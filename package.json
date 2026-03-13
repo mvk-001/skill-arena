@@ -1,0 +1,24 @@
+{
+  "name": "skill-arena",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Promptfoo-based benchmark harness for evaluating skills on coding agents.",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "test": "node --test",
+    "validate:manifest": "node ./src/cli/validate-manifest.js",
+    "generate:config": "node ./src/cli/generate-promptfoo-config.js",
+    "run:benchmark": "node ./src/cli/run-benchmark.js",
+    "benchmark:smoke:no-skill": "node ./src/cli/run-benchmark.js ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill",
+    "benchmark:smoke:skill": "node ./src/cli/run-benchmark.js ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-with-skill"
+  },
+  "dependencies": {
+    "@openai/codex-sdk": "^0.114.0",
+    "promptfoo": "^0.121.2",
+    "yaml": "^2.8.1",
+    "zod": "^4.1.11"
+  }
+}
