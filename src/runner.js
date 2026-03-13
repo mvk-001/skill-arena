@@ -75,10 +75,10 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
     args.push("--no-cache");
   }
 
-  const command = process.platform === "win32" ? "npx.cmd" : "npx";
+  const { executable, executableArgs } = buildPromptfooCommand(args);
 
   await new Promise((resolve, reject) => {
-    const childProcess = spawn(command, args, {
+    const childProcess = spawn(executable, executableArgs, {
       cwd: path.dirname(promptfooConfigPath),
       env: {
         ...process.env,
@@ -109,4 +109,18 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
       reject(new Error(`promptfoo eval exited with code ${code}.`));
     });
   });
+}
+
+function buildPromptfooCommand(args) {
+  if (process.platform !== "win32") {
+    return {
+      executable: "npx",
+      executableArgs: args,
+    };
+  }
+
+  return {
+    executable: "cmd.exe",
+    executableArgs: ["/d", "/s", "/c", "npx.cmd", ...args],
+  };
 }

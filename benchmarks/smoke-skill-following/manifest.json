@@ -22,6 +22,7 @@
       "id": "codex-mini-no-skill",
       "description": "Codex mini baseline in a clean workspace.",
       "skillMode": "disabled",
+      "skillSource": "none",
       "agent": {
         "adapter": "codex",
         "model": "gpt-5.1-codex-mini",
@@ -64,6 +65,7 @@
       "id": "codex-mini-with-skill",
       "description": "Codex mini with the benchmark skill overlay applied.",
       "skillMode": "enabled",
+      "skillSource": "workspace-overlay",
       "agent": {
         "adapter": "codex",
         "model": "gpt-5.1-codex-mini",

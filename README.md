@@ -4,6 +4,8 @@ Skill Arena is a Promptfoo-driven benchmark harness for evaluating coding agents
 
 Codex scenarios run through a Promptfoo custom script that uses the local Codex system via `codex exec` or `@openai/codex-sdk`.
 
+Benchmarks can target either workspace-injected skills or skills already installed in the local Codex system.
+
 Start with these documents:
 
 1. [Architecture](./docs/architecture.md)
