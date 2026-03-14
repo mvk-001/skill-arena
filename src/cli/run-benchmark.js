@@ -1,5 +1,11 @@
 import { findScenario, loadBenchmarkManifest } from "../manifest.js";
+import {
+  buildMergedBenchmarkSummary,
+  renderMergedBenchmarkReport,
+  writeMergedBenchmarkArtifacts,
+} from "../results.js";
 import { runScenario } from "../runner.js";
+import { fromProjectRoot } from "../project-paths.js";
 
 async function main() {
   const manifestPath = process.argv[2];
@@ -30,7 +36,38 @@ async function main() {
     );
   }
 
-  console.log(JSON.stringify(results, null, 2));
+  const completedSummaries = results
+    .filter((result) => !result.skipped && result.summary)
+    .map((result) => result.summary);
+
+  let mergedArtifacts = null;
+
+  if (completedSummaries.length > 0) {
+    const batchRunId = new Date().toISOString().replace(/[:.]/g, "-");
+    const benchmarkRunDirectory = fromProjectRoot(
+      "results",
+      manifest.benchmark.id,
+      `${batchRunId}-merged`,
+    );
+    const mergedSummary = buildMergedBenchmarkSummary({
+      manifest,
+      scenarioSummaries: completedSummaries,
+      generatedAt: new Date().toISOString(),
+    });
+    const cliReport = renderMergedBenchmarkReport(mergedSummary);
+
+    mergedArtifacts = await writeMergedBenchmarkArtifacts({
+      benchmarkId: manifest.benchmark.id,
+      benchmarkRunDirectory,
+      mergedSummary,
+      cliReport,
+    });
+
+    console.log(cliReport);
+    console.log("");
+  }
+
+  console.log(JSON.stringify({ results, mergedArtifacts }, null, 2));
 }
 
 main().catch((error) => {

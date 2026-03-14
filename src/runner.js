@@ -52,6 +52,7 @@ export async function runScenario({ manifest, scenario, dryRun = false }) {
     promptfooConfigPath,
     promptfooResultsPath,
     summaryPath: path.join(workspace.runDirectory, "summary.json"),
+    summary,
     skipped: false,
   };
 }
@@ -75,11 +76,8 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
     promptfooArgs.push("--no-cache");
   }
 
-  const command = process.platform === "win32" ? "cmd.exe" : "npx";
-  const args =
-    process.platform === "win32"
-      ? ["/d", "/s", "/c", "npx.cmd", ...promptfooArgs]
-      : promptfooArgs;
+  const command = process.platform === "win32" ? "npx.cmd" : "npx";
+  const args = promptfooArgs;
 
   await new Promise((resolve, reject) => {
     const childProcess = spawn(command, args, {
@@ -89,7 +87,7 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
         PROMPTFOO_DISABLE_TELEMETRY: "1",
         PROMPTFOO_DISABLE_UPDATE: "1",
       },
-      stdio: "inherit",
+      stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
 
@@ -100,6 +98,14 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
     childProcess.on("error", (error) => {
       clearTimeout(killTimer);
       reject(error);
+    });
+
+    childProcess.stdout.on("data", (chunk) => {
+      process.stdout.write(chunk);
+    });
+
+    childProcess.stderr.on("data", (chunk) => {
+      process.stderr.write(chunk);
     });
 
     childProcess.on("exit", (code) => {

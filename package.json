@@ -13,7 +13,8 @@
     "generate:config": "node ./src/cli/generate-promptfoo-config.js",
     "run:benchmark": "node ./src/cli/run-benchmark.js",
     "benchmark:smoke:no-skill": "node ./src/cli/run-benchmark.js ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill",
-    "benchmark:smoke:skill": "node ./src/cli/run-benchmark.js ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-with-skill"
+    "benchmark:smoke:skill": "node ./src/cli/run-benchmark.js ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-with-skill",
+    "benchmark:remote:gmail-triage": "node ./src/cli/run-benchmark.js ./benchmarks/remote-gws-gmail-triage/manifest.yaml --scenario codex-mini-with-remote-skill"
   },
   "dependencies": {
     "@openai/codex-sdk": "^0.114.0",

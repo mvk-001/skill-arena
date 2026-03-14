@@ -72,6 +72,7 @@ Create `benchmarks/<benchmark-id>/manifest.yaml`.
 This file is the main authoring surface. YAML is the recommended format because it is easier to read and edit. JSON is also supported for compatibility. Put these pieces in it:
 
 - `task.prompt`: the exact prompt sent to the agent
+- `task.prompts`: a list of named prompts to compare in one benchmark run
 - `workspace.fixture`: the base fixture path
 - `workspace.skillOverlay`: the local overlay path or remote Git overlay source for skill-enabled runs
 - `scenarios[*].agent.model`: the model to benchmark
@@ -91,9 +92,15 @@ benchmark:
     - skills
     - summary
 task:
-  prompt: >-
-    Read the repository and write a concise summary of the architecture,
-    the main commands, and the known risks.
+  prompts:
+    - id: architecture
+      description: Ask for the architecture summary.
+      prompt: >-
+        Read the repository and write a concise summary of the architecture.
+    - id: commands
+      description: Ask for the main commands.
+      prompt: >-
+        Read the repository and list the main commands.
 workspace:
   fixture: fixtures/repo-summary/base
   skillOverlay:
@@ -214,7 +221,7 @@ What happens during a run:
 5. Promptfoo stores raw results
 6. Skill Arena writes a normalized `summary.json`
 
-If you set `repeat` to a value greater than `1`, Promptfoo executes repeated trials for that same scenario.
+If you set `repeat` to a value greater than `1`, Promptfoo executes repeated trials for every prompt in that scenario.
 
 ## 6. Inspect the artifacts
 
@@ -230,10 +237,17 @@ The important files are:
 - `promptfooconfig.yaml`
 - `promptfoo-results.json`
 - `summary.json`
+- `../<timestamp>-merged/merged-summary.json`
+- `../<timestamp>-merged/report.md`
 
 `promptfoo-results.json` is the raw Promptfoo export.
 
 `summary.json` is the stable machine-readable file for comparing scenarios, models, and skill modes.
+
+The merged files are generated automatically when you run the full benchmark command across scenarios:
+
+- `merged-summary.json` is the machine-readable comparison across prompts and scenarios
+- `report.md` is the CLI-friendly summary that humans and LLMs can read directly
 
 ## 7. View the results in Promptfoo
 

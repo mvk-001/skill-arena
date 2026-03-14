@@ -70,10 +70,13 @@ All benchmark commands:
 - generate a Promptfoo config for the selected scenario
 - execute Codex through the custom Promptfoo provider
 - write `promptfoo-results.json` and `summary.json`
+- write a benchmark-level `merged-summary.json` and `report.md` when multiple scenarios run in one command
 
 If your manifest uses an `llm-rubric` assertion, Promptfoo also runs the judge model configured on that assertion.
 
 If your manifest uses a Git skill overlay, the harness downloads it before the agent run. The agent itself still follows the scenario sandbox and network settings.
+
+If your manifest uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `repeat` to each one.
 
 ## Where to inspect results
 

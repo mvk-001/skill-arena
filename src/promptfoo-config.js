@@ -11,29 +11,33 @@ export function buildPromptfooConfig({ manifest, scenario, workspace }) {
     workspaceDirectory: workspace.workspaceDirectory,
     gitReady: workspace.gitReady,
   });
+  const taskPrompts = getTaskPrompts(manifest);
 
   const config = {
     description: `${manifest.benchmark.id}:${scenario.id}`,
     prompts: ["{{taskPrompt}}"],
     providers: [provider],
-    tests: [
-      {
-        description: scenario.description,
-        vars: {
-          taskPrompt: manifest.task.prompt,
-        },
-        metadata: {
-          benchmarkId: manifest.benchmark.id,
-          scenarioId: scenario.id,
-          skillMode: scenario.skillMode,
-          tags: [...manifest.benchmark.tags, ...scenario.output.tags],
-          labels: scenario.output.labels,
-        },
-        assert: scenario.evaluation.assertions.map((assertion) =>
-          toPromptfooAssertion(assertion, workspace.workspaceDirectory),
-        ),
+    tests: taskPrompts.map((taskPrompt) => ({
+      description: taskPrompt.description ?? scenario.description,
+      vars: {
+        taskPrompt: taskPrompt.prompt,
       },
-    ],
+      metadata: {
+        benchmarkId: manifest.benchmark.id,
+        scenarioId: scenario.id,
+        scenarioDescription: scenario.description,
+        promptId: taskPrompt.id,
+        promptDescription: taskPrompt.description ?? null,
+        skillMode: scenario.skillMode,
+        model: scenario.agent.model ?? null,
+        tags: [...manifest.benchmark.tags, ...scenario.output.tags],
+        labels: scenario.output.labels,
+        ...flattenLabels(scenario.output.labels),
+      },
+      assert: scenario.evaluation.assertions.map((assertion) =>
+        toPromptfooAssertion(assertion, workspace.workspaceDirectory),
+      ),
+    })),
   };
 
   if (scenario.evaluation.tracing) {
@@ -52,6 +56,25 @@ export function buildPromptfooConfig({ manifest, scenario, workspace }) {
 
 export function stringifyPromptfooConfig(config) {
   return YAML.stringify(config);
+}
+
+function flattenLabels(labels) {
+  return Object.fromEntries(
+    Object.entries(labels).map(([key, value]) => [`label_${key}`, value]),
+  );
+}
+
+function getTaskPrompts(manifest) {
+  if ("prompts" in manifest.task) {
+    return manifest.task.prompts;
+  }
+
+  return [
+    {
+      id: "default",
+      prompt: manifest.task.prompt,
+    },
+  ];
 }
 
 function toPromptfooAssertion(assertion, workspaceDirectory) {

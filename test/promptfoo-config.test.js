@@ -33,6 +33,8 @@ test("codex scenarios generate Promptfoo custom script providers", async () => {
   assert.equal(config.prompts[0], "{{taskPrompt}}");
   assert.equal(config.tests[0].vars.taskPrompt, manifest.task.prompt);
   assert.equal(config.tests[0].metadata.skillMode, "disabled");
+  assert.equal(config.tests[0].metadata.scenarioDescription, scenario.description);
+  assert.equal(config.tests[0].metadata.model, "gpt-5.1-codex-mini");
 });
 
 test("file-contains assertions become Promptfoo javascript assertions", async () => {
@@ -119,4 +121,43 @@ test("codex scenarios can switch to sdk execution", async () => {
 
   assert.equal(config.providers[0].config.execution_method, "sdk");
   assert.equal(config.providers[0].config.skip_git_repo_check, true);
+});
+
+test("multiple task prompts become multiple Promptfoo tests", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = findScenario(manifest, "codex-mini-no-skill");
+
+  manifest.task = {
+    prompts: [
+      {
+        id: "prompt-one",
+        prompt: "Return the marker.",
+        description: "First prompt",
+      },
+      {
+        id: "prompt-two",
+        prompt: "Return the canonical token.",
+      },
+    ],
+  };
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      gitReady: true,
+    },
+  });
+
+  assert.equal(config.tests.length, 2);
+  assert.equal(config.tests[0].metadata.promptId, "prompt-one");
+  assert.equal(config.tests[0].vars.taskPrompt, "Return the marker.");
+  assert.equal(config.tests[1].metadata.promptId, "prompt-two");
+  assert.equal(config.tests[1].vars.taskPrompt, "Return the canonical token.");
 });

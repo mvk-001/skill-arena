@@ -121,6 +121,12 @@ const skillOverlaySchema = z.union([
   }),
 ]);
 
+const taskPromptDefinitionSchema = z.object({
+  id: slugSchema,
+  prompt: z.string().min(1),
+  description: z.string().min(1).optional(),
+});
+
 export const benchmarkManifestSchema = z
   .object({
     schemaVersion: z.literal(1),
@@ -129,9 +135,14 @@ export const benchmarkManifestSchema = z
       description: z.string().min(1),
       tags: z.array(z.string()).default([]),
     }),
-    task: z.object({
-      prompt: z.string().min(1),
-    }),
+    task: z.union([
+      z.object({
+        prompt: z.string().min(1),
+      }),
+      z.object({
+        prompts: z.array(taskPromptDefinitionSchema).min(1),
+      }),
+    ]),
     workspace: z.object({
       fixture: z.string().min(1),
       skillOverlay: skillOverlaySchema.optional(),
