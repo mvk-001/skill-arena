@@ -27,4 +27,5 @@ All repository artifacts must be written in English. This includes code, comment
 - Do not introduce undocumented benchmark formats. Extend the manifest schema and specs first.
 - Keep agent-specific behavior inside the adapter layer instead of scattering it across scripts.
 - Keep Codex execution on the local system path through the custom Promptfoo provider; do not switch benchmark scenarios back to direct hosted Promptfoo Codex providers.
+- When a benchmark uses a system-installed skill, record that in the manifest with `skillSource: "system-installed"` instead of pretending the skill came from a workspace overlay.
 - Preserve the minimal-context goal: benchmark prompts should contain the task, not extra harness instructions, unless the benchmark explicitly measures those instructions.

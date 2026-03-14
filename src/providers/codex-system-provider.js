@@ -31,7 +31,7 @@ export default class CodexSystemProvider {
 
   async runWithSdk(prompt, callOptions) {
     const codex = new Codex({
-      codexPathOverride: this.config.command_path,
+      codexPathOverride: resolveCommandPath(this.config.command_path),
       env: this.buildEnvironment(),
       config: this.config.codex_config,
     });
@@ -84,11 +84,11 @@ export default class CodexSystemProvider {
     let finalResponse = await fs
       .readFile(outputFile, "utf8")
       .catch(() => "");
-
     const events = parseJsonLines(stdout);
+    const eventResponse = extractFinalAgentMessage(events);
 
     if (!finalResponse.trim()) {
-      finalResponse = extractFinalAgentMessage(events);
+      finalResponse = eventResponse;
     }
 
     if (exitCode !== 0) {
@@ -101,9 +101,10 @@ export default class CodexSystemProvider {
     }
 
     const usage = extractCommandUsage(events);
+    const output = finalResponse.trim() || eventResponse || "";
 
     return {
-      output: finalResponse,
+      output,
       tokenUsage: usage,
       metadata: {
         backend: "command",
@@ -294,10 +295,16 @@ function extractCommandUsage(events) {
 }
 
 function extractFinalAgentMessage(events) {
+  const finalMessageEvent = events.findLast?.(
+    (event) => event.type === "item.completed" && event.item?.type === "agent_message",
+  ) ?? [...events]
+    .reverse()
+    .find((event) => event.type === "item.completed" && event.item?.type === "agent_message");
+
   const agentMessageEvent = events.findLast?.((event) => event.type === "agent_message")
     ?? [...events].reverse().find((event) => event.type === "agent_message");
 
-  return agentMessageEvent?.message ?? "";
+  return finalMessageEvent?.item?.text ?? agentMessageEvent?.message ?? "";
 }
 
 async function spawnProcess({
@@ -309,17 +316,13 @@ async function spawnProcess({
   abortSignal,
 }) {
   return await new Promise((resolve, reject) => {
-    const isWindowsCommand = process.platform === "win32";
-    const childProcess = spawn(
-      isWindowsCommand ? "cmd.exe" : command,
-      isWindowsCommand ? ["/d", "/s", "/c", command, ...args] : args,
-      {
+    const { executable, executableArgs } = buildSpawnCommand(command, args);
+    const childProcess = spawn(executable, executableArgs, {
       cwd,
       env,
       stdio: "pipe",
       windowsHide: true,
-      },
-    );
+    });
 
     let stdout = "";
     let stderr = "";
@@ -361,4 +364,28 @@ async function spawnProcess({
 
     abortSignal?.addEventListener("abort", abortHandler, { once: true });
   });
+}
+
+function buildSpawnCommand(command, args) {
+  if (process.platform !== "win32") {
+    return {
+      executable: command,
+      executableArgs: args,
+    };
+  }
+
+  const resolvedCommand = path.extname(command) ? command : `${command}.cmd`;
+
+  return {
+    executable: "cmd.exe",
+    executableArgs: ["/d", "/s", "/c", resolvedCommand, ...args],
+  };
+}
+
+function resolveCommandPath(command) {
+  if (process.platform !== "win32") {
+    return command;
+  }
+
+  return path.extname(command) ? command : `${command}.cmd`;
 }

@@ -29,6 +29,7 @@ scenarios:
   - id: codex-mini-no-skill
     description: Scenario description
     skillMode: disabled
+    skillSource: none
     agent:
       adapter: codex
       model: gpt-5.1-codex-mini
@@ -38,7 +39,7 @@ scenarios:
       approvalPolicy: never
       webSearchEnabled: false
       networkAccessEnabled: false
-      reasoningEffort: low
+      reasoningEffort: minimal
       additionalDirectories: []
       cliEnv: {}
       config: {}
@@ -64,7 +65,7 @@ scenarios:
 - `schemaVersion` must be `1`.
 - `benchmark.id` and each `scenario.id` must be slug-like identifiers.
 - `workspace.fixture` must exist.
-- `workspace.skillOverlay` is required if any scenario uses `skillMode: "enabled"`.
+- `workspace.skillOverlay` is required if any scenario uses `skillMode: "enabled"` with `skillSource: "workspace-overlay"`.
 - `workspace.skillOverlay` may be:
   - a repository-relative local path string
   - an object with `path`
@@ -73,6 +74,10 @@ scenarios:
   - `codex`
   - `copilot-cli`
   - `pi`
+- `skillSource` must be one of:
+  - `none`
+  - `workspace-overlay`
+  - `system-installed`
 - `agent.executionMethod` controls how the custom Promptfoo script invokes Codex:
   - `command`: execute the local `codex exec` command
   - `sdk`: invoke `@openai/codex-sdk`, which wraps the local CLI
@@ -128,8 +133,9 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 
 - Source fixtures are immutable inputs.
 - Every scenario run gets a fresh workspace copy under `results/`.
-- Skill overlays are copied only for `skillMode: "enabled"`.
-- A skill overlay may come from a local directory or a Git repository reference.
+- Workspace skill overlays are copied only for `skillMode: "enabled"` with `skillSource: "workspace-overlay"`.
+- Workspace skill overlays may come from a local directory or a Git repository reference.
+- System-installed skills are not copied into the workspace. Those benchmarks depend on the Codex system skill set already present on the machine.
 - Skill overlays may include root instructions and bundled skill folders, for example `AGENTS.md` plus `skills/<skill-id>/SKILL.md`.
 - Benchmark execution must never write into `fixtures/`.
 - `initializeGit: true` initializes a Git repository in the run workspace so agent providers can operate with their default safety checks.
@@ -160,3 +166,5 @@ Unless a manifest explicitly overrides them, scenarios should use:
 - `noCache: true`
 
 The harness must not add task instructions beyond the benchmark prompt and the files available in the workspace.
+
+Exception: benchmarks that exercise external system CLIs may require broader sandbox access than the default. When that is necessary, the manifest must declare the exception explicitly in the scenario.

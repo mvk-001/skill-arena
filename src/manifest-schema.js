@@ -83,6 +83,9 @@ const scenarioSchema = z.object({
   id: slugSchema,
   description: z.string().min(1),
   skillMode: z.enum(["enabled", "disabled"]),
+  skillSource: z
+    .enum(["workspace-overlay", "system-installed", "none"])
+    .default("none"),
   agent: agentSchema,
   evaluation: z.object({
     assertions: z.array(assertionSchema).min(1),
@@ -165,7 +168,9 @@ export const benchmarkManifestSchema = z
     }
 
     const requiresSkillOverlay = manifest.scenarios.some(
-      (scenario) => scenario.skillMode === "enabled",
+      (scenario) =>
+        scenario.skillMode === "enabled" &&
+        scenario.skillSource === "workspace-overlay",
     );
 
     if (requiresSkillOverlay && !manifest.workspace.skillOverlay) {

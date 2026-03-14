@@ -20,6 +20,7 @@ The benchmark manifest is the project authoring surface. It defines:
 - the exact task prompt
 - the fixture workspace to copy
 - the optional skill overlay
+- whether a skill comes from a workspace overlay or the installed system skill set
 - scenario variants for agent, model, and skill mode
 - assertions, tracing, concurrency, and repeat settings
 
@@ -37,7 +38,9 @@ Each scenario run creates a fresh run directory under `results/`. The materializ
 
 This preserves source fixtures and gives each eval an isolated workspace.
 
-Skill overlays can contain any files needed by the benchmarked agent, including root-level instruction files such as `AGENTS.md` and bundled skill assets such as `skills/<skill-id>/SKILL.md`.
+Workspace skill overlays can contain any files needed by the benchmarked agent, including root-level instruction files such as `AGENTS.md` and bundled skill assets such as `skills/<skill-id>/SKILL.md`.
+
+Some benchmarks use system-installed skills instead of workspace overlays. In those cases the harness does not inject skill files into the workspace; the benchmark relies on skills already installed in the Codex system environment.
 
 ### Agent adapters
 

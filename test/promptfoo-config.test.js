@@ -24,7 +24,6 @@ test("codex scenarios generate Promptfoo custom script providers", async () => {
   });
 
   assert.match(config.providers[0].id, /codex-system-provider\.js$/);
-  assert.match(config.providers[0].id, /codex-system-provider\.js$/);
   assert.equal(config.providers[0].config.model, "gpt-5.1-codex-mini");
   assert.equal(config.providers[0].config.execution_method, "command");
   assert.equal(config.providers[0].config.command_path, "codex");
@@ -160,4 +159,28 @@ test("multiple task prompts become multiple Promptfoo tests", async () => {
   assert.equal(config.tests[0].vars.taskPrompt, "Return the marker.");
   assert.equal(config.tests[1].metadata.promptId, "prompt-two");
   assert.equal(config.tests[1].vars.taskPrompt, "Return the canonical token.");
+});
+
+test("system skill benchmarks generate valid custom providers", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "gws-gmail-triage",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = findScenario(manifest, "codex-mini-command-with-system-skill");
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      gitReady: true,
+    },
+  });
+
+  assert.equal(config.providers[0].config.execution_method, "command");
+  assert.equal(config.providers[0].config.network_access_enabled, true);
+  assert.equal(config.providers[0].config.sandbox_mode, "danger-full-access");
+  assert.equal(config.tests[0].metadata.skillMode, "enabled");
 });
