@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -14,20 +15,16 @@ export async function materializeWorkspace({ manifest, scenario }) {
   const workspaceDirectory = path.join(runDirectory, "workspace");
 
   const fixtureDirectory = resolveManifestPath(manifest.workspace.fixture);
-  const skillOverlayDirectory = manifest.workspace.skillOverlay
-    ? resolveManifestPath(manifest.workspace.skillOverlay)
-    : null;
 
   await assertDirectoryExists(fixtureDirectory, "workspace.fixture");
-
-  if (scenario.skillMode === "enabled" && skillOverlayDirectory) {
-    await assertDirectoryExists(skillOverlayDirectory, "workspace.skillOverlay");
-  }
 
   await fs.mkdir(runDirectory, { recursive: true });
   await fs.cp(fixtureDirectory, workspaceDirectory, { recursive: true });
 
-  if (scenario.skillMode === "enabled" && skillOverlayDirectory) {
+  if (scenario.skillMode === "enabled" && manifest.workspace.skillOverlay) {
+    const skillOverlayDirectory = await resolveSkillOverlayDirectory(
+      manifest.workspace.skillOverlay,
+    );
     await fs.cp(skillOverlayDirectory, workspaceDirectory, { recursive: true });
   }
 
@@ -41,6 +38,55 @@ export async function materializeWorkspace({ manifest, scenario }) {
     workspaceDirectory,
     gitReady,
   };
+}
+
+async function resolveSkillOverlayDirectory(skillOverlay) {
+  if (typeof skillOverlay === "string") {
+    const directory = resolveManifestPath(skillOverlay);
+    await assertDirectoryExists(directory, "workspace.skillOverlay");
+    return directory;
+  }
+
+  if ("path" in skillOverlay) {
+    const directory = resolveManifestPath(skillOverlay.path);
+    await assertDirectoryExists(directory, "workspace.skillOverlay.path");
+    return directory;
+  }
+
+  if ("git" in skillOverlay) {
+    return await cloneGitSkillOverlay(skillOverlay.git);
+  }
+
+  throw new Error("Unsupported workspace.skillOverlay configuration.");
+}
+
+async function cloneGitSkillOverlay(gitOverlay) {
+  const cloneDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-skill-overlay-"));
+  const gitArgs = ["clone", "--depth", "1"];
+
+  if (gitOverlay.ref) {
+    gitArgs.push("--branch", gitOverlay.ref);
+  }
+
+  gitArgs.push(gitOverlay.repo, cloneDirectory);
+
+  try {
+    await execFileAsync("git", gitArgs, {
+      windowsHide: true,
+    });
+  } catch (error) {
+    throw new Error(
+      `Failed to clone workspace.skillOverlay.git.repo "${gitOverlay.repo}". ${error.message}`,
+    );
+  }
+
+  const overlayDirectory = gitOverlay.subpath
+    ? path.join(cloneDirectory, gitOverlay.subpath)
+    : cloneDirectory;
+
+  await assertDirectoryExists(overlayDirectory, "workspace.skillOverlay.git.subpath");
+
+  return overlayDirectory;
 }
 
 async function assertDirectoryExists(directoryPath, label) {

@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import YAML from "yaml";
 import { ZodError } from "zod";
 
 import { benchmarkManifestSchema } from "./manifest-schema.js";
@@ -9,7 +10,10 @@ import { PROJECT_ROOT } from "./project-paths.js";
 export async function loadBenchmarkManifest(manifestPath) {
   const absoluteManifestPath = path.resolve(process.cwd(), manifestPath);
   const manifestContents = await fs.readFile(absoluteManifestPath, "utf8");
-  const parsedManifest = JSON.parse(manifestContents);
+  const parsedManifest = parseManifestContents({
+    manifestContents,
+    manifestPath: absoluteManifestPath,
+  });
 
   try {
     const manifest = benchmarkManifestSchema.parse(parsedManifest);
@@ -23,6 +27,22 @@ export async function loadBenchmarkManifest(manifestPath) {
     }
 
     throw error;
+  }
+}
+
+function parseManifestContents({ manifestContents, manifestPath }) {
+  const extension = path.extname(manifestPath).toLowerCase();
+
+  try {
+    if (extension === ".yaml" || extension === ".yml") {
+      return YAML.parse(manifestContents);
+    }
+
+    return JSON.parse(manifestContents);
+  } catch (error) {
+    throw new Error(
+      `Failed to parse manifest "${manifestPath}". Expected valid ${extension === ".yaml" || extension === ".yml" ? "YAML" : "JSON"}. ${error.message}`,
+    );
   }
 }
 

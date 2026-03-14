@@ -65,6 +65,38 @@ test("file-contains assertions become Promptfoo javascript assertions", async ()
   assert.match(config.tests[0].assert[0].value, /notes\/target\.txt|notes\\\\target\.txt/);
 });
 
+test("llm-rubric assertions pass through to Promptfoo", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = structuredClone(findScenario(manifest, "codex-mini-no-skill"));
+
+  scenario.evaluation.assertions = [
+    {
+      type: "llm-rubric",
+      value:
+        "Return a score of 1 only if the answer matches the expected answer `ALPHA-42` exactly.",
+      threshold: 0.9,
+      metric: "answer-quality",
+      provider: "openai:gpt-5-mini",
+    },
+  ];
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      gitReady: true,
+    },
+  });
+
+  assert.deepEqual(config.tests[0].assert[0], scenario.evaluation.assertions[0]);
+});
+
 test("codex scenarios can switch to sdk execution", async () => {
   const manifestPath = fromProjectRoot(
     "benchmarks",

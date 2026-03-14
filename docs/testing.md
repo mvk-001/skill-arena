@@ -22,10 +22,32 @@ npm test
 Use this before running a live benchmark if the manifest changed.
 
 ```bash
-npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.json
+npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.yaml
 ```
 
-### 3. Run the current skill smoke benchmarks
+YAML is the recommended manifest format. JSON also works if needed.
+
+### 3. Run any benchmark manifest
+
+The generic command is:
+
+```bash
+npm run run:benchmark -- ./benchmarks/<benchmark-id>/manifest.yaml
+```
+
+To run only one scenario:
+
+```bash
+npm run run:benchmark -- ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
+```
+
+To generate the intermediate Promptfoo config without executing the live eval:
+
+```bash
+npm run generate:config -- ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
+```
+
+### 4. Run the current skill smoke benchmarks
 
 The repository currently ships one live benchmark: `smoke-skill-following`.
 
@@ -41,12 +63,17 @@ Run the skill-enabled variant:
 npm run benchmark:smoke:skill
 ```
 
-Both commands:
+All benchmark commands:
 
 - materialize an isolated workspace under `results/`
+- resolve the skill overlay from a local path or clone it from Git when configured
 - generate a Promptfoo config for the selected scenario
 - execute Codex through the custom Promptfoo provider
 - write `promptfoo-results.json` and `summary.json`
+
+If your manifest uses an `llm-rubric` assertion, Promptfoo also runs the judge model configured on that assertion.
+
+If your manifest uses a Git skill overlay, the harness downloads it before the agent run. The agent itself still follows the scenario sandbox and network settings.
 
 ## Where to inspect results
 
@@ -78,7 +105,7 @@ The run artifact paths below are local validation outputs under the ignored `res
 ### Unit and manifest checks
 
 - `npm test`: passed, `9/9` tests
-- `npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.json`: passed
+- `npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.yaml`: passed
 
 ### Live smoke benchmark results
 

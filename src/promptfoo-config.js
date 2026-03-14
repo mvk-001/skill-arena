@@ -60,10 +60,9 @@ function toPromptfooAssertion(assertion, workspaceDirectory) {
     case "contains":
     case "icontains":
     case "regex":
-      return assertion;
     case "is-json":
-      return assertion;
     case "javascript":
+    case "llm-rubric":
       return assertion;
     case "file-contains": {
       const filePath = path.resolve(workspaceDirectory, assertion.path);

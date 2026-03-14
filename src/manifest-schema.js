@@ -7,21 +7,47 @@ const slugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
 const deterministicAssertionSchema = z.object({
   type: z.enum(["equals", "contains", "icontains", "regex"]),
   value: z.string().min(1),
+  metric: z.string().min(1).optional(),
+  weight: z.number().positive().optional(),
 });
 
 const isJsonAssertionSchema = z.object({
   type: z.literal("is-json"),
+  metric: z.string().min(1).optional(),
+  weight: z.number().positive().optional(),
 });
 
 const javascriptAssertionSchema = z.object({
   type: z.literal("javascript"),
   value: z.string().min(1),
+  metric: z.string().min(1).optional(),
+  weight: z.number().positive().optional(),
 });
 
 const fileContainsAssertionSchema = z.object({
   type: z.literal("file-contains"),
   path: z.string().min(1),
   value: z.string().min(1),
+  metric: z.string().min(1).optional(),
+  weight: z.number().positive().optional(),
+});
+
+const graderProviderSchema = z.union([
+  z.string().min(1),
+  z.object({
+    id: z.string().min(1),
+    config: z.record(z.string(), z.unknown()).optional(),
+  }),
+]);
+
+const llmRubricAssertionSchema = z.object({
+  type: z.literal("llm-rubric"),
+  value: z.string().min(1),
+  threshold: z.number().min(0).max(1).optional(),
+  provider: graderProviderSchema.optional(),
+  rubricPrompt: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
+  metric: z.string().min(1).optional(),
+  weight: z.number().positive().optional(),
 });
 
 const assertionSchema = z.discriminatedUnion("type", [
@@ -29,6 +55,7 @@ const assertionSchema = z.discriminatedUnion("type", [
   isJsonAssertionSchema,
   javascriptAssertionSchema,
   fileContainsAssertionSchema,
+  llmRubricAssertionSchema,
 ]);
 
 const agentSchema = z.object({
@@ -73,8 +100,26 @@ const scenarioSchema = z.object({
     .default({
       tags: [],
       labels: {},
-    }),
+  }),
 });
+
+const localSkillOverlaySchema = z.object({
+  path: z.string().min(1),
+});
+
+const gitSkillOverlaySchema = z.object({
+  repo: z.string().min(1),
+  ref: z.string().min(1).optional(),
+  subpath: z.string().min(1).optional(),
+});
+
+const skillOverlaySchema = z.union([
+  z.string().min(1),
+  localSkillOverlaySchema,
+  z.object({
+    git: gitSkillOverlaySchema,
+  }),
+]);
 
 export const benchmarkManifestSchema = z
   .object({
@@ -89,7 +134,7 @@ export const benchmarkManifestSchema = z
     }),
     workspace: z.object({
       fixture: z.string().min(1),
-      skillOverlay: z.string().min(1).optional(),
+      skillOverlay: skillOverlaySchema.optional(),
       initializeGit: z.boolean().default(true),
     }),
     scenarios: z.array(scenarioSchema).min(1),
