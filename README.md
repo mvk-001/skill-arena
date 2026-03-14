@@ -14,4 +14,9 @@ Start with these documents:
 4. [Testing](./docs/testing.md)
 5. [Agent guidance](./AGENTS.md)
 
-The repository authoring surface is the benchmark manifest, typically authored in YAML. Promptfoo is the evaluation runtime behind that manifest.
+The repository has two authoring surfaces:
+
+- `manifest.yaml` for scenario-oriented benchmark runs
+- `compare.yaml` for one Promptfoo eval with skill-mode columns and variant/prompt rows
+
+Promptfoo is the evaluation runtime behind both formats.

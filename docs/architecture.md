@@ -2,31 +2,46 @@
 
 ## Purpose
 
-Skill Arena evaluates how well coding agents perform on repeatable repository tasks under constrained execution settings. The system is designed to compare:
+Skill Arena evaluates coding agents on repeatable repository tasks under constrained execution settings. The main comparisons are:
 
 - skill-enabled vs. skill-disabled runs
 - the same task across different agents
 - smaller and cheaper models under the same benchmark conditions
 
-The project minimizes harness-added context, but it does not claim to remove hidden provider-level system behavior. Agent runtimes may still inject their own instructions or tool policies.
+The harness keeps execution context small, but it does not remove hidden provider runtime behavior.
 
 ## Core components
 
 ### Benchmark manifest
 
-The benchmark manifest is the project authoring surface. It defines:
+The benchmark manifest is the main authoring surface. It defines:
 
 - benchmark identity and description
-- the exact task prompt
+- the exact task prompt or prompt set
 - the fixture workspace to copy
 - the optional skill overlay
-- whether a skill comes from a workspace overlay or the installed system skill set
 - scenario variants for agent, model, and skill mode
-- assertions, tracing, concurrency, and repeat settings
+- assertions, tracing, concurrency, and request-count settings
+
+### Compare config
+
+The compare config is the second authoring surface. It defines:
+
+- benchmark identity and description
+- the exact task prompt or prompt set
+- the fixture workspace to copy
+- shared evaluation settings
+- compare variants for adapter and model
+- compare skill modes such as `no-skill` and `skill`
+
+The compare runner expands the matrix internally, materializes a separate workspace for each supported variant and skill mode, and then executes one Promptfoo eval with:
+
+- Promptfoo providers mapped to skill-mode columns
+- Promptfoo test rows mapped to variant and prompt pairs
 
 ### Fixture workspaces
 
-Fixtures are versioned directories stored in the repository. They represent the source state for a benchmark task. A fixture must be safe to copy and must never be mutated during benchmark execution.
+Fixtures are versioned directories stored in the repository. They represent the source state for a benchmark task. Fixtures must be safe to copy and must never be mutated during benchmark execution.
 
 ### Workspace materializer
 
@@ -46,18 +61,16 @@ Some benchmarks use system-installed skills instead of workspace overlays. In th
 
 The adapter layer maps a manifest scenario into a Promptfoo provider definition. V1 implements:
 
-- `codex`: fully supported through a Promptfoo custom script provider that runs the local Codex system
-
-The following adapter ids are reserved but not implemented in V1:
-
-- `copilot-cli`
+- `codex`
 - `pi`
 
-This keeps the benchmark format stable while future integrations are added.
+The following adapter id is reserved but not implemented in V1:
+
+- `copilot-cli`
 
 ### Promptfoo config generator
 
-The generator translates a manifest scenario and its run workspace into a Promptfoo configuration file. Promptfoo remains the evaluation runtime, but benchmark authors work against the project manifest instead of raw Promptfoo YAML.
+The generator translates a manifest scenario or compare config into a Promptfoo configuration file. Promptfoo remains the evaluation runtime, but benchmark authors work against repository-native YAML instead of raw Promptfoo YAML.
 
 For Codex, the generated provider is a file-based custom script. The script supports two execution methods:
 
@@ -68,12 +81,22 @@ For Codex, the generated provider is a file-based custom script. The script supp
 
 Each run writes a predictable directory under `results/<benchmark-id>/<timestamp>-<scenario-id>/`:
 
-- `workspace/` contains the isolated run workspace
-- `promptfooconfig.yaml` contains the generated Promptfoo config
-- `promptfoo-results.json` contains the raw Promptfoo export
-- `summary.json` contains a normalized run summary for downstream analysis
+- `workspace/`
+- `promptfooconfig.yaml`
+- `promptfoo-results.json`
+- `summary.json`
+
+Compare runs write under `results/<benchmark-id>/<timestamp>-compare/` and include:
+
+- `promptfooconfig.yaml`
+- `promptfoo-results.json`
+- `summary.json` with provider metadata, scenario summaries, and a compare matrix
+- `merged/report.md`
+- `merged/merged-summary.json`
 
 ## Execution flow
+
+### Scenario flow
 
 1. Load and validate a benchmark manifest.
 2. Select one or more scenarios from the manifest.
@@ -83,6 +106,17 @@ Each run writes a predictable directory under `results/<benchmark-id>/<timestamp
 6. Run `promptfoo eval` with the generated config.
 7. Export Promptfoo results as JSON.
 8. Normalize the results into a stable summary payload.
+
+### Compare flow
+
+1. Load and validate a compare config.
+2. Expand compare variants and skill modes into internal scenario-like units.
+3. Materialize a fresh workspace for each supported unit.
+4. Build one Promptfoo config with skill-mode providers and variant/prompt test rows.
+5. Run one `promptfoo eval` so Promptfoo shows skill modes side by side for each row.
+6. Record unsupported adapters as skipped comparison entries.
+7. Export Promptfoo results as JSON.
+8. Normalize the results into a stable comparison matrix plus a merged report.
 
 ## Design constraints
 

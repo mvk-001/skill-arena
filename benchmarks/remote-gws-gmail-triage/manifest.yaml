@@ -60,7 +60,7 @@ scenarios:
       assertions:
         - type: icontains
           value: is:unread
-      repeat: 10
+      requests: 10
       timeoutMs: 900000
       tracing: false
       maxConcurrency: 4
@@ -96,7 +96,7 @@ scenarios:
       assertions:
         - type: icontains
           value: is:unread
-      repeat: 10
+      requests: 10
       timeoutMs: 900000
       tracing: false
       maxConcurrency: 4

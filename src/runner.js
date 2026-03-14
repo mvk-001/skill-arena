@@ -66,7 +66,7 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
     "--output",
     promptfooResultsPath,
     "--repeat",
-    String(scenario.evaluation.repeat),
+    String(scenario.evaluation.requests),
     "-j",
     String(scenario.evaluation.maxConcurrency),
     "--no-progress-bar",

@@ -47,6 +47,33 @@ To generate the intermediate Promptfoo config without executing the live eval:
 npm run generate:config -- ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
 ```
 
+### 3a. Run a compare config
+
+Use this when you want one file to drive one Promptfoo eval with multiple side-by-side providers across adapters, models, and skill modes.
+
+```bash
+npm run benchmark:compare -- ./benchmarks/<benchmark-id>/compare.yaml
+```
+
+To validate the scenario expansion without executing live evals:
+
+```bash
+npm run benchmark:compare -- ./benchmarks/<benchmark-id>/compare.yaml --dry-run
+```
+
+Behavior to expect in compare mode:
+
+- skill modes appear as side-by-side columns in the same Promptfoo eval
+- rows are variant and prompt pairs
+- `evaluation.requests` controls the pass ratio denominator for each compare cell
+- unsupported adapters such as reserved V1 adapters are listed as skipped entries in the merged report
+
+For the smoke comparison across Codex and PI:
+
+```bash
+npm run benchmark:smoke:compare
+```
+
 ### 4. Run the current skill smoke benchmarks
 
 The repository currently ships one live benchmark: `smoke-skill-following`.
@@ -76,7 +103,7 @@ If your manifest uses an `llm-rubric` assertion, Promptfoo also runs the judge m
 
 If your manifest uses a Git skill overlay, the harness downloads it before the agent run. The agent itself still follows the scenario sandbox and network settings.
 
-If your manifest uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `repeat` to each one.
+If your manifest uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `requests` to each one.
 
 ## Where to inspect results
 
@@ -93,6 +120,14 @@ The most useful files are:
 - `summary.json`
 
 `summary.json` is the normalized output to compare runs across scenarios.
+
+For compare runs, inspect:
+
+- `results/<benchmark-id>/<timestamp>-compare/promptfoo-results.json`
+- `results/<benchmark-id>/<timestamp>-compare/summary.json`
+- `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
+
+`summary.json` includes a `matrix` section with compare columns, rows, and per-cell pass ratios such as `40% (4/10)`.
 
 ## Latest validated results
 

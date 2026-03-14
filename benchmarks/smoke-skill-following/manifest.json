@@ -44,7 +44,7 @@
             "value": "ALPHA-42"
           }
         ],
-        "repeat": 1,
+        "requests": 1,
         "timeoutMs": 120000,
         "tracing": false,
         "maxConcurrency": 1,
@@ -87,7 +87,7 @@
             "value": "ALPHA-42"
           }
         ],
-        "repeat": 1,
+        "requests": 1,
         "timeoutMs": 120000,
         "tracing": false,
         "maxConcurrency": 1,

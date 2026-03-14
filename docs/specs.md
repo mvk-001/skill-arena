@@ -39,7 +39,7 @@ scenarios:
       approvalPolicy: never
       webSearchEnabled: false
       networkAccessEnabled: false
-      reasoningEffort: minimal
+      reasoningEffort: low
       additionalDirectories: []
       cliEnv: {}
       config: {}
@@ -47,17 +47,11 @@ scenarios:
       assertions:
         - type: equals
           value: Expected output
-      repeat: 1
+      requests: 1
       timeoutMs: 120000
       tracing: false
       maxConcurrency: 1
       noCache: true
-    output:
-      tags:
-        - codex
-        - baseline
-      labels:
-        skill: off
 ```
 
 ### Required behavior
@@ -81,6 +75,72 @@ scenarios:
 - `agent.executionMethod` controls how the custom Promptfoo script invokes Codex:
   - `command`: execute the local `codex exec` command
   - `sdk`: invoke `@openai/codex-sdk`, which wraps the local CLI
+
+## Compare config
+
+### File format
+
+Compare configs should be authored in YAML for readability. JSON is also supported for compatibility. Paths inside the config are repository-root relative.
+
+### Supported structure
+
+```yaml
+schemaVersion: 1
+benchmark:
+  id: gws-gmail-triage-compare
+  description: Short human-readable description
+  tags:
+    - compare
+task:
+  prompt: Exact task prompt sent to every provider.
+workspace:
+  fixture: fixtures/example/base
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: is-json
+  requests: 10
+  timeoutMs: 180000
+  tracing: false
+  maxConcurrency: 1
+  noCache: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: Baseline without the skill.
+      skillMode: disabled
+    - id: skill
+      description: Skill-enabled run.
+      skillMode: enabled
+      skillSource: system-installed
+  variants:
+    - id: codex-worst
+      description: Codex comparison variant.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+```
+
+### Required behavior
+
+- `schemaVersion` must be `1`.
+- `comparison.skillModes[*].id` and `comparison.variants[*].id` must be slug-like identifiers.
+- `evaluation.requests` is the execution count per compare cell.
+- The compare runner expands the Cartesian product of `comparison.skillModes` and `comparison.variants`.
+- Each expanded unit must resolve a `skillSource`:
+  - `disabled` resolves to `none`
+  - `enabled` resolves to the explicit `skillSource` when provided
+  - `enabled` defaults to `workspace-overlay` when `workspace.skillOverlay` exists
+  - otherwise `enabled` defaults to `system-installed`
+- `workspace.skillOverlay` is required if any enabled compare skill mode resolves to `workspace-overlay`.
+- The compare runner must materialize a separate workspace per supported expanded unit.
+- The compare runner must execute one Promptfoo eval with:
+  - Promptfoo providers keyed by skill mode
+  - Promptfoo test rows keyed by variant and prompt
+- Unsupported adapters must be reported as skipped comparison entries instead of aborting the whole compare run.
+- Provider labels in compare mode should prefer concise skill mode ids such as `no-skill` and `skill`.
+- Compare reports should show rows as `prompt x variant` and columns as skill modes.
+- Compare cells should report pass ratios against the requested execution count, for example `40% (4/10)`.
 
 ## Supported assertion types in V1
 
@@ -126,8 +186,10 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 - `codex`: supported
   - implemented as a Promptfoo custom script
   - supports `executionMethod: "command"` and `executionMethod: "sdk"`
+- `pi`: supported
+  - implemented as a Promptfoo custom script
+  - currently uses `executionMethod: "command"` through the local `pi` CLI
 - `copilot-cli`: reserved, not implemented
-- `pi`: reserved, not implemented
 
 ## Workspace rules
 
@@ -150,6 +212,23 @@ Each run must produce:
 - `results/<benchmark-id>/<timestamp>-<scenario-id>/summary.json`
 
 `summary.json` is the stable machine-readable output for later comparisons across agents and skill modes.
+
+Compare runs must produce:
+
+- `results/<benchmark-id>/<timestamp>-compare/promptfooconfig.yaml`
+- `results/<benchmark-id>/<timestamp>-compare/promptfoo-results.json`
+- `results/<benchmark-id>/<timestamp>-compare/summary.json`
+- `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
+- `results/<benchmark-id>/<timestamp>-compare/merged/merged-summary.json`
+
+Compare `summary.json` must include:
+
+- provider metadata for supported scenario units
+- scenario-oriented normalized summaries
+- a `matrix` object with:
+  - `columns`: skill mode ids and labels
+  - `rows`: variant and prompt pairs
+  - per-cell aggregates including requested runs, completed runs, pass counts, error counts, and a display string such as `40% (4/10)`
 
 ## Minimal execution defaults
 

@@ -184,3 +184,32 @@ test("system skill benchmarks generate valid custom providers", async () => {
   assert.equal(config.providers[0].config.sandbox_mode, "danger-full-access");
   assert.equal(config.tests[0].metadata.skillMode, "enabled");
 });
+
+test("pi scenarios generate Promptfoo custom script providers", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = structuredClone(findScenario(manifest, "codex-mini-no-skill"));
+
+  scenario.id = "pi-gpt5mini-no-skill";
+  scenario.agent.adapter = "pi";
+  scenario.agent.model = "github-copilot/gpt-5-mini";
+  scenario.agent.commandPath = "pi";
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      gitReady: true,
+    },
+  });
+
+  assert.match(config.providers[0].id, /pi-system-provider\.js$/);
+  assert.equal(config.providers[0].config.model, "github-copilot/gpt-5-mini");
+  assert.equal(config.providers[0].config.command_path, "pi");
+  assert.equal(config.providers[0].config.working_dir, "C:/temp/workspace");
+});

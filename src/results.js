@@ -87,22 +87,25 @@ export async function normalizePromptfooResults({
   };
 }
 
-function normalizeOutput(output, index) {
+export function normalizeOutput(output, index) {
   const failureReason =
     output.failureReason === 0 || output.failureReason === null
       ? null
       : output.failureReason;
+  const metadata = output.metadata ?? output.testCase?.metadata ?? {};
 
   return {
     index,
-    promptId: output.metadata?.promptId ?? output.testCase?.metadata?.promptId ?? null,
-    promptDescription:
-      output.metadata?.promptDescription ?? output.testCase?.metadata?.promptDescription ?? null,
-    scenarioId: output.metadata?.scenarioId ?? output.testCase?.metadata?.scenarioId ?? null,
+    promptId: metadata.promptId ?? null,
+    promptDescription: metadata.promptDescription ?? null,
+    scenarioId: metadata.scenarioId ?? null,
     scenarioDescription:
-      output.metadata?.scenarioDescription
-      ?? output.testCase?.metadata?.scenarioDescription
+      metadata.scenarioDescription
       ?? null,
+    variantId: metadata.variantId ?? metadata.label_variantId ?? null,
+    variantDisplayName:
+      metadata.variantDisplayName ?? metadata.label_variantDisplayName ?? null,
+    rowId: metadata.rowId ?? null,
     provider:
       typeof output.provider === "string"
         ? output.provider
@@ -118,7 +121,29 @@ function normalizeOutput(output, index) {
   };
 }
 
-export function buildMergedBenchmarkSummary({ manifest, scenarioSummaries, generatedAt }) {
+export async function normalizeRawPromptfooResults(promptfooResultsPath) {
+  const rawResults = JSON.parse(await fs.readFile(promptfooResultsPath, "utf8"));
+  const resultEnvelope = rawResults.results ?? {};
+  const stats = resultEnvelope.stats ?? {};
+  const rowResults = Array.isArray(resultEnvelope.results)
+    ? resultEnvelope.results
+    : Array.isArray(resultEnvelope.outputs)
+      ? resultEnvelope.outputs
+      : [];
+
+  return {
+    rawResults,
+    stats,
+    outputs: rowResults.map((output, index) => normalizeOutput(output, index)),
+  };
+}
+
+export function buildMergedBenchmarkSummary({
+  manifest,
+  scenarioSummaries,
+  generatedAt,
+  skippedScenarios = [],
+}) {
   const promptGroups = new Map();
 
   for (const summary of scenarioSummaries) {
@@ -138,6 +163,11 @@ export function buildMergedBenchmarkSummary({ manifest, scenarioSummaries, gener
         model: summary.model,
         outputLabels: summary.outputLabels,
         outputTags: summary.outputTags,
+        displayName:
+          summary.outputLabels?.reportDisplayName
+          ?? summary.outputLabels?.displayName
+          ?? summary.scenarioId,
+        status: "completed",
         runs: 0,
         successes: 0,
         failures: 0,
@@ -169,11 +199,56 @@ export function buildMergedBenchmarkSummary({ manifest, scenarioSummaries, gener
     benchmarkDescription: manifest.benchmark.description ?? null,
     generatedAt,
     scenarioCount: scenarioSummaries.length,
+    skippedScenarios,
     prompts: [...promptGroups.values()],
   };
 }
 
+export function buildCompareMatrixSummary({
+  manifest,
+  matrix,
+  skippedVariants = [],
+  generatedAt,
+}) {
+  const rows = (matrix?.rows ?? []).map((row) => ({
+    ...row,
+    cells: { ...row.cells },
+  }));
+
+  for (const skippedVariant of skippedVariants) {
+    const hasRowForVariant = rows.some((row) => row.variantId === skippedVariant.variantId);
+
+    if (hasRowForVariant) {
+      continue;
+    }
+
+    rows.push({
+      rowId: `${skippedVariant.variantId}:skipped`,
+      variantId: skippedVariant.variantId,
+      variantDisplayName: skippedVariant.variantDisplayName,
+      promptId: "skipped",
+      promptDescription: "skipped",
+      prompt: null,
+      cells: {},
+      skipped: true,
+      reason: skippedVariant.reason,
+    });
+  }
+
+  return {
+    benchmarkId: manifest.benchmark.id,
+    benchmarkDescription: manifest.benchmark.description ?? null,
+    generatedAt,
+    matrix: {
+      columns: matrix?.columns ?? [],
+      rows,
+    },
+    skippedVariants,
+  };
+}
+
 export function renderMergedBenchmarkReport(mergedSummary) {
+  const scenarioColumns = buildScenarioColumns(mergedSummary);
   const lines = [
     `# ${mergedSummary.benchmarkId}`,
     "",
@@ -181,24 +256,18 @@ export function renderMergedBenchmarkReport(mergedSummary) {
     "",
   ];
 
-  for (const prompt of mergedSummary.prompts) {
-    lines.push(`## Prompt: ${prompt.promptId}`);
-    if (prompt.promptDescription) {
-      lines.push(prompt.promptDescription);
-      lines.push("");
-    }
-    lines.push(`Prompt text: ${prompt.prompt}`);
-    lines.push("");
-    lines.push("| Scenario | Skill | Runs | Pass | Fail | Avg score | Avg latency ms |");
-    lines.push("| --- | --- | ---: | ---: | ---: | ---: | ---: |");
+  if (scenarioColumns.length > 0) {
+    lines.push("| Prompt | " + scenarioColumns.map((scenario) => scenario.displayName).join(" | ") + " |");
+    lines.push("| --- | " + scenarioColumns.map(() => "---:").join(" | ") + " |");
 
-    for (const scenario of Object.values(prompt.scenarios)) {
-      lines.push(
-        `| ${scenario.scenarioId} | ${scenario.outputLabels?.skill_state ?? scenario.skillMode} | ${scenario.runs} | ${scenario.successes} | ${scenario.failures} | ${formatNumber(scenario.avgScore)} | ${formatNumber(scenario.avgLatencyMs)} |`,
-      );
+    for (const prompt of mergedSummary.prompts) {
+      const promptLabel = prompt.promptDescription ?? prompt.promptId;
+      const cells = scenarioColumns.map((scenario) => {
+        const promptScenario = prompt.scenarios[scenario.scenarioId];
+        return formatScenarioRatio(promptScenario, scenario.status);
+      });
+      lines.push(`| ${promptLabel} | ${cells.join(" | ")} |`);
     }
-
-    lines.push("");
   }
 
   return lines.filter((line, index, array) => {
@@ -207,6 +276,80 @@ export function renderMergedBenchmarkReport(mergedSummary) {
     }
     return array[index - 1] !== "";
   }).join("\n");
+}
+
+export function renderCompareMatrixReport(mergedSummary) {
+  const matrix = mergedSummary.matrix ?? { columns: [], rows: [] };
+  const columns = matrix.columns ?? [];
+  const lines = [
+    `# ${mergedSummary.benchmarkId}`,
+    "",
+    mergedSummary.benchmarkDescription ?? "",
+    "",
+  ];
+
+  if (columns.length > 0) {
+    lines.push(
+      "| Prompt | Agent/Config | " + columns.map((column) => column.label).join(" | ") + " |",
+    );
+    lines.push("| --- | --- | " + columns.map(() => "---:").join(" | ") + " |");
+
+    for (const row of matrix.rows ?? []) {
+      const promptLabel = row.promptDescription ?? row.promptId;
+      const cells = columns.map((column) => row.cells[column.id]?.displayValue ?? (row.skipped ? "skipped" : "-"));
+      lines.push(`| ${promptLabel} | ${row.variantDisplayName} | ${cells.join(" | ")} |`);
+    }
+  }
+
+  return lines.filter((line, index, array) => {
+    if (line !== "") {
+      return true;
+    }
+    return array[index - 1] !== "";
+  }).join("\n");
+}
+
+function buildScenarioColumns(mergedSummary) {
+  const completedScenarios = new Map();
+
+  for (const prompt of mergedSummary.prompts) {
+    for (const scenario of Object.values(prompt.scenarios)) {
+      if (!completedScenarios.has(scenario.scenarioId)) {
+        completedScenarios.set(scenario.scenarioId, {
+          scenarioId: scenario.scenarioId,
+          displayName: scenario.displayName ?? scenario.scenarioId,
+          status: scenario.status ?? "completed",
+        });
+      }
+    }
+  }
+
+  for (const scenario of mergedSummary.skippedScenarios ?? []) {
+    if (!completedScenarios.has(scenario.scenarioId)) {
+      completedScenarios.set(scenario.scenarioId, {
+        scenarioId: scenario.scenarioId,
+        displayName: scenario.displayName ?? scenario.scenarioId,
+        status: "skipped",
+      });
+    }
+  }
+
+  return [...completedScenarios.values()].sort((left, right) =>
+    left.displayName.localeCompare(right.displayName),
+  );
+}
+
+function formatScenarioRatio(scenario, status) {
+  if (status === "skipped") {
+    return "skipped";
+  }
+
+  if (!scenario || scenario.runs === 0) {
+    return "-";
+  }
+
+  const ratio = scenario.successes / scenario.runs;
+  return `${formatPercent(ratio)} (${scenario.successes}/${scenario.runs})`;
 }
 
 function getOrCreateMapEntry(map, key, createValue) {
@@ -229,6 +372,6 @@ function averageNumbers(currentAverage, count, nextValue) {
   return ((currentAverage * (count - 1)) + nextValue) / count;
 }
 
-function formatNumber(value) {
-  return typeof value === "number" ? value.toFixed(2) : "-";
+function formatPercent(value) {
+  return `${(value * 100).toFixed(0)}%`;
 }

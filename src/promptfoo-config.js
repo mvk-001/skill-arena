@@ -58,13 +58,13 @@ export function stringifyPromptfooConfig(config) {
   return YAML.stringify(config);
 }
 
-function flattenLabels(labels) {
+export function flattenLabels(labels) {
   return Object.fromEntries(
     Object.entries(labels).map(([key, value]) => [`label_${key}`, value]),
   );
 }
 
-function getTaskPrompts(manifest) {
+export function getTaskPrompts(manifest) {
   if ("prompts" in manifest.task) {
     return manifest.task.prompts;
   }
@@ -77,7 +77,7 @@ function getTaskPrompts(manifest) {
   ];
 }
 
-function toPromptfooAssertion(assertion, workspaceDirectory) {
+export function toPromptfooAssertion(assertion, workspaceDirectory) {
   switch (assertion.type) {
     case "equals":
     case "contains":

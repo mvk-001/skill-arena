@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const slugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+export const slugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
   message: "Expected a lowercase slug using letters, numbers, and hyphens.",
 });
 
@@ -50,7 +50,7 @@ const llmRubricAssertionSchema = z.object({
   weight: z.number().positive().optional(),
 });
 
-const assertionSchema = z.discriminatedUnion("type", [
+export const assertionSchema = z.discriminatedUnion("type", [
   deterministicAssertionSchema,
   isJsonAssertionSchema,
   javascriptAssertionSchema,
@@ -58,7 +58,7 @@ const assertionSchema = z.discriminatedUnion("type", [
   llmRubricAssertionSchema,
 ]);
 
-const agentSchema = z.object({
+export const agentSchema = z.object({
   adapter: z.enum(["codex", "copilot-cli", "pi"]),
   model: z.string().min(1).optional(),
   executionMethod: z.enum(["command", "sdk"]).default("command"),
@@ -79,7 +79,52 @@ const agentSchema = z.object({
   config: z.record(z.string(), z.unknown()).default({}),
 });
 
-const scenarioSchema = z.object({
+const localSkillOverlaySchema = z.object({
+  path: z.string().min(1),
+});
+
+const gitSkillOverlaySchema = z.object({
+  repo: z.string().min(1),
+  ref: z.string().min(1).optional(),
+  subpath: z.string().min(1).optional(),
+});
+
+export const skillOverlaySchema = z.union([
+  z.string().min(1),
+  localSkillOverlaySchema,
+  z.object({
+    git: gitSkillOverlaySchema,
+  }),
+]);
+
+export const taskPromptDefinitionSchema = z.object({
+  id: slugSchema,
+  prompt: z.string().min(1),
+  description: z.string().min(1).optional(),
+});
+
+export const benchmarkMetadataSchema = z.object({
+  id: slugSchema,
+  description: z.string().min(1),
+  tags: z.array(z.string()).default([]),
+});
+
+export const taskSchema = z.union([
+  z.object({
+    prompt: z.string().min(1),
+  }),
+  z.object({
+    prompts: z.array(taskPromptDefinitionSchema).min(1),
+  }),
+]);
+
+export const workspaceSchema = z.object({
+  fixture: z.string().min(1),
+  skillOverlay: skillOverlaySchema.optional(),
+  initializeGit: z.boolean().default(true),
+});
+
+export const scenarioSchema = z.object({
   id: slugSchema,
   description: z.string().min(1),
   skillMode: z.enum(["enabled", "disabled"]),
@@ -89,12 +134,20 @@ const scenarioSchema = z.object({
   agent: agentSchema,
   evaluation: z.object({
     assertions: z.array(assertionSchema).min(1),
-    repeat: z.number().int().positive().default(1),
+    requests: z.number().int().positive().optional(),
+    repeat: z.number().int().positive().optional(),
     timeoutMs: z.number().int().positive().default(120000),
     tracing: z.boolean().default(false),
     maxConcurrency: z.number().int().positive().default(1),
     noCache: z.boolean().default(true),
-  }),
+  }).transform((evaluation) => ({
+    assertions: evaluation.assertions,
+    requests: evaluation.requests ?? evaluation.repeat ?? 1,
+    timeoutMs: evaluation.timeoutMs,
+    tracing: evaluation.tracing,
+    maxConcurrency: evaluation.maxConcurrency,
+    noCache: evaluation.noCache,
+  })),
   output: z
     .object({
       tags: z.array(z.string()).default([]),
@@ -106,51 +159,12 @@ const scenarioSchema = z.object({
   }),
 });
 
-const localSkillOverlaySchema = z.object({
-  path: z.string().min(1),
-});
-
-const gitSkillOverlaySchema = z.object({
-  repo: z.string().min(1),
-  ref: z.string().min(1).optional(),
-  subpath: z.string().min(1).optional(),
-});
-
-const skillOverlaySchema = z.union([
-  z.string().min(1),
-  localSkillOverlaySchema,
-  z.object({
-    git: gitSkillOverlaySchema,
-  }),
-]);
-
-const taskPromptDefinitionSchema = z.object({
-  id: slugSchema,
-  prompt: z.string().min(1),
-  description: z.string().min(1).optional(),
-});
-
 export const benchmarkManifestSchema = z
   .object({
     schemaVersion: z.literal(1),
-    benchmark: z.object({
-      id: slugSchema,
-      description: z.string().min(1),
-      tags: z.array(z.string()).default([]),
-    }),
-    task: z.union([
-      z.object({
-        prompt: z.string().min(1),
-      }),
-      z.object({
-        prompts: z.array(taskPromptDefinitionSchema).min(1),
-      }),
-    ]),
-    workspace: z.object({
-      fixture: z.string().min(1),
-      skillOverlay: skillOverlaySchema.optional(),
-      initializeGit: z.boolean().default(true),
-    }),
+    benchmark: benchmarkMetadataSchema,
+    task: taskSchema,
+    workspace: workspaceSchema,
     scenarios: z.array(scenarioSchema).min(1),
   })
   .superRefine((manifest, context) => {
