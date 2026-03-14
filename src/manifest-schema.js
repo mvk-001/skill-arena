@@ -46,7 +46,7 @@ const agentSchema = z.object({
   networkAccessEnabled: z.boolean().default(false),
   reasoningEffort: z
     .enum(["none", "minimal", "low", "medium", "high", "xhigh"])
-    .default("minimal"),
+    .default("low"),
   additionalDirectories: z.array(z.string()).default([]),
   cliEnv: z.record(z.string(), z.string()).default({}),
   config: z.record(z.string(), z.unknown()).default({}),

@@ -81,9 +81,15 @@ export default class CodexSystemProvider {
       abortSignal: callOptions?.abortSignal,
     });
 
-    const finalResponse = await fs
+    let finalResponse = await fs
       .readFile(outputFile, "utf8")
       .catch(() => "");
+
+    const events = parseJsonLines(stdout);
+
+    if (!finalResponse.trim()) {
+      finalResponse = extractFinalAgentMessage(events);
+    }
 
     if (exitCode !== 0) {
       return {
@@ -94,7 +100,6 @@ export default class CodexSystemProvider {
       };
     }
 
-    const events = parseJsonLines(stdout);
     const usage = extractCommandUsage(events);
 
     return {
@@ -120,8 +125,6 @@ export default class CodexSystemProvider {
       this.config.working_dir,
       "--sandbox",
       this.config.sandbox_mode,
-      "--ask-for-approval",
-      this.config.approval_policy,
       "--ephemeral",
     ];
 
@@ -173,6 +176,10 @@ function buildCommandConfigEntries(config) {
 
   if (config.model_reasoning_effort) {
     entries.push(["model_reasoning_effort", serializeTomlLiteral(config.model_reasoning_effort)]);
+  }
+
+  if (config.approval_policy) {
+    entries.push(["approval_policy", serializeTomlLiteral(config.approval_policy)]);
   }
 
   if (config.sandbox_mode === "workspace-write") {
@@ -286,6 +293,13 @@ function extractCommandUsage(events) {
   };
 }
 
+function extractFinalAgentMessage(events) {
+  const agentMessageEvent = events.findLast?.((event) => event.type === "agent_message")
+    ?? [...events].reverse().find((event) => event.type === "agent_message");
+
+  return agentMessageEvent?.message ?? "";
+}
+
 async function spawnProcess({
   command,
   args,
@@ -295,12 +309,17 @@ async function spawnProcess({
   abortSignal,
 }) {
   return await new Promise((resolve, reject) => {
-    const childProcess = spawn(resolveCommandPath(command), args, {
+    const isWindowsCommand = process.platform === "win32";
+    const childProcess = spawn(
+      isWindowsCommand ? "cmd.exe" : command,
+      isWindowsCommand ? ["/d", "/s", "/c", command, ...args] : args,
+      {
       cwd,
       env,
       stdio: "pipe",
       windowsHide: true,
-    });
+      },
+    );
 
     let stdout = "";
     let stderr = "";
@@ -342,16 +361,4 @@ async function spawnProcess({
 
     abortSignal?.addEventListener("abort", abortHandler, { once: true });
   });
-}
-
-function resolveCommandPath(command) {
-  if (process.platform !== "win32") {
-    return command;
-  }
-
-  if (path.extname(command)) {
-    return command;
-  }
-
-  return `${command}.cmd`;
 }

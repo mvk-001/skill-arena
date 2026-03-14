@@ -13,7 +13,8 @@ All repository artifacts must be written in English. This includes code, comment
 1. `README.md`
 2. `docs/architecture.md`
 3. `docs/specs.md`
-4. `benchmarks/` manifests for concrete scenarios
+4. `docs/testing.md`
+5. `benchmarks/` manifests for concrete scenarios
 
 ## Canonical sources of truth
 

@@ -1,5 +1,4 @@
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 
 import { fromProjectRoot } from "./project-paths.js";
 
@@ -10,9 +9,7 @@ const adapterRegistry = {
     id: "codex",
     supported: true,
     buildProvider({ scenario, workspaceDirectory, gitReady }) {
-      const providerPath = pathToFileURL(
-        fromProjectRoot("src", "providers", "codex-system-provider.js"),
-      ).href;
+      const providerPath = fromProjectRoot("src", "providers", "codex-system-provider.js");
 
       return {
         id: providerPath,

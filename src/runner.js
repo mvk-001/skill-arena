@@ -57,7 +57,7 @@ export async function runScenario({ manifest, scenario, dryRun = false }) {
 }
 
 async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, scenario }) {
-  const args = [
+  const promptfooArgs = [
     "promptfoo",
     "eval",
     "-c",
@@ -72,10 +72,14 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
   ];
 
   if (scenario.evaluation.noCache) {
-    args.push("--no-cache");
+    promptfooArgs.push("--no-cache");
   }
 
-  const command = process.platform === "win32" ? "npx.cmd" : "npx";
+  const command = process.platform === "win32" ? "cmd.exe" : "npx";
+  const args =
+    process.platform === "win32"
+      ? ["/d", "/s", "/c", "npx.cmd", ...promptfooArgs]
+      : promptfooArgs;
 
   await new Promise((resolve, reject) => {
     const childProcess = spawn(command, args, {

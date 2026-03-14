@@ -38,7 +38,7 @@ Benchmark manifests are JSON files. Paths inside the manifest are repository-roo
         "approvalPolicy": "never",
         "webSearchEnabled": false,
         "networkAccessEnabled": false,
-        "reasoningEffort": "minimal",
+        "reasoningEffort": "low",
         "additionalDirectories": [],
         "cliEnv": {},
         "config": {}
@@ -156,7 +156,7 @@ Unless a manifest explicitly overrides them, scenarios should use:
 - `approvalPolicy: "never"`
 - `webSearchEnabled: false`
 - `networkAccessEnabled: false`
-- `reasoningEffort: "minimal"`
+- `reasoningEffort: "low"`
 - `noCache: true`
 
 The harness must not add task instructions beyond the benchmark prompt and the files available in the workspace.

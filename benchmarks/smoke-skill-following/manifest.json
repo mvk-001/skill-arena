@@ -31,7 +31,7 @@
         "approvalPolicy": "never",
         "webSearchEnabled": false,
         "networkAccessEnabled": false,
-        "reasoningEffort": "minimal",
+        "reasoningEffort": "low",
         "additionalDirectories": [],
         "cliEnv": {},
         "config": {}
@@ -73,7 +73,7 @@
         "approvalPolicy": "never",
         "webSearchEnabled": false,
         "networkAccessEnabled": false,
-        "reasoningEffort": "minimal",
+        "reasoningEffort": "low",
         "additionalDirectories": [],
         "cliEnv": {},
         "config": {}

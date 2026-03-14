@@ -8,6 +8,7 @@ Start with these documents:
 
 1. [Architecture](./docs/architecture.md)
 2. [Specs](./docs/specs.md)
-3. [Agent guidance](./AGENTS.md)
+3. [Testing](./docs/testing.md)
+4. [Agent guidance](./AGENTS.md)
 
 The repository authoring surface is the benchmark manifest. Promptfoo is the evaluation runtime behind that manifest.

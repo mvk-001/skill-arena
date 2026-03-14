@@ -14,11 +14,14 @@ export function buildPromptfooConfig({ manifest, scenario, workspace }) {
 
   const config = {
     description: `${manifest.benchmark.id}:${scenario.id}`,
-    prompts: [manifest.task.prompt],
+    prompts: ["{{taskPrompt}}"],
     providers: [provider],
     tests: [
       {
         description: scenario.description,
+        vars: {
+          taskPrompt: manifest.task.prompt,
+        },
         metadata: {
           benchmarkId: manifest.benchmark.id,
           scenarioId: scenario.id,

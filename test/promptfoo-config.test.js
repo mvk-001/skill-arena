@@ -23,13 +23,15 @@ test("codex scenarios generate Promptfoo custom script providers", async () => {
     },
   });
 
-  assert.match(config.providers[0].id, /^file:\/\//);
+  assert.match(config.providers[0].id, /codex-system-provider\.js$/);
   assert.match(config.providers[0].id, /codex-system-provider\.js$/);
   assert.equal(config.providers[0].config.model, "gpt-5.1-codex-mini");
   assert.equal(config.providers[0].config.execution_method, "command");
   assert.equal(config.providers[0].config.command_path, "codex");
   assert.equal(config.providers[0].config.working_dir, "C:/temp/workspace");
   assert.equal(config.providers[0].config.approval_policy, "never");
+  assert.equal(config.prompts[0], "{{taskPrompt}}");
+  assert.equal(config.tests[0].vars.taskPrompt, manifest.task.prompt);
   assert.equal(config.tests[0].metadata.skillMode, "disabled");
 });
 
