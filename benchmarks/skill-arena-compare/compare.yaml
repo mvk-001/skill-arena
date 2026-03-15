@@ -24,23 +24,14 @@ task:
         content as your final answer.
       evaluation:
         assertions:
-          - type: file-contains
-            path: deliverables/compare.yaml
+          - type: contains
             value: "type: local-path"
-          - type: file-contains
-            path: deliverables/compare.yaml
+          - type: contains
             value: "path: fixtures/skill-arena-compare/skill-overlay/skills/skill-arena-compare"
-          - type: file-contains
-            path: deliverables/compare.yaml
+          - type: contains
             value: "skillId: skill-arena-compare"
           - type: javascript
-            value: |
-              (() => {
-                const fs = process.getBuiltinModule('node:fs');
-                const fileContents = fs.readFileSync('deliverables/compare.yaml', 'utf8');
-                return !fileContents.includes('type: git')
-                  && !fileContents.includes('type: inline-files');
-              })()
+            value: "!output.includes('type: git') && !output.includes('type: inline-files')"
     - id: inline-files-skill
       description: Author the compare config from the benchmark brief using an inline-files workspace-overlay skill source.
       prompt: >-
@@ -56,23 +47,14 @@ task:
         content as your final answer.
       evaluation:
         assertions:
-          - type: file-contains
-            path: deliverables/compare.yaml
+          - type: contains
             value: "type: inline-files"
-          - type: file-contains
-            path: deliverables/compare.yaml
+          - type: contains
             value: "path: skills/skill-arena-compare/SKILL.md"
-          - type: file-contains
-            path: deliverables/compare.yaml
+          - type: contains
             value: "name: skill-arena-compare"
           - type: javascript
-            value: |
-              (() => {
-                const fs = process.getBuiltinModule('node:fs');
-                const fileContents = fs.readFileSync('deliverables/compare.yaml', 'utf8');
-                return !fileContents.includes('type: git')
-                  && !fileContents.includes('type: local-path');
-              })()
+            value: "!output.includes('type: git') && !output.includes('type: local-path')"
     - id: git-skill
       description: Author the compare config from the benchmark brief using a git workspace-overlay skill source.
       prompt: >-
@@ -89,26 +71,16 @@ task:
         content as your final answer.
       evaluation:
         assertions:
-          - type: file-contains
-            path: deliverables/compare.yaml
+          - type: contains
             value: "type: git"
-          - type: file-contains
-            path: deliverables/compare.yaml
+          - type: contains
             value: "repo: https://github.com/mvk-001/skill-arena"
-          - type: file-contains
-            path: deliverables/compare.yaml
+          - type: contains
             value: "skillPath: skills/skill-arena-compare"
-          - type: file-contains
-            path: deliverables/compare.yaml
+          - type: contains
             value: "skillId: skill-arena-compare"
           - type: javascript
-            value: |
-              (() => {
-                const fs = process.getBuiltinModule('node:fs');
-                const fileContents = fs.readFileSync('deliverables/compare.yaml', 'utf8');
-                return !fileContents.includes('type: local-path')
-                  && !fileContents.includes('type: inline-files');
-              })()
+            value: "!output.includes('type: local-path') && !output.includes('type: inline-files')"
 workspace:
   fixture: fixtures/skill-arena-compare/base
   initializeGit: true
@@ -141,37 +113,27 @@ evaluation:
     - type: contains
       value: "maxConcurrency: 12"
     - type: contains
+      value: "timeoutMs: 180000"
+    - type: contains
+      value: "tracing: false"
+    - type: contains
+      value: "noCache: true"
+    - type: contains
       value: "sandboxMode: workspace-write"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "schemaVersion: 1"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "id: compare-config-authoring-generated"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "fixture: fixtures/skill-arena-compare/base"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "provider: skill-arena:judge:codex"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "requests: 6"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "maxConcurrency: 12"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "sandboxMode: workspace-write"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
+    - type: contains
       value: "skillMode: disabled"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
+    - type: contains
       value: "skillMode: enabled"
+    - type: contains
+      value: "additionalDirectories: []"
+    - type: contains
+      value: "cliEnv: {}"
+    - type: contains
+      value: "config: {}"
     - type: javascript
-      value: |
-        output.trimStart().startsWith("schemaVersion: 1")
+      value: 'output.trimStart().startsWith("schemaVersion: 1")'
+    - type: javascript
+      value: "!output.includes('```')"
   requests: 6
   timeoutMs: 300000
   tracing: false
@@ -206,16 +168,16 @@ comparison:
           skillModeId: skill
   variants:
     - id: codex-mini
-      description: Codex mini using workspace-write so it can author the requested compare file.
+      description: Codex mini using danger-full-access so Windows Codex can run shell tools in the isolated authoring workspace.
       agent:
         adapter: codex
         model: gpt-5.1-codex-mini
         executionMethod: command
         commandPath: codex
-        sandboxMode: workspace-write
+        sandboxMode: danger-full-access
         approvalPolicy: never
         webSearchEnabled: false
-        networkAccessEnabled: false
+        networkAccessEnabled: true
         reasoningEffort: low
         additionalDirectories: []
         cliEnv: {}

@@ -34,6 +34,8 @@ Produce a concise compare config that gives:
 12. Reuse the template in `assets/compare-template.yaml` as the starting point, but replace any stale defaults that do not match the user request.
 13. When the output must run outside the current repository root, prefer runtime-relative local paths such as `fixtures/...` when the installed compare runner is expected to bootstrap them into the current working directory, or use absolute paths when the user wants a fixed filesystem location.
 14. Do not rely on package-relative path resolution. Compare local paths are only valid when they are absolute or relative to the command working directory at runtime.
+15. Return raw YAML only. Do not add Markdown fences, prose before the YAML, or explanations after it unless the user explicitly asks for commentary.
+16. Use exact compare schema keys. Do not invent aliases such as `llm-rubric`, `llmRubric`, top-level `skillModes`, top-level `variants`, `execution`, `sandbox`, `approval`, `webSearch`, or `network`.
 
 ## Workflow
 
@@ -42,6 +44,7 @@ Produce a concise compare config that gives:
 3. Replace the benchmark metadata, prompts, workspace, evaluation, skill modes, and variants with values from the brief.
 4. If the task asks for multiple prompt variants that differ by expected skill source shape, keep one shared compare skeleton and vary only the prompt text plus `task.prompts[*].evaluation.assertions`.
 5. If the benchmark asks for an explicit output path such as `deliverables/compare.yaml`, write the file there and return only the completed YAML unless the user asks for explanation.
+6. Before returning, compare the final draft against the exact schema skeleton below and fix any invented keys or wrong nesting.
 
 ## Checklist
 
@@ -49,13 +52,99 @@ Before returning, verify all of these:
 
 - `schemaVersion: 1`
 - benchmark id, description, and tags match the task exactly
+- `task.prompts` is a YAML list of prompt objects, not a mapping
 - prompt ids and prompt text match the brief exactly
 - `workspace` uses runtime-valid local paths
 - `evaluation.requests` and `evaluation.maxConcurrency` match the task
+- `evaluation.assertions` exists and contains the shared assertions
 - every enabled skill mode has an explicit `skill` block
+- `comparison.skillModes` and `comparison.variants` are nested under `comparison`
 - the chosen skill source shape matches the prompt exactly
+- variant agent settings use the exact keys `executionMethod`, `commandPath`, `sandboxMode`, `approvalPolicy`, `webSearchEnabled`, `networkAccessEnabled`, and `reasoningEffort`
 - variant adapter, model, sandbox, approval, network, and labels are present
 - the output file path is the one the user requested
+- the answer starts with `schemaVersion: 1`
+- the answer does not contain backticks
+
+## Exact schema guardrails
+
+Use this exact shape when authoring compare configs:
+
+```yaml
+schemaVersion: 1
+benchmark:
+  id: ...
+  description: ...
+  tags:
+    - ...
+task:
+  prompts:
+    - id: ...
+      description: ...
+      prompt: ...
+      evaluation:
+        assertions:
+          - type: contains
+            value: ...
+workspace:
+  fixture: ...
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: llm-rubric
+      provider: skill-arena:judge:codex
+      value: ...
+  requests: 10
+  timeoutMs: 180000
+  tracing: false
+  maxConcurrency: 1
+  noCache: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: ...
+      skillMode: disabled
+    - id: skill
+      description: ...
+      skillMode: enabled
+      skill:
+        source:
+          type: local-path
+          path: ...
+          skillId: ...
+        install:
+          strategy: workspace-overlay
+  variants:
+    - id: codex-mini
+      description: ...
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: workspace-write
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        labels:
+          variantDisplayName: codex mini
+```
+
+If your draft contains any of the following, stop and correct it before returning:
+
+- `task.prompts:` followed by `author-compare:` or any other direct mapping key
+- `llm-rubric:` or `llmRubric:` outside `evaluation.assertions`
+- top-level `skillModes:` or `variants:`
+- `execution:` instead of `executionMethod` and `commandPath`
+- `sandbox:` instead of `sandboxMode`
+- `approval:` instead of `approvalPolicy`
+- `webSearch:` instead of `webSearchEnabled`
+- `networkAccess:` or `network:` instead of `networkAccessEnabled`
 
 ## Source-shape patterns
 
