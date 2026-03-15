@@ -129,6 +129,30 @@ Run the skill-enabled variant:
 npm run benchmark:smoke:skill
 ```
 
+### 4a. Recommended benchmark test flow after runtime changes
+
+Use this short sequence when you change the runner, Promptfoo integration, workspace materialization, or assertion translation:
+
+```bash
+npm test
+npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.json
+npm run benchmark:smoke:no-skill
+npm run benchmark:smoke:skill
+```
+
+What this covers:
+
+- `npm test` catches unit-level regressions in config generation and result normalization.
+- `validate:manifest` confirms the benchmark input still parses cleanly.
+- `benchmark:smoke:no-skill` verifies the live baseline path.
+- `benchmark:smoke:skill` verifies the live workspace-overlay skill path.
+
+For compare-mode validation after changing `src/cli/run-compare.js`, also run:
+
+```bash
+npm run benchmark:smoke:compare
+```
+
 All benchmark commands:
 
 - materialize an isolated workspace under `results/`
@@ -141,11 +165,13 @@ All benchmark commands:
 
 If your manifest uses an `llm-rubric` assertion, Promptfoo also runs the judge model configured on that assertion.
 
+If the assertion uses `skill-arena:judge:codex`, `skill-arena:judge:copilot-cli`, or `skill-arena:judge:pi`, Promptfoo runs the packaged local custom provider instead of a hosted model API.
+
 If your manifest uses Git-backed workspace or skill sources, the harness downloads them before the agent run. The agent itself still follows the scenario sandbox and network settings.
 
 If your manifest uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `requests` to each one.
 
-If `maxConcurrency` is omitted in a manifest or compare config, the harness uses the local machine parallelism by default.
+If `maxConcurrency` is omitted in a manifest or compare config, the harness uses the local machine parallelism by default. In compare mode, that resolved value also governs the pre-eval workspace materialization phase so setup and evaluation follow the same concurrency cap.
 
 ## `copilot-cli` adapter notes
 

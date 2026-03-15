@@ -32,7 +32,7 @@ test("compare config expands into adapter x skill-mode scenarios", async () => {
   assert.equal(compareConfig.evaluation.requests, 10);
 });
 
-test("compare config defaults enabled skill source to workspace overlay when configured", () => {
+test("compare config requires an explicit skill definition for enabled skill modes", () => {
   const compareConfig = {
     schemaVersion: 1,
     benchmark: {
@@ -83,11 +83,10 @@ test("compare config defaults enabled skill source to workspace overlay when con
     },
   };
 
-  const manifest = expandCompareConfigToManifest(compareConfigSchema.parse(compareConfig));
-
-  assert.equal(manifest.scenarios.length, 1);
-  assert.equal(manifest.scenarios[0].skillSource, "workspace-overlay");
-  assert.equal(manifest.scenarios[0].skill.install.strategy, "workspace-overlay");
+  assert.throws(
+    () => compareConfigSchema.parse(compareConfig),
+    /Enabled compare skill modes must define comparison\.skillModes\[\*\]\.skill explicitly\./,
+  );
 });
 
 test("compare config supports explicit declarative skill definitions", () => {
@@ -522,6 +521,43 @@ test("compare config validation rejects duplicate ids and invalid normalized ski
     },
   }), /Enabled skill variants must resolve to a concrete skill source\./);
 
+  assert.throws(() => compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "compare-missing-enabled-skill",
+      description: "Invalid compare missing enabled skill",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      skillOverlay: "fixtures/smoke-skill-following/skill-overlay",
+      initializeGit: true,
+    },
+    evaluation: {
+      assertions: [{ type: "equals", value: "HELLO" }],
+      requests: 1,
+    },
+    comparison: {
+      skillModes: [
+        {
+          id: "skill",
+          description: "Enabled without explicit skill block",
+          skillMode: "enabled",
+        },
+      ],
+      variants: [
+        {
+          id: "variant",
+          description: "Variant",
+          agent: { adapter: "codex" },
+        },
+      ],
+    },
+  }), /Enabled compare skill modes must define comparison\.skillModes\[\*\]\.skill explicitly\./);
+
 });
 
 test("compare expansion uses adapter and variant display labels for report labels", () => {
@@ -632,6 +668,12 @@ test("compare dry-run resolves legacy local paths from the runtime working direc
     "    - id: skill",
     "      description: Skill",
     "      skillMode: enabled",
+    "      skill:",
+    "        source:",
+    "          type: local-path",
+    "          path: ./skill-overlay",
+    "        install:",
+    "          strategy: workspace-overlay",
     "  variants:",
     "    - id: codex-mini",
     "      description: Codex mini",
@@ -816,6 +858,12 @@ test("compare dry-run bootstraps missing relative source paths from packaged fix
     "    - id: skill",
     "      description: Skill",
     "      skillMode: enabled",
+    "      skill:",
+    "        source:",
+    "          type: local-path",
+    "          path: fixtures/smoke-skill-following/skill-overlay",
+    "        install:",
+    "          strategy: workspace-overlay",
     "  variants:",
     "    - id: codex-mini",
     "      description: Codex mini",
@@ -882,8 +930,8 @@ test("compare dry-run bootstraps nested fixture matches for repo-summary relativ
     "task:",
     "  prompt: Summarize the repository.",
     "workspace:",
-    "  fixture: fixtures/repo-summary/base",
-    "  skillOverlay: fixtures/repo-summary/skill-overlay",
+    "  fixture: fixtures/skill-arena-compare/base/fixtures/repo-summary/base",
+    "  skillOverlay: fixtures/skill-arena-compare/base/fixtures/repo-summary/skill-overlay",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -901,6 +949,12 @@ test("compare dry-run bootstraps nested fixture matches for repo-summary relativ
     "    - id: skill",
     "      description: Skill",
     "      skillMode: enabled",
+    "      skill:",
+    "        source:",
+    "          type: local-path",
+    "          path: fixtures/skill-arena-compare/base/fixtures/repo-summary/skill-overlay",
+    "        install:",
+    "          strategy: workspace-overlay",
     "  variants:",
     "    - id: codex-mini",
     "      description: Codex mini",
@@ -916,11 +970,162 @@ test("compare dry-run bootstraps nested fixture matches for repo-summary relativ
   });
 
   assert.match(
-    await fs.readFile(path.join(tempDirectory, "fixtures", "repo-summary", "base", "README.md"), "utf8"),
+    await fs.readFile(path.join(tempDirectory, "fixtures", "skill-arena-compare", "base", "fixtures", "repo-summary", "base", "README.md"), "utf8"),
     /repo summary fixture/i,
   );
   assert.equal(
-    await fs.stat(path.join(tempDirectory, "fixtures", "repo-summary", "skill-overlay", "AGENTS.md")).catch(() => null),
+    await fs.stat(path.join(tempDirectory, "fixtures", "skill-arena-compare", "base", "fixtures", "repo-summary", "skill-overlay", "AGENTS.md")).catch(() => null),
     null,
   );
+});
+
+test("compare dry-run prints explicit maxConcurrency as the effective concurrency", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-concurrency-explicit-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: explicit-concurrency-compare",
+    "  description: Explicit concurrency compare.",
+    "  tags: []",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: fixtures/smoke-skill-following/base",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: equals",
+    "      value: HELLO",
+    "  requests: 1",
+    "  maxConcurrency: 4",
+    "comparison:",
+    "  skillModes:",
+    "    - id: no-skill",
+    "      description: No skill",
+    "      skillMode: disabled",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex mini",
+    "      agent:",
+    "        adapter: codex",
+  ].join("\n"), "utf8");
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"],
+    {
+      cwd: tempDirectory,
+      windowsHide: true,
+    },
+  );
+
+  assert.match(stdout, /Parallel requests: 4/);
+});
+
+test("compare dry-run rewrites local judge shorthand into a packaged Promptfoo provider", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-judge-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: local-judge-compare",
+    "  description: Compare local judge provider rewriting.",
+    "  tags: []",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: fixtures/smoke-skill-following/base",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: llm-rubric",
+    "      provider: skill-arena:judge:pi",
+    "      value: Score 1.0 only if the answer is HELLO.",
+    "  requests: 1",
+    "  timeoutMs: 120000",
+    "  tracing: false",
+    "  noCache: true",
+    "comparison:",
+    "  skillModes:",
+    "    - id: no-skill",
+    "      description: No skill",
+    "      skillMode: disabled",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex mini",
+    "      agent:",
+    "        adapter: codex",
+  ].join("\n"), "utf8");
+
+  await execFileAsync(
+    process.execPath,
+    [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"],
+    {
+      cwd: tempDirectory,
+      windowsHide: true,
+    },
+  );
+
+  const resultsRoot = path.join(tempDirectory, "results", "local-judge-compare");
+  const runDirectories = await fs.readdir(resultsRoot);
+  const compareRunDirectory = runDirectories.find((entry) => entry.endsWith("-compare"));
+  const promptfooConfigContents = await fs.readFile(
+    path.join(resultsRoot, compareRunDirectory, "promptfooconfig.yaml"),
+    "utf8",
+  );
+
+  assert.match(promptfooConfigContents, /local-judge-provider\.js/);
+  assert.match(promptfooConfigContents, /provider_id: skill-arena:judge:pi/);
+  assert.match(promptfooConfigContents, /adapter: pi/);
+});
+
+test("compare dry-run uses SKILL_ARENA_MAX_PARALLELISM when maxConcurrency is omitted", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-concurrency-env-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: env-concurrency-compare",
+    "  description: Env concurrency compare.",
+    "  tags: []",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: fixtures/smoke-skill-following/base",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: equals",
+    "      value: HELLO",
+    "  requests: 1",
+    "comparison:",
+    "  skillModes:",
+    "    - id: no-skill",
+    "      description: No skill",
+    "      skillMode: disabled",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex mini",
+    "      agent:",
+    "        adapter: codex",
+  ].join("\n"), "utf8");
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"],
+    {
+      cwd: tempDirectory,
+      env: {
+        ...process.env,
+        SKILL_ARENA_MAX_PARALLELISM: "7",
+      },
+      windowsHide: true,
+    },
+  );
+
+  assert.match(stdout, /Parallel requests: 7/);
 });

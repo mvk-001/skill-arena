@@ -17,7 +17,7 @@ import {
   stringifyPromptfooConfig,
   toPromptfooAssertion,
 } from "../promptfoo-config.js";
-import { getDefaultParallelism, mapWithConcurrency, resolveEvaluationConcurrency } from "../concurrency.js";
+import { mapWithConcurrency, resolveEvaluationConcurrency } from "../concurrency.js";
 import { ensureCompareScenarioLocalPaths } from "../compare-bootstrap.js";
 import { fromPackageRoot } from "../project-paths.js";
 import { materializeWorkspace } from "../workspace.js";
@@ -36,6 +36,7 @@ async function main() {
   const { compareConfig } = await loadCompareConfig(compareConfigPath, {
     cwd: outputRootDirectory,
   });
+  const effectiveConcurrency = resolveEvaluationConcurrency(compareConfig.evaluation);
   const manifest = expandCompareConfigToManifest(compareConfig);
   const supportedRuns = [];
   const skippedVariants = [];
@@ -73,12 +74,26 @@ async function main() {
     supportedScenarios,
     skippedVariants,
     outputRootDirectory,
+    effectiveConcurrency,
   });
   console.log("");
 
+  const batchRunId = new Date().toISOString().replace(/[:.]/g, "-");
+  const benchmarkRunDirectory = path.join(
+    outputRootDirectory,
+    "results",
+    manifest.benchmark.id,
+    `${batchRunId}-compare`,
+  );
+  await fs.mkdir(benchmarkRunDirectory, { recursive: true });
+  const executionLogPath = path.join(benchmarkRunDirectory, "execution.log");
+  await logExecution(executionLogPath, "compare run initialized");
+  await logExecution(executionLogPath, `effective concurrency: ${effectiveConcurrency}`);
+  const materializationStartMs = Date.now();
+
   const materializedRuns = await mapWithConcurrency(
     supportedScenarios,
-    getDefaultParallelism(),
+    effectiveConcurrency,
     async (scenario) => {
       await ensureCompareScenarioLocalPaths({
         manifest,
@@ -98,15 +113,10 @@ async function main() {
     },
   );
   supportedRuns.push(...materializedRuns);
-
-  const batchRunId = new Date().toISOString().replace(/[:.]/g, "-");
-  const benchmarkRunDirectory = path.join(
-    outputRootDirectory,
-    "results",
-    manifest.benchmark.id,
-    `${batchRunId}-compare`,
+  await logExecution(
+    executionLogPath,
+    `workspace materialization completed in ${formatDurationMs(Date.now() - materializationStartMs)}`,
   );
-  await fs.mkdir(benchmarkRunDirectory, { recursive: true });
 
   const promptfooConfig = buildComparePromptfooConfig({
     manifest,
@@ -117,8 +127,10 @@ async function main() {
   const promptfooResultsPath = path.join(benchmarkRunDirectory, "promptfoo-results.json");
 
   await fs.writeFile(promptfooConfigPath, promptfooConfigYaml, "utf8");
+  await logExecution(executionLogPath, `promptfoo config written to ${promptfooConfigPath}`);
 
   if (dryRun) {
+    await logExecution(executionLogPath, "dry-run completed without promptfoo eval");
     printSkipped(skippedVariants);
     console.log(JSON.stringify({
       compareRunDirectory: benchmarkRunDirectory,
@@ -130,15 +142,22 @@ async function main() {
     return;
   }
 
+  const promptfooStartMs = Date.now();
   await executePromptfoo({
     promptfooConfigPath,
     promptfooResultsPath,
     timeoutMs: compareConfig.evaluation.timeoutMs,
-    maxConcurrency: resolveEvaluationConcurrency(compareConfig.evaluation),
+    maxConcurrency: effectiveConcurrency,
     noCache: compareConfig.evaluation.noCache,
     requests: compareConfig.evaluation.requests,
+    executionLogPath,
   });
+  await logExecution(
+    executionLogPath,
+    `promptfoo eval completed in ${formatDurationMs(Date.now() - promptfooStartMs)}`,
+  );
 
+  const normalizeStartMs = Date.now();
   const compareSummary = await normalizeComparePromptfooResults({
     manifest,
     supportedRuns,
@@ -146,6 +165,10 @@ async function main() {
     compareRunDirectory: benchmarkRunDirectory,
     evaluationRequests: compareConfig.evaluation.requests,
   });
+  await logExecution(
+    executionLogPath,
+    `result normalization completed in ${formatDurationMs(Date.now() - normalizeStartMs)}`,
+  );
 
   await writePromptfooArtifacts({
     runDirectory: benchmarkRunDirectory,
@@ -168,6 +191,7 @@ async function main() {
     mergedSummary,
     cliReport,
   });
+  await logExecution(executionLogPath, `merged artifacts written to ${mergedArtifacts.reportPath}`);
 
   console.log(cliReport);
   console.log("");
@@ -509,10 +533,10 @@ function printExecutionPlan({
   supportedScenarios,
   skippedVariants,
   outputRootDirectory,
+  effectiveConcurrency,
 }) {
   const taskPrompts = getTaskPrompts(manifest);
   const requestsPerCell = compareConfig.evaluation.requests;
-  const parallelRequests = resolveEvaluationConcurrency(compareConfig.evaluation);
   const supportedVariantIds = new Set(
     supportedScenarios.map((scenario) => scenario.output.labels.variant ?? scenario.id),
   );
@@ -547,7 +571,7 @@ function printExecutionPlan({
   console.log(`- Requests per cell: ${requestsPerCell}`);
   console.log(`- Total compare cells: ${compareCells}`);
   console.log(`- Total requests: ${totalRequests}`);
-  console.log(`- Parallel requests: ${parallelRequests}`);
+  console.log(`- Parallel requests: ${effectiveConcurrency}`);
 
   if (skippedVariants.length > 0) {
     console.log(`- Skipped variants: ${skippedVariants.length}`);
@@ -573,6 +597,7 @@ async function executePromptfoo({
   maxConcurrency,
   noCache,
   requests,
+  executionLogPath,
 }) {
   const promptfooArgs = [
     "promptfoo",
@@ -592,7 +617,7 @@ async function executePromptfoo({
     promptfooArgs.push("--no-cache");
   }
 
-  const { executable, executableArgs } = buildPromptfooCommand(promptfooArgs);
+  const { executable, executableArgs } = await buildPromptfooCommand(promptfooArgs);
 
   await new Promise((resolve, reject) => {
     const childProcess = spawn(executable, executableArgs, {
@@ -616,10 +641,12 @@ async function executePromptfoo({
     });
 
     childProcess.stdout.on("data", (chunk) => {
+      void fs.appendFile(executionLogPath, chunk);
       process.stdout.write(chunk);
     });
 
     childProcess.stderr.on("data", (chunk) => {
+      void fs.appendFile(executionLogPath, chunk);
       process.stderr.write(chunk);
     });
 
@@ -636,18 +663,42 @@ async function executePromptfoo({
   });
 }
 
-function buildPromptfooCommand(args) {
-  if (process.platform !== "win32") {
+async function logExecution(logPath, message) {
+  await fs.appendFile(logPath, `[${new Date().toISOString()}] ${message}\n`, "utf8");
+}
+
+function formatDurationMs(durationMs) {
+  return `${durationMs} ms`;
+}
+
+async function buildPromptfooCommand(args) {
+  const promptfooEntrypoint = fromPackageRoot(
+    "node_modules",
+    "promptfoo",
+    "dist",
+    "src",
+    "entrypoint.js",
+  );
+
+  try {
+    await fs.access(promptfooEntrypoint);
     return {
-      executable: "npx",
-      executableArgs: args,
+      executable: process.execPath,
+      executableArgs: [promptfooEntrypoint, ...args.slice(1)],
+    };
+  } catch {
+    if (process.platform !== "win32") {
+      return {
+        executable: "npx",
+        executableArgs: args,
+      };
+    }
+
+    return {
+      executable: "cmd.exe",
+      executableArgs: ["/d", "/s", "/c", "npx.cmd", ...args],
     };
   }
-
-  return {
-    executable: "cmd.exe",
-    executableArgs: ["/d", "/s", "/c", "npx.cmd", ...args],
-  };
 }
 
 main().catch((error) => {

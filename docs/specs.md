@@ -316,6 +316,7 @@ comparison:
 - When `evaluation.requests` is omitted in a compare config, it defaults to `10`.
 - `evaluation.maxConcurrency` is optional. When omitted, the harness uses the local machine parallelism.
 - The compare runner expands the Cartesian product of `comparison.skillModes` and `comparison.variants`.
+- `comparison.skillModes[*].skill` is required when `skillMode: enabled`.
 - Each expanded unit must resolve:
   - one materialized workspace
   - one effective skill configuration
@@ -344,11 +345,9 @@ skill:
 ```
 
 - `skillMode: enabled` resolves to the explicit `skill` block when provided.
-- `skillMode: enabled` without an explicit `skill` block resolves to:
-  - a workspace-overlay skill derived from legacy `workspace.skillOverlay` when present
-  - otherwise a system-installed skill
+- `skillMode: enabled` without an explicit `skill` block is invalid.
 
-This keeps compare definitions declarative while preserving compatibility with older benchmark files.
+Compare configs must declare the evaluated skill explicitly so the benchmark target is unambiguous.
 
 ### Compare local path resolution
 
@@ -384,6 +383,14 @@ V1 supports these manifest assertion types:
 `file-contains` is converted into a Promptfoo JavaScript assertion that reads from the run workspace.
 
 `llm-rubric` passes through to Promptfoo model-graded evaluation so a judge model can score the agent output against an expected answer or rubric. This is the recommended choice when exact string matching is too strict.
+
+Local judge shorthand is also supported in V1 through packaged Promptfoo custom providers:
+
+- `skill-arena:judge:codex`
+- `skill-arena:judge:copilot-cli`
+- `skill-arena:judge:pi`
+
+These judge providers are separate from the benchmarked agent adapters. They let Promptfoo run `llm-rubric` grading through the local CLI instead of a hosted API provider.
 
 ## Agent adapter contract
 

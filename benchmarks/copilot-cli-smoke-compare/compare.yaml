@@ -32,6 +32,12 @@ comparison:
     - id: skill
       description: Workspace overlay enabled.
       skillMode: enabled
+      skill:
+        source:
+          type: local-path
+          path: fixtures/smoke-skill-following/skill-overlay
+        install:
+          strategy: workspace-overlay
   variants:
     - id: copilot-gpt5mini
       description: Copilot CLI GPT-5 Mini.

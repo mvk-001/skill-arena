@@ -5,9 +5,9 @@ import { spawn } from "node:child_process";
 import { buildPromptfooConfig, stringifyPromptfooConfig } from "./promptfoo-config.js";
 import { resolveEvaluationConcurrency } from "./concurrency.js";
 import { normalizePromptfooResults, writePromptfooArtifacts } from "./results.js";
+import { fromPackageRoot } from "./project-paths.js";
 import { materializeWorkspace } from "./workspace.js";
 
-export async function runScenario({ manifest, scenario, dryRun = false }) {
 export async function runScenario({
   manifest,
   scenario,
@@ -90,7 +90,7 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
     promptfooArgs.push("--no-cache");
   }
 
-  const { executable, executableArgs } = buildPromptfooCommand(promptfooArgs);
+  const { executable, executableArgs } = await buildPromptfooCommand(promptfooArgs);
 
   await new Promise((resolve, reject) => {
     const childProcess = spawn(executable, executableArgs, {
@@ -134,16 +134,32 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
   });
 }
 
-function buildPromptfooCommand(args) {
-  if (process.platform !== "win32") {
+async function buildPromptfooCommand(args) {
+  const promptfooEntrypoint = fromPackageRoot(
+    "node_modules",
+    "promptfoo",
+    "dist",
+    "src",
+    "entrypoint.js",
+  );
+
+  try {
+    await fs.access(promptfooEntrypoint);
     return {
-      executable: "npx",
-      executableArgs: args,
+      executable: process.execPath,
+      executableArgs: [promptfooEntrypoint, ...args.slice(1)],
+    };
+  } catch {
+    if (process.platform !== "win32") {
+      return {
+        executable: "npx",
+        executableArgs: args,
+      };
+    }
+
+    return {
+      executable: "cmd.exe",
+      executableArgs: ["/d", "/s", "/c", "npx.cmd", ...args],
     };
   }
-
-  return {
-    executable: "cmd.exe",
-    executableArgs: ["/d", "/s", "/c", "npx.cmd", ...args],
-  };
 }

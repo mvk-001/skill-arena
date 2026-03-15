@@ -55,7 +55,7 @@ scenarios:
     evaluation:
       assertions:
         - type: llm-rubric
-          provider: openai:gpt-5-mini
+          provider: skill-arena:judge:codex
           value: Score 1.0 only if the answer covers the main architecture.
       requests: 3
       timeoutMs: 180000
@@ -86,7 +86,7 @@ scenarios:
     evaluation:
       assertions:
         - type: llm-rubric
-          provider: openai:gpt-5-mini
+          provider: skill-arena:judge:codex
           value: Score 1.0 only if the answer covers the main architecture.
       requests: 3
       timeoutMs: 180000
@@ -102,7 +102,7 @@ npm run run:benchmark -- ./benchmarks/repo-summary/manifest.yaml
 ```
 
 If `requests` is greater than `1`, Promptfoo repeats each prompt that many times for the scenario.
-If `maxConcurrency` is omitted, Promptfoo jobs default to the local machine parallelism. Set it explicitly only when you need a stricter cap.
+In compare mode, the resolved concurrency now applies to both workspace materialization and `promptfoo eval`. If `maxConcurrency` is omitted, the harness uses the local machine parallelism for both phases. Set it explicitly only when you need a stricter cap.
 
 ## Compare config
 
@@ -133,7 +133,7 @@ workspace:
 evaluation:
   assertions:
     - type: llm-rubric
-      provider: openai:gpt-5-mini
+      provider: skill-arena:judge:codex
       value: Score 1.0 only if the answer covers the main architecture.
   requests: 10
   timeoutMs: 180000
@@ -183,6 +183,31 @@ Use `--dry-run` to generate the Promptfoo config without live evaluation:
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/repo-summary/compare.yaml --dry-run
+```
+
+For repeated local runs, keep installation out of the hot path. Install once, then run the CLI directly:
+
+```powershell
+npm install
+node .\bin\skill-arena.js compare .\benchmarks\repo-summary\compare.yaml --dry-run
+```
+
+If you want to force one machine-wide cap without editing YAML, set `SKILL_ARENA_MAX_PARALLELISM` before running the command.
+
+`llm-rubric` can use either a native Promptfoo provider such as `openai:gpt-5-mini` or a local Skill Arena judge provider:
+
+- `skill-arena:judge:codex`
+- `skill-arena:judge:copilot-cli`
+- `skill-arena:judge:pi`
+
+You can also use the object form when you need overrides such as `model` or `commandPath`:
+
+```yaml
+provider:
+  id: skill-arena:judge:copilot-cli
+  config:
+    model: gpt-5
+    commandPath: copilot
 ```
 
 For compare configs, local paths follow a runtime contract:

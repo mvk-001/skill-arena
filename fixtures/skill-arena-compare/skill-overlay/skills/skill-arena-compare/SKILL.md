@@ -25,13 +25,35 @@ Produce a concise compare config that gives:
 5. Prefer two skill modes by default:
    - `no-skill`
    - `skill`
-6. Set `skillSource` explicitly when the benchmark depends on a system-installed skill.
+6. For every `skillMode: enabled` entry, define `comparison.skillModes[*].skill` explicitly. Use `source.type: system-installed` with `install.strategy: system-installed` for installed skills, or a concrete `local-path`, `git`, or `inline-files` source for workspace overlays.
 7. Give every variant a stable slug id and a readable `output.labels.variantDisplayName`.
 8. Keep assertions strict enough to measure the benchmark goal, but avoid unnecessary harness instructions in the prompt.
 9. Write the final config into the user's current working workspace at the path they requested, such as `./compare.yaml` or `./deliverables/compare.yaml`. Do not write outputs into the skill directory, the repository skill source, or any hidden helper location unless the user explicitly asks for that.
 10. Reuse the template in `assets/compare-template.yaml` as the starting point.
 11. When the output must run outside the current repository root, prefer runtime-relative local paths such as `fixtures/...` when the installed compare runner is expected to bootstrap them into the current working directory, or use absolute paths when the user wants a fixed filesystem location.
 12. Do not rely on package-relative path resolution. Compare local paths are only valid when they are absolute or relative to the command working directory at runtime.
+
+## Judge provider guidance
+
+When the benchmark uses `llm-rubric`, prefer the local Skill Arena judge shorthand unless the user explicitly wants a hosted Promptfoo provider:
+
+- `skill-arena:judge:codex`
+- `skill-arena:judge:copilot-cli`
+- `skill-arena:judge:pi`
+
+These values belong in `evaluation.assertions[*].provider`.
+
+Use the object form only when the benchmark needs judge-specific overrides such as `model`, `commandPath`, or `cliEnv`:
+
+```yaml
+provider:
+  id: skill-arena:judge:copilot-cli
+  config:
+    model: gpt-5
+    commandPath: copilot
+```
+
+If the benchmark specifically depends on a hosted judge, keep the provider in native Promptfoo form such as `openai:gpt-5-mini`.
 
 ## maxConcurrency guidance
 

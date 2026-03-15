@@ -45,7 +45,11 @@ comparison:
     - id: skill
       description: System-installed gws Gmail triage skill enabled.
       skillMode: enabled
-      skillSource: system-installed
+      skill:
+        source:
+          type: system-installed
+        install:
+          strategy: system-installed
       output:
         tags:
           - skill

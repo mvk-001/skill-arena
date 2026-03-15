@@ -73,6 +73,16 @@ const rawCompareConfigSchema = z.object({
     skillModes: z.array(rawSkillModeVariantSchema).min(1),
     variants: z.array(compareVariantSchema).min(1),
   }),
+}).superRefine((config, context) => {
+  config.comparison.skillModes.forEach((skillMode, index) => {
+    if (skillMode.skillMode === "enabled" && !skillMode.skill) {
+      context.addIssue({
+        code: "custom",
+        message: "Enabled compare skill modes must define comparison.skillModes[*].skill explicitly.",
+        path: ["comparison", "skillModes", index, "skill"],
+      });
+    }
+  });
 });
 
 const normalizedCompareConfigSchema = z.object({
