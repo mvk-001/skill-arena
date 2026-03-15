@@ -4,7 +4,14 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { normalizePromptfooResults } from "../src/results.js";
+import {
+  buildCompareMatrixSummary,
+  buildMergedBenchmarkSummary,
+  normalizePromptfooResults,
+  normalizeOutput,
+  renderCompareMatrixReport,
+  renderMergedBenchmarkReport,
+} from "../src/results.js";
 
 test("normalizePromptfooResults extracts stable summary fields", async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-results-"));
@@ -53,14 +60,22 @@ test("normalizePromptfooResults extracts stable summary fields", async () => {
     manifest: {
       benchmark: {
         id: "smoke-skill-following",
+        description: "Smoke benchmark",
       },
     },
     scenario: {
       id: "codex-mini-no-skill",
+      description: "Baseline scenario",
       skillMode: "disabled",
       agent: {
         adapter: "codex",
         model: "gpt-5.1-codex-mini",
+      },
+      output: {
+        tags: ["baseline"],
+        labels: {
+          skill: "off",
+        },
       },
     },
     workspace: {
@@ -71,8 +86,186 @@ test("normalizePromptfooResults extracts stable summary fields", async () => {
   });
 
   assert.equal(summary.benchmarkId, "smoke-skill-following");
+  assert.equal(summary.benchmarkDescription, "Smoke benchmark");
   assert.equal(summary.evalId, "eval-123");
+  assert.equal(summary.scenarioDescription, "Baseline scenario");
   assert.equal(summary.outputs[0].text, "ALPHA-42");
   assert.equal(summary.outputs[0].provider, "openai:codex-sdk");
+  assert.equal(summary.outputLabels.skill, "off");
   assert.equal(summary.stats.successes, 1);
+});
+
+test("merged benchmark summary groups outputs by prompt and scenario", () => {
+  const mergedSummary = buildMergedBenchmarkSummary({
+    manifest: {
+      benchmark: {
+        id: "comparison-benchmark",
+        description: "Comparison benchmark",
+      },
+    },
+    generatedAt: "2026-03-14T00:00:00.000Z",
+    scenarioSummaries: [
+      {
+        scenarioId: "baseline",
+        scenarioDescription: "No skill",
+        skillMode: "disabled",
+        model: "gpt-5.1-codex-mini",
+        outputLabels: {
+          skill_state: "off",
+        },
+        outputTags: ["baseline"],
+        outputs: [
+          {
+            promptId: "p1",
+            promptDescription: "Prompt one",
+            prompt: "Question one",
+            text: "wrong",
+            success: false,
+            score: 0,
+            latencyMs: 20,
+          },
+        ],
+      },
+      {
+        scenarioId: "with-skill",
+        scenarioDescription: "With skill",
+        skillMode: "enabled",
+        model: "gpt-5.1-codex-mini",
+        outputLabels: {
+          skill_state: "on",
+        },
+        outputTags: ["skill"],
+        outputs: [
+          {
+            promptId: "p1",
+            promptDescription: "Prompt one",
+            prompt: "Question one",
+            text: "right",
+            success: true,
+            score: 1,
+            latencyMs: 10,
+          },
+        ],
+      },
+    ],
+  });
+
+  const report = renderMergedBenchmarkReport(mergedSummary);
+
+  assert.equal(mergedSummary.prompts.length, 1);
+  assert.equal(mergedSummary.prompts[0].promptId, "p1");
+  assert.equal(mergedSummary.prompts[0].scenarios.baseline.failures, 1);
+  assert.equal(mergedSummary.prompts[0].scenarios["with-skill"].successes, 1);
+  assert.match(report, /\| Prompt \| baseline \| with-skill \|/);
+  assert.match(report, /\| Prompt one \| 0% \(0\/1\) \| 100% \(1\/1\) \|/);
+});
+
+test("merged benchmark report includes skipped scenarios", () => {
+  const mergedSummary = buildMergedBenchmarkSummary({
+    manifest: {
+      benchmark: {
+        id: "comparison-benchmark",
+        description: "Comparison benchmark",
+      },
+    },
+    generatedAt: "2026-03-14T00:00:00.000Z",
+    scenarioSummaries: [
+      {
+        scenarioId: "codex-no-skill",
+        scenarioDescription: "No skill",
+        skillMode: "disabled",
+        model: "gpt-5.1-codex-mini",
+        outputLabels: {
+          skill_state: "off",
+          displayName: "no-skill",
+        },
+        outputTags: ["baseline"],
+        outputs: [
+          {
+            promptId: "p1",
+            promptDescription: "Prompt one",
+            prompt: "Question one",
+            text: "wrong",
+            success: false,
+            score: 0,
+            latencyMs: 20,
+          },
+        ],
+      },
+    ],
+    skippedScenarios: [
+      {
+        scenarioId: "pi-skill",
+        displayName: "pi:skill",
+        skillState: "on",
+      },
+    ],
+  });
+
+  const report = renderMergedBenchmarkReport(mergedSummary);
+
+  assert.match(report, /\| Prompt one \| 0% \(0\/1\) \| skipped \|/);
+});
+
+test("normalizeOutput captures compare row metadata", () => {
+  const output = normalizeOutput({
+    provider: "skill",
+    prompt: {
+      raw: "Prompt text",
+    },
+    response: {
+      output: "{\"ok\":true}",
+    },
+    success: true,
+    metadata: {
+      promptId: "gmail",
+      promptDescription: "Unread Gmail triage",
+      variantId: "codex-worst",
+      variantDisplayName: "codex",
+      rowId: "codex-worst:gmail",
+    },
+  }, 0);
+
+  assert.equal(output.provider, "skill");
+  assert.equal(output.variantId, "codex-worst");
+  assert.equal(output.variantDisplayName, "codex");
+  assert.equal(output.rowId, "codex-worst:gmail");
+});
+
+test("compare matrix report renders pass ratios by skill-mode column", () => {
+  const mergedSummary = buildCompareMatrixSummary({
+    manifest: {
+      benchmark: {
+        id: "gws-gmail-triage-compare",
+        description: "Compare Gmail triage skill usage.",
+      },
+    },
+    generatedAt: "2026-03-14T00:00:00.000Z",
+    matrix: {
+      columns: [
+        { id: "no-skill", label: "no-skill" },
+        { id: "skill", label: "skill" },
+      ],
+      rows: [
+        {
+          rowId: "codex-worst:gmail",
+          variantDisplayName: "codex",
+          promptId: "gmail",
+          promptDescription: "Unread Gmail triage",
+          cells: {
+            "no-skill": {
+              displayValue: "40% (4/10)",
+            },
+            skill: {
+              displayValue: "100% (10/10)",
+            },
+          },
+        },
+      ],
+    },
+  });
+  const report = renderCompareMatrixReport(mergedSummary);
+
+  assert.match(report, /\| Prompt \| Agent\/Config \| no-skill \| skill \|/);
+  assert.match(report, /\| Unread Gmail triage \| codex \| 40% \(4\/10\) \| 100% \(10\/10\) \|/);
 });

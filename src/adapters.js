@@ -43,7 +43,22 @@ const adapterRegistry = {
   },
   pi: {
     id: "pi",
-    supported: false,
+    supported: true,
+    buildProvider({ scenario, workspaceDirectory }) {
+      const providerPath = fromProjectRoot("src", "providers", "pi-system-provider.js");
+
+      return {
+        id: providerPath,
+        label: `pi:${scenario.agent.model ?? "default"}`,
+        config: {
+          provider_id: `pi:${scenario.agent.model ?? "default"}`,
+          command_path: scenario.agent.commandPath,
+          model: scenario.agent.model,
+          working_dir: workspaceDirectory,
+          cli_env: scenario.agent.cliEnv,
+        },
+      };
+    },
   },
 };
 

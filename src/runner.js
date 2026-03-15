@@ -3,6 +3,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 import { buildPromptfooConfig, stringifyPromptfooConfig } from "./promptfoo-config.js";
+import { resolveEvaluationConcurrency } from "./concurrency.js";
 import { normalizePromptfooResults, writePromptfooArtifacts } from "./results.js";
 import { materializeWorkspace } from "./workspace.js";
 
@@ -52,12 +53,14 @@ export async function runScenario({ manifest, scenario, dryRun = false }) {
     promptfooConfigPath,
     promptfooResultsPath,
     summaryPath: path.join(workspace.runDirectory, "summary.json"),
+    summary,
     skipped: false,
   };
 }
 
 async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, scenario }) {
-  const args = [
+  const maxConcurrency = resolveEvaluationConcurrency(scenario.evaluation);
+  const promptfooArgs = [
     "promptfoo",
     "eval",
     "-c",
@@ -65,17 +68,17 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
     "--output",
     promptfooResultsPath,
     "--repeat",
-    String(scenario.evaluation.repeat),
+    String(scenario.evaluation.requests),
     "-j",
-    String(scenario.evaluation.maxConcurrency),
+    String(maxConcurrency),
     "--no-progress-bar",
   ];
 
   if (scenario.evaluation.noCache) {
-    args.push("--no-cache");
+    promptfooArgs.push("--no-cache");
   }
 
-  const { executable, executableArgs } = buildPromptfooCommand(args);
+  const { executable, executableArgs } = buildPromptfooCommand(promptfooArgs);
 
   await new Promise((resolve, reject) => {
     const childProcess = spawn(executable, executableArgs, {
@@ -85,7 +88,7 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
         PROMPTFOO_DISABLE_TELEMETRY: "1",
         PROMPTFOO_DISABLE_UPDATE: "1",
       },
-      stdio: "inherit",
+      stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
 
@@ -96,6 +99,14 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
     childProcess.on("error", (error) => {
       clearTimeout(killTimer);
       reject(error);
+    });
+
+    childProcess.stdout.on("data", (chunk) => {
+      process.stdout.write(chunk);
+    });
+
+    childProcess.stderr.on("data", (chunk) => {
+      process.stderr.write(chunk);
     });
 
     childProcess.on("exit", (code) => {

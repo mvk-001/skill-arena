@@ -1,0 +1,114 @@
+schemaVersion: 1
+benchmark:
+  id: remote-gws-gmail-triage
+  description: Validate remote Git skill overlays using the Google Workspace Gmail triage skill.
+  tags:
+    - codex
+    - remote-skill
+    - gmail
+task:
+  prompts:
+    - id: direct-query
+      description: Direct wording for the default Gmail query.
+      prompt: >-
+        Read the repository instructions and return only the default Gmail
+        search query used by the gws-gmail-triage skill as plain text, without
+        quotes or Markdown formatting.
+    - id: flag-default
+      description: Ask for the default value of the query flag.
+      prompt: >-
+        According to the repository instructions, what is the default value of
+        the --query flag for gws gmail +triage? Return only the value as plain
+        text.
+    - id: unread-summary
+      description: Ask how the skill filters unread inbox items.
+      prompt: >-
+        The gws-gmail-triage skill summarizes unread inbox messages. Return only
+        the default Gmail search filter it uses, as plain text.
+    - id: docs-extraction
+      description: Ask the agent to extract the documented default from the skill docs.
+      prompt: >-
+        Extract the documented default Gmail search query from the
+        gws-gmail-triage skill instructions and return only that value as plain
+        text.
+workspace:
+  fixture: fixtures/remote-gws-gmail-triage/base
+  skillOverlay:
+    git:
+      repo: https://github.com/googleworkspace/cli.git
+      ref: main
+      subpath: skills
+  initializeGit: true
+scenarios:
+  - id: codex-mini-no-skill
+    description: Codex mini baseline without the remote Gmail triage skill.
+    skillMode: disabled
+    agent:
+      adapter: codex
+      model: gpt-5.1-codex-mini
+      executionMethod: command
+      commandPath: codex
+      sandboxMode: read-only
+      approvalPolicy: never
+      webSearchEnabled: false
+      networkAccessEnabled: false
+      reasoningEffort: low
+      additionalDirectories: []
+      cliEnv: {}
+      config: {}
+    evaluation:
+      assertions:
+        - type: icontains
+          value: is:unread
+      requests: 10
+      timeoutMs: 900000
+      tracing: false
+      maxConcurrency: 4
+      noCache: true
+    output:
+      tags:
+        - codex
+        - mini
+        - no-skill
+        - baseline
+      labels:
+        comparison_group: remote-gws-gmail-triage
+        skill_state: off
+        skill_source: none
+        variant: baseline
+  - id: codex-mini-with-remote-skill
+    description: Codex mini with the Gmail triage skill fetched from GitHub.
+    skillMode: enabled
+    agent:
+      adapter: codex
+      model: gpt-5.1-codex-mini
+      executionMethod: command
+      commandPath: codex
+      sandboxMode: read-only
+      approvalPolicy: never
+      webSearchEnabled: false
+      networkAccessEnabled: false
+      reasoningEffort: low
+      additionalDirectories: []
+      cliEnv: {}
+      config: {}
+    evaluation:
+      assertions:
+        - type: icontains
+          value: is:unread
+      requests: 10
+      timeoutMs: 900000
+      tracing: false
+      maxConcurrency: 4
+      noCache: true
+    output:
+      tags:
+        - codex
+        - mini
+        - remote-skill
+        - skill
+      labels:
+        comparison_group: remote-gws-gmail-triage
+        skill_state: on
+        skill_source: git
+        variant: remote-skill

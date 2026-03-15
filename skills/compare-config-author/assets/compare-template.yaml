@@ -1,0 +1,52 @@
+schemaVersion: 1
+benchmark:
+  id: example-compare
+  description: Short human-readable description.
+  tags:
+    - compare
+task:
+  prompts:
+    - id: main
+      description: Primary benchmark prompt
+      prompt: Exact task prompt sent to every provider.
+workspace:
+  fixture: fixtures/example/base
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: llm-rubric
+      provider: openai:gpt-5-mini
+      value: Score 1.0 only if the answer satisfies the benchmark goal.
+  requests: 10
+  timeoutMs: 180000
+  tracing: false
+  maxConcurrency: 1
+  noCache: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: Baseline without the skill.
+      skillMode: disabled
+    - id: skill
+      description: Skill-enabled run.
+      skillMode: enabled
+      skillSource: system-installed
+  variants:
+    - id: codex-mini
+      description: Codex mini comparison variant.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        labels:
+          variantDisplayName: codex mini

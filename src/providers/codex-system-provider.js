@@ -81,11 +81,15 @@ export default class CodexSystemProvider {
       abortSignal: callOptions?.abortSignal,
     });
 
-    const finalResponse = await fs
+    let finalResponse = await fs
       .readFile(outputFile, "utf8")
       .catch(() => "");
     const events = parseJsonLines(stdout);
     const eventResponse = extractFinalAgentMessage(events);
+
+    if (!finalResponse.trim()) {
+      finalResponse = eventResponse;
+    }
 
     if (exitCode !== 0) {
       return {
@@ -95,6 +99,7 @@ export default class CodexSystemProvider {
           `codex exec exited with code ${exitCode}.`,
       };
     }
+
     const usage = extractCommandUsage(events);
     const output = finalResponse.trim() || eventResponse || "";
 
@@ -296,7 +301,10 @@ function extractFinalAgentMessage(events) {
     .reverse()
     .find((event) => event.type === "item.completed" && event.item?.type === "agent_message");
 
-  return finalMessageEvent?.item?.text ?? null;
+  const agentMessageEvent = events.findLast?.((event) => event.type === "agent_message")
+    ?? [...events].reverse().find((event) => event.type === "agent_message");
+
+  return finalMessageEvent?.item?.text ?? agentMessageEvent?.message ?? "";
 }
 
 async function spawnProcess({

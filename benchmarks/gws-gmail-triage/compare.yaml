@@ -1,0 +1,98 @@
+schemaVersion: 1
+benchmark:
+  id: gws-gmail-triage-compare
+  description: Compare coding agents on Gmail triage with and without the installed gws skill.
+  tags:
+    - gmail
+    - gws
+    - compare
+task:
+  prompt: >-
+    Use the `$gws-gmail-triage` skill. Triage unread Gmail messages in read-only
+    mode by using the underlying gws command with JSON output and a maximum of 5
+    messages. Return only JSON with top-level keys `messages`, `query`, and
+    `resultSizeEstimate`. Each message entry must include `date`, `from`, `id`,
+    and `subject`.
+workspace:
+  fixture: fixtures/gws-gmail-triage/base
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: is-json
+    - type: javascript
+      value: >-
+        (() => { const data = JSON.parse(output); if (!Array.isArray(data.messages))
+        return false; if (typeof data.query !== 'string') return false; if
+        (typeof data.resultSizeEstimate !== 'number') return false; if
+        (data.messages.length > 5) return false; return data.messages.every((message)
+        => ['date', 'from', 'id', 'subject'].every((key) => typeof message[key]
+        === 'string')); })()
+  requests: 10
+  timeoutMs: 180000
+  tracing: false
+  maxConcurrency: 1
+  noCache: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: Baseline without the installed skill enabled.
+      skillMode: disabled
+      output:
+        tags:
+          - baseline
+        labels:
+          skill_state: off
+    - id: skill
+      description: System-installed gws Gmail triage skill enabled.
+      skillMode: enabled
+      skillSource: system-installed
+      output:
+        tags:
+          - skill
+        labels:
+          skill_state: on
+  variants:
+    - id: codex-worst
+      description: Codex using the smallest currently wired model.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: danger-full-access
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: true
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - codex
+          - mini
+        labels:
+          variantDisplayName: codex mini
+          adapter_family: codex
+    - id: pi-gpt5mini
+      description: PI using GitHub Copilot GPT-5 Mini through the local CLI.
+      agent:
+        adapter: pi
+        model: github-copilot/gpt-5-mini
+        executionMethod: command
+        commandPath: pi
+        sandboxMode: danger-full-access
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: true
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - pi
+          - mini
+        labels:
+          variantDisplayName: pi gpt-5 mini
+          adapter_family: pi

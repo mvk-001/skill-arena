@@ -47,7 +47,7 @@
             "value": "(() => { const data = JSON.parse(output); if (!Array.isArray(data.messages)) return false; if (typeof data.query !== 'string') return false; if (typeof data.resultSizeEstimate !== 'number') return false; if (data.messages.length > 5) return false; return data.messages.every((message) => ['date', 'from', 'id', 'subject'].every((key) => typeof message[key] === 'string')); })()"
           }
         ],
-        "repeat": 1,
+        "requests": 1,
         "timeoutMs": 180000,
         "tracing": false,
         "maxConcurrency": 1,
