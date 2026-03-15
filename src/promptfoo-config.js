@@ -3,6 +3,7 @@ import path from "node:path";
 import YAML from "yaml";
 
 import { buildPromptfooProvider } from "./adapters.js";
+import { toPromptfooGraderProvider } from "./judge-provider.js";
 
 export function buildPromptfooConfig({ manifest, scenario, workspace }) {
   const provider = buildPromptfooProvider({
@@ -78,7 +79,12 @@ export function toPromptfooAssertion(assertion, workspaceDirectory) {
     case "is-json":
     case "javascript":
     case "llm-rubric":
-      return assertion;
+      return {
+        ...assertion,
+        ...(assertion.provider
+          ? { provider: toPromptfooGraderProvider(assertion.provider, workspaceDirectory) }
+          : {}),
+      };
     case "file-contains": {
       const filePath = path.resolve(workspaceDirectory, assertion.path);
       const escapedFilePath = JSON.stringify(filePath);
@@ -88,7 +94,7 @@ export function toPromptfooAssertion(assertion, workspaceDirectory) {
         type: "javascript",
         value: [
           "(() => {",
-          "  const fs = require('node:fs');",
+          "  const fs = process.getBuiltinModule('node:fs');",
           `  const fileContents = fs.readFileSync(${escapedFilePath}, 'utf8');`,
           `  return fileContents.includes(${escapedExpectedValue});`,
           "})()",

@@ -208,7 +208,7 @@ test("normalizeScenario and normalizeCompareSkillMode populate defaults and labe
 
   assert.equal(scenario.skillSource, "workspace-overlay");
   assert.deepEqual(scenario.output, { tags: [], labels: {} });
-  assert.equal(skillMode.skillSource, "workspace-overlay");
+  assert.equal(skillMode.skillSource, "none");
   assert.deepEqual(skillMode.output, { tags: [], labels: {} });
 });
 

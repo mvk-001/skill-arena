@@ -60,7 +60,14 @@ comparison:
     - id: skill
       description: Remote Git overlay with gws-calendar-agenda enabled.
       skillMode: enabled
-      skillSource: workspace-overlay
+      skill:
+        source:
+          type: git
+          repo: https://github.com/googleworkspace/cli.git
+          ref: main
+          subpath: skills
+        install:
+          strategy: workspace-overlay
       output:
         tags:
           - skill

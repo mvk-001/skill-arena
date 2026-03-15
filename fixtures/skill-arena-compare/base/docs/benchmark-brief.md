@@ -18,7 +18,7 @@ The file must define a Skill Arena compare config with these requirements:
 - `evaluation.requests: 10`
 - two skill modes:
   - `no-skill` as disabled baseline
-  - `skill` as enabled with `skillSource: workspace-overlay`
+  - `skill` as enabled with an explicit `skill` block that uses `source.type: local-path`, `path: fixtures/repo-summary/skill-overlay`, and `install.strategy: workspace-overlay`
 - one variant:
   - id `codex-mini`
   - adapter `codex`
@@ -33,3 +33,5 @@ The file must define a Skill Arena compare config with these requirements:
   - `output.labels.variantDisplayName: codex mini`
 
 Keep the config concise and valid YAML.
+
+The final `compare.yaml` must be executable from another working directory such as `C:\Users\villa\tmp`. Use runtime-relative paths and rely on compare bootstrap, not package-relative execution.

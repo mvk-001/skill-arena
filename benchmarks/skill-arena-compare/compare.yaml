@@ -14,19 +14,10 @@ task:
         Read `docs/benchmark-brief.md` and author `./deliverables/compare.yaml`
         in the current workspace. Write the file there instead of inside any
         `skills/` directory. Update the generated compare config so each prompt
-        uses `evaluation.requests: 5`. If you can determine local machine
+        uses `evaluation.requests: 6`. If you can determine local machine
         capacity from Node.js, set `evaluation.maxConcurrency` in the generated
         file. Return only the full completed `compare.yaml` content as your
         final answer.
-    - id: workspace-path
-      description: Reinforce writing to the requested workspace path and keeping the compare config concise.
-      prompt: >-
-        Create `deliverables/compare.yaml` in the current workspace using the
-        requirements in `docs/benchmark-brief.md`. Keep the YAML concise, write
-        the file at the requested path, and do not place the output under the
-        skill source tree. Use `evaluation.requests: 5` in the generated file
-        and include `evaluation.maxConcurrency` when you can compute it from the
-        local machine. Return only the final `compare.yaml` content.
 workspace:
   fixture: fixtures/skill-arena-compare/base
   skillOverlay: fixtures/skill-arena-compare/skill-overlay
@@ -42,7 +33,7 @@ evaluation:
     - type: contains
       value: "path: fixtures/repo-summary/skill-overlay"
     - type: contains
-      value: "requests: 5"
+      value: "requests: 6"
     - type: contains
       value: "maxConcurrency:"
     - type: contains
@@ -50,7 +41,9 @@ evaluation:
     - type: contains
       value: "id: skill"
     - type: contains
-      value: "skillSource: workspace-overlay"
+      value: "type: local-path"
+    - type: contains
+      value: "strategy: workspace-overlay"
     - type: contains
       value: "id: architecture"
     - type: contains
@@ -62,23 +55,32 @@ evaluation:
       value: "schemaVersion: 1"
     - type: file-contains
       path: "deliverables/compare.yaml"
-      value: "requests: 5"
+      value: "requests: 6"
     - type: file-contains
       path: "deliverables/compare.yaml"
       value: "maxConcurrency:"
     - type: file-contains
       path: "deliverables/compare.yaml"
-      value: "skillSource: workspace-overlay"
+      value: "type: local-path"
+    - type: file-contains
+      path: "deliverables/compare.yaml"
+      value: "strategy: workspace-overlay"
+    - type: file-contains
+      path: "deliverables/compare.yaml"
+      value: "fixture: fixtures/repo-summary/base"
+    - type: file-contains
+      path: "deliverables/compare.yaml"
+      value: "path: fixtures/repo-summary/skill-overlay"
     - type: javascript
       value: |
         !output.includes("compare-config-author")
     - type: javascript
       value: |
         !output.includes("skills/skill-arena-compare")
-  requests: 5
+  requests: 6
   timeoutMs: 300000
   tracing: false
-  maxConcurrency: 10
+  maxConcurrency: 12
   noCache: true
 comparison:
   skillModes:
@@ -94,7 +96,12 @@ comparison:
     - id: skill
       description: Workspace overlay with the skill-arena-compare skill enabled.
       skillMode: enabled
-      skillSource: workspace-overlay
+      skill:
+        source:
+          type: local-path
+          path: fixtures/skill-arena-compare/skill-overlay
+        install:
+          strategy: workspace-overlay
       output:
         tags:
           - skill

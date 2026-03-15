@@ -72,6 +72,7 @@ test("file-contains assertions become Promptfoo javascript assertions", async ()
 
   assert.equal(config.tests[0].assert[0].type, "javascript");
   assert.match(config.tests[0].assert[0].value, /notes\/target\.txt|notes\\\\target\.txt/);
+  assert.match(config.tests[0].assert[0].value, /process\.getBuiltinModule\('node:fs'\)/);
 });
 
 test("llm-rubric assertions pass through to Promptfoo", async () => {
@@ -105,6 +106,76 @@ test("llm-rubric assertions pass through to Promptfoo", async () => {
   });
 
   assert.deepEqual(config.tests[0].assert[0], scenario.evaluation.assertions[0]);
+});
+
+test("llm-rubric local judge shorthand rewrites to packaged custom provider", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = structuredClone(findScenario(manifest, "codex-mini-no-skill"));
+
+  scenario.evaluation.assertions = [
+    {
+      type: "llm-rubric",
+      value: "Score 1 only if the answer is ALPHA-42.",
+      provider: "skill-arena:judge:codex",
+    },
+  ];
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      environment: {},
+      gitReady: true,
+    },
+  });
+
+  assert.match(config.tests[0].assert[0].provider.id, /local-judge-provider\.js$/);
+  assert.equal(config.tests[0].assert[0].provider.config.adapter, "codex");
+  assert.equal(config.tests[0].assert[0].provider.config.provider_id, "skill-arena:judge:codex");
+});
+
+test("llm-rubric local judge object form preserves custom config", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = structuredClone(findScenario(manifest, "codex-mini-no-skill"));
+
+  scenario.evaluation.assertions = [
+    {
+      type: "llm-rubric",
+      value: "Score 1 only if the answer is ALPHA-42.",
+      provider: {
+        id: "skill-arena:judge:copilot-cli",
+        config: {
+          model: "gpt-5",
+          commandPath: "copilot",
+        },
+      },
+    },
+  ];
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      environment: {},
+      gitReady: true,
+    },
+  });
+
+  assert.equal(config.tests[0].assert[0].provider.config.adapter, "copilot-cli");
+  assert.equal(config.tests[0].assert[0].provider.config.model, "gpt-5");
+  assert.equal(config.tests[0].assert[0].provider.config.commandPath, "copilot");
 });
 
 test("codex scenarios can switch to sdk execution", async () => {

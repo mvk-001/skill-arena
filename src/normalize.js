@@ -277,11 +277,20 @@ export function normalizeManifestShape(manifest) {
 }
 
 export function normalizeCompareSkillMode(skillMode, workspace) {
-  const skill = normalizeSkill(skillMode.skill, {
-    skillMode: skillMode.skillMode,
-    legacySkillOverlay: workspace.skillOverlay,
-    legacySkillSource: skillMode.skillSource,
-  });
+  const skill = skillMode.skillMode === "enabled" && !skillMode.skill
+    ? buildNormalizedSkill({
+      source: {
+        type: "none",
+      },
+      install: {
+        strategy: "none",
+      },
+    })
+    : normalizeSkill(skillMode.skill, {
+      skillMode: skillMode.skillMode,
+      legacySkillOverlay: workspace.skillOverlay,
+      legacySkillSource: skillMode.skillSource,
+    });
 
   return {
     id: skillMode.id,

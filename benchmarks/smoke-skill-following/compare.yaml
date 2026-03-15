@@ -40,7 +40,12 @@ comparison:
     - id: skill
       description: Workspace overlay enabled.
       skillMode: enabled
-      skillSource: workspace-overlay
+      skill:
+        source:
+          type: local-path
+          path: fixtures/smoke-skill-following/skill-overlay
+        install:
+          strategy: workspace-overlay
       output:
         tags:
           - skill
