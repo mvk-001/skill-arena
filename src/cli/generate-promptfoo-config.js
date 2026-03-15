@@ -9,6 +9,7 @@ async function main() {
   const manifestPath = process.argv[2];
   const scenarioFlagIndex = process.argv.indexOf("--scenario");
   const scenarioId = scenarioFlagIndex > -1 ? process.argv[scenarioFlagIndex + 1] : null;
+  const outputRootDirectory = process.cwd();
 
   if (!manifestPath || !scenarioId) {
     throw new Error(
@@ -16,9 +17,16 @@ async function main() {
     );
   }
 
-  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const { manifest, workspaceRootDirectory } = await loadBenchmarkManifest(manifestPath, {
+    cwd: outputRootDirectory,
+  });
   const scenario = findScenario(manifest, scenarioId);
-  const workspace = await materializeWorkspace({ manifest, scenario });
+  const workspace = await materializeWorkspace({
+    manifest,
+    scenario,
+    outputRootDirectory,
+    sourceBaseDirectory: workspaceRootDirectory,
+  });
   const config = buildPromptfooConfig({ manifest, scenario, workspace });
   const yaml = stringifyPromptfooConfig(config);
   const configPath = path.join(workspace.runDirectory, "promptfooconfig.yaml");

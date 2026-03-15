@@ -27,13 +27,13 @@ cd skill-arena
 npm install
 ```
 
-### 1. Install the `skill-arena-compare-author` skill
+### 1. Install the `skill-arena-compare` skill
 
 Copy the reusable skill into your local Codex skills directory, then restart Codex so it picks up the new skill.
 
 ```bash
 mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-cp -R ./skills/skill-arena-compare-author "${CODEX_HOME:-$HOME/.codex}/skills/skill-arena-compare-author"
+cp -R ./skills/skill-arena-compare "${CODEX_HOME:-$HOME/.codex}/skills/skill-arena-compare"
 ```
 
 ### 2. Ask Codex to generate a compare config
@@ -41,18 +41,18 @@ cp -R ./skills/skill-arena-compare-author "${CODEX_HOME:-$HOME/.codex}/skills/sk
 Use the installed skill in any benchmark authoring workspace. For example:
 
 ```text
-Use the skill-arena-compare-author skill to create deliverables/compare.yaml for this benchmark.
+Use the skill-arena-compare skill to create deliverables/compare.yaml for this benchmark.
 Return only the final compare.yaml content.
 ```
 
-The repository also includes a ready-made benchmark for this exact task in `benchmarks/skill-arena-compare-author/compare.yaml`.
+The repository also includes a ready-made benchmark for this exact task in `benchmarks/skill-arena-compare/compare.yaml`.
 
 ### 3. Run the benchmark
 
 Execute the included compare benchmark:
 
 ```bash
-npm run benchmark:compare -- ./benchmarks/skill-arena-compare-author/compare.yaml
+npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 To run the versioned minimal `copilot-cli` smoke comparison:
@@ -66,13 +66,13 @@ npm run benchmark:copilot:compare
 The compare run writes a merged report to:
 
 ```text
-results/skill-arena-compare-author/<timestamp>-compare/merged/report.md
+results/skill-arena-compare/<timestamp>-compare/merged/report.md
 ```
 
 On PowerShell, this opens the most recent report:
 
 ```powershell
-$report = Get-ChildItem .\results\skill-arena-compare-author\*\merged\report.md |
+$report = Get-ChildItem .\results\skill-arena-compare\*\merged\report.md |
   Sort-Object LastWriteTime -Descending |
   Select-Object -First 1 -ExpandProperty FullName
 Start-Process $report

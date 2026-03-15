@@ -5,14 +5,18 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import { resolveManifestPath } from "./manifest.js";
-import { fromProjectRoot } from "./project-paths.js";
 
 const execFileAsync = promisify(execFile);
 const gitSourceCache = new Map();
 
-export async function materializeWorkspace({ manifest, scenario }) {
+export async function materializeWorkspace({
+  manifest,
+  scenario,
+  outputRootDirectory = process.cwd(),
+  sourceBaseDirectory = outputRootDirectory,
+}) {
   const runId = createRunId(scenario.id);
-  const runDirectory = fromProjectRoot("results", manifest.benchmark.id, runId);
+  const runDirectory = path.join(outputRootDirectory, "results", manifest.benchmark.id, runId);
   const workspaceDirectory = path.join(runDirectory, "workspace");
 
   await fs.mkdir(workspaceDirectory, { recursive: true });
@@ -22,6 +26,7 @@ export async function materializeWorkspace({ manifest, scenario }) {
       source,
       workspaceDirectory,
       labelPrefix: "workspace.sources",
+      sourceBaseDirectory,
     });
   }
 
@@ -29,6 +34,7 @@ export async function materializeWorkspace({ manifest, scenario }) {
     await materializeSkillSource({
       skillSource: scenario.skill.source,
       workspaceDirectory,
+      sourceBaseDirectory,
     });
   }
 
@@ -47,10 +53,15 @@ export async function materializeWorkspace({ manifest, scenario }) {
   };
 }
 
-async function materializeWorkspaceSource({ source, workspaceDirectory, labelPrefix }) {
+async function materializeWorkspaceSource({
+  source,
+  workspaceDirectory,
+  labelPrefix,
+  sourceBaseDirectory,
+}) {
   switch (source.type) {
     case "local-path": {
-      const sourceDirectory = resolveLocalPath(source.path);
+      const sourceDirectory = resolveLocalPath(source.path, sourceBaseDirectory);
       await assertDirectoryExists(sourceDirectory, `${labelPrefix}.${source.id ?? source.type}.path`);
       await copyDirectoryIntoTarget({
         sourceDirectory,
@@ -83,10 +94,10 @@ async function materializeWorkspaceSource({ source, workspaceDirectory, labelPre
   }
 }
 
-async function materializeSkillSource({ skillSource, workspaceDirectory }) {
+async function materializeSkillSource({ skillSource, workspaceDirectory, sourceBaseDirectory }) {
   switch (skillSource.type) {
     case "local-path": {
-      const sourceDirectory = resolveLocalPath(skillSource.path);
+      const sourceDirectory = resolveLocalPath(skillSource.path, sourceBaseDirectory);
       await assertDirectoryExists(sourceDirectory, "skill.source.path");
       await copyDirectoryIntoTarget({
         sourceDirectory,
@@ -186,12 +197,8 @@ async function copyDirectoryIntoTarget({ sourceDirectory, workspaceDirectory, ta
   }
 }
 
-function resolveLocalPath(inputPath) {
-  if (path.isAbsolute(inputPath)) {
-    return inputPath;
-  }
-
-  return resolveManifestPath(inputPath);
+function resolveLocalPath(inputPath, sourceBaseDirectory) {
+  return resolveManifestPath(inputPath, { baseDirectory: sourceBaseDirectory });
 }
 
 function resolveWorkspacePath(workspaceDirectory, targetPath) {

@@ -6,13 +6,14 @@ import {
 } from "../results.js";
 import { getDefaultParallelism, mapWithConcurrency } from "../concurrency.js";
 import { runScenario } from "../runner.js";
-import { fromProjectRoot } from "../project-paths.js";
+import path from "node:path";
 
 async function main() {
   const manifestPath = process.argv[2];
   const scenarioFlagIndex = process.argv.indexOf("--scenario");
   const dryRun = process.argv.includes("--dry-run");
   const scenarioId = scenarioFlagIndex > -1 ? process.argv[scenarioFlagIndex + 1] : null;
+  const outputRootDirectory = process.cwd();
 
   if (!manifestPath) {
     throw new Error(
@@ -20,7 +21,9 @@ async function main() {
     );
   }
 
-  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const { manifest, workspaceRootDirectory } = await loadBenchmarkManifest(manifestPath, {
+    cwd: outputRootDirectory,
+  });
   const scenarios = scenarioId
     ? [findScenario(manifest, scenarioId)]
     : manifest.scenarios;
@@ -33,6 +36,8 @@ async function main() {
         manifest,
         scenario,
         dryRun,
+        outputRootDirectory,
+        sourceBaseDirectory: workspaceRootDirectory,
       }),
   );
 
@@ -44,7 +49,8 @@ async function main() {
 
   if (completedSummaries.length > 0) {
     const batchRunId = new Date().toISOString().replace(/[:.]/g, "-");
-    const benchmarkRunDirectory = fromProjectRoot(
+    const benchmarkRunDirectory = path.join(
+      outputRootDirectory,
       "results",
       manifest.benchmark.id,
       `${batchRunId}-merged`,

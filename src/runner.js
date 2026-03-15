@@ -8,7 +8,19 @@ import { normalizePromptfooResults, writePromptfooArtifacts } from "./results.js
 import { materializeWorkspace } from "./workspace.js";
 
 export async function runScenario({ manifest, scenario, dryRun = false }) {
-  const workspace = await materializeWorkspace({ manifest, scenario });
+export async function runScenario({
+  manifest,
+  scenario,
+  dryRun = false,
+  outputRootDirectory = process.cwd(),
+  sourceBaseDirectory = outputRootDirectory,
+}) {
+  const workspace = await materializeWorkspace({
+    manifest,
+    scenario,
+    outputRootDirectory,
+    sourceBaseDirectory,
+  });
   const promptfooConfig = buildPromptfooConfig({ manifest, scenario, workspace });
   const promptfooConfigYaml = stringifyPromptfooConfig(promptfooConfig);
   const promptfooConfigPath = path.join(workspace.runDirectory, "promptfooconfig.yaml");

@@ -5,9 +5,11 @@ import YAML from "yaml";
 import { ZodError } from "zod";
 
 import { compareConfigSchema } from "./compare-schema.js";
+import { findWorkspaceRoot } from "./project-paths.js";
 
-export async function loadCompareConfig(compareConfigPath) {
-  const absoluteCompareConfigPath = path.resolve(process.cwd(), compareConfigPath);
+export async function loadCompareConfig(compareConfigPath, options = {}) {
+  const resolutionDirectory = options.cwd ?? process.cwd();
+  const absoluteCompareConfigPath = path.resolve(resolutionDirectory, compareConfigPath);
   const compareConfigContents = await fs.readFile(absoluteCompareConfigPath, "utf8");
   const parsedCompareConfig = parseConfigContents({
     configContents: compareConfigContents,
@@ -19,6 +21,8 @@ export async function loadCompareConfig(compareConfigPath) {
     return {
       compareConfig,
       compareConfigPath: absoluteCompareConfigPath,
+      compareConfigDirectory: path.dirname(absoluteCompareConfigPath),
+      workspaceRootDirectory: findWorkspaceRoot(path.dirname(absoluteCompareConfigPath)),
     };
   } catch (error) {
     if (error instanceof ZodError) {

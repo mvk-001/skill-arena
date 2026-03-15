@@ -2,3 +2,4 @@ node_modules/
 results/
 coverage/
 reports/
+bin/

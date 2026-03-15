@@ -5,10 +5,11 @@ import YAML from "yaml";
 import { ZodError } from "zod";
 
 import { benchmarkManifestSchema } from "./manifest-schema.js";
-import { PROJECT_ROOT } from "./project-paths.js";
+import { findWorkspaceRoot, PROJECT_ROOT } from "./project-paths.js";
 
-export async function loadBenchmarkManifest(manifestPath) {
-  const absoluteManifestPath = path.resolve(process.cwd(), manifestPath);
+export async function loadBenchmarkManifest(manifestPath, options = {}) {
+  const resolutionDirectory = options.cwd ?? process.cwd();
+  const absoluteManifestPath = path.resolve(resolutionDirectory, manifestPath);
   const manifestContents = await fs.readFile(absoluteManifestPath, "utf8");
   const parsedManifest = parseManifestContents({
     manifestContents,
@@ -20,6 +21,8 @@ export async function loadBenchmarkManifest(manifestPath) {
     return {
       manifest,
       manifestPath: absoluteManifestPath,
+      manifestDirectory: path.dirname(absoluteManifestPath),
+      workspaceRootDirectory: findWorkspaceRoot(path.dirname(absoluteManifestPath)),
     };
   } catch (error) {
     if (error instanceof ZodError) {
@@ -46,12 +49,12 @@ function parseManifestContents({ manifestContents, manifestPath }) {
   }
 }
 
-export function resolveManifestPath(repositoryRelativePath) {
+export function resolveManifestPath(repositoryRelativePath, options = {}) {
   if (path.isAbsolute(repositoryRelativePath)) {
     return repositoryRelativePath;
   }
 
-  return path.resolve(PROJECT_ROOT, repositoryRelativePath);
+  return path.resolve(options.baseDirectory ?? PROJECT_ROOT, repositoryRelativePath);
 }
 
 export function findScenario(manifest, scenarioId) {

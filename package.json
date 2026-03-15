@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "skill-arena": "./bin/skill-arena.js"
+  },
   "description": "Promptfoo-based benchmark harness for evaluating skills on coding agents.",
   "engines": {
     "node": ">=24.0.0"

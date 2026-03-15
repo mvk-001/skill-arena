@@ -1,9 +1,9 @@
 ---
-name: skill-arena-compare-author
+name: skill-arena-compare
 description: Use this skill when you need to author or refine a Skill Arena compare.yaml file.
 ---
 
-# Skill Arena Compare Author
+# Skill Arena Compare
 
 Author a `compare.yaml` file for Skill Arena.
 

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { fromProjectRoot } from "./project-paths.js";
+import { fromPackageRoot } from "./project-paths.js";
 
 export const ADAPTER_IDS = ["codex", "copilot-cli", "pi"];
 
@@ -9,7 +9,7 @@ const adapterRegistry = {
     id: "codex",
     supported: true,
     buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, gitReady }) {
-      const providerPath = fromProjectRoot("src", "providers", "codex-system-provider.js");
+      const providerPath = fromPackageRoot("src", "providers", "codex-system-provider.js");
 
       return {
         id: providerPath,
@@ -44,7 +44,7 @@ const adapterRegistry = {
     id: "copilot-cli",
     supported: true,
     buildProvider({ scenario, workspaceDirectory, workspaceEnvironment }) {
-      const providerPath = fromProjectRoot("src", "providers", "copilot-system-provider.js");
+      const providerPath = fromPackageRoot("src", "providers", "copilot-system-provider.js");
 
       return {
         id: providerPath,
@@ -73,7 +73,7 @@ const adapterRegistry = {
     id: "pi",
     supported: true,
     buildProvider({ scenario, workspaceDirectory, workspaceEnvironment }) {
-      const providerPath = fromProjectRoot("src", "providers", "pi-system-provider.js");
+      const providerPath = fromPackageRoot("src", "providers", "pi-system-provider.js");
 
       return {
         id: providerPath,

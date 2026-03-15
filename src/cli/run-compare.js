@@ -18,12 +18,13 @@ import {
   toPromptfooAssertion,
 } from "../promptfoo-config.js";
 import { getDefaultParallelism, mapWithConcurrency, resolveEvaluationConcurrency } from "../concurrency.js";
-import { fromProjectRoot } from "../project-paths.js";
+import { fromPackageRoot } from "../project-paths.js";
 import { materializeWorkspace } from "../workspace.js";
 
 async function main() {
   const compareConfigPath = process.argv[2];
   const dryRun = process.argv.includes("--dry-run");
+  const outputRootDirectory = process.cwd();
 
   if (!compareConfigPath) {
     throw new Error(
@@ -31,7 +32,9 @@ async function main() {
     );
   }
 
-  const { compareConfig } = await loadCompareConfig(compareConfigPath);
+  const { compareConfig, workspaceRootDirectory } = await loadCompareConfig(compareConfigPath, {
+    cwd: outputRootDirectory,
+  });
   const manifest = expandCompareConfigToManifest(compareConfig);
   const supportedRuns = [];
   const skippedVariants = [];
@@ -63,18 +66,33 @@ async function main() {
     supportedScenarios.push(scenario);
   }
 
+  printExecutionPlan({
+    compareConfig,
+    manifest,
+    supportedScenarios,
+    skippedVariants,
+    outputRootDirectory,
+  });
+  console.log("");
+
   const materializedRuns = await mapWithConcurrency(
     supportedScenarios,
     getDefaultParallelism(),
     async (scenario) => ({
       scenario,
-      workspace: await materializeWorkspace({ manifest, scenario }),
+      workspace: await materializeWorkspace({
+        manifest,
+        scenario,
+        outputRootDirectory,
+        sourceBaseDirectory: workspaceRootDirectory,
+      }),
     }),
   );
   supportedRuns.push(...materializedRuns);
 
   const batchRunId = new Date().toISOString().replace(/[:.]/g, "-");
-  const benchmarkRunDirectory = fromProjectRoot(
+  const benchmarkRunDirectory = path.join(
+    outputRootDirectory,
     "results",
     manifest.benchmark.id,
     `${batchRunId}-compare`,
@@ -167,7 +185,7 @@ async function main() {
 }
 
 function buildComparePromptfooConfig({ manifest, runs }) {
-  const routerProviderPath = fromProjectRoot("src", "providers", "compare-matrix-provider.js");
+  const routerProviderPath = fromPackageRoot("src", "providers", "compare-matrix-provider.js");
   const skillModeMap = new Map();
 
   for (const { scenario, workspace } of runs) {
@@ -474,6 +492,57 @@ function buildScenarioStats(outputs) {
 
 function formatPercent(value) {
   return `${(value * 100).toFixed(0)}%`;
+}
+
+function printExecutionPlan({
+  compareConfig,
+  manifest,
+  supportedScenarios,
+  skippedVariants,
+  outputRootDirectory,
+}) {
+  const taskPrompts = getTaskPrompts(manifest);
+  const requestsPerCell = compareConfig.evaluation.requests;
+  const parallelRequests = resolveEvaluationConcurrency(compareConfig.evaluation);
+  const supportedVariantIds = new Set(
+    supportedScenarios.map((scenario) => scenario.output.labels.variant ?? scenario.id),
+  );
+  const supportedVariants = compareConfig.comparison.variants.filter((variant) =>
+    supportedVariantIds.has(variant.id),
+  );
+  const skillModes = compareConfig.comparison.skillModes;
+  const compareCells = taskPrompts.length * supportedVariants.length * skillModes.length;
+  const totalRequests = compareCells * requestsPerCell;
+
+  console.log("Compare plan");
+  console.log(`- Benchmark: ${manifest.benchmark.id}`);
+  console.log(`- Output root: ${outputRootDirectory}`);
+  console.log(`- Prompts: ${taskPrompts.length}`);
+  for (const taskPrompt of taskPrompts) {
+    const promptLabel = taskPrompt.description ?? taskPrompt.id ?? "prompt";
+    console.log(`  - ${taskPrompt.id ?? "default"}: ${promptLabel}`);
+  }
+
+  console.log(`- Skill modes: ${skillModes.length}`);
+  for (const skillMode of skillModes) {
+    console.log(`  - ${skillMode.id}: ${skillMode.description}`);
+  }
+
+  console.log(`- Variants: ${supportedVariants.length}`);
+  for (const variant of supportedVariants) {
+    console.log(
+      `  - ${variant.id}: ${variant.agent.adapter} ${variant.agent.model ?? "default-model"}`,
+    );
+  }
+
+  console.log(`- Requests per cell: ${requestsPerCell}`);
+  console.log(`- Total compare cells: ${compareCells}`);
+  console.log(`- Total requests: ${totalRequests}`);
+  console.log(`- Parallel requests: ${parallelRequests}`);
+
+  if (skippedVariants.length > 0) {
+    console.log(`- Skipped variants: ${skippedVariants.length}`);
+  }
 }
 
 function printSkipped(skippedVariants) {

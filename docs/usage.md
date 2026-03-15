@@ -239,7 +239,7 @@ npx promptfoo@latest view
 The repository includes a reusable skill overlay for authoring `compare.yaml` files:
 
 ```text
-fixtures/skill-arena-compare-author/skill-overlay/
+fixtures/skill-arena-compare/skill-overlay/
 ```
 
 Use it when you want a workspace skill that helps produce:
