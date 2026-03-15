@@ -185,6 +185,16 @@ Use `--dry-run` to generate the Promptfoo config without live evaluation:
 npm run benchmark:compare -- ./benchmarks/repo-summary/compare.yaml --dry-run
 ```
 
+For compare configs, local paths follow a runtime contract:
+
+- absolute paths are valid
+- relative paths are resolved from the current command working directory
+- package-relative fallback is not supported
+- if a relative local path is missing, compare can bootstrap the runtime-relative directory from a unique packaged fixture match
+- bootstrap excludes `AGENTS.md`
+
+If you plan to run `compare.yaml` outside the repository root, use either absolute paths or relative paths that the installed package can bootstrap into the current working directory.
+
 The repository also includes a versioned minimal `copilot-cli` compare benchmark:
 
 ```bash

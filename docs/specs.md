@@ -256,7 +256,7 @@ When present, the harness must normalize these fields into the declarative `work
 
 Compare configs should be authored in YAML for readability. JSON is also supported for compatibility.
 
-Paths inside the config may be repository-root relative, absolute local paths, or external Git references according to the field schema.
+Paths inside the config may be absolute local paths, runtime-working-directory-relative local paths, or external Git references according to the field schema.
 
 ### Supported structure
 
@@ -349,6 +349,24 @@ skill:
   - otherwise a system-installed skill
 
 This keeps compare definitions declarative while preserving compatibility with older benchmark files.
+
+### Compare local path resolution
+
+For compare configs, local filesystem paths are resolved using this contract:
+
+- absolute local paths are used as-is
+- relative local paths are resolved from the current runtime working directory where `skill-arena compare` is executed
+- relative local paths are not resolved against the installed package location
+- when a relative local path is missing in compare mode, the runner may bootstrap that relative directory from a unique packaged fixture match before workspace materialization
+
+This applies to legacy fields such as `workspace.fixture` and `workspace.skillOverlay` and to declarative `local-path` entries such as `workspace.sources[*].path` and `comparison.skillModes[*].skill.source.path`.
+
+Bootstrap behavior in compare mode:
+
+- bootstrap only applies to relative local paths
+- bootstrap copies fixture content into the runtime-relative destination path
+- bootstrap prepares only the sources needed by the specific scenario unit
+- bootstrap excludes `AGENTS.md` so compare evaluation measures the agent configuration plus prompt rather than injected root instructions
 
 ## Supported assertion types in V1
 

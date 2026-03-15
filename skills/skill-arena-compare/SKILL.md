@@ -30,6 +30,8 @@ Produce a concise compare config that gives:
 8. Keep assertions strict enough to measure the benchmark goal, but avoid unnecessary harness instructions in the prompt.
 9. Write the final config into the user's current working workspace at the path they requested, such as `./compare.yaml` or `./deliverables/compare.yaml`. Do not write outputs into the skill directory, the repository skill source, or any hidden helper location unless the user explicitly asks for that.
 10. Reuse the template in `assets/compare-template.yaml` as the starting point.
+11. When the output must run outside the current repository root, prefer runtime-relative local paths such as `fixtures/...` when the installed compare runner is expected to bootstrap them into the current working directory, or use absolute paths when the user wants a fixed filesystem location.
+12. Do not rely on package-relative path resolution. Compare local paths are only valid when they are absolute or relative to the command working directory at runtime.
 
 ## maxConcurrency guidance
 

@@ -69,6 +69,12 @@ evaluation:
     - type: file-contains
       path: "deliverables/compare.yaml"
       value: "skillSource: workspace-overlay"
+    - type: file-contains
+      path: "deliverables/compare.yaml"
+      value: "fixture: fixtures/repo-summary/base"
+    - type: file-contains
+      path: "deliverables/compare.yaml"
+      value: "path: fixtures/repo-summary/skill-overlay"
     - type: javascript
       value: |
         !output.includes("compare-config-author")

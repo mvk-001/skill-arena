@@ -3,10 +3,14 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 import { expandCompareConfigToManifest, loadCompareConfig } from "../src/compare.js";
 import { compareConfigSchema } from "../src/compare-schema.js";
 import { fromProjectRoot } from "../src/project-paths.js";
+
+const execFileAsync = promisify(execFile);
 
 test("compare config expands into adapter x skill-mode scenarios", async () => {
   const compareConfigPath = fromProjectRoot(
@@ -581,4 +585,342 @@ test("compare expansion uses adapter and variant display labels for report label
   assert.equal(manifest.scenarios[0].output.labels.variantDisplayName, "Mini Variant");
   assert.equal(manifest.scenarios[0].output.labels.skillLabel, "off");
   assert.equal(manifest.scenarios[1].output.labels.reportDisplayName, "pi:no-skill");
+});
+
+test("compare dry-run resolves legacy local paths from the runtime working directory", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-cwd-"));
+  const fixtureDirectory = path.join(tempDirectory, "fixture");
+  const skillDirectory = path.join(tempDirectory, "skill-overlay");
+
+  await fs.mkdir(path.join(fixtureDirectory, "notes"), { recursive: true });
+  await fs.writeFile(path.join(fixtureDirectory, "notes", "target.txt"), "ALPHA-42", "utf8");
+  await fs.mkdir(path.join(skillDirectory, "skills", "helper"), { recursive: true });
+  await fs.writeFile(path.join(skillDirectory, "AGENTS.md"), "# Skill Overlay\n", "utf8");
+  await fs.writeFile(
+    path.join(skillDirectory, "skills", "helper", "SKILL.md"),
+    "---\nname: helper\n---\n",
+    "utf8",
+  );
+
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: cwd-relative-compare",
+    "  description: Compare relative paths from cwd.",
+    "  tags: []",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: ./fixture",
+    "  skillOverlay:",
+    "    path: ./skill-overlay",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: equals",
+    "      value: HELLO",
+    "  requests: 1",
+    "  timeoutMs: 120000",
+    "  tracing: false",
+    "  noCache: true",
+    "comparison:",
+    "  skillModes:",
+    "    - id: no-skill",
+    "      description: No skill",
+    "      skillMode: disabled",
+    "    - id: skill",
+    "      description: Skill",
+    "      skillMode: enabled",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex mini",
+    "      agent:",
+    "        adapter: codex",
+    "        executionMethod: command",
+    "        commandPath: codex",
+  ].join("\n"), "utf8");
+
+  await execFileAsync(process.execPath, [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"], {
+    cwd: tempDirectory,
+    windowsHide: true,
+  });
+
+  const resultsRoot = path.join(tempDirectory, "results", "cwd-relative-compare");
+  const runDirectories = await fs.readdir(resultsRoot);
+  const noSkillRunDirectory = runDirectories.find((entry) => entry.endsWith("-codex-mini-no-skill"));
+  const skillRunDirectory = runDirectories.find((entry) => entry.endsWith("-codex-mini-skill"));
+
+  assert.ok(noSkillRunDirectory);
+  assert.ok(skillRunDirectory);
+
+  const noSkillTarget = await fs.readFile(
+    path.join(resultsRoot, noSkillRunDirectory, "workspace", "notes", "target.txt"),
+    "utf8",
+  );
+  const skillAgents = await fs.readFile(
+    path.join(resultsRoot, skillRunDirectory, "workspace", "AGENTS.md"),
+    "utf8",
+  );
+
+  assert.equal(noSkillTarget, "ALPHA-42");
+  assert.match(skillAgents, /Skill Overlay/);
+});
+
+test("compare dry-run accepts absolute local paths", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-absolute-"));
+  const assetsDirectory = path.join(tempDirectory, "assets");
+  const fixtureDirectory = path.join(assetsDirectory, "fixture");
+  const skillDirectory = path.join(assetsDirectory, "skill-overlay");
+
+  await fs.mkdir(path.join(fixtureDirectory, "notes"), { recursive: true });
+  await fs.writeFile(path.join(fixtureDirectory, "notes", "target.txt"), "ALPHA-42", "utf8");
+  await fs.mkdir(path.join(skillDirectory, "skills", "helper"), { recursive: true });
+  await fs.writeFile(path.join(skillDirectory, "AGENTS.md"), "# Skill Overlay\n", "utf8");
+  await fs.writeFile(
+    path.join(skillDirectory, "skills", "helper", "SKILL.md"),
+    "---\nname: helper\n---\n",
+    "utf8",
+  );
+
+  const compareConfigPath = path.join(tempDirectory, "absolute-compare.yaml");
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: absolute-path-compare",
+    "  description: Compare absolute paths.",
+    "  tags: []",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  sources:",
+    "    - id: base",
+    "      type: local-path",
+    `      path: ${JSON.stringify(fixtureDirectory)}`,
+    "      target: /",
+    "  setup:",
+    "    initializeGit: true",
+    "    env: {}",
+    "evaluation:",
+    "  assertions:",
+    "    - type: equals",
+    "      value: HELLO",
+    "  requests: 1",
+    "  timeoutMs: 120000",
+    "  tracing: false",
+    "  noCache: true",
+    "comparison:",
+    "  skillModes:",
+    "    - id: no-skill",
+    "      description: No skill",
+    "      skillMode: disabled",
+    "    - id: skill",
+    "      description: Skill",
+    "      skillMode: enabled",
+    "      skill:",
+    "        source:",
+    "          type: local-path",
+    `          path: ${JSON.stringify(skillDirectory)}`,
+    "        install:",
+    "          strategy: workspace-overlay",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex mini",
+    "      agent:",
+    "        adapter: codex",
+    "        executionMethod: command",
+    "        commandPath: codex",
+  ].join("\n"), "utf8");
+
+  await execFileAsync(process.execPath, [fromProjectRoot("src", "cli", "run-compare.js"), "absolute-compare.yaml", "--dry-run"], {
+    cwd: tempDirectory,
+    windowsHide: true,
+  });
+
+  const resultsRoot = path.join(tempDirectory, "results", "absolute-path-compare");
+  const runDirectories = await fs.readdir(resultsRoot);
+  assert.equal(runDirectories.some((entry) => entry.endsWith("-codex-mini-no-skill")), true);
+  assert.equal(runDirectories.some((entry) => entry.endsWith("-codex-mini-skill")), true);
+});
+
+test("compare dry-run rejects unknown relative source paths when no packaged fixture matches exist", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-missing-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: missing-path-compare",
+    "  description: Compare invalid relative paths.",
+    "  tags: []",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: fixtures/does-not-exist/base",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: equals",
+    "      value: HELLO",
+    "  requests: 1",
+    "comparison:",
+    "  skillModes:",
+    "    - id: no-skill",
+    "      description: No skill",
+    "      skillMode: disabled",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex mini",
+    "      agent:",
+    "        adapter: codex",
+  ].join("\n"), "utf8");
+
+  await assert.rejects(
+    () => execFileAsync(process.execPath, [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"], {
+      cwd: tempDirectory,
+      windowsHide: true,
+    }),
+    /does not exist or is not a directory/,
+  );
+});
+
+test("compare dry-run bootstraps missing relative source paths from packaged fixtures and excludes AGENTS.md", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-bootstrap-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: bootstrap-relative-compare",
+    "  description: Bootstrap relative compare sources.",
+    "  tags: []",
+    "task:",
+    "  prompt: Return ALPHA-42.",
+    "workspace:",
+    "  fixture: fixtures/smoke-skill-following/base",
+    "  skillOverlay: fixtures/smoke-skill-following/skill-overlay",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: equals",
+    "      value: ALPHA-42",
+    "  requests: 1",
+    "  timeoutMs: 120000",
+    "  tracing: false",
+    "  noCache: true",
+    "comparison:",
+    "  skillModes:",
+    "    - id: no-skill",
+    "      description: No skill",
+    "      skillMode: disabled",
+    "    - id: skill",
+    "      description: Skill",
+    "      skillMode: enabled",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex mini",
+    "      agent:",
+    "        adapter: codex",
+    "        executionMethod: command",
+    "        commandPath: codex",
+  ].join("\n"), "utf8");
+
+  await execFileAsync(process.execPath, [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"], {
+    cwd: tempDirectory,
+    windowsHide: true,
+  });
+
+  const bootstrappedBase = path.join(tempDirectory, "fixtures", "smoke-skill-following", "base");
+  const bootstrappedSkill = path.join(tempDirectory, "fixtures", "smoke-skill-following", "skill-overlay");
+  const resultsRoot = path.join(tempDirectory, "results", "bootstrap-relative-compare");
+  const runDirectories = await fs.readdir(resultsRoot);
+  const noSkillRunDirectory = runDirectories.find((entry) => entry.endsWith("-codex-mini-no-skill"));
+  const skillRunDirectory = runDirectories.find((entry) => entry.endsWith("-codex-mini-skill"));
+
+  assert.equal(
+    await fs.readFile(path.join(bootstrappedBase, "notes", "target.txt"), "utf8"),
+    "MARKER=ALPHA-42\n",
+  );
+  assert.equal(
+    await fs.readFile(path.join(bootstrappedSkill, "skills", "marker-guide", "SKILL.md"), "utf8"),
+    await fs.readFile(
+      fromProjectRoot("fixtures", "smoke-skill-following", "skill-overlay", "skills", "marker-guide", "SKILL.md"),
+      "utf8",
+    ),
+  );
+  assert.equal(await fs.stat(path.join(bootstrappedSkill, "AGENTS.md")).catch(() => null), null);
+  assert.ok(noSkillRunDirectory);
+  assert.ok(skillRunDirectory);
+  assert.equal(
+    await fs.stat(path.join(resultsRoot, noSkillRunDirectory, "workspace", "skills", "marker-guide", "SKILL.md")).catch(() => null),
+    null,
+  );
+  assert.equal(
+    await fs.stat(path.join(resultsRoot, noSkillRunDirectory, "workspace", "AGENTS.md")).catch(() => null),
+    null,
+  );
+  assert.match(
+    await fs.readFile(path.join(resultsRoot, skillRunDirectory, "workspace", "skills", "marker-guide", "SKILL.md"), "utf8"),
+    /name: marker-guide/,
+  );
+  assert.equal(
+    await fs.stat(path.join(resultsRoot, skillRunDirectory, "workspace", "AGENTS.md")).catch(() => null),
+    null,
+  );
+});
+
+test("compare dry-run bootstraps nested fixture matches for repo-summary relative paths", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-repo-summary-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: repo-summary-relative-compare",
+    "  description: Bootstrap nested repo summary fixtures.",
+    "  tags: []",
+    "task:",
+    "  prompt: Summarize the repository.",
+    "workspace:",
+    "  fixture: fixtures/repo-summary/base",
+    "  skillOverlay: fixtures/repo-summary/skill-overlay",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: contains",
+    "      value: repository",
+    "  requests: 1",
+    "  timeoutMs: 120000",
+    "  tracing: false",
+    "  noCache: true",
+    "comparison:",
+    "  skillModes:",
+    "    - id: no-skill",
+    "      description: No skill",
+    "      skillMode: disabled",
+    "    - id: skill",
+    "      description: Skill",
+    "      skillMode: enabled",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex mini",
+    "      agent:",
+    "        adapter: codex",
+    "        executionMethod: command",
+    "        commandPath: codex",
+  ].join("\n"), "utf8");
+
+  await execFileAsync(process.execPath, [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"], {
+    cwd: tempDirectory,
+    windowsHide: true,
+  });
+
+  assert.match(
+    await fs.readFile(path.join(tempDirectory, "fixtures", "repo-summary", "base", "README.md"), "utf8"),
+    /repo summary fixture/i,
+  );
+  assert.equal(
+    await fs.stat(path.join(tempDirectory, "fixtures", "repo-summary", "skill-overlay", "AGENTS.md")).catch(() => null),
+    null,
+  );
 });

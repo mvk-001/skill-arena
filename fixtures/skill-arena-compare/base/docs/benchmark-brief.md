@@ -33,3 +33,5 @@ The file must define a Skill Arena compare config with these requirements:
   - `output.labels.variantDisplayName: codex mini`
 
 Keep the config concise and valid YAML.
+
+The final `compare.yaml` must be executable from another working directory such as `C:\Users\villa\tmp`. Use runtime-relative paths and rely on compare bootstrap, not package-relative execution.

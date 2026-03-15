@@ -86,6 +86,14 @@ To validate the scenario expansion without executing live evals:
 npm run benchmark:compare -- ./benchmarks/<benchmark-id>/compare.yaml --dry-run
 ```
 
+Compare local path contract:
+
+- absolute paths always work
+- relative paths are resolved from the current command working directory
+- compare configs must not depend on package-relative path resolution
+- when a relative local path is missing, compare may bootstrap that source tree from packaged fixtures and then materialize a per-scenario workspace
+- compare bootstrap excludes `AGENTS.md`
+
 Behavior to expect in compare mode:
 
 - skill modes appear as side-by-side columns in the same Promptfoo eval

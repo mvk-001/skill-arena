@@ -18,6 +18,7 @@ import {
   toPromptfooAssertion,
 } from "../promptfoo-config.js";
 import { getDefaultParallelism, mapWithConcurrency, resolveEvaluationConcurrency } from "../concurrency.js";
+import { ensureCompareScenarioLocalPaths } from "../compare-bootstrap.js";
 import { fromPackageRoot } from "../project-paths.js";
 import { materializeWorkspace } from "../workspace.js";
 
@@ -32,7 +33,7 @@ async function main() {
     );
   }
 
-  const { compareConfig, workspaceRootDirectory } = await loadCompareConfig(compareConfigPath, {
+  const { compareConfig } = await loadCompareConfig(compareConfigPath, {
     cwd: outputRootDirectory,
   });
   const manifest = expandCompareConfigToManifest(compareConfig);
@@ -78,15 +79,23 @@ async function main() {
   const materializedRuns = await mapWithConcurrency(
     supportedScenarios,
     getDefaultParallelism(),
-    async (scenario) => ({
-      scenario,
-      workspace: await materializeWorkspace({
+    async (scenario) => {
+      await ensureCompareScenarioLocalPaths({
         manifest,
         scenario,
         outputRootDirectory,
-        sourceBaseDirectory: workspaceRootDirectory,
-      }),
-    }),
+      });
+
+      return {
+        scenario,
+        workspace: await materializeWorkspace({
+          manifest,
+          scenario,
+          outputRootDirectory,
+          sourceBaseDirectory: outputRootDirectory,
+        }),
+      };
+    },
   );
   supportedRuns.push(...materializedRuns);
 
