@@ -4,6 +4,7 @@ import {
   renderMergedBenchmarkReport,
   writeMergedBenchmarkArtifacts,
 } from "../results.js";
+import { getDefaultParallelism, mapWithConcurrency } from "../concurrency.js";
 import { runScenario } from "../runner.js";
 import { fromProjectRoot } from "../project-paths.js";
 
@@ -24,17 +25,16 @@ async function main() {
     ? [findScenario(manifest, scenarioId)]
     : manifest.scenarios;
 
-  const results = [];
-
-  for (const scenario of scenarios) {
-    results.push(
+  const results = await mapWithConcurrency(
+    scenarios,
+    getDefaultParallelism(),
+    async (scenario) =>
       await runScenario({
         manifest,
         scenario,
         dryRun,
       }),
-    );
-  }
+  );
 
   const completedSummaries = results
     .filter((result) => !result.skipped && result.summary)

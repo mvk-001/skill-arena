@@ -8,6 +8,7 @@ import { resolveManifestPath } from "./manifest.js";
 import { fromProjectRoot } from "./project-paths.js";
 
 const execFileAsync = promisify(execFile);
+const gitOverlayCache = new Map();
 
 export async function materializeWorkspace({ manifest, scenario }) {
   const runId = createRunId(scenario.id);
@@ -61,6 +62,16 @@ async function resolveSkillOverlayDirectory(skillOverlay) {
 }
 
 async function cloneGitSkillOverlay(gitOverlay) {
+  const cacheKey = JSON.stringify(gitOverlay);
+
+  if (!gitOverlayCache.has(cacheKey)) {
+    gitOverlayCache.set(cacheKey, cloneGitSkillOverlayOnce(gitOverlay));
+  }
+
+  return await gitOverlayCache.get(cacheKey);
+}
+
+async function cloneGitSkillOverlayOnce(gitOverlay) {
   const cloneDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-skill-overlay-"));
   const gitArgs = ["clone", "--depth", "1"];
 

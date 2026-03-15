@@ -6,7 +6,7 @@ Use `manifest.yaml` when you want scenario-oriented runs. Use `compare.yaml` whe
 - rows by `prompt x agent/configuration`
 - per-cell pass ratios such as `40% (4/10)`
 
-In both formats, `evaluation.requests` is the execution count.
+In both formats, `evaluation.requests` is the execution count. `evaluation.maxConcurrency` is optional; when omitted, the harness uses the local machine parallelism.
 
 ## Benchmark manifest
 
@@ -58,7 +58,6 @@ scenarios:
       requests: 3
       timeoutMs: 180000
       tracing: false
-      maxConcurrency: 1
       noCache: true
   - id: codex-mini-with-skill
     description: Skill enabled
@@ -85,7 +84,6 @@ scenarios:
       requests: 3
       timeoutMs: 180000
       tracing: false
-      maxConcurrency: 1
       noCache: true
 ```
 
@@ -97,6 +95,7 @@ npm run run:benchmark -- ./benchmarks/repo-summary/manifest.yaml
 ```
 
 If `requests` is greater than `1`, Promptfoo repeats each prompt that many times for the scenario.
+If `maxConcurrency` is omitted, Promptfoo jobs default to the local machine parallelism. Set it explicitly only when you need a stricter cap.
 
 ## Compare config
 
@@ -127,7 +126,6 @@ evaluation:
   requests: 10
   timeoutMs: 180000
   tracing: false
-  maxConcurrency: 1
   noCache: true
 comparison:
   skillModes:

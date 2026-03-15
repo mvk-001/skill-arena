@@ -1,0 +1,89 @@
+schemaVersion: 1
+benchmark:
+  id: compare-config-author
+  description: Evaluate the compare-config-author workspace skill on authoring a Skill Arena compare.yaml file.
+  tags:
+    - compare
+    - skill
+    - authoring
+task:
+  prompt: >-
+    Read the workspace brief and author `deliverables/compare.yaml`. Write the
+    file if you want, but return only the full completed `compare.yaml` content
+    as your final answer.
+workspace:
+  fixture: fixtures/compare-config-author/base
+  skillOverlay: fixtures/compare-config-author/skill-overlay
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: contains
+      value: "schemaVersion: 1"
+    - type: contains
+      value: "id: repo-summary-generated"
+    - type: contains
+      value: "fixture: fixtures/repo-summary/base"
+    - type: contains
+      value: "path: fixtures/repo-summary/skill-overlay"
+    - type: contains
+      value: "requests: 10"
+    - type: contains
+      value: "id: no-skill"
+    - type: contains
+      value: "id: skill"
+    - type: contains
+      value: "skillSource: workspace-overlay"
+    - type: contains
+      value: "id: architecture"
+    - type: contains
+      value: "id: testing"
+    - type: contains
+      value: "variantDisplayName: codex mini"
+  requests: 10
+  timeoutMs: 300000
+  tracing: false
+  maxConcurrency: 1
+  noCache: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: Baseline without the compare-config-author skill overlay.
+      skillMode: disabled
+      output:
+        tags:
+          - baseline
+        labels:
+          skillDisplayName: no-skill
+          skillModeId: no-skill
+    - id: skill
+      description: Workspace overlay with the compare-config-author skill enabled.
+      skillMode: enabled
+      skillSource: workspace-overlay
+      output:
+        tags:
+          - skill
+        labels:
+          skillDisplayName: skill
+          skillModeId: skill
+  variants:
+    - id: codex-mini
+      description: Codex mini using workspace-write so it can author the target file.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: workspace-write
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - codex
+          - mini
+        labels:
+          variantDisplayName: codex mini

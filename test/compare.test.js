@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { expandCompareConfigToManifest, loadCompareConfig } from "../src/compare.js";
+import { compareConfigSchema } from "../src/compare-schema.js";
 import { fromProjectRoot } from "../src/project-paths.js";
 
 test("compare config expands into adapter x skill-mode scenarios", async () => {
@@ -78,6 +79,58 @@ test("compare config defaults enabled skill source to workspace overlay when con
 
   assert.equal(manifest.scenarios.length, 1);
   assert.equal(manifest.scenarios[0].skillSource, "workspace-overlay");
+});
+
+test("compare config evaluation leaves maxConcurrency unset so runtime can auto-resolve it", () => {
+  const compareConfig = compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "compare-auto-concurrency",
+      description: "Compare auto concurrency scenarios.",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    evaluation: {
+      assertions: [
+        {
+          type: "equals",
+          value: "HELLO",
+        },
+      ],
+      requests: 2,
+      timeoutMs: 120000,
+      tracing: false,
+      noCache: true,
+    },
+    comparison: {
+      skillModes: [
+        {
+          id: "no-skill",
+          description: "No skill",
+          skillMode: "disabled",
+        },
+      ],
+      variants: [
+        {
+          id: "codex-mini",
+          description: "Codex mini",
+          agent: {
+            adapter: "codex",
+            executionMethod: "command",
+            commandPath: "codex",
+          },
+        },
+      ],
+    },
+  });
+
+  assert.equal(compareConfig.evaluation.maxConcurrency, undefined);
 });
 
 test("smoke compare config expands into codex and pi skill-mode scenarios", async () => {

@@ -50,7 +50,7 @@ scenarios:
       requests: 1
       timeoutMs: 120000
       tracing: false
-      maxConcurrency: 1
+      maxConcurrency: 4
       noCache: true
 ```
 
@@ -102,7 +102,7 @@ evaluation:
   requests: 10
   timeoutMs: 180000
   tracing: false
-  maxConcurrency: 1
+  maxConcurrency: 4
   noCache: true
 comparison:
   skillModes:
@@ -126,6 +126,7 @@ comparison:
 - `schemaVersion` must be `1`.
 - `comparison.skillModes[*].id` and `comparison.variants[*].id` must be slug-like identifiers.
 - `evaluation.requests` is the execution count per compare cell.
+- `evaluation.maxConcurrency` is optional. When omitted, the harness uses the local machine parallelism.
 - The compare runner expands the Cartesian product of `comparison.skillModes` and `comparison.variants`.
 - Each expanded unit must resolve a `skillSource`:
   - `disabled` resolves to `none`
@@ -242,6 +243,7 @@ Unless a manifest explicitly overrides them, scenarios should use:
 - `webSearchEnabled: false`
 - `networkAccessEnabled: false`
 - `reasoningEffort: "low"`
+- local machine parallelism for `evaluation.maxConcurrency`
 - `noCache: true`
 
 The harness must not add task instructions beyond the benchmark prompt and the files available in the workspace.

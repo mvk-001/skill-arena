@@ -119,25 +119,11 @@ function buildSpawnCommand(command, args) {
   }
 
   return {
-    executable: "powershell.exe",
-    executableArgs: [
-      "-NoProfile",
-      "-NonInteractive",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-Command",
-      buildPowershellCommand(command, args),
-    ],
+    executable: "cmd.exe",
+    executableArgs: ["/d", "/s", "/c", resolveWindowsCommand(command), ...args],
   };
 }
 
-function buildPowershellCommand(command, args) {
-  const escapedCommand = escapePowershellArgument(command);
-  const escapedArgs = args.map((arg) => escapePowershellArgument(arg)).join(" ");
-
-  return `& ${escapedCommand}${escapedArgs ? ` ${escapedArgs}` : ""}`;
-}
-
-function escapePowershellArgument(value) {
-  return `'${String(value).replace(/'/g, "''")}'`;
+function resolveWindowsCommand(command) {
+  return path.extname(command) ? command : `${command}.cmd`;
 }

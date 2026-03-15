@@ -3,6 +3,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 import { buildPromptfooConfig, stringifyPromptfooConfig } from "./promptfoo-config.js";
+import { resolveEvaluationConcurrency } from "./concurrency.js";
 import { normalizePromptfooResults, writePromptfooArtifacts } from "./results.js";
 import { materializeWorkspace } from "./workspace.js";
 
@@ -58,6 +59,7 @@ export async function runScenario({ manifest, scenario, dryRun = false }) {
 }
 
 async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, scenario }) {
+  const maxConcurrency = resolveEvaluationConcurrency(scenario.evaluation);
   const promptfooArgs = [
     "promptfoo",
     "eval",
@@ -68,7 +70,7 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
     "--repeat",
     String(scenario.evaluation.requests),
     "-j",
-    String(scenario.evaluation.maxConcurrency),
+    String(maxConcurrency),
     "--no-progress-bar",
   ];
 

@@ -17,6 +17,7 @@ import {
   stringifyPromptfooConfig,
   toPromptfooAssertion,
 } from "../promptfoo-config.js";
+import { getDefaultParallelism, mapWithConcurrency, resolveEvaluationConcurrency } from "../concurrency.js";
 import { fromProjectRoot } from "../project-paths.js";
 import { materializeWorkspace } from "../workspace.js";
 
@@ -35,6 +36,8 @@ async function main() {
   const supportedRuns = [];
   const skippedVariants = [];
   const skippedVariantIds = new Set();
+
+  const supportedScenarios = [];
 
   for (const scenario of manifest.scenarios) {
     const adapter = getAdapter(scenario.agent.adapter);
@@ -57,12 +60,18 @@ async function main() {
       continue;
     }
 
-    const workspace = await materializeWorkspace({ manifest, scenario });
-    supportedRuns.push({
-      scenario,
-      workspace,
-    });
+    supportedScenarios.push(scenario);
   }
+
+  const materializedRuns = await mapWithConcurrency(
+    supportedScenarios,
+    getDefaultParallelism(),
+    async (scenario) => ({
+      scenario,
+      workspace: await materializeWorkspace({ manifest, scenario }),
+    }),
+  );
+  supportedRuns.push(...materializedRuns);
 
   const batchRunId = new Date().toISOString().replace(/[:.]/g, "-");
   const benchmarkRunDirectory = fromProjectRoot(
@@ -98,7 +107,7 @@ async function main() {
     promptfooConfigPath,
     promptfooResultsPath,
     timeoutMs: compareConfig.evaluation.timeoutMs,
-    maxConcurrency: compareConfig.evaluation.maxConcurrency,
+    maxConcurrency: resolveEvaluationConcurrency(compareConfig.evaluation),
     noCache: compareConfig.evaluation.noCache,
     requests: compareConfig.evaluation.requests,
   });

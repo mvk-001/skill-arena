@@ -105,6 +105,8 @@ If your manifest uses a Git skill overlay, the harness downloads it before the a
 
 If your manifest uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `requests` to each one.
 
+If `maxConcurrency` is omitted in a manifest or compare config, the harness uses the local machine parallelism by default.
+
 ## Where to inspect results
 
 Each run writes artifacts under:

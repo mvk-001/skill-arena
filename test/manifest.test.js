@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
+import { getDefaultParallelism } from "../src/concurrency.js";
 import { benchmarkManifestSchema } from "../src/manifest-schema.js";
 import { loadBenchmarkManifest } from "../src/manifest.js";
 import { fromProjectRoot } from "../src/project-paths.js";
@@ -161,6 +162,47 @@ test("manifest validation accepts llm-rubric assertions", () => {
   const parsed = benchmarkManifestSchema.safeParse(manifest);
 
   assert.equal(parsed.success, true);
+});
+
+test("manifest evaluation leaves maxConcurrency unset so runtime can use local parallelism", () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "auto-concurrency-check",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    scenarios: [
+      {
+        id: "auto-concurrency",
+        description: "Uses runtime concurrency defaults",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+          executionMethod: "command",
+          commandPath: "codex",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "HELLO",
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  assert.equal(manifest.scenarios[0].evaluation.maxConcurrency, undefined);
+  assert.ok(getDefaultParallelism() >= 1);
 });
 
 test("manifest validation accepts git skill overlays", () => {

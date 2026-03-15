@@ -18,7 +18,7 @@ const evaluationSchema = z.object({
   repeat: z.number().int().positive().optional(),
   timeoutMs: z.number().int().positive().default(120000),
   tracing: z.boolean().default(false),
-  maxConcurrency: z.number().int().positive().default(1),
+  maxConcurrency: z.number().int().positive().optional(),
   noCache: z.boolean().default(true),
 }).transform((evaluation) => ({
   assertions: evaluation.assertions,
