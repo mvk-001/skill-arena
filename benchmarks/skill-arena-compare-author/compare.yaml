@@ -1,7 +1,7 @@
 schemaVersion: 1
 benchmark:
-  id: compare-config-author
-  description: Evaluate the compare-config-author workspace skill on authoring a Skill Arena compare.yaml file.
+  id: skill-arena-compare-author
+  description: Evaluate the skill-arena-compare-author workspace skill on authoring a Skill Arena compare.yaml file.
   tags:
     - compare
     - skill
@@ -12,8 +12,8 @@ task:
     file if you want, but return only the full completed `compare.yaml` content
     as your final answer.
 workspace:
-  fixture: fixtures/compare-config-author/base
-  skillOverlay: fixtures/compare-config-author/skill-overlay
+  fixture: fixtures/skill-arena-compare-author/base
+  skillOverlay: fixtures/skill-arena-compare-author/skill-overlay
   initializeGit: true
 evaluation:
   assertions:
@@ -42,12 +42,12 @@ evaluation:
   requests: 10
   timeoutMs: 300000
   tracing: false
-  maxConcurrency: 1
+  maxConcurrency: 10
   noCache: true
 comparison:
   skillModes:
     - id: no-skill
-      description: Baseline without the compare-config-author skill overlay.
+      description: Baseline without the skill-arena-compare-author skill overlay.
       skillMode: disabled
       output:
         tags:
@@ -56,7 +56,7 @@ comparison:
           skillDisplayName: no-skill
           skillModeId: no-skill
     - id: skill
-      description: Workspace overlay with the compare-config-author skill enabled.
+      description: Workspace overlay with the skill-arena-compare-author skill enabled.
       skillMode: enabled
       skillSource: workspace-overlay
       output:

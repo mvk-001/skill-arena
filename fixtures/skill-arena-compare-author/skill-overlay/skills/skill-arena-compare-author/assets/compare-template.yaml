@@ -20,6 +20,7 @@ evaluation:
   requests: 10
   timeoutMs: 180000
   tracing: false
+  # Prefer floor(0.8 * available machine parallelism) when authoring on a specific machine.
   maxConcurrency: 1
   noCache: true
 comparison:
