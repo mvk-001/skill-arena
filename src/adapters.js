@@ -8,7 +8,7 @@ const adapterRegistry = {
   codex: {
     id: "codex",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory, gitReady }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, gitReady }) {
       const providerPath = fromProjectRoot("src", "providers", "codex-system-provider.js");
 
       return {
@@ -28,7 +28,10 @@ const adapterRegistry = {
           web_search_enabled: scenario.agent.webSearchEnabled,
           network_access_enabled: scenario.agent.networkAccessEnabled,
           model_reasoning_effort: scenario.agent.reasoningEffort,
-          cli_env: scenario.agent.cliEnv,
+          cli_env: {
+            ...workspaceEnvironment,
+            ...scenario.agent.cliEnv,
+          },
           enable_streaming: scenario.evaluation.tracing,
           deep_tracing: scenario.evaluation.tracing,
           skip_git_repo_check: !gitReady,
@@ -44,7 +47,7 @@ const adapterRegistry = {
   pi: {
     id: "pi",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment }) {
       const providerPath = fromProjectRoot("src", "providers", "pi-system-provider.js");
 
       return {
@@ -55,7 +58,10 @@ const adapterRegistry = {
           command_path: scenario.agent.commandPath,
           model: scenario.agent.model,
           working_dir: workspaceDirectory,
-          cli_env: scenario.agent.cliEnv,
+          cli_env: {
+            ...workspaceEnvironment,
+            ...scenario.agent.cliEnv,
+          },
         },
       };
     },

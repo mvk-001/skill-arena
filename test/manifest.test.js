@@ -19,9 +19,11 @@ test("sample manifest parses successfully", async () => {
 
   assert.equal(manifest.benchmark.id, "smoke-skill-following");
   assert.equal(manifest.scenarios.length, 2);
+  assert.equal(manifest.workspace.sources.length, 1);
+  assert.equal(manifest.workspace.sources[0].type, "local-path");
 });
 
-test("system skill benchmarks parse without workspace overlays", async () => {
+test("system skill benchmarks normalize without workspace overlays", async () => {
   const manifestPath = fromProjectRoot(
     "benchmarks",
     "gws-gmail-triage",
@@ -30,8 +32,8 @@ test("system skill benchmarks parse without workspace overlays", async () => {
   const { manifest } = await loadBenchmarkManifest(manifestPath);
 
   assert.equal(manifest.benchmark.id, "gws-gmail-triage");
-  assert.equal(manifest.workspace.skillOverlay, undefined);
   assert.equal(manifest.scenarios[0].skillSource, "system-installed");
+  assert.equal(manifest.scenarios[0].skill.source.type, "system-installed");
   assert.equal(manifest.scenarios[0].agent.executionMethod, "command");
 });
 
@@ -75,8 +77,8 @@ test("manifest validation rejects unsupported adapter ids", async () => {
   assert.throws(() => benchmarkManifestSchema.parse(invalidManifest));
 });
 
-test("enabled skill mode requires a skill overlay path", () => {
-  const invalidManifest = {
+test("enabled skill mode defaults to workspace overlay when legacy skillOverlay exists", () => {
+  const manifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,
     benchmark: {
       id: "overlay-check",
@@ -88,14 +90,14 @@ test("enabled skill mode requires a skill overlay path", () => {
     },
     workspace: {
       fixture: "fixtures/smoke-skill-following/base",
+      skillOverlay: "fixtures/smoke-skill-following/skill-overlay",
       initializeGit: true,
     },
     scenarios: [
       {
         id: "skill-enabled",
-        description: "Missing skill overlay",
+        description: "Legacy overlay default",
         skillMode: "enabled",
-        skillSource: "workspace-overlay",
         agent: {
           adapter: "codex",
           executionMethod: "command",
@@ -111,12 +113,10 @@ test("enabled skill mode requires a skill overlay path", () => {
         },
       },
     ],
-  };
+  });
 
-  const parsed = benchmarkManifestSchema.safeParse(invalidManifest);
-
-  assert.equal(parsed.success, false);
-  assert.match(parsed.error.issues[0].message, /skillOverlay/);
+  assert.equal(manifest.scenarios[0].skillSource, "workspace-overlay");
+  assert.equal(manifest.scenarios[0].skill.install.strategy, "workspace-overlay");
 });
 
 test("manifest validation accepts llm-rubric assertions", () => {
@@ -205,33 +205,56 @@ test("manifest evaluation leaves maxConcurrency unset so runtime can use local p
   assert.ok(getDefaultParallelism() >= 1);
 });
 
-test("manifest validation accepts git skill overlays", () => {
-  const manifest = {
+test("manifest validation accepts declarative workspace sources and explicit skill", () => {
+  const manifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,
     benchmark: {
-      id: "git-overlay-check",
-      description: "Validation fixture",
+      id: "declarative-check",
+      description: "Declarative workspace fixture",
       tags: [],
     },
     task: {
-      prompt: "Return HELLO.",
+      prompts: [
+        {
+          prompt: "Return HELLO.",
+        },
+      ],
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
-      skillOverlay: {
-        git: {
-          repo: "https://github.com/example/skills.git",
-          ref: "main",
-          subpath: "bundles/marker-guide",
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: "fixtures/smoke-skill-following/base",
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {
+          SAMPLE_FLAG: "1",
         },
       },
-      initializeGit: true,
     },
     scenarios: [
       {
-        id: "git-overlay-enabled",
-        description: "Uses a remote skill overlay",
+        id: "declarative-skill",
+        description: "Uses explicit skill config",
         skillMode: "enabled",
+        skill: {
+          source: {
+            type: "inline-files",
+            files: [
+              {
+                path: "AGENTS.md",
+                content: "# Inline skill\n",
+              },
+            ],
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
         agent: {
           adapter: "codex",
           executionMethod: "command",
@@ -247,11 +270,11 @@ test("manifest validation accepts git skill overlays", () => {
         },
       },
     ],
-  };
+  });
 
-  const parsed = benchmarkManifestSchema.safeParse(manifest);
-
-  assert.equal(parsed.success, true);
+  assert.equal(manifest.task.prompts[0].id, "prompt-1");
+  assert.equal(manifest.workspace.setup.env.SAMPLE_FLAG, "1");
+  assert.equal(manifest.scenarios[0].skill.source.type, "inline-files");
 });
 
 test("yaml manifests load successfully", async () => {
@@ -292,4 +315,5 @@ test("yaml manifests load successfully", async () => {
 
   assert.equal(manifest.benchmark.id, "yaml-check");
   assert.equal(manifest.scenarios[0].id, "yaml-scenario");
+  assert.equal(manifest.task.prompts[0].id, "default");
 });

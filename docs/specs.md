@@ -1,10 +1,27 @@
 # Specs
 
+## Goals
+
+The benchmark configuration must be declarative and skill-agnostic. A manifest or compare config should describe enough information for the harness to:
+
+- materialize a fresh workspace for each run
+- resolve the `skill` and `no-skill` environments without hidden repository coupling
+- execute multiple prompts across multiple agent configurations
+- compare outputs under consistent, reproducible conditions
+
+The repository may contain example fixtures, overlays, and benchmark definitions, but the execution model must not depend on benchmarks being pre-registered in this repository.
+
 ## Benchmark manifest
 
 ### File format
 
-Benchmark manifests should be authored in YAML for readability. JSON is also supported for compatibility. Paths inside the manifest are repository-root relative.
+Benchmark manifests should be authored in YAML for readability. JSON is also supported for compatibility.
+
+Paths inside the manifest may be:
+
+- repository-root relative
+- absolute local paths
+- Git-based external references where allowed by the field schema
 
 For an end-to-end authoring example, see [Usage Guide](./usage.md).
 
@@ -19,17 +36,24 @@ benchmark:
     - smoke
     - codex
 task:
-  prompt: Exact task prompt sent to the agent.
+  prompts:
+    - id: direct
+      prompt: Exact task prompt sent to the agent.
 workspace:
-  fixture: fixtures/example/base
-  skillOverlay:
-    path: fixtures/example/skill-overlay
-  initializeGit: true
+  sources:
+    - id: base
+      type: local-path
+      path: fixtures/example/base
+      target: /
+  setup:
+    initializeGit: true
 scenarios:
   - id: codex-mini-no-skill
     description: Scenario description
     skillMode: disabled
-    skillSource: none
+    skill:
+      source:
+        type: none
     agent:
       adapter: codex
       model: gpt-5.1-codex-mini
@@ -58,29 +82,180 @@ scenarios:
 
 - `schemaVersion` must be `1`.
 - `benchmark.id` and each `scenario.id` must be slug-like identifiers.
-- `workspace.fixture` must exist.
-- `workspace.skillOverlay` is required if any scenario uses `skillMode: "enabled"` with `skillSource: "workspace-overlay"`.
-- `workspace.skillOverlay` may be:
-  - a repository-relative local path string
-  - an object with `path`
-  - an object with `git.repo`, plus optional `git.ref` and `git.subpath`
+- `task` must define either:
+  - `prompt` as a single exact prompt string, or
+  - `prompts` as a non-empty list of prompt objects
+- `task.prompt` is shorthand for a single-entry `task.prompts` list.
+- `task.prompts[*].id` should be slug-like when present.
+- `workspace` must fully describe how to materialize the run workspace.
+- `workspace.sources` is the preferred representation and must be applied in declaration order.
+- Each `workspace.sources[*]` entry must declare a `type` and a `target`.
+- `workspace.setup` defines post-materialization setup such as Git initialization.
 - `agent.adapter` must be one of:
   - `codex`
   - `copilot-cli`
   - `pi`
-- `skillSource` must be one of:
-  - `none`
-  - `workspace-overlay`
-  - `system-installed`
 - `agent.executionMethod` controls how the custom Promptfoo script invokes Codex:
   - `command`: execute the local `codex exec` command
   - `sdk`: invoke `@openai/codex-sdk`, which wraps the local CLI
+- `skillMode` must be one of:
+  - `disabled`
+  - `enabled`
+- Each scenario must resolve a skill source explicitly or by normalization rules.
+- The harness must be able to build the scenario workspace and skill state from the manifest alone, plus any external references declared in the manifest.
+
+### Workspace model
+
+`workspace` describes how a run workspace is materialized. The harness must create a fresh workspace per scenario run under `results/`.
+
+Preferred structure:
+
+```yaml
+workspace:
+  sources:
+    - id: base
+      type: local-path
+      path: fixtures/example/base
+      target: /
+    - id: helper-files
+      type: git
+      repo: https://github.com/example/benchmark-assets.git
+      ref: main
+      subpath: repo-summary/base
+      target: /
+  setup:
+    initializeGit: true
+    env:
+      EXAMPLE_FLAG: "1"
+```
+
+Supported source types in V1:
+
+- `local-path`
+  - copy files from a local directory into the materialized workspace
+- `git`
+  - fetch files from a Git repository, optionally pinned with `ref` and narrowed with `subpath`
+- `inline-files`
+  - write one or more small files declared directly in the YAML
+- `empty`
+  - contribute no files and act as an explicit empty source
+
+Common source fields:
+
+- `id`: optional stable identifier
+- `type`: required source type
+- `target`: required destination path inside the run workspace
+
+Type-specific fields:
+
+- `local-path`
+  - `path`
+- `git`
+  - `repo`
+  - optional `ref`
+  - optional `subpath`
+- `inline-files`
+  - `files`
+    - each file entry must include `path`
+    - file content may be provided as `content`
+
+Required workspace behavior:
+
+- Source inputs are immutable.
+- The harness must never mutate local source directories, fetched Git sources, or inline source definitions.
+- Sources are applied in order, so later sources may intentionally add or override files written by earlier sources.
+- `target` is resolved relative to the materialized workspace root.
+- `workspace.setup.initializeGit: true` initializes a Git repository in the run workspace so agent providers can operate with their default safety checks.
+- `workspace.setup.env` defines environment variables for provider execution in that run workspace.
+
+### Skill model
+
+`skillMode` controls whether a skill is available to the agent for a scenario. The skill itself should be described declaratively instead of being inferred from repository structure.
+
+Preferred structure:
+
+```yaml
+skillMode: enabled
+skill:
+  source:
+    type: local-path
+    path: fixtures/example/skill-overlay
+  install:
+    strategy: workspace-overlay
+```
+
+Supported skill source types in V1:
+
+- `none`
+- `local-path`
+- `git`
+- `system-installed`
+- `inline-files`
+
+Supported install strategies in V1:
+
+- `none`
+- `workspace-overlay`
+- `system-installed`
+
+Required skill behavior:
+
+- `skillMode: disabled` must resolve to an effective skill source of `none`.
+- `skillMode: enabled` must resolve to a concrete skill source and install strategy.
+- For `workspace-overlay`, the harness copies or writes skill files into the materialized workspace.
+- For `system-installed`, the harness does not inject skill files into the workspace and relies on the local agent runtime environment.
+- Skill materialization for `enabled` runs must not leak into `disabled` runs.
+- Skill definitions may include root instructions and bundled skill folders, for example `AGENTS.md` plus `skills/<skill-id>/SKILL.md`.
+
+Normalization rules for backward-compatible manifests:
+
+- If `skillMode: disabled`, the effective skill config is:
+
+```yaml
+skill:
+  source:
+    type: none
+  install:
+    strategy: none
+```
+
+- If `skillMode: enabled` and `skill` is omitted:
+  - use `workspace.skillOverlay` when present and normalize it to:
+
+```yaml
+skill:
+  source:
+    type: local-path
+    path: <workspace.skillOverlay path>
+  install:
+    strategy: workspace-overlay
+```
+
+  - otherwise use:
+
+```yaml
+skill:
+  source:
+    type: system-installed
+  install:
+    strategy: system-installed
+```
+
+Legacy compatibility fields still supported in V1:
+
+- `workspace.fixture`
+- `workspace.skillOverlay`
+- `skillSource`
+
+When present, the harness must normalize these fields into the declarative `workspace.sources` and `skill` forms before execution.
 
 ## Compare config
 
 ### File format
 
-Compare configs should be authored in YAML for readability. JSON is also supported for compatibility. Paths inside the config are repository-root relative.
+Compare configs should be authored in YAML for readability. JSON is also supported for compatibility.
+
+Paths inside the config may be repository-root relative, absolute local paths, or external Git references according to the field schema.
 
 ### Supported structure
 
@@ -92,10 +267,17 @@ benchmark:
   tags:
     - compare
 task:
-  prompt: Exact task prompt sent to every provider.
+  prompts:
+    - id: primary
+      prompt: Exact task prompt sent to every provider.
 workspace:
-  fixture: fixtures/example/base
-  initializeGit: true
+  sources:
+    - id: base
+      type: local-path
+      path: fixtures/example/base
+      target: /
+  setup:
+    initializeGit: true
 evaluation:
   assertions:
     - type: is-json
@@ -112,7 +294,11 @@ comparison:
     - id: skill
       description: Skill-enabled run.
       skillMode: enabled
-      skillSource: system-installed
+      skill:
+        source:
+          type: system-installed
+        install:
+          strategy: system-installed
   variants:
     - id: codex-worst
       description: Codex comparison variant.
@@ -126,14 +312,13 @@ comparison:
 - `schemaVersion` must be `1`.
 - `comparison.skillModes[*].id` and `comparison.variants[*].id` must be slug-like identifiers.
 - `evaluation.requests` is the execution count per compare cell.
+- When `evaluation.requests` is omitted in a compare config, it defaults to `10`.
 - `evaluation.maxConcurrency` is optional. When omitted, the harness uses the local machine parallelism.
 - The compare runner expands the Cartesian product of `comparison.skillModes` and `comparison.variants`.
-- Each expanded unit must resolve a `skillSource`:
-  - `disabled` resolves to `none`
-  - `enabled` resolves to the explicit `skillSource` when provided
-  - `enabled` defaults to `workspace-overlay` when `workspace.skillOverlay` exists
-  - otherwise `enabled` defaults to `system-installed`
-- `workspace.skillOverlay` is required if any enabled compare skill mode resolves to `workspace-overlay`.
+- Each expanded unit must resolve:
+  - one materialized workspace
+  - one effective skill configuration
+  - one agent configuration
 - The compare runner must materialize a separate workspace per supported expanded unit.
 - The compare runner must execute one Promptfoo eval with:
   - Promptfoo providers keyed by skill mode
@@ -142,6 +327,27 @@ comparison:
 - Provider labels in compare mode should prefer concise skill mode ids such as `no-skill` and `skill`.
 - Compare reports should show rows as `prompt x variant` and columns as skill modes.
 - Compare cells should report pass ratios against the requested execution count, for example `40% (4/10)`.
+
+### Compare normalization rules
+
+For each `comparison.skillModes[*]` entry:
+
+- `skillMode: disabled` resolves to:
+
+```yaml
+skill:
+  source:
+    type: none
+  install:
+    strategy: none
+```
+
+- `skillMode: enabled` resolves to the explicit `skill` block when provided.
+- `skillMode: enabled` without an explicit `skill` block resolves to:
+  - a workspace-overlay skill derived from legacy `workspace.skillOverlay` when present
+  - otherwise a system-installed skill
+
+This keeps compare definitions declarative while preserving compatibility with older benchmark files.
 
 ## Supported assertion types in V1
 
@@ -166,10 +372,11 @@ V1 supports these manifest assertion types:
 
 Each adapter receives:
 
-- the manifest
-- the selected scenario
+- the manifest or compare-derived scenario unit
+- the selected scenario or comparison variant
 - the run workspace path
 - the resolved skill mode
+- the normalized skill configuration
 - execution constraints such as sandbox mode, approval policy, web access, and network access
 
 ### Output
@@ -194,14 +401,13 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 
 ## Workspace rules
 
-- Source fixtures are immutable inputs.
+- Source workspaces, fixtures, overlays, and skill assets are immutable inputs.
 - Every scenario run gets a fresh workspace copy under `results/`.
-- Workspace skill overlays are copied only for `skillMode: "enabled"` with `skillSource: "workspace-overlay"`.
-- Workspace skill overlays may come from a local directory or a Git repository reference.
-- System-installed skills are not copied into the workspace. Those benchmarks depend on the Codex system skill set already present on the machine.
-- Skill overlays may include root instructions and bundled skill folders, for example `AGENTS.md` plus `skills/<skill-id>/SKILL.md`.
-- Benchmark execution must never write into `fixtures/`.
-- `initializeGit: true` initializes a Git repository in the run workspace so agent providers can operate with their default safety checks.
+- Benchmark execution must never write into declared local source paths or repository fixture inputs.
+- The workspace and skill environment for a run must be derivable from the benchmark YAML plus any external references declared in it.
+- System-installed skills are not copied into the workspace.
+- Workspace-injected skills are copied or written only for `skillMode: "enabled"` runs that resolve to `workspace-overlay`.
+- The harness must not require a benchmark to live under `benchmarks/` in order to run it.
 
 ## Result directories
 

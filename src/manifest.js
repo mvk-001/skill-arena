@@ -47,6 +47,10 @@ function parseManifestContents({ manifestContents, manifestPath }) {
 }
 
 export function resolveManifestPath(repositoryRelativePath) {
+  if (path.isAbsolute(repositoryRelativePath)) {
+    return repositoryRelativePath;
+  }
+
   return path.resolve(PROJECT_ROOT, repositoryRelativePath);
 }
 

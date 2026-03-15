@@ -21,6 +21,7 @@ test("compare config expands into adapter x skill-mode scenarios", async () => {
   assert.equal(manifest.scenarios[1].id, "codex-worst-skill");
   assert.equal(manifest.scenarios[0].skillSource, "none");
   assert.equal(manifest.scenarios[1].skillSource, "system-installed");
+  assert.equal(manifest.scenarios[1].skill.source.type, "system-installed");
   assert.equal(compareConfig.evaluation.requests, 10);
 });
 
@@ -75,10 +76,94 @@ test("compare config defaults enabled skill source to workspace overlay when con
     },
   };
 
-  const manifest = expandCompareConfigToManifest(compareConfig);
+  const manifest = expandCompareConfigToManifest(compareConfigSchema.parse(compareConfig));
 
   assert.equal(manifest.scenarios.length, 1);
   assert.equal(manifest.scenarios[0].skillSource, "workspace-overlay");
+  assert.equal(manifest.scenarios[0].skill.install.strategy, "workspace-overlay");
+});
+
+test("compare config supports explicit declarative skill definitions", () => {
+  const compareConfig = compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "compare-explicit-skill",
+      description: "Compare explicit skill scenarios.",
+      tags: [],
+    },
+    task: {
+      prompts: [
+        {
+          prompt: "Return HELLO.",
+        },
+      ],
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: "fixtures/smoke-skill-following/base",
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: true,
+        env: {},
+      },
+    },
+    evaluation: {
+      assertions: [
+        {
+          type: "equals",
+          value: "HELLO",
+        },
+      ],
+      requests: 2,
+      timeoutMs: 120000,
+      tracing: false,
+      noCache: true,
+    },
+    comparison: {
+      skillModes: [
+        {
+          id: "skill",
+          description: "Inline skill",
+          skillMode: "enabled",
+          skill: {
+            source: {
+              type: "inline-files",
+              files: [
+                {
+                  path: "AGENTS.md",
+                  content: "# Inline compare skill\n",
+                },
+              ],
+            },
+            install: {
+              strategy: "workspace-overlay",
+            },
+          },
+        },
+      ],
+      variants: [
+        {
+          id: "codex-mini",
+          description: "Codex mini",
+          agent: {
+            adapter: "codex",
+            executionMethod: "command",
+            commandPath: "codex",
+          },
+        },
+      ],
+    },
+  });
+
+  const manifest = expandCompareConfigToManifest(compareConfig);
+
+  assert.equal(compareConfig.task.prompts[0].id, "prompt-1");
+  assert.equal(manifest.scenarios[0].skill.source.type, "inline-files");
 });
 
 test("compare config evaluation leaves maxConcurrency unset so runtime can auto-resolve it", () => {
@@ -133,6 +218,57 @@ test("compare config evaluation leaves maxConcurrency unset so runtime can auto-
   assert.equal(compareConfig.evaluation.maxConcurrency, undefined);
 });
 
+test("compare config defaults requests to 10 when omitted", () => {
+  const compareConfig = compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "compare-default-requests",
+      description: "Compare request default scenarios.",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    evaluation: {
+      assertions: [
+        {
+          type: "equals",
+          value: "HELLO",
+        },
+      ],
+      timeoutMs: 120000,
+      tracing: false,
+      noCache: true,
+    },
+    comparison: {
+      skillModes: [
+        {
+          id: "no-skill",
+          description: "No skill",
+          skillMode: "disabled",
+        },
+      ],
+      variants: [
+        {
+          id: "codex-mini",
+          description: "Codex mini",
+          agent: {
+            adapter: "codex",
+            executionMethod: "command",
+            commandPath: "codex",
+          },
+        },
+      ],
+    },
+  });
+
+  assert.equal(compareConfig.evaluation.requests, 10);
+});
+
 test("smoke compare config expands into codex and pi skill-mode scenarios", async () => {
   const compareConfigPath = fromProjectRoot(
     "benchmarks",
@@ -144,7 +280,6 @@ test("smoke compare config expands into codex and pi skill-mode scenarios", asyn
   const manifest = expandCompareConfigToManifest(compareConfig);
 
   assert.equal(manifest.benchmark.id, "smoke-skill-following-compare");
-  assert.ok("prompts" in manifest.task);
   assert.equal(manifest.task.prompts.length, 2);
   assert.equal(compareConfig.evaluation.requests, 10);
   assert.equal(manifest.scenarios.length, 4);

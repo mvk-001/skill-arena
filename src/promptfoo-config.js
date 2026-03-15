@@ -9,6 +9,7 @@ export function buildPromptfooConfig({ manifest, scenario, workspace }) {
     manifest,
     scenario,
     workspaceDirectory: workspace.workspaceDirectory,
+    workspaceEnvironment: workspace.environment ?? {},
     gitReady: workspace.gitReady,
   });
   const taskPrompts = getTaskPrompts(manifest);
@@ -65,16 +66,7 @@ export function flattenLabels(labels) {
 }
 
 export function getTaskPrompts(manifest) {
-  if ("prompts" in manifest.task) {
-    return manifest.task.prompts;
-  }
-
-  return [
-    {
-      id: "default",
-      prompt: manifest.task.prompt,
-    },
-  ];
+  return manifest.task.prompts;
 }
 
 export function toPromptfooAssertion(assertion, workspaceDirectory) {

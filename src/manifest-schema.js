@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { deriveSkillSourceLabel, normalizeManifestShape } from "./normalize.js";
+
 export const slugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
   message: "Expected a lowercase slug using letters, numbers, and hyphens.",
 });
@@ -98,7 +100,7 @@ export const skillOverlaySchema = z.union([
 ]);
 
 export const taskPromptDefinitionSchema = z.object({
-  id: slugSchema,
+  id: slugSchema.optional(),
   prompt: z.string().min(1),
   description: z.string().min(1).optional(),
 });
@@ -109,7 +111,7 @@ export const benchmarkMetadataSchema = z.object({
   tags: z.array(z.string()).default([]),
 });
 
-export const taskSchema = z.union([
+const legacyTaskSchema = z.union([
   z.object({
     prompt: z.string().min(1),
   }),
@@ -118,19 +120,106 @@ export const taskSchema = z.union([
   }),
 ]);
 
-export const workspaceSchema = z.object({
+const localPathSourceSchema = z.object({
+  id: slugSchema.optional(),
+  type: z.literal("local-path"),
+  path: z.string().min(1),
+  target: z.string().min(1),
+});
+
+const gitSourceSchema = z.object({
+  id: slugSchema.optional(),
+  type: z.literal("git"),
+  repo: z.string().min(1),
+  ref: z.string().min(1).optional(),
+  subpath: z.string().min(1).optional(),
+  target: z.string().min(1),
+});
+
+const inlineFileSchema = z.object({
+  path: z.string().min(1),
+  content: z.string().default(""),
+});
+
+const inlineFilesSourceSchema = z.object({
+  id: slugSchema.optional(),
+  type: z.literal("inline-files"),
+  target: z.string().min(1),
+  files: z.array(inlineFileSchema).min(1),
+});
+
+const emptySourceSchema = z.object({
+  id: slugSchema.optional(),
+  type: z.literal("empty"),
+  target: z.string().min(1),
+});
+
+export const workspaceSourceSchema = z.discriminatedUnion("type", [
+  localPathSourceSchema,
+  gitSourceSchema,
+  inlineFilesSourceSchema,
+  emptySourceSchema,
+]);
+
+const workspaceSetupSchema = z.object({
+  initializeGit: z.boolean().default(true),
+  env: z.record(z.string(), z.string()).default({}),
+});
+
+const declarativeWorkspaceSchema = z.object({
+  sources: z.array(workspaceSourceSchema).min(1),
+  setup: workspaceSetupSchema.default({
+    initializeGit: true,
+    env: {},
+  }),
+});
+
+const legacyWorkspaceSchema = z.object({
   fixture: z.string().min(1),
   skillOverlay: skillOverlaySchema.optional(),
   initializeGit: z.boolean().default(true),
 });
 
-export const scenarioSchema = z.object({
+export const workspaceSchema = z.union([declarativeWorkspaceSchema, legacyWorkspaceSchema]);
+
+const normalizedSkillSourceSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("none"),
+  }),
+  z.object({
+    type: z.literal("system-installed"),
+  }),
+  z.object({
+    type: z.literal("local-path"),
+    path: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal("git"),
+    repo: z.string().min(1),
+    ref: z.string().min(1).optional(),
+    subpath: z.string().min(1).optional(),
+  }),
+  z.object({
+    type: z.literal("inline-files"),
+    files: z.array(inlineFileSchema).min(1),
+  }),
+]);
+
+export const skillSchema = z.object({
+  source: normalizedSkillSourceSchema,
+  install: z.object({
+    strategy: z.enum(["none", "workspace-overlay", "system-installed"]),
+  }).optional(),
+});
+
+const rawScenarioSchema = z.object({
   id: slugSchema,
   description: z.string().min(1),
   skillMode: z.enum(["enabled", "disabled"]),
   skillSource: z
     .enum(["workspace-overlay", "system-installed", "none"])
     .default("none"),
+  skill: skillSchema.optional(),
   agent: agentSchema,
   evaluation: z.object({
     assertions: z.array(assertionSchema).min(1),
@@ -156,17 +245,59 @@ export const scenarioSchema = z.object({
     .default({
       tags: [],
       labels: {},
+    }),
+});
+
+const rawManifestSchema = z.object({
+  schemaVersion: z.literal(1),
+  benchmark: benchmarkMetadataSchema,
+  task: legacyTaskSchema,
+  workspace: workspaceSchema,
+  scenarios: z.array(rawScenarioSchema).min(1),
+});
+
+const normalizedScenarioSchema = z.object({
+  id: slugSchema,
+  description: z.string().min(1),
+  skillMode: z.enum(["enabled", "disabled"]),
+  skillSource: z.enum(["workspace-overlay", "system-installed", "none"]),
+  skill: z.object({
+    source: normalizedSkillSourceSchema,
+    install: z.object({
+      strategy: z.enum(["none", "workspace-overlay", "system-installed"]),
+    }),
+  }),
+  agent: agentSchema,
+  evaluation: z.object({
+    assertions: z.array(assertionSchema).min(1),
+    requests: z.number().int().positive(),
+    timeoutMs: z.number().int().positive(),
+    tracing: z.boolean(),
+    maxConcurrency: z.number().int().positive().optional(),
+    noCache: z.boolean(),
+  }),
+  output: z.object({
+    tags: z.array(z.string()),
+    labels: z.record(z.string(), z.string()),
   }),
 });
 
-export const benchmarkManifestSchema = z
-  .object({
-    schemaVersion: z.literal(1),
-    benchmark: benchmarkMetadataSchema,
-    task: taskSchema,
-    workspace: workspaceSchema,
-    scenarios: z.array(scenarioSchema).min(1),
-  })
+const normalizedManifestSchema = z.object({
+  schemaVersion: z.literal(1),
+  benchmark: benchmarkMetadataSchema,
+  task: z.object({
+    prompts: z.array(taskPromptDefinitionSchema).min(1),
+  }),
+  workspace: z.object({
+    sources: z.array(workspaceSourceSchema).min(1),
+    setup: workspaceSetupSchema,
+  }),
+  scenarios: z.array(normalizedScenarioSchema).min(1),
+});
+
+export const benchmarkManifestSchema = rawManifestSchema
+  .transform((manifest) => normalizeManifestShape(manifest))
+  .pipe(normalizedManifestSchema)
   .superRefine((manifest, context) => {
     const scenarioIds = new Set();
 
@@ -179,20 +310,29 @@ export const benchmarkManifestSchema = z
         });
       }
       scenarioIds.add(scenario.id);
-    }
 
-    const requiresSkillOverlay = manifest.scenarios.some(
-      (scenario) =>
-        scenario.skillMode === "enabled" &&
-        scenario.skillSource === "workspace-overlay",
-    );
+      if (scenario.skillMode === "disabled" && scenario.skill.install.strategy !== "none") {
+        context.addIssue({
+          code: "custom",
+          message: "Disabled scenarios must resolve to skill.install.strategy \"none\".",
+          path: ["scenarios"],
+        });
+      }
 
-    if (requiresSkillOverlay && !manifest.workspace.skillOverlay) {
-      context.addIssue({
-        code: "custom",
-        message:
-          "workspace.skillOverlay is required when any scenario enables skill mode.",
-        path: ["workspace", "skillOverlay"],
-      });
+      if (scenario.skillMode === "enabled" && scenario.skill.source.type === "none") {
+        context.addIssue({
+          code: "custom",
+          message: "Enabled scenarios must resolve to a concrete skill source.",
+          path: ["scenarios"],
+        });
+      }
+
+      if (deriveSkillSourceLabel(scenario.skill) !== scenario.skillSource) {
+        context.addIssue({
+          code: "custom",
+          message: "Scenario skillSource does not match the normalized skill configuration.",
+          path: ["scenarios"],
+        });
+      }
     }
   });

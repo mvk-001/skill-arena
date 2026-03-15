@@ -4,7 +4,7 @@ import path from "node:path";
 import YAML from "yaml";
 import { ZodError } from "zod";
 
-import { compareConfigSchema, resolveSkillSource } from "./compare-schema.js";
+import { compareConfigSchema } from "./compare-schema.js";
 
 export async function loadCompareConfig(compareConfigPath) {
   const absoluteCompareConfigPath = path.resolve(process.cwd(), compareConfigPath);
@@ -44,7 +44,7 @@ export function expandCompareConfigToManifest(compareConfig) {
 }
 
 function buildScenario(compareConfig, variant, skillModeVariant) {
-  const skillSource = resolveSkillSource(skillModeVariant, compareConfig.workspace.skillOverlay);
+  const skillSource = skillModeVariant.skillSource;
   const skillStateLabel = skillModeVariant.skillMode === "enabled" ? "on" : "off";
   const adapterDisplayName = variant.output?.labels?.adapterDisplayName ?? variant.agent.adapter;
   const variantDisplayName = variant.output?.labels?.variantDisplayName ?? adapterDisplayName ?? variant.id;
@@ -56,6 +56,7 @@ function buildScenario(compareConfig, variant, skillModeVariant) {
     id: `${variant.id}-${skillModeVariant.id}`,
     description: `${variant.description} | ${skillModeVariant.description}`,
     skillMode: skillModeVariant.skillMode,
+    skill: skillModeVariant.skill,
     skillSource,
     agent: variant.agent,
     evaluation: compareConfig.evaluation,

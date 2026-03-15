@@ -18,8 +18,8 @@ The benchmark manifest is the main authoring surface. It defines:
 
 - benchmark identity and description
 - the exact task prompt or prompt set
-- the fixture workspace to copy
-- the optional skill overlay
+- the declarative workspace sources to materialize
+- the optional declarative skill definition
 - scenario variants for agent, model, and skill mode
 - assertions, tracing, concurrency, and request-count settings
 
@@ -29,7 +29,7 @@ The compare config is the second authoring surface. It defines:
 
 - benchmark identity and description
 - the exact task prompt or prompt set
-- the fixture workspace to copy
+- the declarative workspace sources to materialize
 - shared evaluation settings
 - compare variants for adapter and model
 - compare skill modes such as `no-skill` and `skill`
@@ -39,23 +39,26 @@ The compare runner expands the matrix internally, materializes a separate worksp
 - Promptfoo providers mapped to skill-mode columns
 - Promptfoo test rows mapped to variant and prompt pairs
 
-### Fixture workspaces
+### Workspace sources
 
-Fixtures are versioned directories stored in the repository. They represent the source state for a benchmark task. Fixtures must be safe to copy and must never be mutated during benchmark execution.
+Workspace inputs are declared in YAML. Common sources include versioned fixtures in the repository, Git-backed external inputs, and small inline files. Source inputs must be safe to copy and must never be mutated during benchmark execution.
 
 ### Workspace materializer
 
 Each scenario run creates a fresh run directory under `results/`. The materializer:
 
-1. copies the fixture tree into a new workspace
-2. applies the skill overlay only when the scenario enables skill mode
-3. initializes a Git repository inside the workspace when requested
+1. creates an empty run workspace
+2. applies `workspace.sources` in declaration order
+3. injects the skill only when the resolved skill install strategy is `workspace-overlay`
+4. initializes a Git repository inside the workspace when requested
 
-This preserves source fixtures and gives each eval an isolated workspace.
+This preserves source inputs and gives each eval an isolated workspace.
 
-Workspace skill overlays can contain any files needed by the benchmarked agent, including root-level instruction files such as `AGENTS.md` and bundled skill assets such as `skills/<skill-id>/SKILL.md`.
+Workspace-injected skills can contain any files needed by the benchmarked agent, including root-level instruction files such as `AGENTS.md` and bundled skill assets such as `skills/<skill-id>/SKILL.md`.
 
-Some benchmarks use system-installed skills instead of workspace overlays. In those cases the harness does not inject skill files into the workspace; the benchmark relies on skills already installed in the Codex system environment.
+Some benchmarks use system-installed skills instead of workspace overlays. In those cases the harness does not inject skill files into the workspace; the benchmark relies on skills already installed in the local agent environment.
+
+Legacy `workspace.fixture`, `workspace.skillOverlay`, and `skillSource` fields are still accepted in V1, but the runtime normalizes them into the declarative workspace and skill model before execution.
 
 ### Agent adapters
 

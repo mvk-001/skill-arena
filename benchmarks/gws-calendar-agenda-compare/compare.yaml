@@ -1,0 +1,185 @@
+schemaVersion: 1
+benchmark:
+  id: gws-calendar-agenda-compare
+  description: Compare Codex and PI on Google Calendar agenda requests with and without the remote gws-calendar-agenda skill.
+  tags:
+    - calendar
+    - gws
+    - compare
+task:
+  prompts:
+    - id: month-events
+      description: Monthly agenda phrasing.
+      prompt: >-
+        Use the `$gws-calendar-agenda` skill. Show this month's events across
+        all calendars. Use the underlying `gws calendar +agenda` command in
+        read-only mode, prefer `--format json`, and return only JSON with
+        top-level keys `request`, `commandUsed`, `events`, `eventCount`, and
+        `notes`.
+    - id: today-events
+      description: Ask for today's events.
+      prompt: >-
+        Use the `$gws-calendar-agenda` skill. Show today's events across all
+        calendars. Use the underlying `gws calendar +agenda` command in
+        read-only mode, prefer `--format json`, and return only JSON with
+        top-level keys `request`, `commandUsed`, `events`, `eventCount`, and
+        `notes`.
+    - id: tomorrow-events
+      description: Ask for tomorrow's agenda.
+      prompt: >-
+        Use the `$gws-calendar-agenda` skill. Show tomorrow's events across all
+        calendars. Use the underlying `gws calendar +agenda` command in
+        read-only mode, prefer `--format json`, and return only JSON with
+        top-level keys `request`, `commandUsed`, `events`, `eventCount`, and
+        `notes`.
+    - id: week-events
+      description: Ask for this week.
+      prompt: >-
+        Use the `$gws-calendar-agenda` skill. Show this week's events across
+        all calendars. Use the underlying `gws calendar +agenda` command in
+        read-only mode, prefer `--format json`, and return only JSON with
+        top-level keys `request`, `commandUsed`, `events`, `eventCount`, and
+        `notes`.
+    - id: next-3-days
+      description: Ask for the next three days.
+      prompt: >-
+        Use the `$gws-calendar-agenda` skill. Show events for the next 3 days
+        across all calendars. Use the underlying `gws calendar +agenda` command
+        in read-only mode, prefer `--format json`, and return only JSON with
+        top-level keys `request`, `commandUsed`, `events`, `eventCount`, and
+        `notes`.
+    - id: next-5-days
+      description: Ask for the next five days.
+      prompt: >-
+        Use the `$gws-calendar-agenda` skill. Show events for the next 5 days
+        across all calendars. Use the underlying `gws calendar +agenda` command
+        in read-only mode, prefer `--format json`, and return only JSON with
+        top-level keys `request`, `commandUsed`, `events`, `eventCount`, and
+        `notes`.
+    - id: next-7-days-ny
+      description: Ask for a timezone-specific seven-day agenda.
+      prompt: >-
+        Use the `$gws-calendar-agenda` skill. Show events for the next 7 days
+        across all calendars in the `America/New_York` timezone. Use the
+        underlying `gws calendar +agenda` command in read-only mode, prefer
+        `--format json`, and return only JSON with top-level keys `request`,
+        `commandUsed`, `events`, `eventCount`, and `notes`.
+    - id: next-14-days-la
+      description: Ask for a timezone-specific two-week agenda.
+      prompt: >-
+        Use the `$gws-calendar-agenda` skill. Show events for the next 14 days
+        across all calendars in the `America/Los_Angeles` timezone. Use the
+        underlying `gws calendar +agenda` command in read-only mode, prefer
+        `--format json`, and return only JSON with top-level keys `request`,
+        `commandUsed`, `events`, `eventCount`, and `notes`.
+    - id: next-30-days
+      description: Another monthly-style phrasing.
+      prompt: >-
+        Use the `$gws-calendar-agenda` skill. Show events for the next 30 days
+        across all calendars. Use the underlying `gws calendar +agenda` command
+        in read-only mode, prefer `--format json`, and return only JSON with
+        top-level keys `request`, `commandUsed`, `events`, `eventCount`, and
+        `notes`.
+    - id: default-agenda
+      description: Ask for the default upcoming agenda.
+      prompt: >-
+        Use the `$gws-calendar-agenda` skill. Show my upcoming calendar agenda
+        across all calendars using the command defaults. Use the underlying
+        `gws calendar +agenda` command in read-only mode, prefer `--format
+        json`, and return only JSON with top-level keys `request`,
+        `commandUsed`, `events`, `eventCount`, and `notes`.
+workspace:
+  fixture: fixtures/gws-calendar-agenda-compare/base
+  skillOverlay:
+    git:
+      repo: https://github.com/googleworkspace/cli.git
+      ref: main
+      subpath: skills
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: is-json
+    - type: javascript
+      value: >-
+        (() => { const data = JSON.parse(output); return typeof data.request ===
+        'string' && typeof data.commandUsed === 'string' &&
+        data.commandUsed.includes('gws calendar +agenda') &&
+        Array.isArray(data.events) && typeof data.eventCount === 'number' &&
+        data.eventCount === data.events.length && typeof data.notes ===
+        'string'; })()
+    - type: llm-rubric
+      provider: openai:gpt-5-mini
+      threshold: 0.8
+      value: >-
+        Score 1.0 only if the response is valid JSON, directly answers the
+        requested agenda window, uses the gws calendar agenda command rather
+        than a made-up workflow, and either returns real agenda results or
+        accurately reports a command/auth failure inside the notes field
+        without hallucinating events.
+  requests: 10
+  timeoutMs: 1200000
+  tracing: false
+  maxConcurrency: 1
+  noCache: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: Baseline without the remote calendar agenda skill.
+      skillMode: disabled
+      output:
+        tags:
+          - baseline
+        labels:
+          skill_state: off
+    - id: skill
+      description: Remote Git overlay with gws-calendar-agenda enabled.
+      skillMode: enabled
+      skillSource: workspace-overlay
+      output:
+        tags:
+          - skill
+        labels:
+          skill_state: on
+  variants:
+    - id: codex-mini
+      description: Codex with the mini coding model through the local CLI.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: danger-full-access
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: true
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - codex
+          - mini
+        labels:
+          variantDisplayName: codex mini
+    - id: pi-gpt5mini
+      description: PI using GitHub Copilot GPT-5 Mini through the local CLI.
+      agent:
+        adapter: pi
+        model: github-copilot/gpt-5-mini
+        executionMethod: command
+        commandPath: pi
+        sandboxMode: danger-full-access
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: true
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - pi
+          - mini
+        labels:
+          variantDisplayName: pi gpt-5 mini

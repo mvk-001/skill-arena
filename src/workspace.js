@@ -8,28 +8,31 @@ import { resolveManifestPath } from "./manifest.js";
 import { fromProjectRoot } from "./project-paths.js";
 
 const execFileAsync = promisify(execFile);
-const gitOverlayCache = new Map();
+const gitSourceCache = new Map();
 
 export async function materializeWorkspace({ manifest, scenario }) {
   const runId = createRunId(scenario.id);
   const runDirectory = fromProjectRoot("results", manifest.benchmark.id, runId);
   const workspaceDirectory = path.join(runDirectory, "workspace");
 
-  const fixtureDirectory = resolveManifestPath(manifest.workspace.fixture);
+  await fs.mkdir(workspaceDirectory, { recursive: true });
 
-  await assertDirectoryExists(fixtureDirectory, "workspace.fixture");
-
-  await fs.mkdir(runDirectory, { recursive: true });
-  await fs.cp(fixtureDirectory, workspaceDirectory, { recursive: true });
-
-  if (scenario.skillMode === "enabled" && manifest.workspace.skillOverlay) {
-    const skillOverlayDirectory = await resolveSkillOverlayDirectory(
-      manifest.workspace.skillOverlay,
-    );
-    await fs.cp(skillOverlayDirectory, workspaceDirectory, { recursive: true });
+  for (const source of manifest.workspace.sources) {
+    await materializeWorkspaceSource({
+      source,
+      workspaceDirectory,
+      labelPrefix: "workspace.sources",
+    });
   }
 
-  const gitReady = manifest.workspace.initializeGit
+  if (scenario.skill.install.strategy === "workspace-overlay") {
+    await materializeSkillSource({
+      skillSource: scenario.skill.source,
+      workspaceDirectory,
+    });
+  }
+
+  const gitReady = manifest.workspace.setup.initializeGit
     ? await initializeGitRepository(workspaceDirectory)
     : false;
 
@@ -38,48 +41,104 @@ export async function materializeWorkspace({ manifest, scenario }) {
     runDirectory,
     workspaceDirectory,
     gitReady,
+    environment: {
+      ...manifest.workspace.setup.env,
+    },
   };
 }
 
-async function resolveSkillOverlayDirectory(skillOverlay) {
-  if (typeof skillOverlay === "string") {
-    const directory = resolveManifestPath(skillOverlay);
-    await assertDirectoryExists(directory, "workspace.skillOverlay");
-    return directory;
+async function materializeWorkspaceSource({ source, workspaceDirectory, labelPrefix }) {
+  switch (source.type) {
+    case "local-path": {
+      const sourceDirectory = resolveLocalPath(source.path);
+      await assertDirectoryExists(sourceDirectory, `${labelPrefix}.${source.id ?? source.type}.path`);
+      await copyDirectoryIntoTarget({
+        sourceDirectory,
+        workspaceDirectory,
+        target: source.target,
+      });
+      return;
+    }
+    case "git": {
+      const sourceDirectory = await cloneGitSource(source);
+      await copyDirectoryIntoTarget({
+        sourceDirectory,
+        workspaceDirectory,
+        target: source.target,
+      });
+      return;
+    }
+    case "inline-files": {
+      for (const file of source.files) {
+        const outputPath = resolveWorkspacePath(workspaceDirectory, path.posix.join(source.target, file.path));
+        await fs.mkdir(path.dirname(outputPath), { recursive: true });
+        await fs.writeFile(outputPath, file.content ?? "", "utf8");
+      }
+      return;
+    }
+    case "empty":
+      return;
+    default:
+      throw new Error(`Unsupported workspace source type "${source.type}".`);
   }
-
-  if ("path" in skillOverlay) {
-    const directory = resolveManifestPath(skillOverlay.path);
-    await assertDirectoryExists(directory, "workspace.skillOverlay.path");
-    return directory;
-  }
-
-  if ("git" in skillOverlay) {
-    return await cloneGitSkillOverlay(skillOverlay.git);
-  }
-
-  throw new Error("Unsupported workspace.skillOverlay configuration.");
 }
 
-async function cloneGitSkillOverlay(gitOverlay) {
-  const cacheKey = JSON.stringify(gitOverlay);
-
-  if (!gitOverlayCache.has(cacheKey)) {
-    gitOverlayCache.set(cacheKey, cloneGitSkillOverlayOnce(gitOverlay));
+async function materializeSkillSource({ skillSource, workspaceDirectory }) {
+  switch (skillSource.type) {
+    case "local-path": {
+      const sourceDirectory = resolveLocalPath(skillSource.path);
+      await assertDirectoryExists(sourceDirectory, "skill.source.path");
+      await copyDirectoryIntoTarget({
+        sourceDirectory,
+        workspaceDirectory,
+        target: "/",
+      });
+      return;
+    }
+    case "git": {
+      const sourceDirectory = await cloneGitSource(skillSource);
+      await copyDirectoryIntoTarget({
+        sourceDirectory,
+        workspaceDirectory,
+        target: "/",
+      });
+      return;
+    }
+    case "inline-files": {
+      for (const file of skillSource.files) {
+        const outputPath = resolveWorkspacePath(workspaceDirectory, file.path);
+        await fs.mkdir(path.dirname(outputPath), { recursive: true });
+        await fs.writeFile(outputPath, file.content ?? "", "utf8");
+      }
+      return;
+    }
+    case "none":
+    case "system-installed":
+      return;
+    default:
+      throw new Error(`Unsupported skill source type "${skillSource.type}".`);
   }
-
-  return await gitOverlayCache.get(cacheKey);
 }
 
-async function cloneGitSkillOverlayOnce(gitOverlay) {
-  const cloneDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-skill-overlay-"));
+async function cloneGitSource(gitSource) {
+  const cacheKey = JSON.stringify(gitSource);
+
+  if (!gitSourceCache.has(cacheKey)) {
+    gitSourceCache.set(cacheKey, cloneGitSourceOnce(gitSource));
+  }
+
+  return await gitSourceCache.get(cacheKey);
+}
+
+async function cloneGitSourceOnce(gitSource) {
+  const cloneDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-git-source-"));
   const gitArgs = ["clone", "--depth", "1"];
 
-  if (gitOverlay.ref) {
-    gitArgs.push("--branch", gitOverlay.ref);
+  if (gitSource.ref) {
+    gitArgs.push("--branch", gitSource.ref);
   }
 
-  gitArgs.push(gitOverlay.repo, cloneDirectory);
+  gitArgs.push(gitSource.repo, cloneDirectory);
 
   try {
     await execFileAsync("git", gitArgs, {
@@ -87,17 +146,67 @@ async function cloneGitSkillOverlayOnce(gitOverlay) {
     });
   } catch (error) {
     throw new Error(
-      `Failed to clone workspace.skillOverlay.git.repo "${gitOverlay.repo}". ${error.message}`,
+      `Failed to clone git repo "${gitSource.repo}". ${error.message}`,
     );
   }
 
-  const overlayDirectory = gitOverlay.subpath
-    ? path.join(cloneDirectory, gitOverlay.subpath)
+  const sourceDirectory = gitSource.subpath
+    ? path.join(cloneDirectory, gitSource.subpath)
     : cloneDirectory;
 
-  await assertDirectoryExists(overlayDirectory, "workspace.skillOverlay.git.subpath");
+  await assertDirectoryExists(sourceDirectory, "git.subpath");
+  return sourceDirectory;
+}
 
-  return overlayDirectory;
+async function copyDirectoryIntoTarget({ sourceDirectory, workspaceDirectory, target }) {
+  const targetDirectory = resolveWorkspacePath(workspaceDirectory, target);
+  await fs.mkdir(targetDirectory, { recursive: true });
+
+  const entries = await fs.readdir(sourceDirectory, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const sourcePath = path.join(sourceDirectory, entry.name);
+    const destinationPath = path.join(targetDirectory, entry.name);
+
+    if (entry.isDirectory()) {
+      await fs.cp(sourcePath, destinationPath, { recursive: true });
+      continue;
+    }
+
+    if (entry.isFile()) {
+      await fs.mkdir(path.dirname(destinationPath), { recursive: true });
+      await fs.copyFile(sourcePath, destinationPath);
+      continue;
+    }
+
+    if (entry.isSymbolicLink()) {
+      const linkTarget = await fs.readlink(sourcePath);
+      await fs.symlink(linkTarget, destinationPath);
+    }
+  }
+}
+
+function resolveLocalPath(inputPath) {
+  if (path.isAbsolute(inputPath)) {
+    return inputPath;
+  }
+
+  return resolveManifestPath(inputPath);
+}
+
+function resolveWorkspacePath(workspaceDirectory, targetPath) {
+  const normalizedRelativePath = targetPath === "/"
+    ? ""
+    : targetPath.replace(/^[/\\]+/, "");
+  const resolvedPath = path.resolve(workspaceDirectory, normalizedRelativePath);
+
+  const relative = path.relative(workspaceDirectory, resolvedPath);
+
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`Workspace target escapes the workspace root: ${targetPath}`);
+  }
+
+  return resolvedPath;
 }
 
 async function assertDirectoryExists(directoryPath, label) {

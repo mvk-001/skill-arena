@@ -93,7 +93,8 @@ npm run benchmark:smoke:skill
 All benchmark commands:
 
 - materialize an isolated workspace under `results/`
-- resolve the skill overlay from a local path or clone it from Git when configured
+- materialize `workspace.sources` in declaration order
+- resolve the skill from local path, Git, inline files, or the system-installed environment when configured
 - generate a Promptfoo config for the selected scenario
 - execute Codex through the custom Promptfoo provider
 - write `promptfoo-results.json` and `summary.json`
@@ -101,7 +102,7 @@ All benchmark commands:
 
 If your manifest uses an `llm-rubric` assertion, Promptfoo also runs the judge model configured on that assertion.
 
-If your manifest uses a Git skill overlay, the harness downloads it before the agent run. The agent itself still follows the scenario sandbox and network settings.
+If your manifest uses Git-backed workspace or skill sources, the harness downloads them before the agent run. The agent itself still follows the scenario sandbox and network settings.
 
 If your manifest uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `requests` to each one.
 

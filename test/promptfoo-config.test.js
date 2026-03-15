@@ -19,6 +19,7 @@ test("codex scenarios generate Promptfoo custom script providers", async () => {
     scenario,
     workspace: {
       workspaceDirectory: "C:/temp/workspace",
+      environment: {},
       gitReady: true,
     },
   });
@@ -30,7 +31,7 @@ test("codex scenarios generate Promptfoo custom script providers", async () => {
   assert.equal(config.providers[0].config.working_dir, "C:/temp/workspace");
   assert.equal(config.providers[0].config.approval_policy, "never");
   assert.equal(config.prompts[0], "{{taskPrompt}}");
-  assert.equal(config.tests[0].vars.taskPrompt, manifest.task.prompt);
+  assert.equal(config.tests[0].vars.taskPrompt, manifest.task.prompts[0].prompt);
   assert.equal(config.tests[0].metadata.skillMode, "disabled");
   assert.equal(config.tests[0].metadata.scenarioDescription, scenario.description);
   assert.equal(config.tests[0].metadata.model, "gpt-5.1-codex-mini");
@@ -58,6 +59,7 @@ test("file-contains assertions become Promptfoo javascript assertions", async ()
     scenario,
     workspace: {
       workspaceDirectory: "C:/temp/workspace",
+      environment: {},
       gitReady: true,
     },
   });
@@ -91,6 +93,7 @@ test("llm-rubric assertions pass through to Promptfoo", async () => {
     scenario,
     workspace: {
       workspaceDirectory: "C:/temp/workspace",
+      environment: {},
       gitReady: true,
     },
   });
@@ -114,6 +117,7 @@ test("codex scenarios can switch to sdk execution", async () => {
     scenario,
     workspace: {
       workspaceDirectory: "C:/temp/workspace",
+      environment: {},
       gitReady: false,
     },
   });
@@ -150,6 +154,7 @@ test("multiple task prompts become multiple Promptfoo tests", async () => {
     scenario,
     workspace: {
       workspaceDirectory: "C:/temp/workspace",
+      environment: {},
       gitReady: true,
     },
   });
@@ -175,6 +180,7 @@ test("system skill benchmarks generate valid custom providers", async () => {
     scenario,
     workspace: {
       workspaceDirectory: "C:/temp/workspace",
+      environment: {},
       gitReady: true,
     },
   });
@@ -204,6 +210,7 @@ test("pi scenarios generate Promptfoo custom script providers", async () => {
     scenario,
     workspace: {
       workspaceDirectory: "C:/temp/workspace",
+      environment: {},
       gitReady: true,
     },
   });

@@ -7,6 +7,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import { findScenario, loadBenchmarkManifest } from "../src/manifest.js";
+import { benchmarkManifestSchema } from "../src/manifest-schema.js";
 import { fromProjectRoot } from "../src/project-paths.js";
 import { materializeWorkspace } from "../src/workspace.js";
 
@@ -65,6 +66,152 @@ test("skill overlays are applied only when skill mode is enabled", async () => {
   assert.match(enabledSkillContents, /name: marker-guide/);
 });
 
+test("workspace sources are applied in declaration order", async () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "ordered-sources",
+      description: "Ordered sources test",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: "fixtures/smoke-skill-following/base",
+          target: "/",
+        },
+        {
+          id: "override",
+          type: "inline-files",
+          target: "/notes",
+          files: [
+            {
+              path: "target.txt",
+              content: "OVERRIDDEN",
+            },
+          ],
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {
+          SAMPLE_FLAG: "1",
+        },
+      },
+    },
+    scenarios: [
+      {
+        id: "ordered",
+        description: "Ordered sources scenario",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+          executionMethod: "command",
+          commandPath: "codex",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "HELLO",
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  const workspace = await materializeWorkspace({
+    manifest,
+    scenario: manifest.scenarios[0],
+  });
+  const targetContents = await fs.readFile(
+    path.join(workspace.workspaceDirectory, "notes", "target.txt"),
+    "utf8",
+  );
+
+  assert.equal(targetContents, "OVERRIDDEN");
+  assert.equal(workspace.environment.SAMPLE_FLAG, "1");
+});
+
+test("inline skill sources are written into the workspace only for enabled runs", async () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "inline-skill-check",
+      description: "Inline skill test",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: "fixtures/smoke-skill-following/base",
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "inline-enabled",
+        description: "Inline skill enabled",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "inline-files",
+            files: [
+              {
+                path: "AGENTS.md",
+                content: "# Inline overlay\n",
+              },
+            ],
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
+        agent: {
+          adapter: "codex",
+          executionMethod: "command",
+          commandPath: "codex",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "HELLO",
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  const workspace = await materializeWorkspace({
+    manifest,
+    scenario: manifest.scenarios[0],
+  });
+  const agentsContents = await fs.readFile(
+    path.join(workspace.workspaceDirectory, "AGENTS.md"),
+    "utf8",
+  );
+
+  assert.match(agentsContents, /Inline overlay/);
+});
+
 test("skill overlays can be cloned from a git repository", async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-git-overlay-"));
   const fixtureDirectory = path.join(tempDirectory, "fixture");
@@ -108,28 +255,64 @@ test("skill overlays can be cloned from a git repository", async () => {
     windowsHide: true,
   });
 
-  const scenario = {
-    id: "git-skill",
-    skillMode: "enabled",
-  };
-  const manifest = {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
     benchmark: {
       id: "git-overlay-workspace",
+      description: "Git overlay workspace",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: path.relative(fromProjectRoot(), fixtureDirectory).replaceAll("\\", "/"),
-      skillOverlay: {
-        git: {
-          repo: skillRepoDirectory,
-          ref: "main",
-          subpath: "overlay",
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: fixtureDirectory,
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "git-skill",
+        description: "Uses a remote skill overlay",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "git",
+            repo: skillRepoDirectory,
+            ref: "main",
+            subpath: "overlay",
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
+        agent: {
+          adapter: "codex",
+          executionMethod: "command",
+          commandPath: "codex",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "HELLO",
+            },
+          ],
         },
       },
-      initializeGit: false,
-    },
-  };
+    ],
+  });
 
-  const workspace = await materializeWorkspace({ manifest, scenario });
+  const workspace = await materializeWorkspace({ manifest, scenario: manifest.scenarios[0] });
   const agentsContents = await fs.readFile(
     path.join(workspace.workspaceDirectory, "AGENTS.md"),
     "utf8",

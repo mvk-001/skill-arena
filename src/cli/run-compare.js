@@ -177,6 +177,7 @@ function buildComparePromptfooConfig({ manifest, runs }) {
       manifest,
       scenario,
       workspaceDirectory: workspace.workspaceDirectory,
+      workspaceEnvironment: workspace.environment ?? {},
       gitReady: workspace.gitReady,
     });
     const entry = skillModeMap.get(skillModeId) ?? {

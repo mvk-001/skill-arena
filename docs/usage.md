@@ -6,11 +6,11 @@ Use `manifest.yaml` when you want scenario-oriented runs. Use `compare.yaml` whe
 - rows by `prompt x agent/configuration`
 - per-cell pass ratios such as `40% (4/10)`
 
-In both formats, `evaluation.requests` is the execution count. `evaluation.maxConcurrency` is optional; when omitted, the harness uses the local machine parallelism.
+In both formats, `evaluation.requests` is the execution count. For compare configs, it defaults to `10` when omitted. `evaluation.maxConcurrency` is optional; when omitted, the harness uses the local machine parallelism.
 
 ## Benchmark manifest
 
-Create a fixture under `fixtures/<benchmark-id>/base/`. Add a skill overlay only if the benchmark needs a workspace-injected skill.
+Preferred shape: declare the workspace with `workspace.sources` and declare the skill explicitly per scenario. Legacy `fixture` and `skillOverlay` fields still work, but they are compatibility inputs now.
 
 Minimal shape:
 
@@ -28,15 +28,17 @@ task:
       description: Architecture summary
       prompt: Read the repository and summarize the architecture.
 workspace:
-  fixture: fixtures/repo-summary/base
-  skillOverlay:
-    path: fixtures/repo-summary/skill-overlay
-  initializeGit: true
+  sources:
+    - id: base
+      type: local-path
+      path: fixtures/repo-summary/base
+      target: /
+  setup:
+    initializeGit: true
 scenarios:
   - id: codex-mini-no-skill
     description: Baseline
     skillMode: disabled
-    skillSource: none
     agent:
       adapter: codex
       model: gpt-5.1-codex-mini
@@ -62,7 +64,12 @@ scenarios:
   - id: codex-mini-with-skill
     description: Skill enabled
     skillMode: enabled
-    skillSource: workspace-overlay
+    skill:
+      source:
+        type: local-path
+        path: fixtures/repo-summary/skill-overlay
+      install:
+        strategy: workspace-overlay
     agent:
       adapter: codex
       model: gpt-5.1-codex-mini
@@ -116,8 +123,13 @@ task:
       description: Architecture summary
       prompt: Read the repository and summarize the architecture.
 workspace:
-  fixture: fixtures/repo-summary/base
-  initializeGit: true
+  sources:
+    - id: base
+      type: local-path
+      path: fixtures/repo-summary/base
+      target: /
+  setup:
+    initializeGit: true
 evaluation:
   assertions:
     - type: llm-rubric
@@ -135,7 +147,11 @@ comparison:
     - id: skill
       description: Skill enabled
       skillMode: enabled
-      skillSource: system-installed
+      skill:
+        source:
+          type: system-installed
+        install:
+          strategy: system-installed
   variants:
     - id: codex-mini
       description: Codex mini
@@ -175,6 +191,12 @@ What compare mode produces:
 - Promptfoo rows by variant and prompt
 - `summary.json` with a `matrix` section
 - `merged/report.md` with cells like `40% (4/10)`
+
+Legacy compatibility:
+
+- `workspace.fixture` normalizes to the first `workspace.sources` entry
+- `workspace.skillOverlay` can still supply the default enabled skill
+- `task.prompt` still works and normalizes to a single prompt entry
 
 ## Artifacts
 
