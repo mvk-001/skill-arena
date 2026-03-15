@@ -1,0 +1,26 @@
+# <type>: <short summary>
+#
+# Recommended types:
+# feat, fix, docs, refactor, test, chore
+#
+# Keep the summary imperative and specific.
+# Example:
+# feat: add compare summary matrix to merged report
+
+# Why
+# Explain the user-visible or repository-level reason for the change.
+# Mention the benchmark, manifest, adapter, or workflow affected.
+
+# What
+# Summarize the implementation at a high level.
+# Include important schema, workspace, adapter, or CLI changes.
+
+# Validation
+# List the commands you ran and the result.
+# Examples:
+# - npm test
+# - npm run validate:manifest -- ./benchmarks/<benchmark-id>/manifest.yaml
+# - npm run benchmark:compare -- ./benchmarks/<benchmark-id>/compare.yaml --dry-run
+
+# Notes
+# Record any follow-up work, limitations, or intentional omissions.
