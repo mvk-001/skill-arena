@@ -6,6 +6,77 @@ Codex scenarios run through a Promptfoo custom script that uses the local Codex 
 
 Benchmarks can target either workspace-injected skills or skills already installed in the local Codex system.
 
+## Quickstart
+
+Prerequisites:
+
+- Node.js 24 or newer
+- local Codex CLI on `PATH` as `codex`
+- Codex already authenticated on the machine
+
+### 0. Install this repository with npm
+
+Clone the repository and install dependencies. No global Promptfoo install is required because the repo uses the local package through `npm run` and `npx`.
+
+```bash
+git clone <your-fork-or-this-repo-url>
+cd skill-arena
+npm install
+```
+
+### 1. Install the `compare-config-author` skill
+
+Copy the reusable skill into your local Codex skills directory, then restart Codex so it picks up the new skill.
+
+```bash
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+cp -R ./skills/compare-config-author "${CODEX_HOME:-$HOME/.codex}/skills/compare-config-author"
+```
+
+### 2. Ask Codex to generate a compare config
+
+Use the installed skill in any benchmark authoring workspace. For example:
+
+```text
+Use the compare-config-author skill to create deliverables/compare.yaml for this benchmark.
+Return only the final compare.yaml content.
+```
+
+The repository also includes a ready-made benchmark for this exact task in `benchmarks/compare-config-author/compare.yaml`.
+
+### 3. Run the benchmark
+
+Execute the included compare benchmark:
+
+```bash
+npm run benchmark:compare -- ./benchmarks/compare-config-author/compare.yaml
+```
+
+### 4. Open the generated report
+
+The compare run writes a merged report to:
+
+```text
+results/compare-config-author/<timestamp>-compare/merged/report.md
+```
+
+On PowerShell, this opens the most recent report:
+
+```powershell
+$report = Get-ChildItem .\results\compare-config-author\*\merged\report.md |
+  Sort-Object LastWriteTime -Descending |
+  Select-Object -First 1 -ExpandProperty FullName
+Start-Process $report
+```
+
+### 5. Optional: inspect execution details in Promptfoo
+
+After at least one run, open the Promptfoo viewer:
+
+```bash
+npx promptfoo@latest view
+```
+
 Start with these documents:
 
 1. [Architecture](./docs/architecture.md)
