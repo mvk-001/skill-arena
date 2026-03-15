@@ -60,6 +60,10 @@ export const assertionSchema = z.discriminatedUnion("type", [
   llmRubricAssertionSchema,
 ]);
 
+export const promptEvaluationSchema = z.object({
+  assertions: z.array(assertionSchema).min(1),
+});
+
 const baseAgentSchema = z.object({
   adapter: z.enum(["codex", "copilot-cli", "pi"]),
   model: z.string().min(1).optional(),
@@ -130,6 +134,7 @@ export const taskPromptDefinitionSchema = z.object({
   id: slugSchema.optional(),
   prompt: z.string().min(1),
   description: z.string().min(1).optional(),
+  evaluation: promptEvaluationSchema.optional(),
 });
 
 export const benchmarkMetadataSchema = z.object({
@@ -219,12 +224,21 @@ const normalizedSkillSourceSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("local-path"),
     path: z.string().min(1),
+    skillId: slugSchema.optional(),
   }),
   z.object({
     type: z.literal("git"),
     repo: z.string().min(1),
     ref: z.string().min(1).optional(),
     subpath: z.string().min(1).optional(),
+    skillPath: z.string().min(1).optional(),
+    skillId: slugSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("inline"),
+    skillId: slugSchema,
+    content: z.string().default(""),
+    files: z.array(inlineFileSchema).default([]),
   }),
   z.object({
     type: z.literal("inline-files"),

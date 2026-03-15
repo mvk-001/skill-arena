@@ -16,6 +16,15 @@ test("local judge helpers detect supported shorthand ids", () => {
   assert.equal(getLocalJudgeAdapter("skill-arena:judge:copilot-cli"), "copilot-cli");
 });
 
+test("local judge helpers reject unsupported ids and ignore invalid provider shapes", () => {
+  assert.throws(
+    () => getLocalJudgeAdapter("openai:gpt-5-mini"),
+    /Unsupported local judge provider id "openai:gpt-5-mini"\./,
+  );
+  assert.equal(toPromptfooGraderProvider(null, "C:/temp/workspace"), null);
+  assert.deepEqual(toPromptfooGraderProvider({}, "C:/temp/workspace"), {});
+});
+
 test("toPromptfooGraderProvider rewrites local judge shorthand and passes through other providers", () => {
   const workspaceDirectory = "C:/temp/workspace";
   const translated = toPromptfooGraderProvider("skill-arena:judge:codex", workspaceDirectory);
@@ -80,6 +89,36 @@ test("local judge provider delegates to copilot and pi configs", () => {
   assert.equal(copilotProvider.buildDelegate().config.model, "gpt-5");
   assert.equal(piProvider.buildDelegate().config.command_path, "pi");
   assert.equal(piProvider.buildDelegate().config.model, "github-copilot/gpt-5-mini");
+});
+
+test("local judge provider exposes ids and forwards callApi to the delegate", async () => {
+  const provider = new LocalJudgeProvider({
+    id: "custom-local-judge",
+    config: {
+      provider_id: "skill-arena:judge:copilot-cli",
+    },
+  });
+
+  assert.equal(provider.id(), "skill-arena:judge:copilot-cli");
+  assert.equal(new LocalJudgeProvider({ id: "fallback-id" }).id(), "fallback-id");
+  assert.equal(new LocalJudgeProvider().id(), "local-judge-provider");
+
+  const abortController = new AbortController();
+  provider.buildDelegate = () => ({
+    callApi: async (prompt, context, callOptions) => ({
+      output: `${prompt}:${context.variantId}:${String(callOptions.abortSignal.aborted)}`,
+    }),
+  });
+
+  const response = await provider.callApi(
+    "grade this",
+    { variantId: "baseline" },
+    { abortSignal: abortController.signal },
+  );
+
+  assert.deepEqual(response, {
+    output: "grade this:baseline:false",
+  });
 });
 
 test("local judge provider rejects unsupported adapters", () => {

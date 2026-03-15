@@ -9,6 +9,11 @@ task:
     - id: main
       description: Primary benchmark prompt
       prompt: Exact task prompt sent to every provider.
+      # Optional prompt-level assertions for row-specific checks.
+      # evaluation:
+      #   assertions:
+      #     - type: contains
+      #       value: Prompt-specific expectation.
 workspace:
   fixture: fixtures/example/base
   initializeGit: true
@@ -33,9 +38,11 @@ comparison:
       skillMode: enabled
       skill:
         source:
-          type: system-installed
+          type: local-path
+          path: fixtures/example/skills/example-skill
+          skillId: example-skill
         install:
-          strategy: system-installed
+          strategy: workspace-overlay
   variants:
     - id: codex-mini
       description: Codex mini comparison variant.
@@ -44,7 +51,7 @@ comparison:
         model: gpt-5.1-codex-mini
         executionMethod: command
         commandPath: codex
-        sandboxMode: read-only
+        sandboxMode: workspace-write
         approvalPolicy: never
         webSearchEnabled: false
         networkAccessEnabled: false

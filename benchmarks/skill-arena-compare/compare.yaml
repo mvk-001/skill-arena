@@ -1,82 +1,177 @@
 schemaVersion: 1
 benchmark:
   id: skill-arena-compare
-  description: Evaluate the skill-arena-compare workspace skill on authoring a Skill Arena compare.yaml file.
+  description: Evaluate the repo-local skill-arena-compare workspace skill on authoring correct Skill Arena compare configs.
   tags:
     - compare
     - skill
     - authoring
 task:
   prompts:
-    - id: brief-driven
-      description: Author the compare config from the benchmark brief and write it into the current workspace.
+    - id: local-path-skill
+      description: Author the compare config from the benchmark brief using an explicit local-path workspace-overlay skill source.
       prompt: >-
         Read `docs/benchmark-brief.md` and author `./deliverables/compare.yaml`
         in the current workspace. Write the file there instead of inside any
-        `skills/` directory. Update the generated compare config so each prompt
-        uses `evaluation.requests: 6`. If you can determine local machine
-        capacity from Node.js, set `evaluation.maxConcurrency` in the generated
-        file. Return only the full completed `compare.yaml` content as your
-        final answer.
+        `skills/` directory. The generated compare config must stay focused on
+        correct prompts, explicit evaluation, one codex variant, and explicit
+        `no-skill` and `skill` modes. For the enabled `skill` mode in the
+        generated compare config, use an explicit `skill` block with
+        `source.type: local-path`, `path:
+        fixtures/skill-arena-compare/skill-overlay/skills/skill-arena-compare`,
+        `skillId: skill-arena-compare`, and `install.strategy:
+        workspace-overlay`. Return only the full completed `compare.yaml`
+        content as your final answer.
+      evaluation:
+        assertions:
+          - type: file-contains
+            path: deliverables/compare.yaml
+            value: "type: local-path"
+          - type: file-contains
+            path: deliverables/compare.yaml
+            value: "path: fixtures/skill-arena-compare/skill-overlay/skills/skill-arena-compare"
+          - type: file-contains
+            path: deliverables/compare.yaml
+            value: "skillId: skill-arena-compare"
+          - type: javascript
+            value: |
+              (() => {
+                const fs = process.getBuiltinModule('node:fs');
+                const fileContents = fs.readFileSync('deliverables/compare.yaml', 'utf8');
+                return !fileContents.includes('type: git')
+                  && !fileContents.includes('type: inline-files');
+              })()
+    - id: inline-files-skill
+      description: Author the compare config from the benchmark brief using an inline-files workspace-overlay skill source.
+      prompt: >-
+        Read `docs/benchmark-brief.md` and author `./deliverables/compare.yaml`
+        in the current workspace. Write the file there instead of inside any
+        `skills/` directory. The generated compare config must stay focused on
+        correct prompts, explicit evaluation, one codex variant, and explicit
+        `no-skill` and `skill` modes. For the enabled `skill` mode in the
+        generated compare config, use an explicit `skill` block with
+        `source.type: inline-files` and files that define at least
+        `skills/skill-arena-compare/SKILL.md`. Keep `install.strategy:
+        workspace-overlay`. Return only the full completed `compare.yaml`
+        content as your final answer.
+      evaluation:
+        assertions:
+          - type: file-contains
+            path: deliverables/compare.yaml
+            value: "type: inline-files"
+          - type: file-contains
+            path: deliverables/compare.yaml
+            value: "path: skills/skill-arena-compare/SKILL.md"
+          - type: file-contains
+            path: deliverables/compare.yaml
+            value: "name: skill-arena-compare"
+          - type: javascript
+            value: |
+              (() => {
+                const fs = process.getBuiltinModule('node:fs');
+                const fileContents = fs.readFileSync('deliverables/compare.yaml', 'utf8');
+                return !fileContents.includes('type: git')
+                  && !fileContents.includes('type: local-path');
+              })()
+    - id: git-skill
+      description: Author the compare config from the benchmark brief using a git workspace-overlay skill source.
+      prompt: >-
+        Read `docs/benchmark-brief.md` and author `./deliverables/compare.yaml`
+        in the current workspace. Write the file there instead of inside any
+        `skills/` directory. The generated compare config must stay focused on
+        correct prompts, explicit evaluation, one codex variant, and explicit
+        `no-skill` and `skill` modes. For the enabled `skill` mode in the
+        generated compare config, use an explicit `skill` block with
+        `source.type: git`, `repo: https://github.com/mvk-001/skill-arena`,
+        `ref: main`, `subpath: .`, `skillPath: skills/skill-arena-compare`,
+        `skillId: skill-arena-compare`, and `install.strategy:
+        workspace-overlay`. Return only the full completed `compare.yaml`
+        content as your final answer.
+      evaluation:
+        assertions:
+          - type: file-contains
+            path: deliverables/compare.yaml
+            value: "type: git"
+          - type: file-contains
+            path: deliverables/compare.yaml
+            value: "repo: https://github.com/mvk-001/skill-arena"
+          - type: file-contains
+            path: deliverables/compare.yaml
+            value: "skillPath: skills/skill-arena-compare"
+          - type: file-contains
+            path: deliverables/compare.yaml
+            value: "skillId: skill-arena-compare"
+          - type: javascript
+            value: |
+              (() => {
+                const fs = process.getBuiltinModule('node:fs');
+                const fileContents = fs.readFileSync('deliverables/compare.yaml', 'utf8');
+                return !fileContents.includes('type: local-path')
+                  && !fileContents.includes('type: inline-files');
+              })()
 workspace:
   fixture: fixtures/skill-arena-compare/base
-  skillOverlay: fixtures/skill-arena-compare/skill-overlay
   initializeGit: true
 evaluation:
   assertions:
     - type: contains
       value: "schemaVersion: 1"
     - type: contains
-      value: "id: repo-summary-generated"
+      value: "id: compare-config-authoring-generated"
     - type: contains
-      value: "fixture: fixtures/repo-summary/base"
+      value: "description: Compare baseline and skill-enabled compare.yaml authoring runs."
     - type: contains
-      value: "path: fixtures/repo-summary/skill-overlay"
+      value: "fixture: fixtures/skill-arena-compare/base"
     - type: contains
-      value: "requests: 6"
-    - type: contains
-      value: "maxConcurrency:"
+      value: "provider: skill-arena:judge:codex"
     - type: contains
       value: "id: no-skill"
     - type: contains
       value: "id: skill"
     - type: contains
-      value: "type: local-path"
-    - type: contains
       value: "strategy: workspace-overlay"
     - type: contains
-      value: "id: architecture"
+      value: "id: author-compare"
     - type: contains
-      value: "id: testing"
+      value: "id: review-compare"
     - type: contains
       value: "variantDisplayName: codex mini"
+    - type: contains
+      value: "requests: 6"
+    - type: contains
+      value: "maxConcurrency: 12"
+    - type: contains
+      value: "sandboxMode: workspace-write"
     - type: file-contains
       path: "deliverables/compare.yaml"
       value: "schemaVersion: 1"
     - type: file-contains
       path: "deliverables/compare.yaml"
+      value: "id: compare-config-authoring-generated"
+    - type: file-contains
+      path: "deliverables/compare.yaml"
+      value: "fixture: fixtures/skill-arena-compare/base"
+    - type: file-contains
+      path: "deliverables/compare.yaml"
+      value: "provider: skill-arena:judge:codex"
+    - type: file-contains
+      path: "deliverables/compare.yaml"
       value: "requests: 6"
     - type: file-contains
       path: "deliverables/compare.yaml"
-      value: "maxConcurrency:"
+      value: "maxConcurrency: 12"
     - type: file-contains
       path: "deliverables/compare.yaml"
-      value: "type: local-path"
+      value: "sandboxMode: workspace-write"
     - type: file-contains
       path: "deliverables/compare.yaml"
-      value: "strategy: workspace-overlay"
+      value: "skillMode: disabled"
     - type: file-contains
       path: "deliverables/compare.yaml"
-      value: "fixture: fixtures/repo-summary/base"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "path: fixtures/repo-summary/skill-overlay"
+      value: "skillMode: enabled"
     - type: javascript
       value: |
-        !output.includes("compare-config-author")
-    - type: javascript
-      value: |
-        !output.includes("skills/skill-arena-compare")
+        output.trimStart().startsWith("schemaVersion: 1")
   requests: 6
   timeoutMs: 300000
   tracing: false
@@ -85,7 +180,7 @@ evaluation:
 comparison:
   skillModes:
     - id: no-skill
-      description: Baseline without the skill-arena-compare skill overlay.
+      description: Baseline without the skill-arena-compare authoring skill.
       skillMode: disabled
       output:
         tags:
@@ -94,12 +189,13 @@ comparison:
           skillDisplayName: no-skill
           skillModeId: no-skill
     - id: skill
-      description: Workspace overlay with the skill-arena-compare skill enabled.
+      description: Workspace overlay with the repo-local skill-arena-compare skill enabled.
       skillMode: enabled
       skill:
         source:
           type: local-path
-          path: fixtures/skill-arena-compare/skill-overlay
+          path: skills/skill-arena-compare
+          skillId: skill-arena-compare
         install:
           strategy: workspace-overlay
       output:
@@ -110,7 +206,7 @@ comparison:
           skillModeId: skill
   variants:
     - id: codex-mini
-      description: Codex mini using workspace-write so it can author the target file.
+      description: Codex mini using workspace-write so it can author the requested compare file.
       agent:
         adapter: codex
         model: gpt-5.1-codex-mini

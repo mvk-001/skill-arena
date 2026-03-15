@@ -14,13 +14,14 @@ import {
 import {
   flattenLabels,
   getTaskPrompts,
+  resolvePromptAssertions,
   stringifyPromptfooConfig,
   toPromptfooAssertion,
 } from "../promptfoo-config.js";
 import { mapWithConcurrency, resolveEvaluationConcurrency } from "../concurrency.js";
 import { ensureCompareScenarioLocalPaths } from "../compare-bootstrap.js";
 import { fromPackageRoot } from "../project-paths.js";
-import { materializeWorkspace } from "../workspace.js";
+import { materializeWorkspace, syncExecutionWorkspaceToArtifacts } from "../workspace.js";
 
 async function main() {
   const compareConfigPath = process.argv[2];
@@ -156,6 +157,13 @@ async function main() {
     executionLogPath,
     `promptfoo eval completed in ${formatDurationMs(Date.now() - promptfooStartMs)}`,
   );
+  await mapWithConcurrency(
+    supportedRuns,
+    effectiveConcurrency,
+    async ({ workspace }) => {
+      await syncExecutionWorkspaceToArtifacts(workspace);
+    },
+  );
 
   const normalizeStartMs = Date.now();
   const compareSummary = await normalizeComparePromptfooResults({
@@ -227,8 +235,9 @@ function buildComparePromptfooConfig({ manifest, runs }) {
     const provider = buildPromptfooProvider({
       manifest,
       scenario,
-      workspaceDirectory: workspace.workspaceDirectory,
+      workspaceDirectory: workspace.executionWorkspaceDirectory ?? workspace.workspaceDirectory,
       workspaceEnvironment: workspace.environment ?? {},
+      isolatedEnvironment: workspace.executionEnvironment ?? {},
       gitReady: workspace.gitReady,
     });
     const entry = skillModeMap.get(skillModeId) ?? {
@@ -279,8 +288,14 @@ function buildComparePromptfooConfig({ manifest, runs }) {
             variantDisplayName: variant.variantDisplayName,
           }),
         },
-        assert: evaluation.assertions.map((assertion) =>
-          toPromptfooAssertion(assertion, runs[0].workspace.workspaceDirectory),
+        assert: resolvePromptAssertions({
+          defaultAssertions: evaluation.assertions,
+          taskPrompt,
+        }).map((assertion) =>
+          toPromptfooAssertion(
+            assertion,
+            runs[0].workspace.executionWorkspaceDirectory ?? runs[0].workspace.workspaceDirectory,
+          ),
         ),
       })),
     ),

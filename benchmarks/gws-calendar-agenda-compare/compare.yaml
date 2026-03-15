@@ -8,10 +8,10 @@ benchmark:
     - compare
 task:
   prompts:
-    - id: month-events
-      description: Ask for this month's events.
+    - id: today-events
+      description: Ask for today's events.
       prompt: >-
-        Show this month's events across all calendars. Use the underlying
+        Show today's events across all calendars. Use the underlying
         `gws calendar +agenda` command in read-only mode, prefer `--format
         json`, and return only JSON with top-level keys `request`,
         `commandUsed`, `events`, `eventCount`, and `notes`.

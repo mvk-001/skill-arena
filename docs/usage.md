@@ -27,6 +27,10 @@ task:
     - id: architecture
       description: Architecture summary
       prompt: Read the repository and summarize the architecture.
+      evaluation:
+        assertions:
+          - type: contains
+            value: architecture
 workspace:
   sources:
     - id: base
@@ -67,7 +71,7 @@ scenarios:
     skill:
       source:
         type: local-path
-        path: fixtures/repo-summary/skill-overlay
+        path: fixtures/repo-summary/skill-overlay/skills/repo-summary
       install:
         strategy: workspace-overlay
     agent:
@@ -149,9 +153,15 @@ comparison:
       skillMode: enabled
       skill:
         source:
-          type: system-installed
+          type: inline
+          skillId: repo-summary
+          content: |
+            ---
+            name: repo-summary
+            ---
+            Summarize the repository using the provided workspace files only.
         install:
-          strategy: system-installed
+          strategy: workspace-overlay
   variants:
     - id: codex-mini
       description: Codex mini
@@ -220,6 +230,8 @@ For compare configs, local paths follow a runtime contract:
 
 If you plan to run `compare.yaml` outside the repository root, use either absolute paths or relative paths that the installed package can bootstrap into the current working directory.
 
+When a compare benchmark needs different checks per prompt row, keep shared assertions at top-level `evaluation.assertions` and add prompt-specific assertions under `task.prompts[*].evaluation.assertions`. Prompt-level assertions are appended to the shared set for that row.
+
 The repository also includes a versioned minimal `copilot-cli` compare benchmark:
 
 ```bash
@@ -240,6 +252,12 @@ Legacy compatibility:
 - `workspace.fixture` normalizes to the first `workspace.sources` entry
 - `workspace.skillOverlay` can still supply the default enabled skill
 - `task.prompt` still works and normalizes to a single prompt entry
+
+Preferred explicit skill source options:
+
+- `local-path`: point to one local skill folder containing `SKILL.md`
+- `inline`: define one `SKILL.md` directly in YAML
+- `git`: clone a repo and select one skill folder with optional `skillPath`
 
 ## Artifacts
 

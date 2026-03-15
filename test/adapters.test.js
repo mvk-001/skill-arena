@@ -16,6 +16,10 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, and
     workspaceEnvironment: {
       BASE_FLAG: "1",
     },
+    isolatedEnvironment: {
+      HOME: "C:/temp/home",
+      CODEX_HOME: "C:/temp/codex-home",
+    },
     gitReady: false,
   };
 
@@ -33,7 +37,7 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, and
         networkAccessEnabled: false,
         reasoningEffort: "low",
         additionalDirectories: ["fixtures"],
-        cliEnv: { CODEX_FLAG: "1" },
+        cliEnv: { CODEX_FLAG: "1", CODEX_HOME: "C:/should-not-win" },
         config: { profile: "bench" },
       },
       evaluation: {
@@ -55,7 +59,7 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, and
         networkAccessEnabled: true,
         reasoningEffort: "low",
         additionalDirectories: ["fixtures"],
-        cliEnv: { COPILOT_FLAG: "1" },
+        cliEnv: { COPILOT_FLAG: "1", HOME: "C:/should-not-win" },
         config: { agent: "terminal" },
       },
       evaluation: {
@@ -71,7 +75,7 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, and
         adapter: "pi",
         commandPath: "pi",
         model: "github-copilot/gpt-5-mini",
-        cliEnv: { PI_FLAG: "1" },
+        cliEnv: { PI_FLAG: "1", HOME: "C:/should-not-win" },
       },
       evaluation: {
         tracing: false,
@@ -85,11 +89,39 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, and
   assert.equal(codexProvider.config.cli_env.CODEX_FLAG, "1");
 
   assert.match(copilotProvider.id, /copilot-system-provider\.js$/);
-  assert.deepEqual(copilotProvider.config.additional_directories, ["fixtures"]);
+  assert.deepEqual(copilotProvider.config.additional_directories, ["C:\\temp\\workspace\\fixtures"]);
   assert.equal(copilotProvider.config.cli_env.COPILOT_FLAG, "1");
   assert.equal(copilotProvider.config.copilot_config.agent, "terminal");
 
   assert.match(piProvider.id, /pi-system-provider\.js$/);
   assert.equal(piProvider.config.command_path, "pi");
   assert.equal(piProvider.config.cli_env.PI_FLAG, "1");
+  assert.equal(piProvider.config.cli_env.HOME, "C:/temp/home");
+  assert.equal(codexProvider.config.cli_env.CODEX_HOME, "C:/temp/codex-home");
+});
+
+test("buildPromptfooProvider rejects additional directories outside the workspace", () => {
+  assert.throws(() => buildPromptfooProvider({
+    workspaceDirectory: "C:/temp/workspace",
+    workspaceEnvironment: {},
+    gitReady: true,
+    scenario: {
+      agent: {
+        adapter: "codex",
+        executionMethod: "command",
+        commandPath: "codex",
+        additionalDirectories: ["../outside"],
+        sandboxMode: "read-only",
+        approvalPolicy: "never",
+        webSearchEnabled: false,
+        networkAccessEnabled: false,
+        reasoningEffort: "low",
+        cliEnv: {},
+        config: {},
+      },
+      evaluation: {
+        tracing: false,
+      },
+    },
+  }), /Additional directory escapes the workspace root/);
 });

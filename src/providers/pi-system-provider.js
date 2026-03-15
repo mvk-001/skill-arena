@@ -9,6 +9,7 @@ export default class PiSystemProvider {
   constructor(options = {}) {
     this.options = options;
     this.config = options.config ?? {};
+    this.spawnProcess = options.spawnProcess ?? spawnProcess;
   }
 
   id() {
@@ -20,7 +21,7 @@ export default class PiSystemProvider {
     const args = this.buildCommandArguments(
       useWindowsPromptWrapper ? WINDOWS_PROMPT_PLACEHOLDER : prompt,
     );
-    const { stdout, stderr, exitCode } = await spawnProcess({
+    const { stdout, stderr, exitCode } = await this.spawnProcess({
       command: this.config.command_path ?? "pi",
       args,
       cwd: this.config.working_dir,
