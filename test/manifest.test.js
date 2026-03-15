@@ -317,3 +317,79 @@ test("yaml manifests load successfully", async () => {
   assert.equal(manifest.scenarios[0].id, "yaml-scenario");
   assert.equal(manifest.task.prompts[0].id, "default");
 });
+
+test("copilot-cli defaults commandPath to copilot", () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "copilot-default-check",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    scenarios: [
+      {
+        id: "copilot-default",
+        description: "Uses copilot defaults",
+        skillMode: "disabled",
+        agent: {
+          adapter: "copilot-cli",
+          executionMethod: "command",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "HELLO",
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  assert.equal(manifest.scenarios[0].agent.commandPath, "copilot");
+});
+
+test("copilot-cli rejects sdk execution", () => {
+  assert.throws(() => benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "copilot-sdk-check",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    scenarios: [
+      {
+        id: "copilot-sdk",
+        description: "Invalid copilot execution method",
+        skillMode: "disabled",
+        agent: {
+          adapter: "copilot-cli",
+          executionMethod: "sdk",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "HELLO",
+            },
+          ],
+        },
+      },
+    ],
+  }));
+});

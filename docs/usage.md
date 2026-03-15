@@ -185,6 +185,14 @@ Use `--dry-run` to generate the Promptfoo config without live evaluation:
 npm run benchmark:compare -- ./benchmarks/repo-summary/compare.yaml --dry-run
 ```
 
+The repository also includes a versioned minimal `copilot-cli` compare benchmark:
+
+```bash
+npm run benchmark:copilot:compare
+```
+
+It uses one prompt with `requests: 2` and compares `no-skill` versus `skill` against the smoke marker fixture.
+
 What compare mode produces:
 
 - Promptfoo columns by skill mode

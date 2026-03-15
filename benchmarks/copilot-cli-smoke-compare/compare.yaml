@@ -1,0 +1,56 @@
+schemaVersion: 1
+benchmark:
+  id: copilot-cli-smoke-compare
+  description: Minimal Copilot CLI compare smoke test for skill versus no-skill marker lookup.
+  tags:
+    - smoke
+    - compare
+    - copilot-cli
+task:
+  prompts:
+    - id: marker
+      description: Return the marker only.
+      prompt: Open notes/target.txt and return only the raw value assigned to MARKER.
+workspace:
+  fixture: fixtures/smoke-skill-following/base
+  skillOverlay: fixtures/smoke-skill-following/skill-overlay
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: equals
+      value: ALPHA-42
+  requests: 2
+  timeoutMs: 180000
+  tracing: false
+  maxConcurrency: 1
+  noCache: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: Baseline without the workspace skill overlay.
+      skillMode: disabled
+    - id: skill
+      description: Workspace overlay enabled.
+      skillMode: enabled
+  variants:
+    - id: copilot-gpt5mini
+      description: Copilot CLI GPT-5 Mini.
+      agent:
+        adapter: copilot-cli
+        model: gpt-5-mini
+        executionMethod: command
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - copilot-cli
+          - gpt-5-mini
+        labels:
+          adapterDisplayName: copilot-cli
+          adapter_family: copilot-cli

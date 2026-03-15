@@ -5,6 +5,7 @@
 - Node.js 24 or newer
 - `npm install`
 - Local Codex CLI available on `PATH` as `codex`
+- Local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
 - Codex authenticated on the machine before running live benchmarks
 
 ## What to run
@@ -74,6 +75,12 @@ For the smoke comparison across Codex and PI:
 npm run benchmark:smoke:compare
 ```
 
+For the minimal smoke comparison across `copilot-cli` with `no-skill` and `skill`:
+
+```bash
+npm run benchmark:copilot:compare
+```
+
 ### 4. Run the current skill smoke benchmarks
 
 The repository currently ships one live benchmark: `smoke-skill-following`.
@@ -108,6 +115,13 @@ If your manifest uses `task.prompts`, Promptfoo evaluates every prompt variant a
 
 If `maxConcurrency` is omitted in a manifest or compare config, the harness uses the local machine parallelism by default.
 
+## `copilot-cli` adapter notes
+
+- V1 supports `copilot-cli` through the local `copilot` command only.
+- `executionMethod: "sdk"` is not supported for `copilot-cli`.
+- Sandbox, network, web search, and approval settings are mapped on a best-effort basis because Copilot CLI does not expose the same control surface as Codex.
+- If `copilot` is not installed or not on `PATH`, the scenario fails with a command execution error.
+
 ## Where to inspect results
 
 Each run writes artifacts under:
@@ -134,18 +148,19 @@ For compare runs, inspect:
 
 ## Latest validated results
 
-Validated on March 13, 2026 in `America/New_York` on Windows with:
+Validated on March 15, 2026 in `America/New_York` on Windows with:
 
 - Promptfoo `0.121.2`
 - Node `v24.14.0`
 - Codex via the `command` backend
+- Copilot CLI via the `command` backend
 - model `gpt-5.1-codex-mini`
 
 The run artifact paths below are local validation outputs under the ignored `results/` directory.
 
 ### Unit and manifest checks
 
-- `npm test`: passed, `9/9` tests
+- `npm test`: passed, `40/40` tests
 - `npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.yaml`: passed
 
 ### Live smoke benchmark results
@@ -176,7 +191,21 @@ The run artifact paths below are local validation outputs under the ignored `res
 - Summary path:
   - `results/smoke-skill-following/2026-03-14T00-05-41-889Z-codex-mini-with-skill/summary.json`
 
+### Live Copilot compare result
+
+#### `copilot-cli-smoke-compare`
+
+- Result: passed
+- Rows: `1`
+- Requests per cell: `2`
+- Matrix:
+  - `no-skill`: `100% (2/2)`
+  - `skill`: `100% (2/2)`
+- Summary path:
+  - `results/copilot-cli-smoke-compare/2026-03-15T16-10-05-720Z-compare/summary.json`
+
 ## Notes from validation
 
 - The live benchmark now uses `reasoningEffort: "low"` because the active Codex backend in this environment rejected `"minimal"`.
 - Codex emitted non-fatal warnings on stderr about PowerShell shell snapshots and model personality fallback. They did not prevent successful benchmark completion.
+- The `copilot-cli` provider uses Copilot JSON output mode and extracts the final `assistant.message` content so Promptfoo assertions see only the terminal answer.

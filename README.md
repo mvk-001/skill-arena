@@ -4,6 +4,8 @@ Skill Arena is a Promptfoo-driven benchmark harness for evaluating coding agents
 
 Codex scenarios run through a Promptfoo custom script that uses the local Codex system via `codex exec` or `@openai/codex-sdk`.
 
+Copilot CLI scenarios run through a Promptfoo custom script that uses the local `copilot` command.
+
 Benchmarks can target either workspace-injected skills or skills already installed in the local Codex system.
 
 ## Quickstart
@@ -12,6 +14,7 @@ Prerequisites:
 
 - Node.js 24 or newer
 - local Codex CLI on `PATH` as `codex`
+- local GitHub Copilot CLI on `PATH` as `copilot` when running `copilot-cli` scenarios
 - Codex already authenticated on the machine
 
 ### 0. Install this repository with npm
@@ -50,6 +53,12 @@ Execute the included compare benchmark:
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/compare-config-author/compare.yaml
+```
+
+To run the versioned minimal `copilot-cli` smoke comparison:
+
+```bash
+npm run benchmark:copilot:compare
 ```
 
 ### 4. Open the generated report

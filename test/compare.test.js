@@ -290,3 +290,77 @@ test("smoke compare config expands into codex and pi skill-mode scenarios", asyn
   assert.equal(manifest.scenarios[3].agent.model, "github-copilot/gpt-5-mini");
   assert.equal(manifest.scenarios[3].skillSource, "workspace-overlay");
 });
+
+test("compare config accepts copilot-cli variants", () => {
+  const compareConfig = compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "copilot-compare",
+      description: "Compare copilot scenarios.",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    evaluation: {
+      assertions: [
+        {
+          type: "equals",
+          value: "HELLO",
+        },
+      ],
+      requests: 1,
+      timeoutMs: 120000,
+      tracing: false,
+      noCache: true,
+    },
+    comparison: {
+      skillModes: [
+        {
+          id: "no-skill",
+          description: "No skill",
+          skillMode: "disabled",
+        },
+      ],
+      variants: [
+        {
+          id: "copilot-gpt5",
+          description: "Copilot GPT-5",
+          agent: {
+            adapter: "copilot-cli",
+            executionMethod: "command",
+            model: "gpt-5",
+          },
+        },
+      ],
+    },
+  });
+
+  const manifest = expandCompareConfigToManifest(compareConfig);
+  assert.equal(manifest.scenarios[0].agent.adapter, "copilot-cli");
+  assert.equal(manifest.scenarios[0].agent.commandPath, "copilot");
+});
+
+test("copilot smoke compare config expands into skill and no-skill scenarios", async () => {
+  const compareConfigPath = fromProjectRoot(
+    "benchmarks",
+    "copilot-cli-smoke-compare",
+    "compare.yaml",
+  );
+  const { compareConfig } = await loadCompareConfig(compareConfigPath);
+
+  const manifest = expandCompareConfigToManifest(compareConfig);
+
+  assert.equal(manifest.benchmark.id, "copilot-cli-smoke-compare");
+  assert.equal(compareConfig.evaluation.requests, 2);
+  assert.equal(manifest.scenarios.length, 2);
+  assert.equal(manifest.scenarios[0].id, "copilot-gpt5mini-no-skill");
+  assert.equal(manifest.scenarios[1].id, "copilot-gpt5mini-skill");
+  assert.equal(manifest.scenarios[0].agent.adapter, "copilot-cli");
+  assert.equal(manifest.scenarios[0].agent.commandPath, "copilot");
+  assert.equal(manifest.scenarios[1].skillSource, "workspace-overlay");
+});

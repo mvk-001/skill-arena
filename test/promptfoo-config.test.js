@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { findScenario, loadBenchmarkManifest } from "../src/manifest.js";
+import { benchmarkManifestSchema } from "../src/manifest-schema.js";
 import { buildPromptfooConfig } from "../src/promptfoo-config.js";
 import { fromProjectRoot } from "../src/project-paths.js";
 
@@ -219,4 +220,43 @@ test("pi scenarios generate Promptfoo custom script providers", async () => {
   assert.equal(config.providers[0].config.model, "github-copilot/gpt-5-mini");
   assert.equal(config.providers[0].config.command_path, "pi");
   assert.equal(config.providers[0].config.working_dir, "C:/temp/workspace");
+});
+
+test("copilot-cli scenarios generate Promptfoo custom script providers", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = structuredClone(findScenario(manifest, "codex-mini-no-skill"));
+
+  scenario.id = "copilot-cli-no-skill";
+  scenario.agent.adapter = "copilot-cli";
+  delete scenario.agent.commandPath;
+  scenario.agent.model = "gpt-5";
+
+  const parsedScenario = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: manifest.benchmark,
+    task: manifest.task,
+    workspace: manifest.workspace,
+    scenarios: [scenario],
+  }).scenarios[0];
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario: parsedScenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      environment: {},
+      gitReady: true,
+    },
+  });
+
+  assert.match(config.providers[0].id, /copilot-system-provider\.js$/);
+  assert.equal(config.providers[0].config.model, "gpt-5");
+  assert.equal(config.providers[0].config.command_path, "copilot");
+  assert.equal(config.providers[0].config.working_dir, "C:/temp/workspace");
+  assert.equal(config.providers[0].config.approval_policy, "never");
 });

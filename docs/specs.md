@@ -95,9 +95,10 @@ scenarios:
   - `codex`
   - `copilot-cli`
   - `pi`
-- `agent.executionMethod` controls how the custom Promptfoo script invokes Codex:
+- For `codex`, `agent.executionMethod` controls how the custom Promptfoo script invokes the local runtime:
   - `command`: execute the local `codex exec` command
   - `sdk`: invoke `@openai/codex-sdk`, which wraps the local CLI
+- `copilot-cli` supports only `executionMethod: "command"` in V1.
 - `skillMode` must be one of:
   - `disabled`
   - `enabled`
@@ -394,10 +395,13 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 - `codex`: supported
   - implemented as a Promptfoo custom script
   - supports `executionMethod: "command"` and `executionMethod: "sdk"`
+- `copilot-cli`: supported
+  - implemented as a Promptfoo custom script
+  - supports `executionMethod: "command"` through the local `copilot` CLI
+  - maps sandbox, network, web, and approval settings on a best-effort basis
 - `pi`: supported
   - implemented as a Promptfoo custom script
   - currently uses `executionMethod: "command"` through the local `pi` CLI
-- `copilot-cli`: reserved, not implemented
 
 ## Workspace rules
 

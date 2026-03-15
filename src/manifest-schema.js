@@ -60,11 +60,11 @@ export const assertionSchema = z.discriminatedUnion("type", [
   llmRubricAssertionSchema,
 ]);
 
-export const agentSchema = z.object({
+const baseAgentSchema = z.object({
   adapter: z.enum(["codex", "copilot-cli", "pi"]),
   model: z.string().min(1).optional(),
   executionMethod: z.enum(["command", "sdk"]).default("command"),
-  commandPath: z.string().min(1).default("codex"),
+  commandPath: z.string().min(1).optional(),
   sandboxMode: z
     .enum(["read-only", "workspace-write", "danger-full-access"])
     .default("read-only"),
@@ -80,6 +80,33 @@ export const agentSchema = z.object({
   cliEnv: z.record(z.string(), z.string()).default({}),
   config: z.record(z.string(), z.unknown()).default({}),
 });
+
+export const agentSchema = baseAgentSchema
+  .superRefine((agent, context) => {
+    if (agent.adapter === "copilot-cli" && agent.executionMethod !== "command") {
+      context.addIssue({
+        code: "custom",
+        message: "The copilot-cli adapter only supports executionMethod \"command\" in V1.",
+        path: ["executionMethod"],
+      });
+    }
+  })
+  .transform((agent) => ({
+    ...agent,
+    commandPath: agent.commandPath ?? getDefaultCommandPath(agent.adapter),
+  }));
+
+function getDefaultCommandPath(adapter) {
+  switch (adapter) {
+    case "copilot-cli":
+      return "copilot";
+    case "pi":
+      return "pi";
+    case "codex":
+    default:
+      return "codex";
+  }
+}
 
 const localSkillOverlaySchema = z.object({
   path: z.string().min(1),

@@ -65,11 +65,8 @@ Legacy `workspace.fixture`, `workspace.skillOverlay`, and `skillSource` fields a
 The adapter layer maps a manifest scenario into a Promptfoo provider definition. V1 implements:
 
 - `codex`
-- `pi`
-
-The following adapter id is reserved but not implemented in V1:
-
 - `copilot-cli`
+- `pi`
 
 ### Promptfoo config generator
 
@@ -79,6 +76,12 @@ For Codex, the generated provider is a file-based custom script. The script supp
 
 - `command`: shell out to `codex exec`
 - `sdk`: invoke `@openai/codex-sdk`, which still wraps the local Codex CLI
+
+For `copilot-cli`, the generated provider is also a file-based custom script. V1 supports:
+
+- `command`: shell out to the local `copilot` CLI
+
+`copilot-cli` maps sandbox, network, web, and approval settings on a best-effort basis because the Copilot CLI does not expose the same execution controls as Codex.
 
 ### Result outputs
 

@@ -42,7 +42,32 @@ const adapterRegistry = {
   },
   "copilot-cli": {
     id: "copilot-cli",
-    supported: false,
+    supported: true,
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment }) {
+      const providerPath = fromProjectRoot("src", "providers", "copilot-system-provider.js");
+
+      return {
+        id: providerPath,
+        label: `copilot-cli:${scenario.agent.model ?? "default"}`,
+        config: {
+          provider_id: `copilot-cli:${scenario.agent.model ?? "default"}`,
+          command_path: scenario.agent.commandPath,
+          model: scenario.agent.model,
+          working_dir: workspaceDirectory,
+          sandbox_mode: scenario.agent.sandboxMode,
+          approval_policy: scenario.agent.approvalPolicy,
+          web_search_enabled: scenario.agent.webSearchEnabled,
+          network_access_enabled: scenario.agent.networkAccessEnabled,
+          model_reasoning_effort: scenario.agent.reasoningEffort,
+          additional_directories: scenario.agent.additionalDirectories,
+          cli_env: {
+            ...workspaceEnvironment,
+            ...scenario.agent.cliEnv,
+          },
+          copilot_config: scenario.agent.config,
+        },
+      };
+    },
   },
   pi: {
     id: "pi",
