@@ -7,8 +7,11 @@ import path from "node:path";
 import {
   buildCompareMatrixSummary,
   buildMergedBenchmarkSummary,
+  normalizeRawPromptfooResults,
   normalizePromptfooResults,
   normalizeOutput,
+  writeMergedBenchmarkArtifacts,
+  writePromptfooArtifacts,
   renderCompareMatrixReport,
   renderMergedBenchmarkReport,
 } from "../src/results.js";
@@ -268,4 +271,219 @@ test("compare matrix report renders pass ratios by skill-mode column", () => {
 
   assert.match(report, /\| Prompt \| Agent\/Config \| no-skill \| skill \|/);
   assert.match(report, /\| Unread Gmail triage \| codex \| 40% \(4\/10\) \| 100% \(10\/10\) \|/);
+});
+
+test("writePromptfooArtifacts persists config, summary, and copies result files", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-artifacts-"));
+  const sourceResultsPath = path.join(tempDirectory, "source-results.json");
+  const outputResultsPath = path.join(tempDirectory, "promptfoo-results.json");
+
+  await fs.writeFile(sourceResultsPath, "{\"ok\":true}", "utf8");
+
+  await writePromptfooArtifacts({
+    runDirectory: tempDirectory,
+    promptfooConfigYaml: "description: test\n",
+    promptfooResultsPath: sourceResultsPath,
+    promptfooJsonPath: outputResultsPath,
+    summary: { ok: true },
+  });
+
+  assert.equal(
+    await fs.readFile(path.join(tempDirectory, "promptfooconfig.yaml"), "utf8"),
+    "description: test\n",
+  );
+  assert.equal(await fs.readFile(outputResultsPath, "utf8"), "{\"ok\":true}");
+  assert.deepEqual(
+    JSON.parse(await fs.readFile(path.join(tempDirectory, "summary.json"), "utf8")),
+    { ok: true },
+  );
+});
+
+test("writeMergedBenchmarkArtifacts writes merged summary and report", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-merged-"));
+  const result = await writeMergedBenchmarkArtifacts({
+    benchmarkId: "benchmark-id",
+    benchmarkRunDirectory: tempDirectory,
+    mergedSummary: { benchmarkId: "benchmark-id" },
+    cliReport: "# benchmark-id\n",
+  });
+
+  assert.equal(result.benchmarkId, "benchmark-id");
+  assert.equal(
+    await fs.readFile(path.join(tempDirectory, "report.md"), "utf8"),
+    "# benchmark-id\n",
+  );
+});
+
+test("normalizeRawPromptfooResults handles alternate outputs payloads", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-raw-results-"));
+  const promptfooResultsPath = path.join(tempDirectory, "promptfoo-results.json");
+
+  await fs.writeFile(
+    promptfooResultsPath,
+    JSON.stringify({
+      results: {
+        stats: {
+          successes: 2,
+        },
+        outputs: [
+          {
+            provider: "skill",
+            prompt: "Prompt text",
+            output: "DONE",
+            success: true,
+          },
+        ],
+      },
+    }),
+    "utf8",
+  );
+
+  const normalized = await normalizeRawPromptfooResults(promptfooResultsPath);
+
+  assert.equal(normalized.stats.successes, 2);
+  assert.equal(normalized.outputs[0].provider, "skill");
+  assert.equal(normalized.outputs[0].text, "DONE");
+});
+
+test("normalizeOutput handles failure fallbacks and testCase metadata", () => {
+  const output = normalizeOutput({
+    provider: {
+      id: "provider-id",
+    },
+    prompt: "Prompt text",
+    output: "Partial",
+    failureReason: "Tool error",
+    latency: 25,
+    tokenUsage: {
+      total: 10,
+    },
+    testCase: {
+      metadata: {
+        promptId: "prompt-id",
+        promptDescription: "Prompt description",
+        scenarioId: "scenario-id",
+        scenarioDescription: "Scenario description",
+        label_variantId: "variant-id",
+        label_variantDisplayName: "Variant display",
+      },
+    },
+  }, 2);
+
+  const nullFailureOutput = normalizeOutput({
+    provider: "provider-id",
+    prompt: "Prompt text",
+    output: "DONE",
+    failureReason: 0,
+  }, 3);
+
+  assert.equal(output.provider, "provider-id");
+  assert.equal(output.error, "Tool error");
+  assert.equal(output.variantId, "variant-id");
+  assert.equal(output.variantDisplayName, "Variant display");
+  assert.equal(output.latencyMs, 25);
+  assert.equal(output.tokenUsage.total, 10);
+  assert.equal(nullFailureOutput.error, null);
+});
+
+test("merged benchmark summary and reports handle defaults, skips, and empty cells", () => {
+  const mergedSummary = buildMergedBenchmarkSummary({
+    manifest: {
+      benchmark: {
+        id: "benchmark-id",
+        description: "Benchmark",
+      },
+    },
+    generatedAt: "2026-03-14T00:00:00.000Z",
+    scenarioSummaries: [
+      {
+        scenarioId: "scenario-a",
+        scenarioDescription: "Scenario A",
+        skillMode: "enabled",
+        model: "gpt-5",
+        outputLabels: {
+          reportDisplayName: "Scenario A",
+        },
+        outputTags: ["tag-a"],
+        outputs: [
+          {
+            promptId: null,
+            promptDescription: null,
+            prompt: "Prompt A",
+            text: "one",
+            success: true,
+            score: 0.4,
+            latencyMs: 10,
+          },
+          {
+            promptId: null,
+            promptDescription: null,
+            prompt: "Prompt A",
+            text: "two",
+            success: false,
+            score: null,
+            latencyMs: null,
+          },
+          {
+            promptId: null,
+            promptDescription: null,
+            prompt: "Prompt A",
+            text: "three",
+            success: true,
+            score: 0.8,
+            latencyMs: 20,
+          },
+          {
+            promptId: null,
+            promptDescription: null,
+            prompt: "Prompt A",
+            text: "four",
+            success: true,
+            score: 1,
+            latencyMs: 30,
+          },
+        ],
+      },
+    ],
+    skippedScenarios: [
+      {
+        scenarioId: "scenario-b",
+        displayName: "Scenario B",
+      },
+    ],
+  });
+
+  const report = renderMergedBenchmarkReport(mergedSummary);
+
+  assert.equal(mergedSummary.prompts[0].promptId, "default");
+  assert.equal(mergedSummary.prompts[0].scenarios["scenario-a"].sampleOutputs.length, 3);
+  assert.equal(mergedSummary.prompts[0].scenarios["scenario-a"].avgScore, 0.65);
+  assert.equal(mergedSummary.prompts[0].scenarios["scenario-a"].avgLatencyMs, 17.5);
+  assert.match(report, /\| default \| 75% \(3\/4\) \| skipped \|/);
+});
+
+test("compare matrix summary appends skipped variants and render handles empty columns", () => {
+  const mergedSummary = buildCompareMatrixSummary({
+    manifest: {
+      benchmark: {
+        id: "benchmark-id",
+        description: "Benchmark",
+      },
+    },
+    generatedAt: "2026-03-14T00:00:00.000Z",
+    matrix: {
+      columns: [],
+      rows: [],
+    },
+    skippedVariants: [
+      {
+        variantId: "variant-a",
+        variantDisplayName: "Variant A",
+        reason: "unsupported",
+      },
+    ],
+  });
+
+  assert.equal(mergedSummary.matrix.rows[0].skipped, true);
+  assert.equal(renderCompareMatrixReport(mergedSummary), "# benchmark-id\n\nBenchmark\n");
 });

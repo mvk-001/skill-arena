@@ -6,7 +6,7 @@ import path from "node:path";
 
 import { getDefaultParallelism } from "../src/concurrency.js";
 import { benchmarkManifestSchema } from "../src/manifest-schema.js";
-import { loadBenchmarkManifest } from "../src/manifest.js";
+import { findScenario, loadBenchmarkManifest, resolveManifestPath } from "../src/manifest.js";
 import { fromProjectRoot } from "../src/project-paths.js";
 
 test("sample manifest parses successfully", async () => {
@@ -318,6 +318,76 @@ test("yaml manifests load successfully", async () => {
   assert.equal(manifest.task.prompts[0].id, "default");
 });
 
+test("manifest loader reports invalid JSON and YAML parse errors", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-manifest-errors-"));
+  const invalidJsonPath = path.join(tempDirectory, "manifest.json");
+  const invalidYamlPath = path.join(tempDirectory, "manifest.yaml");
+
+  await fs.writeFile(invalidJsonPath, "{ invalid json", "utf8");
+  await fs.writeFile(invalidYamlPath, "schemaVersion: [", "utf8");
+
+  await assert.rejects(
+    () => loadBenchmarkManifest(invalidJsonPath),
+    /Expected valid JSON/,
+  );
+  await assert.rejects(
+    () => loadBenchmarkManifest(invalidYamlPath),
+    /Expected valid YAML/,
+  );
+});
+
+test("manifest loader formats schema validation errors", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-manifest-zod-"));
+  const manifestPath = path.join(tempDirectory, "manifest.json");
+
+  await fs.writeFile(
+    manifestPath,
+    JSON.stringify({
+      schemaVersion: 1,
+      benchmark: {
+        id: "invalid-manifest",
+        description: "Invalid manifest",
+        tags: [],
+      },
+      task: {
+        prompt: "Return HELLO.",
+      },
+      workspace: {
+        fixture: "fixtures/smoke-skill-following/base",
+        initializeGit: true,
+      },
+      scenarios: [],
+    }),
+    "utf8",
+  );
+
+  await assert.rejects(
+    () => loadBenchmarkManifest(manifestPath),
+    /scenarios:/,
+  );
+});
+
+test("resolveManifestPath preserves absolute paths and resolves repository-relative paths", () => {
+  const absolutePath = "C:\\temp\\manifest.json";
+  assert.equal(resolveManifestPath(absolutePath), absolutePath);
+  assert.match(resolveManifestPath("benchmarks/smoke-skill-following/manifest.json"), /benchmarks[\\/]smoke-skill-following[\\/]manifest\.json$/);
+});
+
+test("findScenario returns a scenario and rejects unknown ids", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+
+  assert.equal(findScenario(manifest, "codex-mini-no-skill").id, "codex-mini-no-skill");
+  assert.throws(
+    () => findScenario(manifest, "missing-scenario"),
+    /Scenario "missing-scenario" was not found in benchmark "smoke-skill-following"\./,
+  );
+});
+
 test("copilot-cli defaults commandPath to copilot", () => {
   const manifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,
@@ -392,4 +462,86 @@ test("copilot-cli rejects sdk execution", () => {
       },
     ],
   }));
+});
+
+test("manifest validation rejects duplicate scenario ids and invalid normalized skill states", () => {
+  assert.throws(() => benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "duplicate-scenarios",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    scenarios: [
+      {
+        id: "repeat",
+        description: "First",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+      {
+        id: "repeat",
+        description: "Second",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  }), (error) => {
+    assert.equal(error.message.includes("Duplicate scenario id"), true);
+    return true;
+  });
+
+  assert.throws(() => benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "invalid-enabled-skill",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    scenarios: [
+      {
+        id: "bad-enabled",
+        description: "Bad enabled scenario",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "none",
+          },
+          install: {
+            strategy: "none",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  }), /Enabled scenarios must resolve to a concrete skill source\./);
 });

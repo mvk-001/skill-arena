@@ -130,3 +130,58 @@ test("copilot provider returns stderr on command failure", async () => {
     "webSearchEnabled",
   ]);
 });
+
+test("copilot provider exposes ids, trims fallback fields, and handles empty output", async () => {
+  const provider = new CopilotSystemProvider({
+    id: "custom-id",
+    config: {
+      working_dir: "C:/temp/workspace",
+      copilot_config: {
+        denyTool: ["browser", "", 1],
+        extraContext: ["GITHUB_TOKEN"],
+      },
+    },
+    spawnProcess: async () => ({
+      stdout: [
+        "{\"message\":\" first \"}",
+        "{\"content\":\" second \"}",
+        "{\"text\":\" third \"}",
+        "{\"output\":\" final output \"}",
+      ].join("\n"),
+      stderr: "warn\n",
+      exitCode: 0,
+    }),
+  });
+
+  assert.equal(provider.id(), "custom-id");
+  assert.deepEqual(provider.buildCommandArguments("Return HELLO."), [
+    "-p",
+    "Return HELLO.",
+    "--output-format",
+    "json",
+    "--no-color",
+    "--no-ask-user",
+    "--deny-tool",
+    "browser",
+    "--context",
+    "GITHUB_TOKEN",
+  ]);
+
+  const response = await provider.callApi("Return the marker.");
+  assert.equal(response.output, "final output");
+  assert.equal(response.metadata.stderr, "warn");
+
+  const emptyOutputProvider = new CopilotSystemProvider({
+    config: {
+      working_dir: "C:/temp/workspace",
+    },
+    spawnProcess: async () => ({
+      stdout: "   ",
+      stderr: "",
+      exitCode: 0,
+    }),
+  });
+
+  const emptyResponse = await emptyOutputProvider.callApi("Return the marker.");
+  assert.equal(emptyResponse.output, "");
+});

@@ -325,3 +325,223 @@ test("skill overlays can be cloned from a git repository", async () => {
   assert.match(agentsContents, /Remote Overlay/);
   assert.match(skillContents, /name: remote-guide/);
 });
+
+test("workspace materialization supports empty sources and rejects escaping targets", async () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-empty-source",
+      description: "Workspace empty source",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "empty-source",
+          type: "empty",
+          target: "/ignored",
+        },
+        {
+          id: "inline-source",
+          type: "inline-files",
+          target: "/",
+          files: [
+            {
+              path: "README.md",
+              content: "HELLO",
+            },
+          ],
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "workspace-empty",
+        description: "Workspace empty",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  const workspace = await materializeWorkspace({ manifest, scenario: manifest.scenarios[0] });
+  const readmeContents = await fs.readFile(
+    path.join(workspace.workspaceDirectory, "README.md"),
+    "utf8",
+  );
+
+  assert.equal(readmeContents, "HELLO");
+
+  const escapingManifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-escaping-target",
+      description: "Workspace escaping target",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "inline-source",
+          type: "inline-files",
+          target: "../escape",
+          files: [
+            {
+              path: "README.md",
+              content: "HELLO",
+            },
+          ],
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "workspace-escaping",
+        description: "Workspace escaping",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  await assert.rejects(
+    () => materializeWorkspace({
+      manifest: escapingManifest,
+      scenario: escapingManifest.scenarios[0],
+    }),
+    /Workspace target escapes the workspace root/,
+  );
+});
+
+test("workspace materialization rejects missing directories and broken git sources", async () => {
+  const missingManifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-missing-source",
+      description: "Workspace missing source",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "missing-source",
+          type: "local-path",
+          path: "fixtures/does-not-exist",
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "workspace-missing",
+        description: "Workspace missing",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  await assert.rejects(
+    () => materializeWorkspace({
+      manifest: missingManifest,
+      scenario: missingManifest.scenarios[0],
+    }),
+    /workspace\.sources\.missing-source\.path does not exist or is not a directory/,
+  );
+
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-broken-git-"));
+  const fixtureDirectory = path.join(tempDirectory, "fixture");
+  await fs.mkdir(fixtureDirectory, { recursive: true });
+
+  const brokenGitManifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-broken-git",
+      description: "Workspace broken git",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: fixtureDirectory,
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "workspace-broken-git-skill",
+        description: "Workspace broken git skill",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "git",
+            repo: path.join(tempDirectory, "missing-repo"),
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  await assert.rejects(
+    () => materializeWorkspace({
+      manifest: brokenGitManifest,
+      scenario: brokenGitManifest.scenarios[0],
+    }),
+    /Failed to clone git repo/,
+  );
+});

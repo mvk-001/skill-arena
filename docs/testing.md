@@ -18,6 +18,30 @@ These validate manifest parsing, Promptfoo config generation, workspace material
 npm test
 ```
 
+### 1a. Run coverage with enforced minimum thresholds
+
+Use this command for repository changes that touch the runtime or test surface. It fails if coverage drops below the enforced minimum:
+
+```bash
+npm run test:coverage
+```
+
+Current enforced minimum thresholds:
+
+- statements: `93%`
+- lines: `93%`
+- branches: `80%`
+- functions: `95%`
+
+Coverage scope for this threshold includes `src/**/*.js` and excludes:
+
+- `src/cli/**`
+- `src/runner.js`
+- `src/providers/codex-system-provider.js`
+- `src/providers/pi-system-provider.js`
+
+These exclusions keep the quota focused on the unit-testable runtime surface while live benchmark flows continue to exercise the excluded command-oriented entrypoints.
+
 ### 2. Validate a benchmark manifest
 
 Use this before running a live benchmark if the manifest changed.
@@ -160,7 +184,8 @@ The run artifact paths below are local validation outputs under the ignored `res
 
 ### Unit and manifest checks
 
-- `npm test`: passed, `40/40` tests
+- `npm test`: passed, `76/76` tests
+- `npm run test:coverage`: passed with statements `93.9%`, lines `93.9%`, branches `80.88%`, functions `95.23%`
 - `npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.yaml`: passed
 
 ### Live smoke benchmark results

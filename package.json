@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "node --test",
+    "test:coverage": "c8 --reporter=text --all --include=src/**/*.js --exclude=src/cli/** --exclude=src/runner.js --exclude=src/providers/codex-system-provider.js --exclude=src/providers/pi-system-provider.js --check-coverage --statements 93 --branches 80 --functions 95 --lines 93 node --test",
     "validate:manifest": "node ./src/cli/validate-manifest.js",
     "generate:config": "node ./src/cli/generate-promptfoo-config.js",
     "run:benchmark": "node ./src/cli/run-benchmark.js",
@@ -25,5 +26,8 @@
     "promptfoo": "^0.121.2",
     "yaml": "^2.8.1",
     "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "c8": "^11.0.0"
   }
 }

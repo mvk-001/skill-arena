@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 
 import { findScenario, loadBenchmarkManifest } from "../src/manifest.js";
 import { benchmarkManifestSchema } from "../src/manifest-schema.js";
-import { buildPromptfooConfig } from "../src/promptfoo-config.js";
+import {
+  buildPromptfooConfig,
+  flattenLabels,
+  stringifyPromptfooConfig,
+  toPromptfooAssertion,
+} from "../src/promptfoo-config.js";
 import { fromProjectRoot } from "../src/project-paths.js";
 
 test("codex scenarios generate Promptfoo custom script providers", async () => {
@@ -259,4 +264,45 @@ test("copilot-cli scenarios generate Promptfoo custom script providers", async (
   assert.equal(config.providers[0].config.command_path, "copilot");
   assert.equal(config.providers[0].config.working_dir, "C:/temp/workspace");
   assert.equal(config.providers[0].config.approval_policy, "never");
+});
+
+test("promptfoo config enables tracing and flattens labels", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = structuredClone(findScenario(manifest, "codex-mini-no-skill"));
+
+  scenario.evaluation.tracing = true;
+  scenario.output.labels = {
+    displayName: "baseline",
+    skill: "off",
+  };
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      environment: {},
+      gitReady: true,
+    },
+  });
+
+  assert.equal(config.tracing.enabled, true);
+  assert.equal(config.tests[0].metadata.label_displayName, "baseline");
+  assert.match(stringifyPromptfooConfig(config), /description: smoke-skill-following:codex-mini-no-skill/);
+  assert.deepEqual(flattenLabels({ a: "1", b: "2" }), {
+    label_a: "1",
+    label_b: "2",
+  });
+});
+
+test("toPromptfooAssertion rejects unsupported assertion types", () => {
+  assert.throws(
+    () => toPromptfooAssertion({ type: "unsupported" }, "C:/temp/workspace"),
+    /Unsupported assertion type "unsupported"\./,
+  );
 });

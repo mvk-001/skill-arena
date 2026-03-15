@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
 import { expandCompareConfigToManifest, loadCompareConfig } from "../src/compare.js";
 import { compareConfigSchema } from "../src/compare-schema.js";
@@ -363,4 +366,219 @@ test("copilot smoke compare config expands into skill and no-skill scenarios", a
   assert.equal(manifest.scenarios[0].agent.adapter, "copilot-cli");
   assert.equal(manifest.scenarios[0].agent.commandPath, "copilot");
   assert.equal(manifest.scenarios[1].skillSource, "workspace-overlay");
+});
+
+test("compare config loader reports invalid JSON and YAML parse errors", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-errors-"));
+  const invalidJsonPath = path.join(tempDirectory, "compare.json");
+  const invalidYamlPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(invalidJsonPath, "{ invalid json", "utf8");
+  await fs.writeFile(invalidYamlPath, "schemaVersion: [", "utf8");
+
+  await assert.rejects(
+    () => loadCompareConfig(invalidJsonPath),
+    /Expected valid JSON/,
+  );
+  await assert.rejects(
+    () => loadCompareConfig(invalidYamlPath),
+    /Expected valid YAML/,
+  );
+});
+
+test("compare config loader formats schema validation errors", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-zod-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.json");
+
+  await fs.writeFile(
+    compareConfigPath,
+    JSON.stringify({
+      schemaVersion: 1,
+      benchmark: {
+        id: "invalid-compare",
+        description: "Invalid compare",
+        tags: [],
+      },
+      task: {
+        prompt: "Return HELLO.",
+      },
+      workspace: {
+        fixture: "fixtures/smoke-skill-following/base",
+        initializeGit: true,
+      },
+      evaluation: {
+        assertions: [{ type: "equals", value: "HELLO" }],
+      },
+      comparison: {
+        skillModes: [],
+        variants: [],
+      },
+    }),
+    "utf8",
+  );
+
+  await assert.rejects(
+    () => loadCompareConfig(compareConfigPath),
+    /comparison\./,
+  );
+});
+
+test("compare config validation rejects duplicate ids and invalid normalized skill states", () => {
+  assert.throws(() => compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "duplicate-compare",
+      description: "Duplicate compare config",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    evaluation: {
+      assertions: [{ type: "equals", value: "HELLO" }],
+      requests: 1,
+    },
+    comparison: {
+      skillModes: [
+        {
+          id: "same",
+          description: "First",
+          skillMode: "disabled",
+        },
+        {
+          id: "same",
+          description: "Second",
+          skillMode: "disabled",
+        },
+      ],
+      variants: [
+        {
+          id: "variant",
+          description: "Variant",
+          agent: { adapter: "codex" },
+        },
+        {
+          id: "variant",
+          description: "Duplicate variant",
+          agent: { adapter: "codex" },
+        },
+      ],
+    },
+  }), (error) => {
+    assert.equal(error.message.includes("Duplicate comparison variant id"), true);
+    assert.equal(error.message.includes("Duplicate comparison skill mode id"), true);
+    return true;
+  });
+
+  assert.throws(() => compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "compare-invalid-enabled",
+      description: "Invalid compare enabled skill",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    evaluation: {
+      assertions: [{ type: "equals", value: "HELLO" }],
+      requests: 1,
+    },
+    comparison: {
+      skillModes: [
+        {
+          id: "skill",
+          description: "Enabled without concrete skill",
+          skillMode: "enabled",
+          skill: {
+            source: {
+              type: "none",
+            },
+            install: {
+              strategy: "none",
+            },
+          },
+        },
+      ],
+      variants: [
+        {
+          id: "variant",
+          description: "Variant",
+          agent: { adapter: "codex" },
+        },
+      ],
+    },
+  }), /Enabled skill variants must resolve to a concrete skill source\./);
+
+});
+
+test("compare expansion uses adapter and variant display labels for report labels", () => {
+  const manifest = expandCompareConfigToManifest(compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "compare-labels",
+      description: "Compare labels",
+      tags: ["compare"],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    evaluation: {
+      assertions: [{ type: "equals", value: "HELLO" }],
+      requests: 1,
+    },
+    comparison: {
+      skillModes: [
+        {
+          id: "no-skill",
+          description: "No skill",
+          skillMode: "disabled",
+          output: {
+            labels: {
+              skillLabel: "off",
+            },
+          },
+        },
+      ],
+      variants: [
+        {
+          id: "variant-a",
+          description: "Variant A",
+          agent: {
+            adapter: "codex",
+          },
+          output: {
+            labels: {
+              adapterDisplayName: "Codex Mini",
+              variantDisplayName: "Mini Variant",
+            },
+          },
+        },
+        {
+          id: "variant-b",
+          description: "Variant B",
+          agent: {
+            adapter: "pi",
+          },
+        },
+      ],
+    },
+  }));
+
+  assert.equal(manifest.scenarios[0].output.labels.reportDisplayName, "Codex Mini:no-skill");
+  assert.equal(manifest.scenarios[0].output.labels.variantDisplayName, "Mini Variant");
+  assert.equal(manifest.scenarios[0].output.labels.skillLabel, "off");
+  assert.equal(manifest.scenarios[1].output.labels.reportDisplayName, "pi:no-skill");
 });
