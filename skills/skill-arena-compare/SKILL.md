@@ -7,6 +7,33 @@ description: Author or refine a Skill Arena compare.yaml file. Use when Codex ne
 
 Author a `compare.yaml` file for Skill Arena.
 
+## Output Contract
+
+For compare-authoring tasks, the final answer is usually the file content only.
+
+- Start with `schemaVersion: 1`.
+- Return raw YAML only.
+- No headings, bullets, status notes, test notes, next steps, or file notes.
+- No prose before the YAML.
+- No prose after the YAML.
+- No Markdown fences.
+- If you wrote `deliverables/compare.yaml`, answer with that file's contents
+  only.
+
+## Fast Path
+
+When the task is straightforward or the agent is struggling with long
+instructions:
+
+1. Open `assets/fast-path.md`.
+2. For the repository benchmark, run
+   `node skills/skill-arena-compare/scripts/scaffold-skill-arena-compare-benchmark.js --validate`.
+   It writes `deliverables/compare.yaml` by default.
+3. Otherwise start from `assets/compare-template.yaml`.
+4. Validate with `scripts/validate-compare-output.js` when shell commands work.
+5. Final answer rule: return raw YAML only. Do not add headings, bullets,
+   fences, status notes, test notes, or file notes before or after the YAML.
+
 ## Goal
 
 Produce a concise compare config that gives:
@@ -16,69 +43,114 @@ Produce a concise compare config that gives:
 - explicit repeated executions through `evaluation.requests`
 - labels that read well in Promptfoo and in `merged/report.md`
 
-## Rules
+## Decision Tree
 
-1. Keep the task prompt exact and benchmark-specific.
-2. Prefer `task.prompts` over a single `task.prompt` when the benchmark should compare multiple prompt variants.
-3. Set `evaluation.requests` explicitly. Use `10` unless the benchmark has a reason to use a different count.
-4. Set `evaluation.maxConcurrency` explicitly when the benchmark should scale with local machine capacity. Prefer `80%` of the machine's available parallelism, rounded down, with a minimum of `1`.
-5. Prefer two skill modes by default:
-   - `no-skill`
-   - `skill`
-6. For every `skillMode: enabled` entry, define `comparison.skillModes[*].skill` explicitly. Use `source.type: system-installed` with `install.strategy: system-installed` for installed skills, or a concrete `local-path`, `git`, or `inline-files` source for workspace overlays.
-7. Give every variant a stable slug id and a readable `output.labels.variantDisplayName`.
-8. Keep shared checks in top-level `evaluation.assertions`. When different prompt rows need different checks, append row-specific assertions under `task.prompts[*].evaluation.assertions`.
-9. Use prompt-level assertions to distinguish source-shape variants such as `local-path`, `git`, and `inline-files` without duplicating every shared assertion in every prompt.
-10. Keep assertions strict enough to measure the benchmark goal, but avoid unnecessary harness instructions in the prompt.
-11. Write the final config into the user's current working workspace at the path they requested, such as `./compare.yaml` or `./deliverables/compare.yaml`. Do not write outputs into the skill directory, the repository skill source, or any hidden helper location unless the user explicitly asks for that.
-12. Reuse the template in `assets/compare-template.yaml` as the starting point, but replace any stale defaults that do not match the user request.
-13. When the output must run outside the current repository root, prefer runtime-relative local paths such as `fixtures/...` when the installed compare runner is expected to bootstrap them into the current working directory, or use absolute paths when the user wants a fixed filesystem location.
-14. Do not rely on package-relative path resolution. Compare local paths are only valid when they are absolute or relative to the command working directory at runtime.
-15. Return raw YAML only. Do not add Markdown fences, prose before the YAML, or explanations after it unless the user explicitly asks for commentary.
-16. Use exact compare schema keys. Do not invent aliases such as `llm-rubric`, `llmRubric`, top-level `skillModes`, top-level `variants`, `execution`, `sandbox`, `approval`, `webSearch`, or `network`.
-17. When the brief gives exact prompt ids and exact prompt text, preserve them verbatim inside `task.prompts` list items. Do not rewrite `task.prompts` into a mapping.
-18. Keep `task`, `workspace`, `evaluation`, and `comparison` as top-level keys. Do not nest them under `benchmark` and do not emit `benchmarks:` or `tasks:`.
-19. If the task says to write a file and return only its contents, write the file first and then return only the raw YAML. Do not mention that you used the skill.
-20. Prefer `workspace.sources` plus `workspace.setup.initializeGit` over legacy `workspace.fixture` examples unless the task explicitly asks for the legacy form.
+1. Read the user brief first.
+2. Open `assets/fast-path.md`.
+3. If the task matches the repository benchmark, run the scaffold script first.
+4. Otherwise open `assets/fast-path.md`.
+5. If shell access works, inspect the workspace and run the validator.
+6. If shell access is blocked or flaky, finish offline. Do not stop with a
+   blocker message when the needed values are already available.
+
+## Do This
+
+- Keep the task prompt exact and benchmark-specific.
+- Put the final-answer format first: raw YAML only.
+- Prefer `task.prompts` when the benchmark needs multiple prompt rows.
+- Set `evaluation.requests` explicitly. Use `10` unless the benchmark says
+  otherwise.
+- Set `evaluation.maxConcurrency` explicitly only when the benchmark wants a
+  machine-specific value.
+- Prefer two skill modes by default: `no-skill` and `skill`.
+- For every enabled skill mode, define `comparison.skillModes[*].skill`
+  explicitly.
+- Keep shared checks in top-level `evaluation.assertions`.
+- Keep row-specific checks under `task.prompts[*].evaluation.assertions`.
+- Write the file to the user-requested path before returning YAML when the task
+  asks for file output.
+- Use runtime-relative or absolute local paths. Do not rely on package-relative
+  paths.
+- Return raw YAML only unless the user explicitly asks for commentary.
+- Before sending the final answer, delete any summary, validation note,
+  command-log note, or next-step note and leave only the YAML body.
+- If you ran validation or wrote files successfully, do not mention that in the
+  final answer unless the user explicitly asked for commentary.
+
+## Do Not Do This
+
+- Do not invent aliases such as top-level `skillModes`, top-level `variants`,
+  `execution`, `sandbox`, `approval`, `webSearch`, or `network`.
+- Do not rewrite `task.prompts` into a mapping.
+- Do not move `task`, `workspace`, `evaluation`, or `comparison` under
+  `benchmark`.
+- Do not write outputs into the skill directory unless the user explicitly asks.
+- Do not replace the YAML with shell-error prose when the brief and assets are
+  enough to finish offline.
 
 ## Workflow
 
 1. Read the benchmark brief or user requirements first.
-2. If shell access works, inspect the requested workspace files immediately.
-3. If shell access is unavailable, blocked, or flaky, switch to offline authoring immediately. Do not ask the user to unblock the shell when the available prompt, skill, AGENTS instructions, or benchmark-specific note already provide enough information to draft the YAML.
-4. Use the structure in `assets/compare-template.yaml` as the scaffold.
-5. If the benchmark uses a Git workspace-overlay skill source, copy the block shape from `assets/git-workspace-overlay-reference.md` and then replace only the benchmark-specific values.
-6. If the task asks for multiple prompt variants that differ by expected skill source shape, keep one shared compare skeleton and vary only the prompt text plus `task.prompts[*].evaluation.assertions`. Use `assets/prompt-assertions-reference.md` for row-specific assertion patterns.
-7. Replace the benchmark metadata, prompts, workspace, evaluation, skill modes, and variants with values from the brief or from the benchmark-specific offline recipe below when that recipe matches the task exactly.
-8. If the benchmark asks for an explicit output path such as `deliverables/compare.yaml`, write the file there before preparing the final answer.
-9. If shell commands are available, run the smallest useful validation you can:
-   - preferred cheap guardrail for this repository benchmark: `node skills/skill-arena-compare/scripts/validate-compare-output.js <path> --benchmark skill-arena-compare`
-   - otherwise use the generic guardrail: `node skills/skill-arena-compare/scripts/validate-compare-output.js <path>`
-   - only then escalate to the exact benchmark-requested compare command
-10. If shell commands are unavailable, blocked, or flaky, continue with offline authoring:
-   - use `assets/fallback-checklist.md`
-   - for the repository `skill-arena-compare` benchmark, use `assets/gws-calendar-agenda-benchmark-reference.md` as the exact-value source
-   - use `assets/git-workspace-overlay-reference.md` for remote skill blocks
-   - use `assets/prompt-assertions-reference.md` for prompt-level checks
-   - validate against the checklist in this file and the benchmark brief or benchmark-specific offline recipe
-   - do not abandon the task just because validation could not run
-11. Before returning, compare the final draft against the exact schema skeleton below and fix any invented keys or wrong nesting.
-12. When the user asked for the file contents only, return raw YAML only even if validation failed or could not run. Do not prepend status notes, testing summaries, apologies, or fenced code blocks.
+2. If the task matches the repository benchmark, prefer
+   `node skills/skill-arena-compare/scripts/scaffold-skill-arena-compare-benchmark.js --validate`
+   immediately. It writes `deliverables/compare.yaml` by default.
+3. Otherwise open `assets/fast-path.md`.
+4. Choose the starting asset:
+   - generic task: `assets/compare-template.yaml`
+   - repository benchmark: the scaffold script
+5. If shell access works, inspect the requested workspace files immediately.
+6. If shell access is blocked or flaky, switch to offline authoring immediately.
+7. If the benchmark uses a Git workspace-overlay skill source, copy the block
+   shape from `assets/git-workspace-overlay-reference.md`.
+8. If the task needs multiple prompt rows, vary only the prompt text and nested
+   prompt assertions. Use `assets/prompt-assertions-reference.md`.
+9. Replace placeholders with benchmark-specific metadata, prompts, workspace,
+   evaluation, skill modes, and variants.
+10. If the task asks for an output path such as `deliverables/compare.yaml`,
+   write the file there before the final answer.
+11. Run the smallest useful validation:
+   - repository benchmark:
+     `node skills/skill-arena-compare/scripts/validate-compare-output.js <path> --benchmark skill-arena-compare`
+   - generic task:
+     `node skills/skill-arena-compare/scripts/validate-compare-output.js <path>`
+12. Before returning, compare the draft against the checklist in this file and
+    `assets/fallback-checklist.md`.
+13. When the user asked for file contents only, return raw YAML only even if a
+    live compare run could not complete.
+14. If the task asks for a file and final YAML, the final answer must be only
+    the file contents. Do not append validator results, dry-run status, or
+    next steps after the YAML.
+15. Final answer checkpoint:
+    - starts with `schemaVersion: 1`
+    - contains no backticks
+    - contains no prose before or after the YAML
+16. Before the final answer, remove any headings, bullets, status summaries,
+    shell failure notes, and code fences so the reply starts with
+    `schemaVersion: 1`.
 
 ## No-Shell Rule
 
 If every shell command fails, do not return a blocker message by default.
 
-- Use the benchmark brief, the current user request, the skill assets, and the benchmark-specific note in this file to draft the YAML offline.
-- Only mention a shell problem when the task truly depends on unknown values that are not available anywhere in the prompt, skill, workspace instructions, or embedded benchmark recipe.
-- For file-writing tasks, still produce the requested file content even if local file creation could not be verified.
-- Prefer one complete best-effort `compare.yaml` over a prose explanation of why shell commands failed.
+- Use the benchmark brief, the current user request, the skill assets, and the
+  benchmark-specific note in this file to draft the YAML offline.
+- Only mention a shell problem when the task truly depends on unknown values
+  that are not available anywhere in the prompt, skill, workspace instructions,
+  or embedded benchmark recipe.
+- For file-writing tasks, still produce the requested file content even if local
+  file creation could not be verified.
+- Prefer one complete best-effort `compare.yaml` over a prose explanation of
+  why shell commands failed.
+- Even when validation fails, keep that failure out of the final answer unless
+  the user explicitly asked for commentary.
 
 ## Benchmark-Specific Offline Recipe
 
-Use this only when the task matches the repository benchmark `benchmarks/skill-arena-compare/compare.yaml`.
+Use this only when the task matches the repository benchmark
+`benchmarks/skill-arena-compare/compare.yaml`.
 
-The required output is one compare config for the remote `gws-calendar-agenda` skill with these exact facts:
+The required output is one compare config for the remote
+`gws-calendar-agenda` skill with these exact facts:
 
 - `schemaVersion: 1`
 - benchmark id `gws-calendar-agenda-compare-generated`
@@ -87,8 +159,10 @@ The required output is one compare config for the remote `gws-calendar-agenda` s
 - exactly two prompts under `task.prompts`:
   - `today-json`
   - `week-markdown`
-- `today-json` asks for today's agenda across all calendars, explicitly prefers `gws calendar +agenda` in read-only mode, and requires JSON only
-- `week-markdown` asks for this week's agenda across all calendars, explicitly prefers `gws calendar +agenda` in read-only mode, and requires Markdown only
+- `today-json` asks for today's agenda across all calendars, explicitly prefers
+  `gws calendar +agenda` in read-only mode, and requires JSON only
+- `week-markdown` asks for this week's agenda across all calendars, explicitly
+  prefers `gws calendar +agenda` in read-only mode, and requires Markdown only
 - top-level keys must be exactly:
   - `schemaVersion`
   - `benchmark`
@@ -100,16 +174,19 @@ The required output is one compare config for the remote `gws-calendar-agenda` s
   - `path: fixtures/gws-calendar-agenda-compare/base`
   - `target: /`
 - `workspace.setup.initializeGit: true`
-- shared evaluation includes one `llm-rubric` assertion with provider `skill-arena:judge:codex`
+- shared evaluation includes one `llm-rubric` assertion with provider
+  `skill-arena:judge:codex`
 - prompt-level evaluation differs by format:
   - `today-json` includes `type: is-json`
-  - `week-markdown` uses supported V1 assertions such as `regex` and/or `llm-rubric` for Markdown-shaped output instead of JSON
+  - `week-markdown` uses supported V1 assertions such as `regex` and/or
+    `llm-rubric` for Markdown-shaped output instead of JSON
 - `evaluation.requests: 2`
 - `evaluation.timeoutMs: 1200000`
 - `evaluation.maxConcurrency: 1`
 - skill modes:
   - `no-skill` with `skillMode: disabled`
-  - `skill` with `skillMode: enabled` and explicit `skill.install.strategy: workspace-overlay`
+  - `skill` with `skillMode: enabled` and explicit
+    `skill.install.strategy: workspace-overlay`
 - enabled skill source uses exactly:
   - `type: git`
   - `repo: https://github.com/googleworkspace/cli.git`
@@ -129,9 +206,16 @@ The required output is one compare config for the remote `gws-calendar-agenda` s
   - `reasoningEffort: low`
   - `output.labels.variantDisplayName: codex mini`
 
-If this benchmark-specific recipe matches the current task, draft the YAML directly from it instead of replying with a shell-error explanation.
+If this benchmark-specific recipe matches the current task, draft the YAML
+directly from it instead of replying with a shell-error explanation.
 
-When this benchmark-specific recipe applies and shell access is blocked, prefer copying the exact schema structure from a benchmark-specific skeleton or reference asset rather than drafting the structure from memory. Do not rename keys into aliases such as `instructions`, `request`, `responseFormat`, `shared`, `enabled`, or nested `reasoning` blocks.
+When this benchmark-specific recipe applies and shell access is blocked, prefer
+copying the exact schema structure from a benchmark-specific skeleton or
+reference asset rather than drafting the structure from memory. Do not rename
+keys into aliases such as `instructions`, `request`, `responseFormat`,
+`shared`, `enabled`, or nested `reasoning` blocks.
+Do not mention the scaffold script, validator, or file-writing step in the
+final answer. Return the YAML body only.
 
 ## Checklist
 
@@ -139,40 +223,60 @@ Before returning, verify all of these:
 
 - `schemaVersion: 1`
 - benchmark id, description, and tags match the task exactly
+- the final answer starts with `schemaVersion: 1` and ends at the end of YAML
 - `task.prompts` is a YAML list of prompt objects, not a mapping
 - prompt ids and prompt text match the brief exactly
 - `workspace` uses runtime-valid local paths
-- `workspace.sources` uses a normal source object like `- type: local-path`, not a shorthand mapping like `- local-path:`
-- `workspace.setup.initializeGit: true` is present when the brief requires Git initialization
+- `workspace.sources` uses a normal source object like `- type: local-path`,
+  not a shorthand mapping like `- local-path:`
+- `workspace.setup.initializeGit: true` is present when the brief requires Git
+  initialization
 - `evaluation.requests` and `evaluation.maxConcurrency` match the task
 - `evaluation.assertions` exists and contains the shared assertions
 - prompt-specific assertions stay under `task.prompts[*].evaluation.assertions`
 - every enabled skill mode has an explicit `skill` block
-- `comparison.skillModes` and `comparison.variants` are nested under `comparison`
+- `comparison.skillModes` and `comparison.variants` are nested under
+  `comparison`
 - the chosen skill source shape matches the prompt exactly
-- Git workspace-overlay blocks use `source.type: git`, `skillPath`, `skillId`, and `install.strategy: workspace-overlay`
-- variant agent settings use the exact keys `executionMethod`, `commandPath`, `sandboxMode`, `approvalPolicy`, `webSearchEnabled`, `networkAccessEnabled`, and `reasoningEffort`
+- Git workspace-overlay blocks use `source.type: git`, `skillPath`, `skillId`,
+  and `install.strategy: workspace-overlay`
+- variant agent settings use the exact keys `executionMethod`, `commandPath`,
+  `sandboxMode`, `approvalPolicy`, `webSearchEnabled`,
+  `networkAccessEnabled`, and `reasoningEffort`
 - variant adapter, model, sandbox, approval, network, and labels are present
 - the output file path is the one the user requested
 - the answer starts with `schemaVersion: 1`
 - the answer does not contain backticks
 - the answer does not contain prose before or after the YAML
-- validation failures, if any, were handled before the final answer instead of being included in the final answer
+- the answer does not contain headings such as `Status`, `Summary`, `Testing`,
+  `Deliverable`, or `Next Steps`
+- validation failures, if any, were handled before the final answer instead of
+  being included in the final answer
 
-## Validation fallback
+## Validation Fallback
 
 Use this when command execution is unreliable:
 
 1. Draft the file from `assets/compare-template.yaml`.
-2. Cross-check required values against the benchmark brief or the benchmark-specific offline recipe in this file.
-3. Use `assets/fallback-checklist.md` to catch wrong nesting, wrong key names, and commentary leakage.
-4. For the repository `skill-arena-compare` benchmark, use `assets/gws-calendar-agenda-benchmark-reference.md` to fill in exact required values offline.
-5. Use `assets/git-workspace-overlay-reference.md` to check remote skill-source blocks.
-6. Use `assets/prompt-assertions-reference.md` to check prompt-specific assertions.
-7. If you can run shell commands, use `scripts/validate-compare-output.js` as a cheap local guardrail before any heavier compare command. For the repository benchmark, prefer `--benchmark skill-arena-compare`.
+2. Cross-check required values against the benchmark brief or the
+   benchmark-specific offline recipe in this file.
+3. Use `assets/fallback-checklist.md` to catch wrong nesting, wrong key names,
+   and commentary leakage.
+4. For the repository `skill-arena-compare` benchmark, use
+   `scripts/scaffold-skill-arena-compare-benchmark.js` first, then
+   `assets/gws-calendar-agenda-benchmark-reference.md` to fill in exact
+   required values.
+5. Use `assets/git-workspace-overlay-reference.md` to check remote skill-source
+   blocks.
+6. Use `assets/prompt-assertions-reference.md` to check prompt-specific
+   assertions.
+7. If you can run shell commands, use
+   `scripts/validate-compare-output.js` as a cheap local guardrail before any
+   heavier compare command. For the repository benchmark, prefer
+   `--benchmark skill-arena-compare`.
 8. Return the YAML only.
 
-## Exact schema guardrails
+## Exact Schema Guardrails
 
 Use this exact shape when authoring compare configs:
 
@@ -246,7 +350,8 @@ comparison:
           variantDisplayName: codex mini
 ```
 
-If your draft contains any of the following, stop and correct it before returning:
+If your draft contains any of the following, stop and correct it before
+returning:
 
 - `task.prompts:` followed by `author-compare:` or any other direct mapping key
 - top-level `benchmarks:` or `tasks:`
@@ -254,24 +359,31 @@ If your draft contains any of the following, stop and correct it before returnin
 - top-level `skillModes:` or `variants:`
 - top-level `modes:`
 - `workspace.fixture` when the task explicitly asks for `workspace.sources`
-- `workspace.sources` written as `- local-path:` instead of `- type: local-path`
+- `workspace.sources` written as `- local-path:` instead of
+  `- type: local-path`
 - `execution:` instead of `executionMethod` and `commandPath`
 - `sandbox:` instead of `sandboxMode`
 - `approval:` instead of `approvalPolicy`
 - `webSearch:` instead of `webSearchEnabled`
 - `networkAccess:` or `network:` instead of `networkAccessEnabled`
 
-## Common failure patterns
+## Common Failure Patterns
 
 - Returning commentary such as `Used the skill...` before the YAML.
+- Returning headings such as `Status`, `Testing`, `Changes`, or `Deliverable`
+  before the YAML.
 - Moving `task`, `workspace`, or `evaluation` under `benchmark`.
-- Emitting top-level `variants`, `skillModes`, or `modes` instead of nesting them under `comparison`.
-- Rewriting `task.prompts` as a mapping keyed by prompt id instead of a YAML list of prompt objects.
-- Using `shared:` under `evaluation` instead of top-level `evaluation.assertions`.
+- Emitting top-level `variants`, `skillModes`, or `modes` instead of nesting
+  them under `comparison`.
+- Rewriting `task.prompts` as a mapping keyed by prompt id instead of a YAML
+  list of prompt objects.
+- Using `shared:` under `evaluation` instead of top-level
+  `evaluation.assertions`.
 - Putting `adapter` or `model` outside `comparison.variants[*].agent`.
-- Replacing the YAML answer with a shell-failure status message when validation is unavailable.
+- Replacing the YAML answer with a shell-failure status message when validation
+  is unavailable.
 
-## Source-shape patterns
+## Source-Shape Patterns
 
 Use the exact shape the task asks for:
 
@@ -319,11 +431,13 @@ skill:
     strategy: workspace-overlay
 ```
 
-Prefer `inline-files` over `inline` when the benchmark explicitly asks for a workspace-overlay file set.
+Prefer `inline-files` over `inline` when the benchmark explicitly asks for a
+workspace-overlay file set.
 
-## Judge provider guidance
+## Judge Provider Guidance
 
-When the benchmark uses `llm-rubric`, prefer the local Skill Arena judge shorthand unless the user explicitly wants a hosted Promptfoo provider:
+When the benchmark uses `llm-rubric`, prefer the local Skill Arena judge
+shorthand unless the user explicitly wants a hosted Promptfoo provider:
 
 - `skill-arena:judge:codex`
 - `skill-arena:judge:copilot-cli`
@@ -331,7 +445,8 @@ When the benchmark uses `llm-rubric`, prefer the local Skill Arena judge shortha
 
 These values belong in `evaluation.assertions[*].provider`.
 
-Use the object form only when the benchmark needs judge-specific overrides such as `model`, `commandPath`, or `cliEnv`:
+Use the object form only when the benchmark needs judge-specific overrides such
+as `model`, `commandPath`, or `cliEnv`:
 
 ```yaml
 provider:
@@ -341,11 +456,14 @@ provider:
     commandPath: copilot
 ```
 
-If the benchmark specifically depends on a hosted judge, keep the provider in native Promptfoo form such as `openai:gpt-5-mini`.
+If the benchmark specifically depends on a hosted judge, keep the provider in
+native Promptfoo form such as `openai:gpt-5-mini`.
 
-## maxConcurrency guidance
+## maxConcurrency Guidance
 
-When the user wants the compare config to use local machine capacity, calculate `evaluation.maxConcurrency` from Node.js and write the computed integer into the YAML.
+When the user wants the compare config to use local machine capacity, calculate
+`evaluation.maxConcurrency` from Node.js and write the computed integer into the
+YAML.
 
 Preferred Node.js snippet:
 
@@ -366,24 +484,36 @@ PowerShell one-liner:
 node -e "const os=require('node:os'); const capacity=typeof os.availableParallelism==='function' ? os.availableParallelism() : os.cpus().length; console.log(Math.max(1, Math.floor(capacity * 0.8)));"
 ```
 
-If the benchmark should stay portable across machines and the user does not want machine-specific numbers committed into the file, omit `evaluation.maxConcurrency` and note that the harness will use local machine parallelism by default.
+If the benchmark should stay portable across machines and the user does not want
+machine-specific numbers committed into the file, omit
+`evaluation.maxConcurrency` and note that the harness will use local machine
+parallelism by default.
 
-## Benchmark-specific note
+## Benchmark-Specific Note
 
-For the repository benchmark `benchmarks/skill-arena-compare/compare.yaml`, optimize for exact compare authoring:
+For the repository benchmark `benchmarks/skill-arena-compare/compare.yaml`,
+optimize for exact compare authoring:
 
-- keep the generated file focused on compare configuration, not unrelated repository tasks
-- if shell access fails, use the benchmark-specific offline recipe in this file and keep going
+- keep the generated file focused on compare configuration, not unrelated
+  repository tasks
+- if shell access fails, use the benchmark-specific offline recipe in this file
+  and keep going
 - preserve shared assertions at top-level
 - use prompt-level assertions only for the source-shape differences
-- prefer `skill-arena:judge:codex` when the benchmark brief asks for a local judge
-- treat `npx skill-arena compare ... --dry-run` as best-effort verification, not as a reason to stop authoring
-- prefer `node skills/skill-arena-compare/scripts/validate-compare-output.js deliverables/compare.yaml --benchmark skill-arena-compare` before the expensive live compare run
+- prefer `skill-arena:judge:codex` when the benchmark brief asks for a local
+  judge
+- treat `npx skill-arena compare ... --dry-run` as best-effort verification,
+  not as a reason to stop authoring
+- prefer
+  `node skills/skill-arena-compare/scripts/validate-compare-output.js deliverables/compare.yaml --benchmark skill-arena-compare`
+  before the expensive live compare run
 - do not output commentary outside the final YAML
-- the benchmark brief remains the source of truth when helper assets are more generic than the benchmark
+- the benchmark brief remains the source of truth when helper assets are more
+  generic than the benchmark
 
 ## Output
 
 When writing files, treat the user's current workspace as the destination root.
 
-Return only the completed `compare.yaml` content unless the user asks for explanation.
+Return only the completed `compare.yaml` content unless the user asks for
+explanation.

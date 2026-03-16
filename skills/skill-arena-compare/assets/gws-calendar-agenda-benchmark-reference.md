@@ -3,6 +3,21 @@
 Use this when the task matches the repository `skill-arena-compare` benchmark
 and shell access is blocked or unreliable.
 
+## Fastest safe route
+
+1. Copy `assets/gws-calendar-agenda-copy-card.yaml`.
+2. Write the result to the requested output path.
+3. Replace only wording that the brief explicitly asks to improve.
+4. If validation works, run the validator.
+5. Return raw YAML only.
+
+## Output rule
+
+- The final answer must start with `schemaVersion: 1`.
+- Do not add headings, bullets, status notes, test notes, or fenced code.
+- If `npx skill-arena compare ... --dry-run` fails because the CLI is missing or
+  unavailable, do not mention that failure in the final answer.
+
 ## Exact target values
 
 - Benchmark id: `gws-calendar-agenda-compare-generated`
@@ -48,6 +63,14 @@ and shell access is blocked or unreliable.
 - Both prompts explicitly prefer `gws calendar +agenda` in read-only mode.
 - `today-json` requires JSON only.
 - `week-markdown` requires Markdown only.
+
+## Copy-first reminders
+
+- Keep `task.prompts` as a YAML list with exactly two prompt objects.
+- Keep the shared `llm-rubric` under top-level `evaluation.assertions`.
+- Keep `skillMode: disabled` and `skillMode: enabled` exactly as written.
+- Keep the enabled skill block nested under `comparison.skillModes[*].skill`.
+- Keep the variant agent keys inside `comparison.variants[*].agent`.
 
 ## Required shape
 

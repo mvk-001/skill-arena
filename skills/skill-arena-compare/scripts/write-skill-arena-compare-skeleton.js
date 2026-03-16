@@ -1,0 +1,96 @@
+#!/usr/bin/env node
+
+import fs from "node:fs";
+import path from "node:path";
+
+const args = process.argv.slice(2);
+const targetPath = args.find((arg) => !arg.startsWith("--")) ?? "deliverables/compare.yaml";
+const writeToStdout = args.includes("--stdout");
+
+const content = `schemaVersion: 1
+benchmark:
+  id: gws-calendar-agenda-compare-generated
+  description: Compare Codex mini on Google Calendar agenda requests with and without the remote gws-calendar-agenda skill.
+  tags:
+    - compare
+    - calendar
+    - gws
+    - codex
+task:
+  prompts:
+    - id: today-json
+      prompt: Return today's agenda across all calendars. Prefer gws calendar +agenda in read-only mode. Return JSON only.
+      evaluation:
+        assertions:
+          - type: is-json
+    - id: week-markdown
+      prompt: Return this week's agenda across all calendars. Prefer gws calendar +agenda in read-only mode. Return Markdown only.
+      evaluation:
+        assertions:
+          - type: regex
+            value: "(?m)^(#|[-*] )"
+workspace:
+  sources:
+    - type: local-path
+      path: fixtures/gws-calendar-agenda-compare/base
+      target: /
+  setup:
+    initializeGit: true
+evaluation:
+  assertions:
+    - type: llm-rubric
+      provider: skill-arena:judge:codex
+      value: Score 1.0 only if the answer is raw YAML for a valid Skill Arena compare config that evaluates the remote gws-calendar-agenda skill, compares no-skill versus skill for one Codex mini variant, uses runtime-relative paths, and includes exactly two task prompts: one for today's agenda with a JSON-only contract and one for this week's agenda with a Markdown-only contract, all using valid Skill Arena compare schema keys and supported V1 assertion types, with no commentary before or after the YAML.
+  requests: 2
+  timeoutMs: 1200000
+  tracing: false
+  maxConcurrency: 1
+  noCache: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: Baseline without the skill.
+      skillMode: disabled
+    - id: skill
+      description: Skill-enabled run.
+      skillMode: enabled
+      skill:
+        source:
+          type: git
+          repo: https://github.com/googleworkspace/cli.git
+          ref: main
+          subpath: .
+          skillPath: skills/gws-calendar-agenda
+          skillId: gws-calendar-agenda
+        install:
+          strategy: workspace-overlay
+  variants:
+    - id: codex-mini
+      description: Codex mini comparison variant.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: danger-full-access
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: true
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        labels:
+          variantDisplayName: codex mini
+`;
+
+if (writeToStdout) {
+  process.stdout.write(content);
+  process.exit(0);
+}
+
+const resolvedPath = path.resolve(targetPath);
+fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
+fs.writeFileSync(resolvedPath, content, "utf8");
+console.log(`Wrote benchmark skeleton to ${resolvedPath}`);

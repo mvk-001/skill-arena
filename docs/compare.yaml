@@ -142,7 +142,7 @@ evaluation:
   requests: 2
   timeoutMs: 600000
   tracing: false
-  maxConcurrency: 3
+  maxConcurrency: 4
   noCache: true
 workspace:
   fixture: fixtures/skill-arena-compare/base

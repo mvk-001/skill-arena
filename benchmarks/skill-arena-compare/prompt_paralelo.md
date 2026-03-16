@@ -8,5 +8,23 @@ cada uno lo que hará es:
 5. guarda los intentos tanto fallidos o exitosos on learning.log, asi puedes evitar repetir los mismo, asegurate de no sobreescribir el progreso de otros, siempre append al final.
 6. regresa a paso 2
 
+Que está permitido:
+- Crear scripts en la skills bajo `scripts`
+- Crear references en la skills, bajo `references`
+- Crear templates y esqueletos en assets bajo `assets`
+- modificar SKILL.md 
+- Modificar la evaluations solo en el caso que se haya encontrado falso positivos y falso negativos para arreglarlos
+
+No esta permitido:
+- Modificar algo de la evalaución que no sea dentro de la evaluacion
+- Agregar archivos fuera de la skill folder (skills\skill-arena-compare)
+
+
+Hints:
+- un SKILL.md más simple es más fácil de entender.
+- un script bien ejecutado no falla, ya que siempre hará lo que se espera
+- el output de los scripts pueden retornar siguientes pasos, que puede ser contextual basado en que está sucediendo.
+
+Asume que el que hará la acción tiene deficit atencional y le cuesta recordar instrucciones largas
 
 luego, toma los que lograron algo y mezcla las soluciones en solo una

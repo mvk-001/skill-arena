@@ -1,7 +1,14 @@
 # Prompt-Level Assertions Reference
 
-Use top-level `evaluation.assertions` for checks shared by every prompt. Put only
-row-specific checks under `task.prompts[*].evaluation.assertions`.
+Use top-level `evaluation.assertions` for checks shared by every prompt.
+Put only row-specific checks under `task.prompts[*].evaluation.assertions`.
+
+## Short Rule
+
+- Shared check for every row: top-level `evaluation.assertions`.
+- Format check for one row only: that prompt's `evaluation.assertions`.
+- Do not invent `shared:` under `evaluation`.
+- Do not invent `text:` when the schema expects `prompt:`.
 
 ## Typical split
 
@@ -36,13 +43,14 @@ task:
 ## Checks
 
 - Keep prompt assertions nested under each prompt object in the YAML list.
+- Keep the field name `prompt:`.
 - Use supported V1 assertion types only.
 - Prefer `regex` or `llm-rubric` for Markdown-shaped checks. Do not invent
   `type: is-markdown`.
-- If the user asks for exactly two prompts, verify there are exactly two prompt
-  objects and that each `id` appears once.
-- When the answer must be raw YAML only, do not add commentary before or after
-  the config.
+- If the brief gives exactly two prompts, keep exactly two prompt objects and
+  make each `id` appear once.
+- When the answer must be raw YAML only, keep all commentary out of the final
+  answer.
 
 ## gws-calendar-agenda benchmark pattern
 
@@ -61,3 +69,10 @@ task:
           - type: regex
             value: "(?m)^(#|[-*] )"
 ```
+
+## Reject These Mistakes
+
+- `shared:` under `evaluation`
+- `text:` instead of `prompt:`
+- `type: is-json` inside `week-markdown`
+- commentary before or after the YAML
