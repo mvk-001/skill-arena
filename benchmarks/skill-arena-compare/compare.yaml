@@ -1,55 +1,45 @@
 schemaVersion: 1
 benchmark:
   id: skill-arena-compare
-  description: Evaluate the skill-arena-compare workspace skill on authoring a compare config for the remote gws-calendar-agenda skill.
+  description: Evaluate the skill-arena-compare workspace skill on authoring a compare config for the remote brainstorming skill.
   tags:
     - compare
     - skill
     - authoring
-    - calendar
+    - brainstorming
 task:
   prompts:
-    - id: author-gws-calendar-agenda-compare
-      description: Author one executable compare.yaml for the gws-calendar-agenda skill benchmark.
+    - id: author-brainstorming-compare
+      description: Author one executable compare.yaml for the brainstorming skill benchmark.
       prompt: >-
         Create `deliverables/compare.yaml`.
-        The file must define one valid Skill Arena compare config that evaluates this
+        The file must define one valid Skill Arena compare evaluating this
         skill:
-        - `https://github.com/googleworkspace/cli/tree/main/skills/gws-calendar-agenda`
-        The generated compare config. Create one valid Skill Arena compare config
-        that evaluates
-        `https://github.com/googleworkspace/cli/tree/main/skills/gws-calendar-agenda`
-        with Codex using the most basic supported model, compares `no-skill`
-        versus `skill`, and includes exactly two prompts in the generated file:
-        one for today's agenda that returns JSON only, and one for this week's
-        agenda that returns Markdown only. Improve the prompt wording a little,
-        but keep the benchmark concise and executable. Use the exact Skill
-        Arena compare schema keys and supported V1 assertion types; do not
-        invent aliases such as top-level `skillModes`, top-level `variants`,
-        `execution`, `sandbox`, `webSearch`, `networkAccess`,
-        `allowNetwork`, `instructions`, `template`, or `type: is-markdown`.
-        Use a Git
-        workspace-overlay skill source that points at the Google Workspace CLI
-        repository and the `skills/gws-calendar-agenda` folder. Use runtime-
-        relative paths so the generated compare config can run from another
-        working directory. Return only the completed `compare.yaml` content.
-        run `npx skill-arena compare $COMPARE_FILE --dry-run` to verify that it is valid
+        - `https://github.com/obra/superpowers/tree/main/skills/brainstorming`
+        It should generate just one prompt to generate a brainstorming for a product to sell just on sundays
+        the evaluater should be llm-rubric codex as judge the version gpt 5.3 codex spark
 evaluation:
   assertions:
+    - type: llm-rubric
+      provider:
+        id: skill-arena:judge:codex
+        config:
+          model: gpt-5.3-codex-spark
+      value: Evaluate the prompt that was generated on the file and mark it as Score 1.0 only if make sense for the request
     - type: contains
       value: "schemaVersion: 1"
     - type: contains
-      value: "id: gws-calendar-agenda-compare-generated"
+      value: "id: brainstorming-compare-generated"
     - type: contains
-      value: "path: fixtures/gws-calendar-agenda-compare/base"
+      value: "path: fixtures/skill-arena-compare/base"
     - type: contains
       value: "type: local-path"
     - type: contains
       value: "comparison:"
     - type: contains
-      value: "id: today-json"
+      value: "id: idea-json"
     - type: contains
-      value: "id: week-markdown"
+      value: "id: idea-markdown"
     - type: contains
       value: "skillMode: disabled"
     - type: contains
@@ -57,11 +47,11 @@ evaluation:
     - type: contains
       value: "type: git"
     - type: contains
-      value: "repo: https://github.com/googleworkspace/cli.git"
+      value: "repo: https://github.com/obra/superpowers.git"
     - type: contains
-      value: "skillPath: skills/gws-calendar-agenda"
+      value: "skillPath: skills/brainstorming"
     - type: contains
-      value: "skillId: gws-calendar-agenda"
+      value: "skillId: brainstorming"
     - type: contains
       value: "strategy: workspace-overlay"
     - type: contains
@@ -81,9 +71,9 @@ evaluation:
     - type: contains
       value: "type: is-json"
     - type: contains
-      value: "provider: skill-arena:judge:codex"
-    - type: contains
-      value: "type: regex"
+      value: "id: skill-arena:judge:codex"
+    - type: regex
+      value: "^id:\\s+brainstorming-compare-generated$"
     - type: javascript
       value: 'output.trimStart().startsWith("schemaVersion: 1")'
     - type: javascript
@@ -106,30 +96,30 @@ evaluation:
     - type: javascript
       value: |
         const normalized = output.replace(/\r\n/g, "\n");
-        const todayBlock = normalized.match(/^\s+- id: today-json\s*\n([\s\S]*?)(?=^\s+- id: week-markdown\s*$)/m)?.[1] ?? "";
-        const weekBlock = normalized.match(/^\s+- id: week-markdown\s*\n([\s\S]*?)(?=^workspace:\s*$)/m)?.[1] ?? "";
-        return /^workspace:\n  sources:\n    - (?:id: [^\n]+\n      )?type: local-path\n      path: fixtures\/gws-calendar-agenda-compare\/base\n      target: \/\n  setup:\n    initializeGit: true/m.test(normalized)
+        const ideaJsonBlock = normalized.match(/^\s+- id: idea-json\s*\n([\s\S]*?)(?=^\s+- id: idea-markdown\s*$)/m)?.[1] ?? "";
+        const ideaMarkdownBlock = normalized.match(/^\s+- id: idea-markdown\s*\n([\s\S]*?)(?=^workspace:\s*$)/m)?.[1] ?? "";
+        return /^workspace:\n  sources:\n    - (?:id: [^\n]+\n      )?type: local-path\n      path: fixtures\/skill-arena-compare\/base\n      target: \/\n  setup:\n    initializeGit: true/m.test(normalized)
           && /^evaluation:\n  assertions:\n/m.test(normalized)
-          && /prompt:\s+/m.test(todayBlock)
-          && /type:\s+is-json\b/.test(todayBlock)
-          && /JSON only/.test(todayBlock)
-          && /prompt:\s+/m.test(weekBlock)
-          && /type:\s+regex\b/.test(weekBlock)
-          && /Markdown only/.test(weekBlock)
-          && !/type:\s+is-json\b/.test(weekBlock)
+          && /prompt:\s+/m.test(ideaJsonBlock)
+          && /type:\s+is-json\b/.test(ideaJsonBlock)
+          && /JSON only/.test(ideaJsonBlock)
+          && /prompt:\s+/m.test(ideaMarkdownBlock)
+          && /type:\s+regex\b/.test(ideaMarkdownBlock)
+          && /Markdown only/.test(ideaMarkdownBlock)
+          && !/type:\s+is-json\b/.test(ideaMarkdownBlock)
           && !/^workspace:\n  fixture:/m.test(normalized);
     - type: javascript
       value: |
         const normalized = output.replace(/\r\n/g, "\n");
         return /- id: no-skill\s*\n(?:.*\n)*?\s+skillMode: disabled/m.test(normalized)
-          && /- id: skill\s*\n(?:.*\n)*?\s+skillMode: enabled\s*\n(?:.*\n)*?\s+skill:\s*\n(?:.*\n)*?\s+source:\s*\n(?:.*\n)*?\s+type: git\s*\n(?:.*\n)*?\s+repo: https:\/\/github\.com\/googleworkspace\/cli\.git\s*\n(?:.*\n)*?\s+ref: main\s*\n(?:.*\n)*?\s+subpath: \.\s*\n(?:.*\n)*?\s+skillPath: skills\/gws-calendar-agenda\s*\n(?:.*\n)*?\s+skillId: gws-calendar-agenda\s*\n(?:.*\n)*?\s+install:\s*\n(?:.*\n)*?\s+strategy: workspace-overlay/m.test(normalized)
+          && /- id: skill\s*\n(?:.*\n)*?\s+skillMode: enabled\s*\n(?:.*\n)*?\s+skill:\s*\n(?:.*\n)*?\s+source:\s*\n(?:.*\n)*?\s+type: git\s*\n(?:.*\n)*?\s+repo: https:\/\/github\.com\/obra\/superpowers\.git\s*\n(?:.*\n)*?\s+ref: main\s*\n(?:.*\n)*?\s+subpath: \.\s*\n(?:.*\n)*?\s+skillPath: skills\/brainstorming\s*\n(?:.*\n)*?\s+skillId: brainstorming\s*\n(?:.*\n)*?\s+install:\s*\n(?:.*\n)*?\s+strategy: workspace-overlay/m.test(normalized)
           && /- id: codex-mini\s*\n(?:.*\n)*?\s+agent:\s*\n(?:.*\n)*?\s+adapter: codex\s*\n(?:.*\n)*?\s+model: gpt-5\.1-codex-mini\s*\n(?:.*\n)*?\s+executionMethod: command\s*\n(?:.*\n)*?\s+commandPath: codex\s*\n(?:.*\n)*?\s+sandboxMode: danger-full-access\s*\n(?:.*\n)*?\s+approvalPolicy: never\s*\n(?:.*\n)*?\s+webSearchEnabled: false\s*\n(?:.*\n)*?\s+networkAccessEnabled: true\s*\n(?:.*\n)*?\s+reasoningEffort: low/m.test(normalized);
     - type: javascript
       value: |
         const normalized = output.replace(/\r\n/g, "\n");
         const hasTwoPromptIds =
-          (normalized.match(/^\s+- id: today-json\s*$/gm) ?? []).length === 1
-          && (normalized.match(/^\s+- id: week-markdown\s*$/gm) ?? []).length === 1;
+          (normalized.match(/^\s+- id: idea-json\s*$/gm) ?? []).length === 1
+          && (normalized.match(/^\s+- id: idea-markdown\s*$/gm) ?? []).length === 1;
         const invalidPatterns = [
           /^benchmarks:\s*$/m,
           /^tasks:\s*$/m,
@@ -155,7 +145,7 @@ evaluation:
           && normalized.includes("\n  skillModes:\n")
           && normalized.includes("\n  variants:\n")
           && normalized.includes("\nworkspace:\n  sources:\n")
-          && /\n    - (?:id: [^\n]+\n      )?type: local-path\n      path: fixtures\/gws-calendar-agenda-compare\/base\n      target: \/\n/m.test(normalized)
+          && /\n    - (?:id: [^\n]+\n      )?type: local-path\n      path: fixtures\/skill-arena-compare\/base\n      target: \/\n/m.test(normalized)
           && normalized.includes("\n  setup:\n    initializeGit: true\n")
           && normalized.includes("\nevaluation:\n")
           && normalized.includes("\n  assertions:\n")
@@ -164,8 +154,8 @@ evaluation:
           && normalized.includes("\n  maxConcurrency: 1\n")
           && normalized.includes("JSON only")
           && normalized.includes("Markdown only")
-          && normalized.includes("path: fixtures/gws-calendar-agenda-compare/base")
-          && normalized.includes("skillPath: skills/gws-calendar-agenda")
+          && normalized.includes("path: fixtures/skill-arena-compare/base")
+          && normalized.includes("skillPath: skills/brainstorming")
           && normalized.includes("model: gpt-5.1-codex-mini")
           && normalized.includes("networkAccessEnabled: true")
           && normalized.includes("sandboxMode: danger-full-access")
