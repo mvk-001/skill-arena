@@ -78,6 +78,14 @@ $report = Get-ChildItem .\results\skill-arena-compare\*\merged\report.md |
 Start-Process $report
 ```
 
+The `compare` CLI also prints these final artifact paths at the end of the run:
+
+- `Compare summary`
+- `Final merged summary`
+- `Final merged report`
+
+It also prints the final merged markdown table and the merged JSON summary to stdout.
+
 ### 5. Optional: inspect execution details in Promptfoo
 
 After at least one run, open the Promptfoo viewer:

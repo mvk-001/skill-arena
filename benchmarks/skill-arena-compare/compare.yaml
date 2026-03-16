@@ -31,7 +31,13 @@ task:
           - type: contains
             value: "skillId: skill-arena-compare"
           - type: javascript
-            value: "!output.includes('type: git') && !output.includes('type: inline-files')"
+            value: |
+              const normalized = output.replace(/\r\n/g, "\n");
+              return normalized.includes("type: local-path")
+                && normalized.includes("path: fixtures/skill-arena-compare/skill-overlay/skills/skill-arena-compare")
+                && normalized.includes("skillId: skill-arena-compare")
+                && !normalized.includes("type: git")
+                && !normalized.includes("type: inline-files");
     - id: inline-files-skill
       description: Author the compare config from the benchmark brief using an inline-files workspace-overlay skill source.
       prompt: >-
@@ -54,7 +60,13 @@ task:
           - type: contains
             value: "name: skill-arena-compare"
           - type: javascript
-            value: "!output.includes('type: git') && !output.includes('type: local-path')"
+            value: |
+              const normalized = output.replace(/\r\n/g, "\n");
+              return normalized.includes("type: inline-files")
+                && normalized.includes("path: skills/skill-arena-compare/SKILL.md")
+                && normalized.includes("name: skill-arena-compare")
+                && !normalized.includes("type: git")
+                && !normalized.includes("type: local-path");
     - id: git-skill
       description: Author the compare config from the benchmark brief using a git workspace-overlay skill source.
       prompt: >-
@@ -80,7 +92,14 @@ task:
           - type: contains
             value: "skillId: skill-arena-compare"
           - type: javascript
-            value: "!output.includes('type: local-path') && !output.includes('type: inline-files')"
+            value: |
+              const normalized = output.replace(/\r\n/g, "\n");
+              return normalized.includes("type: git")
+                && normalized.includes("repo: https://github.com/mvk-001/skill-arena")
+                && normalized.includes("skillPath: skills/skill-arena-compare")
+                && normalized.includes("skillId: skill-arena-compare")
+                && !normalized.includes("type: local-path")
+                && !normalized.includes("type: inline-files");
 workspace:
   fixture: fixtures/skill-arena-compare/base
   initializeGit: true
@@ -89,11 +108,15 @@ evaluation:
     - type: contains
       value: "schemaVersion: 1"
     - type: contains
+      value: "comparison:"
+    - type: contains
       value: "id: compare-config-authoring-generated"
     - type: contains
       value: "description: Compare baseline and skill-enabled compare.yaml authoring runs."
     - type: contains
       value: "fixture: fixtures/skill-arena-compare/base"
+    - type: contains
+      value: "type: llm-rubric"
     - type: contains
       value: "provider: skill-arena:judge:codex"
     - type: contains
@@ -107,34 +130,61 @@ evaluation:
     - type: contains
       value: "id: review-compare"
     - type: contains
-      value: "variantDisplayName: codex mini"
-    - type: contains
-      value: "requests: 6"
-    - type: contains
-      value: "maxConcurrency: 12"
-    - type: contains
-      value: "timeoutMs: 180000"
-    - type: contains
-      value: "tracing: false"
-    - type: contains
-      value: "noCache: true"
-    - type: contains
-      value: "sandboxMode: workspace-write"
-    - type: contains
       value: "skillMode: disabled"
     - type: contains
       value: "skillMode: enabled"
     - type: contains
-      value: "additionalDirectories: []"
+      value: "executionMethod: command"
     - type: contains
-      value: "cliEnv: {}"
+      value: "commandPath: codex"
     - type: contains
-      value: "config: {}"
+      value: "variantDisplayName: codex mini"
+    - type: contains
+      value: "requests: 3"
+    - type: contains
+      value: "maxConcurrency: 12"
+    - type: contains
+      value: "sandboxMode: workspace-write"
+    - type: contains
+      value: "approvalPolicy: never"
+    - type: contains
+      value: "webSearchEnabled: false"
+    - type: contains
+      value: "networkAccessEnabled: false"
+    - type: contains
+      value: "reasoningEffort: low"
+    - type: contains
+      value: "model: gpt-5.1-codex-mini"
+    - type: file-contains
+      path: deliverables/compare.yaml
+      value: "schemaVersion: 1"
+    - type: file-contains
+      path: deliverables/compare.yaml
+      value: "comparison:"
     - type: javascript
       value: 'output.trimStart().startsWith("schemaVersion: 1")'
     - type: javascript
       value: "!output.includes('```')"
-  requests: 6
+    - type: javascript
+      value: |
+        const normalized = output.replace(/\r\n/g, "\n");
+        return normalized.includes("\ntask:\n")
+          && normalized.includes("\n  prompts:\n")
+          && /-\s+id:\s+author-compare\b/.test(normalized)
+          && /-\s+id:\s+review-compare\b/.test(normalized)
+          && normalized.includes("Read docs/benchmark-brief.md and author deliverables/compare.yaml in the workspace. Return only the completed compare.yaml content.")
+          && normalized.includes("Review the generated compare.yaml for correct prompts, agent settings, evaluation rules, and explicit skill and no-skill configuration. Return only a short validation summary.")
+          && normalized.includes("\ncomparison:\n")
+          && !/\nbenchmarks:\n/.test(normalized)
+          && !/\ntasks:\n/.test(normalized)
+          && !/\nvariants:\n/.test(normalized)
+          && !/\nskillModes:\n/.test(normalized)
+          && !/\nmodes:\n/.test(normalized)
+          && !/\nllm-rubric:\n/.test(normalized)
+          && !/llmRubric:/.test(normalized)
+          && !/\n\s+author-compare:\s/.test(normalized)
+          && !/\n\s+review-compare:\s/.test(normalized);
+  requests: 3
   timeoutMs: 300000
   tracing: false
   maxConcurrency: 12

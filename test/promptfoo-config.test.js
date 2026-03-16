@@ -112,6 +112,8 @@ test("file-contains assertions become Promptfoo javascript assertions", async ()
   assert.equal(config.tests[0].assert[0].type, "javascript");
   assert.match(config.tests[0].assert[0].value, /notes\/target\.txt|notes\\\\target\.txt/);
   assert.match(config.tests[0].assert[0].value, /process\.getBuiltinModule\('node:fs'\)/);
+  assert.match(config.tests[0].assert[0].value, /^const fs =/);
+  assert.match(config.tests[0].assert[0].value, /return fileContents\.includes/);
 });
 
 test("llm-rubric assertions pass through to Promptfoo", async () => {

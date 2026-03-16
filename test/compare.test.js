@@ -1078,6 +1078,26 @@ test("compare dry-run prints explicit maxConcurrency as the effective concurrenc
   );
 
   assert.match(stdout, /Parallel requests: 4/);
+  assert.match(stdout, /Effective eval timeout: 120000 ms/);
+  assert.match(stdout, /Compare artifacts/);
+  assert.match(stdout, /Execution log:/);
+  assert.match(stdout, /Final merged report:/);
+  assert.match(stdout, /merged[\\/]report\.md/);
+});
+
+test("skill-arena-compare plan scales eval timeout by batched compare workload", async () => {
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [fromProjectRoot("src", "cli", "run-compare.js"), "./benchmarks/skill-arena-compare/compare.yaml", "--dry-run"],
+    {
+      cwd: fromProjectRoot(),
+      windowsHide: true,
+    },
+  );
+
+  assert.match(stdout, /Total requests: 18/);
+  assert.match(stdout, /Parallel requests: 12/);
+  assert.match(stdout, /Effective eval timeout: 600000 ms/);
 });
 
 test("compare dry-run rewrites local judge shorthand into a packaged Promptfoo provider", async () => {
@@ -1213,6 +1233,12 @@ test("skill-arena-compare benchmark uses the repo-local skill path and prompt-sp
   assert.equal(compareConfig.task.prompts.length, 3);
   assert.equal(compareConfig.task.prompts[0].evaluation.assertions.length > 0, true);
   assert.equal(compareConfig.task.prompts[1].id, "inline-files-skill");
+  assert.equal(compareConfig.evaluation.requests, 3);
+  assert.equal(
+    compareConfig.evaluation.assertions.some((assertion) =>
+      assertion.type === "file-contains" && assertion.path === "deliverables/compare.yaml"),
+    true,
+  );
 });
 
 test("compare dry-run uses SKILL_ARENA_MAX_PARALLELISM when maxConcurrency is omitted", async () => {

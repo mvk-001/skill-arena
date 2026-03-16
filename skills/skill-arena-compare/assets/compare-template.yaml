@@ -9,6 +9,8 @@ task:
     - id: main
       description: Primary benchmark prompt
       prompt: Exact task prompt sent to every provider.
+      # Keep prompts as a YAML list of prompt objects.
+      # Do not rewrite this into a mapping like `main: ...`.
       # Optional prompt-level assertions for row-specific checks.
       # evaluation:
       #   assertions:

@@ -202,6 +202,12 @@ For compare runs, inspect:
 - `results/<benchmark-id>/<timestamp>-compare/summary.json`
 - `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
 
+At the end of `skill-arena compare`, the CLI prints:
+
+- the final merged markdown report
+- the merged JSON summary
+- explicit artifact paths for `Compare summary`, `Final merged summary`, and `Final merged report`
+
 `summary.json` includes a `matrix` section with compare columns, rows, and per-cell pass ratios such as `40% (4/10)`.
 
 ## Latest validated results

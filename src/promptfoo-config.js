@@ -107,11 +107,9 @@ export function toPromptfooAssertion(assertion, workspaceDirectory) {
       return {
         type: "javascript",
         value: [
-          "(() => {",
-          "  const fs = process.getBuiltinModule('node:fs');",
-          `  const fileContents = fs.readFileSync(${escapedFilePath}, 'utf8');`,
-          `  return fileContents.includes(${escapedExpectedValue});`,
-          "})()",
+          "const fs = process.getBuiltinModule('node:fs');",
+          `const fileContents = fs.readFileSync(${escapedFilePath}, 'utf8');`,
+          `return fileContents.includes(${escapedExpectedValue});`,
         ].join("\n"),
       };
     }

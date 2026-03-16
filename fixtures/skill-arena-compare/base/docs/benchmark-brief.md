@@ -14,7 +14,7 @@ The file must define a Skill Arena compare config with these requirements:
 - `workspace.fixture: fixtures/skill-arena-compare/base`
 - `workspace.initializeGit: true`
 - one `llm-rubric` assertion with provider `skill-arena:judge:codex`
-- `evaluation.requests: 6`
+- `evaluation.requests: 3`
 - two skill modes:
   - `no-skill` as disabled baseline
   - `skill` as enabled with an explicit `skill` block and `install.strategy: workspace-overlay`

@@ -23,6 +23,8 @@ import { ensureCompareScenarioLocalPaths } from "../compare-bootstrap.js";
 import { fromPackageRoot } from "../project-paths.js";
 import { materializeWorkspace, syncExecutionWorkspaceToArtifacts } from "../workspace.js";
 
+let latestCompareArtifacts = null;
+
 async function main() {
   const compareConfigPath = process.argv[2];
   const dryRun = process.argv.includes("--dry-run");
@@ -38,6 +40,7 @@ async function main() {
     cwd: outputRootDirectory,
   });
   const effectiveConcurrency = resolveEvaluationConcurrency(compareConfig.evaluation);
+  const effectiveEvalTimeoutMs = resolveCompareEvalTimeoutMs(compareConfig, effectiveConcurrency);
   const manifest = expandCompareConfigToManifest(compareConfig);
   const supportedRuns = [];
   const skippedVariants = [];
@@ -76,6 +79,7 @@ async function main() {
     skippedVariants,
     outputRootDirectory,
     effectiveConcurrency,
+    effectiveEvalTimeoutMs,
   });
   console.log("");
 
@@ -126,9 +130,18 @@ async function main() {
   const promptfooConfigYaml = stringifyPromptfooConfig(promptfooConfig);
   const promptfooConfigPath = path.join(benchmarkRunDirectory, "promptfooconfig.yaml");
   const promptfooResultsPath = path.join(benchmarkRunDirectory, "promptfoo-results.json");
+  const summaryPath = path.join(benchmarkRunDirectory, "summary.json");
 
   await fs.writeFile(promptfooConfigPath, promptfooConfigYaml, "utf8");
   await logExecution(executionLogPath, `promptfoo config written to ${promptfooConfigPath}`);
+  latestCompareArtifacts = {
+    compareRunDirectory: benchmarkRunDirectory,
+    promptfooConfigPath,
+    promptfooResultsPath,
+    summaryPath,
+    executionLogPath,
+  };
+  printCompareArtifactPaths(latestCompareArtifacts);
 
   if (dryRun) {
     await logExecution(executionLogPath, "dry-run completed without promptfoo eval");
@@ -147,7 +160,7 @@ async function main() {
   await executePromptfoo({
     promptfooConfigPath,
     promptfooResultsPath,
-    timeoutMs: compareConfig.evaluation.timeoutMs,
+    timeoutMs: effectiveEvalTimeoutMs,
     maxConcurrency: effectiveConcurrency,
     noCache: compareConfig.evaluation.noCache,
     requests: compareConfig.evaluation.requests,
@@ -201,14 +214,26 @@ async function main() {
   });
   await logExecution(executionLogPath, `merged artifacts written to ${mergedArtifacts.reportPath}`);
 
+  console.log("Final merged report");
   console.log(cliReport);
   console.log("");
+  console.log("Final merged result");
+  console.log(JSON.stringify(mergedSummary, null, 2));
+  console.log("");
+  printCompareArtifactPaths({
+    compareRunDirectory: benchmarkRunDirectory,
+    promptfooConfigPath,
+    promptfooResultsPath,
+    summaryPath,
+    executionLogPath,
+    mergedArtifacts,
+  });
   printSkipped(skippedVariants);
   console.log(JSON.stringify({
     compareRunDirectory: benchmarkRunDirectory,
     promptfooConfigPath,
     promptfooResultsPath,
-    summaryPath: path.join(benchmarkRunDirectory, "summary.json"),
+    summaryPath,
     mergedArtifacts,
     results: [
       ...compareSummary.matrix.rows.map((row) => ({
@@ -549,6 +574,7 @@ function printExecutionPlan({
   skippedVariants,
   outputRootDirectory,
   effectiveConcurrency,
+  effectiveEvalTimeoutMs,
 }) {
   const taskPrompts = getTaskPrompts(manifest);
   const requestsPerCell = compareConfig.evaluation.requests;
@@ -587,10 +613,21 @@ function printExecutionPlan({
   console.log(`- Total compare cells: ${compareCells}`);
   console.log(`- Total requests: ${totalRequests}`);
   console.log(`- Parallel requests: ${effectiveConcurrency}`);
+  console.log(`- Effective eval timeout: ${effectiveEvalTimeoutMs} ms`);
 
   if (skippedVariants.length > 0) {
     console.log(`- Skipped variants: ${skippedVariants.length}`);
   }
+}
+
+function resolveCompareEvalTimeoutMs(compareConfig, effectiveConcurrency) {
+  const taskPrompts = getTaskPrompts(compareConfig);
+  const requestsPerCell = compareConfig.evaluation.requests;
+  const skillModes = compareConfig.comparison.skillModes.length;
+  const variants = compareConfig.comparison.variants.length;
+  const totalRequests = taskPrompts.length * skillModes * variants * requestsPerCell;
+  const batches = Math.max(1, Math.ceil(totalRequests / Math.max(1, effectiveConcurrency)));
+  return compareConfig.evaluation.timeoutMs * batches;
 }
 
 function printSkipped(skippedVariants) {
@@ -602,6 +639,34 @@ function printSkipped(skippedVariants) {
   for (const result of skippedVariants) {
     console.log(`- ${result.variantId}: ${result.reason}`);
   }
+  console.log("");
+}
+
+function printCompareArtifactPaths({
+  compareRunDirectory,
+  promptfooConfigPath,
+  promptfooResultsPath,
+  summaryPath,
+  executionLogPath,
+  mergedArtifacts,
+}) {
+  console.log("Compare artifacts");
+  console.log(`- Run directory: ${compareRunDirectory}`);
+  console.log(`- Promptfoo config: ${promptfooConfigPath}`);
+  console.log(`- Promptfoo results: ${promptfooResultsPath}`);
+  console.log(`- Compare summary: ${summaryPath}`);
+  if (executionLogPath) {
+    console.log(`- Execution log: ${executionLogPath}`);
+  }
+
+  if (mergedArtifacts) {
+    console.log(`- Final merged summary: ${mergedArtifacts.mergedSummaryPath}`);
+    console.log(`- Final merged report: ${mergedArtifacts.reportPath}`);
+  } else {
+    console.log(`- Final merged summary: ${path.join(compareRunDirectory, "merged", "merged-summary.json")}`);
+    console.log(`- Final merged report: ${path.join(compareRunDirectory, "merged", "report.md")}`);
+  }
+
   console.log("");
 }
 
@@ -635,6 +700,7 @@ async function executePromptfoo({
   const { executable, executableArgs } = await buildPromptfooCommand(promptfooArgs);
 
   await new Promise((resolve, reject) => {
+    let timedOut = false;
     const childProcess = spawn(executable, executableArgs, {
       cwd: path.dirname(promptfooConfigPath),
       env: {
@@ -647,6 +713,7 @@ async function executePromptfoo({
     });
 
     const killTimer = setTimeout(() => {
+      timedOut = true;
       childProcess.kill("SIGTERM");
     }, timeoutMs);
 
@@ -665,11 +732,21 @@ async function executePromptfoo({
       process.stderr.write(chunk);
     });
 
-    childProcess.on("exit", (code) => {
+    childProcess.on("exit", (code, signal) => {
       clearTimeout(killTimer);
 
       if (code === 0 || code === 100) {
         resolve();
+        return;
+      }
+
+      if (timedOut) {
+        reject(new Error(`promptfoo eval timed out after ${timeoutMs} ms and was terminated with signal ${signal ?? "unknown"}.`));
+        return;
+      }
+
+      if (signal) {
+        reject(new Error(`promptfoo eval was terminated with signal ${signal}.`));
         return;
       }
 
@@ -717,6 +794,10 @@ async function buildPromptfooCommand(args) {
 }
 
 main().catch((error) => {
+  if (latestCompareArtifacts) {
+    console.error("");
+    printCompareArtifactPaths(latestCompareArtifacts);
+  }
   console.error(error.message);
   process.exitCode = 1;
 });

@@ -36,6 +36,9 @@ Produce a concise compare config that gives:
 14. Do not rely on package-relative path resolution. Compare local paths are only valid when they are absolute or relative to the command working directory at runtime.
 15. Return raw YAML only. Do not add Markdown fences, prose before the YAML, or explanations after it unless the user explicitly asks for commentary.
 16. Use exact compare schema keys. Do not invent aliases such as `llm-rubric`, `llmRubric`, top-level `skillModes`, top-level `variants`, `execution`, `sandbox`, `approval`, `webSearch`, or `network`.
+17. When the brief gives exact prompt ids and exact prompt text, preserve them verbatim inside `task.prompts` list items. Do not rewrite `task.prompts` into a mapping.
+18. Keep `task`, `workspace`, `evaluation`, and `comparison` as top-level keys. Do not nest them under `benchmark` and do not emit `benchmarks:` or `tasks:`.
+19. If the task says to write a file and return only its contents, write the file first and then return only the raw YAML. Do not mention that you used the skill.
 
 ## Workflow
 
@@ -138,13 +141,22 @@ comparison:
 If your draft contains any of the following, stop and correct it before returning:
 
 - `task.prompts:` followed by `author-compare:` or any other direct mapping key
+- top-level `benchmarks:` or `tasks:`
 - `llm-rubric:` or `llmRubric:` outside `evaluation.assertions`
 - top-level `skillModes:` or `variants:`
+- top-level `modes:`
 - `execution:` instead of `executionMethod` and `commandPath`
 - `sandbox:` instead of `sandboxMode`
 - `approval:` instead of `approvalPolicy`
 - `webSearch:` instead of `webSearchEnabled`
 - `networkAccess:` or `network:` instead of `networkAccessEnabled`
+
+## Common failure patterns
+
+- Returning commentary such as `Used the skill...` before the YAML.
+- Moving `task`, `workspace`, or `evaluation` under `benchmark`.
+- Emitting top-level `variants`, `skillModes`, or `modes` instead of nesting them under `comparison`.
+- Rewriting `task.prompts` as a mapping keyed by prompt id instead of a YAML list of prompt objects.
 
 ## Source-shape patterns
 
