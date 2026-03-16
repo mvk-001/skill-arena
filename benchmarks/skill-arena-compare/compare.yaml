@@ -176,7 +176,7 @@ evaluation:
   requests: 8
   timeoutMs: 600000
   tracing: false
-  maxConcurrency: 16
+  maxConcurrency: 8
   noCache: true
 workspace:
   sources:
