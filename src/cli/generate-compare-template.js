@@ -368,6 +368,7 @@ function resolveVariant(options) {
   const adapter = options.adapter ?? "codex";
   const variantId = options.variantId ?? defaultVariantIdForAdapter(adapter);
   const variantDisplayName = options.variantDisplayName ?? variantId.replaceAll("-", " ");
+  const config = adapter === "copilot-cli" ? { noCustomInstructions: true } : {};
 
   return {
     id: variantId,
@@ -383,6 +384,7 @@ function resolveVariant(options) {
     webSearchEnabled: options.webSearchEnabled ?? false,
     networkAccessEnabled: options.networkAccessEnabled ?? false,
     reasoningEffort: options.reasoningEffort ?? "low",
+    config,
     variantDisplayName,
   };
 }
@@ -579,7 +581,14 @@ function renderCompareTemplate(options) {
   lines.push("        # TODO: additionalDirectories is an open list of extra readable paths. Keep it empty unless the benchmark must expose files outside the materialized workspace.");
   lines.push("        cliEnv: {}");
   lines.push("        # TODO: cliEnv is an open mapping of environment variables passed to the agent CLI. Use it for reproducible CLI tweaks, not for secrets.");
-  lines.push("        config: {}");
+  if (Object.keys(variant.config ?? {}).length === 0) {
+    lines.push("        config: {}");
+  } else {
+    lines.push("        config:");
+    for (const [key, value] of Object.entries(variant.config)) {
+      lines.push(`          ${key}: ${yamlValueForMapping(value)}`);
+    }
+  }
   lines.push("        # TODO: config is an adapter-specific open mapping for advanced overrides. Leave empty unless the adapter contract requires extra fields for this benchmark.");
   lines.push("      output:");
   lines.push("        labels:");
@@ -787,6 +796,18 @@ function yamlString(value) {
 
 function yamlBoolean(value) {
   return value ? "true" : "false";
+}
+
+function yamlValueForMapping(value) {
+  if (typeof value === "boolean") {
+    return yamlBoolean(value);
+  }
+
+  if (typeof value === "number" || typeof value === "string") {
+    return yamlString(value);
+  }
+
+  return JSON.stringify(value);
 }
 
 function slugify(value) {

@@ -18,6 +18,7 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
   const allowedSkills = scenario?.skillMode === "enabled"
     ? inferVisibleSkills(scenario.skill?.source)
     : [];
+  const skipHomeAgents = scenario?.agent?.adapter === "pi" || scenario?.agent?.adapter === "codex";
 
   await Promise.all([
     fs.mkdir(executionRootDirectory, { recursive: true }),
@@ -38,6 +39,7 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
     destinationCodexHome: codexHome,
     destinationSkillsDirectory: codexSkillsDirectory,
     destinationSystemSkillsDirectory: codexSystemSkillsDirectory,
+    copyGlobalAgents: !skipHomeAgents,
   });
 
   return {
@@ -68,6 +70,7 @@ async function seedCodexHome({
   destinationCodexHome,
   destinationSkillsDirectory,
   destinationSystemSkillsDirectory,
+  copyGlobalAgents,
 }) {
   const sourceCodexHome = resolveSourceCodexHome();
   if (!sourceCodexHome) {
@@ -78,7 +81,9 @@ async function seedCodexHome({
   await copyIfPresent(path.join(sourceCodexHome, "config.toml"), path.join(destinationCodexHome, "config.toml"));
   await copyIfPresent(path.join(sourceCodexHome, "version.json"), path.join(destinationCodexHome, "version.json"));
   await copyIfPresent(path.join(sourceCodexHome, ".codex-global-state.json"), path.join(destinationCodexHome, ".codex-global-state.json"));
-  await copyIfPresent(path.join(sourceCodexHome, "AGENTS.md"), path.join(destinationCodexHome, "AGENTS.md"));
+  if (copyGlobalAgents) {
+    await copyIfPresent(path.join(sourceCodexHome, "AGENTS.md"), path.join(destinationCodexHome, "AGENTS.md"));
+  }
   await copyDirectoryIfPresent(path.join(sourceCodexHome, "skills", ".system"), destinationSystemSkillsDirectory);
   await copyDirectoryIfPresent(path.join(sourceCodexHome, "rules"), path.join(destinationCodexHome, "rules"));
   await copyDirectoryIfPresent(path.join(sourceCodexHome, "vendor_imports"), path.join(destinationCodexHome, "vendor_imports"));

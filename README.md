@@ -1,27 +1,37 @@
 # Skill Arena
 
-Skill Arena is a CLI harness for evaluating coding agents with and without skills (skill vs no-skill) in reproducible, isolated workspaces.
+## What this project is
 
-The CLI package creates evaluation artifacts (`promptfooconfig.yaml`, `summary.json`) and runs controlled comparisons across prompts, skill modes, and agent configurations.
+Skill Arena is a CLI-first benchmark harness to compare agent behavior in controlled conditions.
 
-Codex scenarios run through a Promptfoo custom script that uses the local Codex system via `codex exec` or `@openai/codex-sdk`.
+It supports:
 
-Copilot CLI scenarios run through a Promptfoo custom script that uses the local `copilot` command.
+- scenario-based runs via `manifest.*` files
+- matrix comparisons via `compare.*` files
+- reproducible, isolated execution workspaces
+- skill-enabled vs no-skill control paths
+- deterministic output artifacts for review and reporting
 
-Benchmarks can target either workspace-injected skills or skills already installed in the local Codex system.
+Execution is routed through Promptfoo with custom local providers for supported adapters.
 
-## Quickstart
+## Supported adapters
 
-Prerequisites:
+Current adapters:
 
-- Node.js 24 or newer
-- local Codex CLI on `PATH` as `codex`
-- local GitHub Copilot CLI on `PATH` as `copilot` when running `copilot-cli` scenarios
-- Codex already authenticated on the machine
+- `codex`
+- `copilot-cli`
+- `pi`
 
-### 0. Install dependencies
+## Requirements
 
-Clone the repository and install dependencies. No global Promptfoo install is required because the repo uses the local package through `npm run` and `npx`.
+- Node.js 24+
+- Local `codex` CLI installed and authenticated
+- Local `copilot` CLI on `PATH` (only for `copilot-cli` variants)
+- `git` available in PATH (for git-based workspace/skill sources)
+
+## Installation and invocation
+
+### Repository development mode
 
 ```bash
 git clone <your-fork-or-this-repo-url>
@@ -29,146 +39,42 @@ cd skill-arena
 npm install
 ```
 
-or
-
-```bash
-pnpm install
-```
-
-To run Skill Arena as a dependency or globally from the published package:
-
-```bash
-npm install -g skill-arena
-pnpm add -g skill-arena
-```
-
-If you need the package temporarily without installing it globally, use:
-
-```bash
-npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
-npx skill-arena evaluate ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill
-npx skill-arena --version
-```
-
-You can run the CLI with the workspace scripts, `npx`, or through a local install:
-
-```bash
-# local workspace script
-npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
-
-# direct CLI binary (`npm` / `npx`, `pnpm dlx`, or package bin scripts)
-npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
-npx . evaluate ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill
-npx . --version
-
-pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
-pnpm exec skill-arena evaluate ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill
-```
-
-When the package is installed from npm under a name, use:
-
-```bash
-npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
-```
-
-Command help is also command-aware:
-
-```bash
-skill-arena --help
-skill-arena evaluate <manifest-or-compare-path> [--scenario <scenario-id>] [--dry-run]
-skill-arena help evaluate
-skill-arena help gen-conf
-skill-arena help val-conf
-skill-arena evaluate --help
-```
-
-### 1. Install the `skill-arena-compare` skill
-
-Copy the reusable skill into your local Codex skills directory, then restart Codex so it picks up the new skill.
-
-```bash
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-cp -R ./skills/skill-arena-compare "${CODEX_HOME:-$HOME/.codex}/skills/skill-arena-compare"
-```
-
-### 2. Ask Codex to generate a compare config
-
-Use the installed skill in any benchmark authoring workspace. For example:
-
-```text
-Use the skill-arena-compare skill to create deliverables/compare.yaml for this benchmark.
-Return only the final compare.yaml content.
-```
-
-The repository also includes a ready-made benchmark for this exact task in `benchmarks/skill-arena-compare/compare.yaml`.
-
-### 3. Run the benchmark
-
-Execute the included compare benchmark:
+Run with one of:
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
-
-# Or use evaluate to let it auto-detect
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
-skill-arena evaluate ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill
-```
-
-To run the versioned minimal `copilot-cli` smoke comparison:
-
-```bash
 npm run benchmark:copilot:compare
+node ./src/cli/skill-arena.js --help
 ```
 
-### 4. Open the generated report
-
-The compare run writes a merged report to:
-
-```text
-results/skill-arena-compare/<timestamp>-compare/merged/report.md
-```
-
-On PowerShell, this opens the most recent report:
-
-```powershell
-$report = Get-ChildItem .\results\skill-arena-compare\*\merged\report.md |
-  Sort-Object LastWriteTime -Descending |
-  Select-Object -First 1 -ExpandProperty FullName
-Start-Process $report
-```
-
-The evaluate CLI compare mode also prints these final artifact paths at the end of the run:
-
-- `Compare summary`
-- `Final merged summary`
-- `Final merged report`
-
-It also prints the final merged markdown table and the merged JSON summary to stdout.
-
-### 5. Optional: inspect execution details in Promptfoo
-
-After at least one run, open the Promptfoo viewer:
+### Published package
 
 ```bash
-npx promptfoo@latest view
+# global install
+npm install -g skill-arena
+
+# or one-off execution
+npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
-Start with these documents:
+## Quickstart
 
-1. [Architecture](./docs/architecture.md)
-2. [Specs](./docs/specs.md)
-3. [Usage guide](./docs/usage.md)
-4. [Testing](./docs/testing.md)
-5. [Agent guidance](./AGENTS.md)
+### 1) Create or load a benchmark definition
 
-The repository has two authoring surfaces:
+- `manifest.*` files define scenario runs.
+- `compare.*` files define prompt × adapter/mode matrices.
+- Both can be authored in YAML or JSON in the canonical project formats.
 
-- `manifest.yaml` for scenario-oriented benchmark runs
-- `compare.yaml` for one Promptfoo eval with skill-mode columns and variant/prompt rows
+Useful references before authoring:
 
-Promptfoo is the evaluation runtime behind both formats.
+- [Architecture](./docs/architecture.md)
+- [Specs](./docs/specs.md)
+- [Usage guide](./docs/usage.md)
+- [Testing](./docs/testing.md)
 
-`skill-arena gen-conf` is the fast compare authoring helper. It generates a commented `compare.yaml` starter with `TODO:` markers for benchmark metadata, prompts, assertions, workspace sources, skill source shape, and the first variant.
+### 2) Generate a compare template
+
+Use the built-in generator to bootstrap a `compare.yaml` with guided TODO fields:
 
 ```bash
 npx skill-arena gen-conf \
@@ -184,8 +90,86 @@ npx skill-arena gen-conf \
   --skill-type git
 ```
 
-For the older developer-only flow that writes the intermediate Promptfoo config for one manifest scenario, keep using:
+### 3) Run an evaluation
+
+```bash
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill
+npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+```
+
+### 4) Open the artifacts
+
+Compare runs write:
+
+- `results/<benchmark-id>/<timestamp>-compare/promptfooconfig.yaml`
+- `results/<benchmark-id>/<timestamp>-compare/promptfoo-results.json`
+- `results/<benchmark-id>/<timestamp>-compare/summary.json`
+- `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
+
+Open the latest merged report (PowerShell):
+
+```powershell
+$report = Get-ChildItem .\results\skill-arena-compare\*\merged\report.md |
+  Sort-Object LastWriteTime -Descending |
+  Select-Object -First 1 -ExpandProperty FullName
+Start-Process $report
+```
+
+## CLI usage
+
+```bash
+skill-arena --help
+skill-arena evaluate <manifest-or-compare-path> [--scenario <scenario-id>] [--dry-run]
+skill-arena gen-conf --help
+skill-arena val-conf --help
+```
+
+Useful aliases and one-off runs:
+
+```bash
+npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
+npx . evaluate ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill
+pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+```
+
+## Runtime behavior highlights
+
+- Isolation is workspace-centered and per scenario.
+- Scenario skill mounting is deterministic and based on the manifest/compare specification.
+- `system-installed` skills follow the explicit behavior documented in the manifest model.
+- `codex` and `pi` adapters can run with strict default skill scope.
+- No task-specific hidden instructions are injected by the harness outside benchmark-defined data.
+
+## Output and reporting
+
+Scenario runs create:
+
+- `results/<benchmark-id>/<timestamp>-<scenario-id>/workspace/`
+- `results/<benchmark-id>/<timestamp>-<scenario-id>/promptfooconfig.yaml`
+- `results/<benchmark-id>/<timestamp>-<scenario-id>/promptfoo-results.json`
+- `results/<benchmark-id>/<timestamp>-<scenario-id>/summary.json`
+
+Compare runs include the merged report and merged summary under:
+
+- `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
+- `results/<benchmark-id>/<timestamp>-compare/merged/merged-summary.json`
+
+You can inspect Promptfoo output directly when needed:
+
+```bash
+npx promptfoo@latest view
+```
+
+## Legacy helper scripts
+
+For workflows that still generate an intermediate Promptfoo config for single scenario manifests:
 
 ```bash
 npm run generate:config -- ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill
 ```
+
+## Notes
+
+- This repository intentionally ships the CLI runtime surface under `bin/` and `src/`.
+- Artifact-driven runs are preferred: keep your benchmark definitions as the source of truth and avoid hidden prompt overrides.

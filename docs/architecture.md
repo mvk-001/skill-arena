@@ -89,6 +89,13 @@ For `copilot-cli`, the generated provider is also a file-based custom script. V1
 
 `copilot-cli` maps sandbox, network, web, and approval settings on a best-effort basis because the Copilot CLI does not expose the same execution controls as Codex.
 
+For `pi`, the generated provider runs with strict skill isolation by default:
+
+- `--no-skills` disables implicit skill discovery.
+- When a test enables a workspace-overlay skill, it passes explicit `--skill` paths for those declared skill IDs.
+
+For `codex`, skill scope defaults are applied through generated `skills.config` values unless the scenario uses `system-installed` skills.
+
 ### Result outputs
 
 Each run writes a predictable directory under `results/<benchmark-id>/<timestamp>-<scenario-id>/`:

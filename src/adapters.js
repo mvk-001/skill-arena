@@ -36,7 +36,12 @@ const adapterRegistry = {
           enable_streaming: scenario.evaluation.tracing,
           deep_tracing: scenario.evaluation.tracing,
           skip_git_repo_check: !gitReady,
-          codex_config: scenario.agent.config,
+          codex_config: mergeCodexSkillConfig({
+            baseConfig: scenario.agent.config,
+            strategy: scenario.skill.install.strategy,
+            allowedSkillIds: getAllowedSkillIds(isolatedEnvironment),
+            codexHome: isolatedEnvironment?.CODEX_HOME,
+          }),
         },
       };
     },
@@ -92,6 +97,8 @@ const adapterRegistry = {
             ...scenario.agent.cliEnv,
             ...(isolatedEnvironment ?? {}),
           },
+          allowed_skills: getAllowedSkillIds(isolatedEnvironment),
+          disable_other_skills: scenario.skill.install.strategy !== "system-installed",
         },
       };
     },
@@ -107,6 +114,54 @@ function resolveAdditionalDirectory(workspaceDirectory, directory) {
   }
 
   return resolvedDirectory;
+}
+
+function getAllowedSkillIds(isolatedEnvironment) {
+  const value = String(isolatedEnvironment?.SKILL_ARENA_ALLOWED_SKILLS ?? "");
+  return value
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
+function mergeCodexSkillConfig({
+  baseConfig,
+  strategy,
+  allowedSkillIds,
+  codexHome,
+}) {
+  if (strategy === "system-installed") {
+    return baseConfig;
+  }
+
+  if (baseConfig?.skills?.config !== undefined) {
+    return baseConfig;
+  }
+
+  if (!allowedSkillIds.length) {
+    return {
+      ...baseConfig,
+      skills: {
+        ...(baseConfig?.skills ?? {}),
+        config: [],
+      },
+    };
+  }
+
+  if (!codexHome) {
+    return baseConfig;
+  }
+
+  return {
+    ...baseConfig,
+    skills: {
+      ...(baseConfig?.skills ?? {}),
+      config: allowedSkillIds.map((skillId) => ({
+        path: path.join(codexHome, "skills", skillId, "SKILL.md"),
+        enabled: true,
+      })),
+    },
+  };
 }
 
 export function getAdapter(adapterId) {

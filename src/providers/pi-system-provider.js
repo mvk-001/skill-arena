@@ -47,9 +47,27 @@ export default class PiSystemProvider {
 
   buildCommandArguments(prompt) {
     const args = [];
+    const workingDirectory = this.config.working_dir ?? process.cwd();
+    const allowedSkills = Array.isArray(this.config.allowed_skills)
+      ? this.config.allowed_skills
+      : [];
+    const shouldDisableUndeclaredSkills = this.config.disable_other_skills ?? true;
 
     if (this.config.model) {
       args.push("--model", this.config.model);
+    }
+
+    if (shouldDisableUndeclaredSkills) {
+      args.push("--no-skills");
+      for (const skill of allowedSkills) {
+        const skillPath = path.resolve(workingDirectory, "skills", skill);
+        args.push("--skill", skillPath);
+      }
+    } else if (allowedSkills.length > 0) {
+      for (const skill of allowedSkills) {
+        const skillPath = path.resolve(workingDirectory, "skills", skill);
+        args.push("--skill", skillPath);
+      }
     }
 
     args.push("-p", prompt);

@@ -70,6 +70,10 @@ export default class CopilotSystemProvider {
       args.push("--agent", String(adapterConfig.agent));
     }
 
+    if (adapterConfig.noCustomInstructions === true) {
+      args.push("--no-custom-instructions");
+    }
+
     if (this.config.approval_policy === "never") {
       args.push("--allow-all-tools");
     }
