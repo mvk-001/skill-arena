@@ -15,7 +15,7 @@ and shell access is blocked or unreliable.
 
 - The final answer must start with `schemaVersion: 1`.
 - Do not add headings, bullets, status notes, test notes, or fenced code.
-- If `npx skill-arena compare ... --dry-run` fails because the CLI is missing or
+- If `npx skill-arena evaluate ... --dry-run` fails because the CLI is missing or
   unavailable, do not mention that failure in the final answer.
 
 ## Exact target values

@@ -15,6 +15,9 @@ Use this route when the task matches `benchmarks/skill-arena-compare/compare.yam
 1. Start from `assets/compare-template.yaml`
 2. Replace placeholders with task-specific values
 3. Validate with `scripts/validate-compare-output.js <path>` when possible
+   - For quicker prompt-driven scaffolding, use:
+     `node skills/skill-arena-compare/scripts/scaffold-compare-from-prompts.js`.
+  - Full command reference: `assets/scaffold-compare-from-prompts.md`.
 
 ## Final gate
 

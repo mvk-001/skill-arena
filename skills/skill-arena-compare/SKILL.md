@@ -17,6 +17,8 @@ For compare-authoring tasks, the final answer is usually the file content only.
 - No prose before the YAML.
 - No prose after the YAML.
 - No Markdown fences.
+- If the draft starts with commentary instead of `schemaVersion: 1`, delete the
+  commentary and keep only the YAML body.
 - If you wrote `deliverables/compare.yaml`, answer with that file's contents
   only.
 
@@ -29,9 +31,13 @@ instructions:
 2. For the repository benchmark, run
    `node skills/skill-arena-compare/scripts/scaffold-skill-arena-compare-benchmark.js --validate`.
    It writes `deliverables/compare.yaml` by default.
-3. Otherwise start from `assets/compare-template.yaml`.
-4. Validate with `scripts/validate-compare-output.js` when shell commands work.
-5. Final answer rule: return raw YAML only. Do not add headings, bullets,
+3. For generic compare tasks, prefer
+   `node skills/skill-arena-compare/scripts/scaffold-compare-from-prompts.js`.
+   - See full usage and examples in
+     `assets/scaffold-compare-from-prompts.md`.
+4. Otherwise start from `assets/compare-template.yaml`.
+5. Validate with `scripts/validate-compare-output.js` when shell commands work.
+6. Final answer rule: return raw YAML only. Do not add headings, bullets,
    fences, status notes, test notes, or file notes before or after the YAML.
 
 ## Goal
@@ -84,6 +90,8 @@ Produce a concise compare config that gives:
 - Do not rewrite `task.prompts` into a mapping.
 - Do not move `task`, `workspace`, `evaluation`, or `comparison` under
   `benchmark`.
+- Do not use alias keys inside assertions such as `pattern:` or `rubric:`. In
+  V1 assertions, keep the payload under `value:`.
 - Do not write outputs into the skill directory unless the user explicitly asks.
 - Do not replace the YAML with shell-error prose when the brief and assets are
   enough to finish offline.
@@ -95,10 +103,12 @@ Produce a concise compare config that gives:
    `node skills/skill-arena-compare/scripts/scaffold-skill-arena-compare-benchmark.js --validate`
    immediately. It writes `deliverables/compare.yaml` by default.
 3. Otherwise open `assets/fast-path.md`.
-4. Choose the starting asset:
+5. For faster authoring, you can use the prompt-based scaffold:
+   `node skills/skill-arena-compare/scripts/scaffold-compare-from-prompts.js`.
+6. Choose the starting asset:
    - generic task: `assets/compare-template.yaml`
    - repository benchmark: the scaffold script
-5. If shell access works, inspect the requested workspace files immediately.
+7. If shell access works, inspect the requested workspace files immediately.
 6. If shell access is blocked or flaky, switch to offline authoring immediately.
 7. If the benchmark uses a Git workspace-overlay skill source, copy the block
    shape from `assets/git-workspace-overlay-reference.md`.
@@ -379,6 +389,7 @@ returning:
   list of prompt objects.
 - Using `shared:` under `evaluation` instead of top-level
   `evaluation.assertions`.
+- Using `pattern:` or `rubric:` under assertions instead of `value:`.
 - Putting `adapter` or `model` outside `comparison.variants[*].agent`.
 - Replacing the YAML answer with a shell-failure status message when validation
   is unavailable.
@@ -502,7 +513,7 @@ optimize for exact compare authoring:
 - use prompt-level assertions only for the source-shape differences
 - prefer `skill-arena:judge:codex` when the benchmark brief asks for a local
   judge
-- treat `npx skill-arena compare ... --dry-run` as best-effort verification,
+- treat `npx skill-arena evaluate ... --dry-run` as best-effort verification,
   not as a reason to stop authoring
 - prefer
   `node skills/skill-arena-compare/scripts/validate-compare-output.js deliverables/compare.yaml --benchmark skill-arena-compare`

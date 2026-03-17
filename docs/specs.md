@@ -382,7 +382,7 @@ Preferred explicit compare skill definitions use the same three source modes:
 For compare configs, local filesystem paths are resolved using this contract:
 
 - absolute local paths are used as-is
-- relative local paths are resolved from the current runtime working directory where `skill-arena compare` is executed
+- relative local paths are resolved from the current runtime working directory where compare-mode execution runs
 - relative local paths are not resolved against the installed package location
 - when a relative local path is missing in compare mode, the runner may bootstrap that relative directory from a unique packaged fixture match before workspace materialization
 

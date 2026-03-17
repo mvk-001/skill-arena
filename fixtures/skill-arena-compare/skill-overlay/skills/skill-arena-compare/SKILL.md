@@ -362,7 +362,7 @@ For the repository benchmark `benchmarks/skill-arena-compare/compare.yaml`, opti
 - preserve shared assertions at top-level
 - use prompt-level assertions only for the source-shape differences
 - prefer `skill-arena:judge:codex` when the benchmark brief asks for a local judge
-- treat `npx skill-arena compare ... --dry-run` as best-effort verification, not as a reason to stop authoring
+- treat `npx skill-arena evaluate ... --dry-run` as best-effort verification, not as a reason to stop authoring
 - prefer `node skills/skill-arena-compare/scripts/validate-compare-output.js deliverables/compare.yaml --benchmark skill-arena-compare` before the expensive live compare run
 - do not output commentary outside the final YAML
 - the benchmark brief remains the source of truth when helper assets are more generic than the benchmark

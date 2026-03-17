@@ -1077,12 +1077,9 @@ test("compare dry-run prints explicit maxConcurrency as the effective concurrenc
     },
   );
 
-  assert.match(stdout, /Parallel requests: 4/);
-  assert.match(stdout, /Effective eval timeout: 120000 ms/);
-  assert.match(stdout, /Compare artifacts/);
-  assert.match(stdout, /Execution log:/);
-  assert.match(stdout, /Final merged report:/);
-  assert.match(stdout, /merged[\\/]report\.md/);
+  assert.match(stdout, /\| Parallel requests \| 4 \|/);
+  assert.match(stdout, /\| Effective timeout \| 120000 ms \|/);
+  assert.match(stdout, /Running evaluation with Promptfoo/);
 });
 
 test("skill-arena-compare plan scales eval timeout by batched compare workload", async () => {
@@ -1095,9 +1092,9 @@ test("skill-arena-compare plan scales eval timeout by batched compare workload",
     },
   );
 
-  assert.match(stdout, /Total requests: 18/);
-  assert.match(stdout, /Parallel requests: 12/);
-  assert.match(stdout, /Effective eval timeout: 600000 ms/);
+  assert.match(stdout, /\| Total requests \| 32 \|/);
+  assert.match(stdout, /\| Parallel requests \| 8 \|/);
+  assert.match(stdout, /\| Effective timeout \| 4800000 ms \|/);
 });
 
 test("compare dry-run rewrites local judge shorthand into a packaged Promptfoo provider", async () => {
@@ -1220,7 +1217,7 @@ test("compare dry-run appends prompt-level assertions to shared assertions", asy
   assert.equal((promptfooConfigContents.match(/value: BASELINE/g) ?? []).length >= 2, true);
 });
 
-test("skill-arena-compare benchmark uses the repo-local skill path and prompt-specific evaluations", async () => {
+test("skill-arena-compare benchmark uses the remote skill and prompt-specific evaluations", async () => {
   const compareConfigPath = fromProjectRoot(
     "benchmarks",
     "skill-arena-compare",
@@ -1228,15 +1225,14 @@ test("skill-arena-compare benchmark uses the repo-local skill path and prompt-sp
   );
   const { compareConfig } = await loadCompareConfig(compareConfigPath);
 
-  assert.equal(compareConfig.comparison.skillModes[1].skill.source.type, "local-path");
-  assert.equal(compareConfig.comparison.skillModes[1].skill.source.path, "skills/skill-arena-compare");
-  assert.equal(compareConfig.task.prompts.length, 3);
+  assert.equal(compareConfig.comparison.skillModes[1].skill.source.type, "git");
+  assert.equal(compareConfig.task.prompts.length, 2);
   assert.equal(compareConfig.task.prompts[0].evaluation.assertions.length > 0, true);
-  assert.equal(compareConfig.task.prompts[1].id, "inline-files-skill");
-  assert.equal(compareConfig.evaluation.requests, 3);
+  assert.equal(compareConfig.task.prompts[1].id, "sunday-brainstorming-compare-jurisdiction");
+  assert.equal(compareConfig.evaluation.requests, 8);
   assert.equal(
     compareConfig.evaluation.assertions.some((assertion) =>
-      assertion.type === "file-contains" && assertion.path === "deliverables/compare.yaml"),
+      assertion.type === "contains" && assertion.value === "skills/brainstorming"),
     true,
   );
 });
@@ -1286,5 +1282,5 @@ test("compare dry-run uses SKILL_ARENA_MAX_PARALLELISM when maxConcurrency is om
     },
   );
 
-  assert.match(stdout, /Parallel requests: 7/);
+  assert.match(stdout, /\| Parallel requests \| 7 \|/);
 });

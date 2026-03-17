@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js 24 or newer
-- `npm install`
+- `npm install` or `pnpm install`
 - Local Codex CLI available on `PATH` as `codex`
 - Local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
 - Codex authenticated on the machine before running live benchmarks
@@ -16,6 +16,12 @@ These validate manifest parsing, Promptfoo config generation, workspace material
 
 ```bash
 npm test
+```
+
+With `pnpm`:
+
+```bash
+pnpm test
 ```
 
 ### 1a. Run coverage with enforced minimum thresholds
@@ -42,12 +48,22 @@ Coverage scope for this threshold includes `src/**/*.js` and excludes:
 
 These exclusions keep the quota focused on the unit-testable runtime surface while live benchmark flows continue to exercise the excluded command-oriented entrypoints.
 
+This project currently requires:
+
+- lines >= 93%
+- statements >= 93%
+- branches >= 80%
+- functions >= 95%
+
+All are above the requested 90% minimum.
+
 ### 2. Validate a benchmark manifest
 
 Use this before running a live benchmark if the manifest changed.
 
 ```bash
 npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.yaml
+skill-arena val-conf ./benchmarks/smoke-skill-following/manifest.yaml
 ```
 
 YAML is the recommended manifest format. JSON also works if needed.
@@ -58,12 +74,20 @@ The generic command is:
 
 ```bash
 npm run run:benchmark -- ./benchmarks/<benchmark-id>/manifest.yaml
+skill-arena evaluate ./benchmarks/<benchmark-id>/manifest.yaml
 ```
 
 To run only one scenario:
 
 ```bash
 npm run run:benchmark -- ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
+skill-arena evaluate ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
+```
+
+You can run the same command through auto-detect:
+
+```bash
+skill-arena evaluate ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
 ```
 
 To generate the intermediate Promptfoo config without executing the live eval:
@@ -72,18 +96,38 @@ To generate the intermediate Promptfoo config without executing the live eval:
 npm run generate:config -- ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
 ```
 
+To scaffold a commented compare config quickly:
+
+```bash
+skill-arena gen-conf --output ./benchmarks/<benchmark-id>/compare.yaml --prompt "Describe the task." --skill-type local-path
+```
+
 ### 3a. Run a compare config
 
 Use this when you want one file to drive one Promptfoo eval with multiple side-by-side providers across adapters, models, and skill modes.
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/<benchmark-id>/compare.yaml
+skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
+```
+
+You can also use the same path with auto-detect:
+
+```bash
+skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
 ```
 
 To validate the scenario expansion without executing live evals:
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/<benchmark-id>/compare.yaml --dry-run
+skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --dry-run
+```
+
+Also for auto-detect:
+
+```bash
+skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --dry-run
 ```
 
 Compare local path contract:
@@ -202,7 +246,7 @@ For compare runs, inspect:
 - `results/<benchmark-id>/<timestamp>-compare/summary.json`
 - `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
 
-At the end of `skill-arena compare`, the CLI prints:
+At the end of `skill-arena evaluate` in compare mode, the CLI prints:
 
 - the final merged markdown report
 - the merged JSON summary
@@ -274,3 +318,4 @@ The run artifact paths below are local validation outputs under the ignored `res
 - The live benchmark now uses `reasoningEffort: "low"` because the active Codex backend in this environment rejected `"minimal"`.
 - Codex emitted non-fatal warnings on stderr about PowerShell shell snapshots and model personality fallback. They did not prevent successful benchmark completion.
 - The `copilot-cli` provider uses Copilot JSON output mode and extracts the final `assistant.message` content so Promptfoo assertions see only the terminal answer.
+

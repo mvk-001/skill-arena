@@ -12,6 +12,10 @@ to lose track of long instructions.
   - default output path: `deliverables/compare.yaml`
   - no shell or no script execution: copy `assets/gws-calendar-agenda-copy-card.yaml`
   - if needed: open `assets/gws-calendar-agenda-benchmark-reference.md`
+- Prompt-driven generator:
+  - `node skills/skill-arena-compare/scripts/scaffold-compare-from-prompts.js --help`
+  - Full reference: `assets/scaffold-compare-from-prompts.md`
+  - Use `--prompt` with assertion packs (`json`, `markdown`, `regex:...`, `contains:...`).
 
 ## 2. Fill only the required fields
 

@@ -1,9 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { spawn } from "node:child_process";
 
-import { loadBenchmarkManifest } from "../manifest.js";
-import { loadCompareConfig } from "../compare.js";
 import YAML from "yaml";
+
+import { fromPackageRoot } from "../project-paths.js";
+
+const runBenchmarkScript = fromPackageRoot("src", "cli", "run-benchmark.js");
+const runCompareScript = fromPackageRoot("src", "cli", "run-compare.js");
 
 function parseConfigFile(configFilePath) {
   const extension = path.extname(configFilePath).toLowerCase();
@@ -51,54 +55,46 @@ function detectConfigKind(parsedConfig, configPath) {
 
 async function main() {
   const configPath = process.argv[2];
+  const scenarioIndex = process.argv.indexOf("--scenario");
+  const hasScenario = scenarioIndex > -1;
 
-  if (!configPath) {
-    throw new Error("Usage: node ./src/cli/validate-manifest.js <manifest-or-compare-path>");
+  if (!configPath || configPath.startsWith("--")) {
+    throw new Error(
+      "Usage: node ./src/cli/run-evaluate.js <manifest-or-compare-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--dry-run] [--verbose]",
+    );
   }
 
   const absoluteConfigPath = path.resolve(process.cwd(), configPath);
-  const parsedConfig = await parseConfigFile(absoluteConfigPath);
-  const configKind = detectConfigKind(parsedConfig, absoluteConfigPath);
 
-  if (configKind === "manifest") {
-    const { manifest, manifestPath: absoluteManifestPath } = await loadBenchmarkManifest(
-      absoluteConfigPath,
-    );
+  let configKind;
+  const parsed = await parseConfigFile(absoluteConfigPath);
+  configKind = detectConfigKind(parsed, absoluteConfigPath);
 
-    console.log(
-      JSON.stringify(
-        {
-          configPath: absoluteManifestPath,
-          configKind,
-          benchmarkId: manifest.benchmark.id,
-          scenarioIds: manifest.scenarios.map((scenario) => scenario.id),
-        },
-        null,
-        2,
-      ),
-    );
-    return;
+  if (configKind === "compare" && hasScenario) {
+    throw new Error("The compare config does not support --scenario. Remove it and rerun.");
   }
 
-  const { compareConfig, compareConfigPath: absoluteCompareConfigPath } = await loadCompareConfig(
-    absoluteConfigPath,
-  );
+  const script = configKind === "compare" ? runCompareScript : runBenchmarkScript;
+  const child = spawn(process.execPath, [script, ...process.argv.slice(2)], {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: "inherit",
+    windowsHide: true,
+  });
 
-  console.log(
-    JSON.stringify(
-      {
-        configPath: absoluteCompareConfigPath,
-        configKind,
-        benchmarkId: compareConfig.benchmark.id,
-        variantCount: compareConfig.comparison.variants.length,
-        skillModeCount: compareConfig.comparison.skillModes.length,
-      },
-      null,
-      2,
-    ),
-  );
+  child.on("exit", (code, signal) => {
+    if (signal) {
+      process.kill(process.pid, signal);
+      return;
+    }
+    process.exit(code ?? 1);
+  });
+
+  child.on("error", (error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
 }
-
 
 main().catch((error) => {
   console.error(error.message);

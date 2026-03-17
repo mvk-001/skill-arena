@@ -1,173 +1,43 @@
 schemaVersion: 1
 benchmark:
-  id: skill-arena-compare
-  description: Evaluate the skill-arena-compare workspace skill on authoring a compare config for the remote brainstorming skill.
+  id: brainstorming-compare-generated
+  description: Evaluate generation of a compare config for the remote brainstorming skill.
   tags:
     - compare
     - skill
-    - authoring
     - brainstorming
 task:
   prompts:
-    - id: author-brainstorming-compare
-      description: Author one executable compare.yaml for the brainstorming skill benchmark.
+    - id: sunday-brainstorming-compare-file
+      description: Generate a compare.yaml for Sunday-only product brainstorming.
       prompt: >-
-        Create `deliverables/compare.yaml`.
-        The file must define one valid Skill Arena compare evaluating this
-        skill:
-        - `https://github.com/obra/superpowers/tree/main/skills/brainstorming`
-        It should generate just one prompt to generate a brainstorming for a product to sell just on sundays
-        the evaluater should be llm-rubric codex as judge the version gpt 5.3 codex spark
-evaluation:
-  assertions:
-    - type: llm-rubric
-      provider:
-        id: skill-arena:judge:codex
-        config:
-          model: gpt-5.3-codex-spark
-      value: Evaluate the prompt that was generated on the file and mark it as Score 1.0 only if make sense for the request
-    - type: contains
-      value: "schemaVersion: 1"
-    - type: contains
-      value: "id: brainstorming-compare-generated"
-    - type: contains
-      value: "path: fixtures/skill-arena-compare/base"
-    - type: contains
-      value: "type: local-path"
-    - type: contains
-      value: "comparison:"
-    - type: contains
-      value: "id: idea-json"
-    - type: contains
-      value: "id: idea-markdown"
-    - type: contains
-      value: "skillMode: disabled"
-    - type: contains
-      value: "skillMode: enabled"
-    - type: contains
-      value: "type: git"
-    - type: contains
-      value: "repo: https://github.com/obra/superpowers.git"
-    - type: contains
-      value: "skillPath: skills/brainstorming"
-    - type: contains
-      value: "skillId: brainstorming"
-    - type: contains
-      value: "strategy: workspace-overlay"
-    - type: contains
-      value: "id: codex-mini"
-    - type: contains
-      value: "model: gpt-5.1-codex-mini"
-    - type: contains
-      value: "executionMethod: command"
-    - type: contains
-      value: "commandPath: codex"
-    - type: contains
-      value: "sandboxMode: danger-full-access"
-    - type: contains
-      value: "webSearchEnabled: false"
-    - type: contains
-      value: "networkAccessEnabled: true"
-    - type: contains
-      value: "type: is-json"
-    - type: contains
-      value: "id: skill-arena:judge:codex"
-    - type: regex
-      value: "^id:\\s+brainstorming-compare-generated$"
-    - type: javascript
-      value: 'output.trimStart().startsWith("schemaVersion: 1")'
-    - type: javascript
-      value: "!output.includes('```')"
-    - type: javascript
-      value: |
-        const normalized = output.replace(/\r\n/g, "\n");
-        const topLevelKeys = Array.from(
-          normalized.matchAll(/^([A-Za-z][A-Za-z0-9-]*):/gm),
-          (match) => match[1],
-        );
-        return JSON.stringify(topLevelKeys) === JSON.stringify([
-          "schemaVersion",
-          "benchmark",
-          "task",
-          "workspace",
-          "evaluation",
-          "comparison",
-        ]);
-    - type: javascript
-      value: |
-        const normalized = output.replace(/\r\n/g, "\n");
-        const ideaJsonBlock = normalized.match(/^\s+- id: idea-json\s*\n([\s\S]*?)(?=^\s+- id: idea-markdown\s*$)/m)?.[1] ?? "";
-        const ideaMarkdownBlock = normalized.match(/^\s+- id: idea-markdown\s*\n([\s\S]*?)(?=^workspace:\s*$)/m)?.[1] ?? "";
-        return /^workspace:\n  sources:\n    - (?:id: [^\n]+\n      )?type: local-path\n      path: fixtures\/skill-arena-compare\/base\n      target: \/\n  setup:\n    initializeGit: true/m.test(normalized)
-          && /^evaluation:\n  assertions:\n/m.test(normalized)
-          && /prompt:\s+/m.test(ideaJsonBlock)
-          && /type:\s+is-json\b/.test(ideaJsonBlock)
-          && /JSON only/.test(ideaJsonBlock)
-          && /prompt:\s+/m.test(ideaMarkdownBlock)
-          && /type:\s+regex\b/.test(ideaMarkdownBlock)
-          && /Markdown only/.test(ideaMarkdownBlock)
-          && !/type:\s+is-json\b/.test(ideaMarkdownBlock)
-          && !/^workspace:\n  fixture:/m.test(normalized);
-    - type: javascript
-      value: |
-        const normalized = output.replace(/\r\n/g, "\n");
-        return /- id: no-skill\s*\n(?:.*\n)*?\s+skillMode: disabled/m.test(normalized)
-          && /- id: skill\s*\n(?:.*\n)*?\s+skillMode: enabled\s*\n(?:.*\n)*?\s+skill:\s*\n(?:.*\n)*?\s+source:\s*\n(?:.*\n)*?\s+type: git\s*\n(?:.*\n)*?\s+repo: https:\/\/github\.com\/obra\/superpowers\.git\s*\n(?:.*\n)*?\s+ref: main\s*\n(?:.*\n)*?\s+subpath: \.\s*\n(?:.*\n)*?\s+skillPath: skills\/brainstorming\s*\n(?:.*\n)*?\s+skillId: brainstorming\s*\n(?:.*\n)*?\s+install:\s*\n(?:.*\n)*?\s+strategy: workspace-overlay/m.test(normalized)
-          && /- id: codex-mini\s*\n(?:.*\n)*?\s+agent:\s*\n(?:.*\n)*?\s+adapter: codex\s*\n(?:.*\n)*?\s+model: gpt-5\.1-codex-mini\s*\n(?:.*\n)*?\s+executionMethod: command\s*\n(?:.*\n)*?\s+commandPath: codex\s*\n(?:.*\n)*?\s+sandboxMode: danger-full-access\s*\n(?:.*\n)*?\s+approvalPolicy: never\s*\n(?:.*\n)*?\s+webSearchEnabled: false\s*\n(?:.*\n)*?\s+networkAccessEnabled: true\s*\n(?:.*\n)*?\s+reasoningEffort: low/m.test(normalized);
-    - type: javascript
-      value: |
-        const normalized = output.replace(/\r\n/g, "\n");
-        const hasTwoPromptIds =
-          (normalized.match(/^\s+- id: idea-json\s*$/gm) ?? []).length === 1
-          && (normalized.match(/^\s+- id: idea-markdown\s*$/gm) ?? []).length === 1;
-        const invalidPatterns = [
-          /^benchmarks:\s*$/m,
-          /^tasks:\s*$/m,
-          /^skillModes:\s*$/m,
-          /^variants:\s*$/m,
-          /^\s+-\s+local-path:\s*$/m,
-          /^\s+shared:\s*$/m,
-          /^\s+name:\s+/m,
-          /^\s+enabled:\s+(true|false)\s*$/m,
-          /^\s+execution:\s*$/m,
-          /^\s+sandbox:\s+/m,
-          /^\s+webSearch:\s+/m,
-          /^\s+networkAccess:\s+/m,
-          /^\s+allowNetwork:\s+/m,
-          /^\s+disabled:\s+(true|false)\s*$/m,
-          /^\s+instructions:\s*$/m,
-          /^\s+template:\s*$/m,
-          /type:\s+is-markdown\b/,
-        ];
-        return hasTwoPromptIds
-          && /^schemaVersion:\s*1\s*\nbenchmark:\n[\s\S]*\ntask:\n[\s\S]*\nworkspace:\n[\s\S]*\nevaluation:\n[\s\S]*\ncomparison:\s*$/m.test(normalized.trimEnd())
-          && normalized.includes("\ncomparison:\n")
-          && normalized.includes("\n  skillModes:\n")
-          && normalized.includes("\n  variants:\n")
-          && normalized.includes("\nworkspace:\n  sources:\n")
-          && /\n    - (?:id: [^\n]+\n      )?type: local-path\n      path: fixtures\/skill-arena-compare\/base\n      target: \/\n/m.test(normalized)
-          && normalized.includes("\n  setup:\n    initializeGit: true\n")
-          && normalized.includes("\nevaluation:\n")
-          && normalized.includes("\n  assertions:\n")
-          && normalized.includes("\n  requests: 2\n")
-          && normalized.includes("\n  timeoutMs: 1200000\n")
-          && normalized.includes("\n  maxConcurrency: 1\n")
-          && normalized.includes("JSON only")
-          && normalized.includes("Markdown only")
-          && normalized.includes("path: fixtures/skill-arena-compare/base")
-          && normalized.includes("skillPath: skills/brainstorming")
-          && normalized.includes("model: gpt-5.1-codex-mini")
-          && normalized.includes("networkAccessEnabled: true")
-          && normalized.includes("sandboxMode: danger-full-access")
-          && normalized.includes("executionMethod: command")
-          && normalized.includes("commandPath: codex")
-          && normalized.includes("type: regex")
-          && invalidPatterns.every((pattern) => !pattern.test(normalized));
-  requests: 8
-  timeoutMs: 600000
-  tracing: false
-  maxConcurrency: 8
-  noCache: true
+        Create `deliverables/compare.yaml` for this remote skill:
+        https://github.com/obra/superpowers/tree/main/skills/brainstorming.
+        The task inside the generated compare must ask the model to brainstorm ideas for
+        a product that can only be sold on Sundays.
+        Return only the final YAML.
+      evaluation:
+        assertions:
+          - type: contains
+            value: Sunday
+          - type: contains
+            value: brainstorming
+    - id: sunday-brainstorming-compare-jurisdiction
+      description: Generate a complete compare.yaml with both skill modes.
+      prompt: >-
+        Create `deliverables/compare.yaml` for
+        https://github.com/obra/superpowers/tree/main/skills/brainstorming.
+        Ensure the file includes both `no-skill` and `skill` modes,
+        with `skill` installed from git via `workspace-overlay`.
+        Return only valid YAML.
+      evaluation:
+        assertions:
+          - type: contains
+            value: "comparison:"
+          - type: contains
+            value: no-skill
+          - type: contains
+            value: "type: git"
 workspace:
   sources:
     - id: base
@@ -176,19 +46,76 @@ workspace:
       target: /
   setup:
     initializeGit: true
+    env: {}
+evaluation:
+  assertions:
+    - type: regex
+      value: "^schemaVersion:\\s*1(?:\\r?\\n|$)"
+    - type: contains
+      value: "skills/brainstorming"
+    - type: javascript
+      value: |
+        const normalized = output.replace(/\r\n/g, "\n");
+        const topLevelKeys = Array.from(
+          normalized.matchAll(/^([A-Za-z][A-Za-z0-9-]*):/gm),
+          (match) => match[1],
+        );
+        const workspaceSourceMatch = normalized.match(
+          /^workspace:\n  sources:\n    - (?:id: [^\n]+\n      )?type: local-path\n      path: ([^\n]+)\n      target: \//m,
+        );
+        const workspacePathValue = workspaceSourceMatch?.[1]?.trim() ?? "";
+        const hasRuntimeRelativeWorkspace =
+          Boolean(workspaceSourceMatch)
+          && workspacePathValue.length > 0
+          && !/^([A-Za-z]:[\\/]|\/)/.test(workspacePathValue);
+        const forbiddenPatterns = [
+          /^\s*```[A-Za-z0-9-]*\s*$/m,
+          /^task:\n  prompts:\n    [\w-]+:\s*$/m,
+          /^\s+shared:\s*$/m,
+          /^\s+enabled:\s+(true|false)\s*$/m,
+          /^\s+template:\s*[|>]/m,
+          /^\s+instructions:\s*[|>]/m,
+          /^\s+responseFormat:\s*$/m,
+          /^\s+text:\s*[|>]/m,
+          /^\s+pattern:\s+/m,
+          /^\s+rubric:\s*[|>]/m,
+        ];
+        return JSON.stringify(topLevelKeys) === JSON.stringify([
+          "schemaVersion",
+          "benchmark",
+          "task",
+          "workspace",
+          "evaluation",
+          "comparison",
+        ])
+          && /^task:\n  prompts:\n    - id:\s+[\w-]+/m.test(normalized)
+          && hasRuntimeRelativeWorkspace
+          && /^evaluation:\n  assertions:\n/m.test(normalized)
+          && /^\s+- id:\s+no-skill\s*$/m.test(normalized)
+          && /^\s+skillMode:\s+disabled\s*$/m.test(normalized)
+          && /^\s+- id:\s+skill\s*$/m.test(normalized)
+          && /^\s+skillMode:\s+enabled\s*$/m.test(normalized)
+          && /^\s+strategy:\s+workspace-overlay\s*$/m.test(normalized)
+          && /^\s+repo:\s+https:\/\/github\.com\/obra\/superpowers(?:\.git)?\s*$/m.test(normalized)
+          && /^\s+ref:\s+main\s*$/m.test(normalized)
+          && /^\s+subpath:\s+\.\s*$/m.test(normalized)
+          && /^\s+skillPath:\s+skills\/brainstorming\s*$/m.test(normalized)
+          && /^\s+skillId:\s+brainstorming\s*$/m.test(normalized)
+          && /^\s+executionMethod:\s+command\s*$/m.test(normalized)
+          && /^\s+commandPath:\s+codex\s*$/m.test(normalized)
+          && forbiddenPatterns.every((pattern) => !pattern.test(normalized));
+  requests: 8
+  timeoutMs: 1200000
+  tracing: false
+  maxConcurrency: 8
+  noCache: true
 comparison:
   skillModes:
     - id: no-skill
-      description: Baseline without the compare-authoring skill.
+      description: Baseline without the brainstorming skill.
       skillMode: disabled
-      output:
-        tags:
-          - baseline
-        labels:
-          skillDisplayName: no-skill
-          skillModeId: no-skill
     - id: skill
-      description: Workspace overlay with the repo-local skill-arena-compare skill enabled.
+      description: Enabled compare-authoring skill from the workspace overlay.
       skillMode: enabled
       skill:
         source:
@@ -205,7 +132,7 @@ comparison:
           skillModeId: skill
   variants:
     - id: codex-mini
-      description: Codex mini authoring benchmark variant.
+      description: gpt-5.1-codex-mini authoring variant.
       agent:
         adapter: codex
         model: gpt-5.1-codex-mini

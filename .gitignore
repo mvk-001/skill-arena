@@ -3,3 +3,5 @@ results/
 coverage/
 reports/
 bin/
+!bin/
+!bin/skill-arena.js
