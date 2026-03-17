@@ -6,21 +6,27 @@ benchmark:
     - compare
 task:
   prompts:
-    - id: main
-      description: Primary benchmark prompt
+    - id: prompt-id
       prompt: Exact task prompt sent to every provider.
+      # Keep prompts in this list. Do not rewrite `task.prompts` into a mapping.
+      # Put row-only checks here. Shared checks stay under top-level `evaluation`.
 workspace:
-  fixture: fixtures/example/base
-  initializeGit: true
+  sources:
+    - id: base
+      type: local-path
+      path: fixtures/example/base
+      target: /
+  setup:
+    initializeGit: true
 evaluation:
   assertions:
     - type: llm-rubric
       provider: skill-arena:judge:codex
       value: Score 1.0 only if the answer satisfies the benchmark goal.
+  # Keep only shared assertions here. Do not use `shared:`.
   requests: 10
   timeoutMs: 180000
   tracing: false
-  # Prefer floor(0.8 * available machine parallelism) when authoring on a specific machine.
   maxConcurrency: 1
   noCache: true
 comparison:
@@ -31,16 +37,26 @@ comparison:
     - id: skill
       description: Skill-enabled run.
       skillMode: enabled
-      skillSource: system-installed
+      skill:
+        source:
+          type: git
+          repo: https://github.com/example/repo.git
+          ref: main
+          subpath: .
+          skillPath: skills/example-skill
+          skillId: example-skill
+        install:
+          strategy: workspace-overlay
   variants:
     - id: codex-mini
       description: Codex mini comparison variant.
       agent:
         adapter: codex
         model: gpt-5.1-codex-mini
+        # Do not rename these keys to `execution`, `sandbox`, `webSearch`, or `networkAccess`.
         executionMethod: command
         commandPath: codex
-        sandboxMode: read-only
+        sandboxMode: workspace-write
         approvalPolicy: never
         webSearchEnabled: false
         networkAccessEnabled: false

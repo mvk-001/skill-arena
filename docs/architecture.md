@@ -30,7 +30,7 @@ The compare config is the second authoring surface. It defines:
 - benchmark identity and description
 - the exact task prompt or prompt set
 - the declarative workspace sources to materialize
-- shared evaluation settings
+- shared evaluation settings plus optional prompt-specific row assertions
 - compare variants for adapter and model
 - compare skill modes such as `no-skill` and `skill`
 
@@ -55,6 +55,12 @@ Each scenario run creates a fresh run directory under `results/`. The materializ
 This preserves source inputs and gives each eval an isolated workspace.
 
 Workspace-injected skills can contain any files needed by the benchmarked agent, including root-level instruction files such as `AGENTS.md` and bundled skill assets such as `skills/<skill-id>/SKILL.md`.
+
+For explicit skill declarations, the preferred contract is to identify one benchmarked skill through one of three source modes:
+
+- a local skill folder
+- an inline `SKILL.md`
+- a Git repository plus an optional selected skill subfolder
 
 Some benchmarks use system-installed skills instead of workspace overlays. In those cases the harness does not inject skill files into the workspace; the benchmark relies on skills already installed in the local agent environment.
 

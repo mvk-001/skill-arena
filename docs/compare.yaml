@@ -1,0 +1,198 @@
+schemaVersion: 1
+benchmark:
+  id: skill-arena-compare
+  description: Evaluate the skill-arena-compare workspace skill on authoring a compare config for the remote gws-calendar-agenda skill.
+  tags:
+    - compare
+    - skill
+    - authoring
+    - calendar
+task:
+  prompts:
+    - id: author-gws-calendar-agenda-compare
+      description: Author one executable compare.yaml for the gws-calendar-agenda skill benchmark.
+      prompt: >-
+        Create `deliverables/compare.yaml`.
+        The file must define one valid Skill Arena compare config that evaluates this
+        skill:
+        - `https://github.com/googleworkspace/cli/tree/main/skills/gws-calendar-agenda`
+        The generated compare config. Create one valid Skill Arena compare config
+        that evaluates
+        `https://github.com/googleworkspace/cli/tree/main/skills/gws-calendar-agenda`
+        with Codex using the most basic supported model, compares `no-skill`
+        versus `skill`, and includes exactly two prompts in the generated file:
+        one for today's agenda that returns JSON only, and one for this week's
+        agenda that returns Markdown only. Improve the prompt wording a little,
+        but keep the benchmark concise and executable. Use the exact Skill
+        Arena compare schema keys and supported V1 assertion types; do not
+        invent aliases such as top-level `skillModes`, top-level `variants`,
+        `execution`, `sandbox`, `webSearch`, `networkAccess`,
+        `allowNetwork`, `instructions`, `template`, or `type: is-markdown`.
+        Use a Git
+        workspace-overlay skill source that points at the Google Workspace CLI
+        repository and the `skills/gws-calendar-agenda` folder. Use runtime-
+        relative paths so the generated compare config can run from another
+        working directory. Return only the completed `compare.yaml` content.
+        run `npx skill-arena evaluate $COMPARE_FILE --dry-run` to verify that it is valid
+evaluation:
+  assertions:
+    - type: llm-rubric
+      provider: skill-arena:judge:codex
+      value: >-
+        Score 1.0 only if the answer is raw YAML for a valid Skill Arena
+        compare config that evaluates the remote gws-calendar-agenda skill,
+        compares no-skill versus skill for one Codex mini variant, uses
+        runtime-relative paths, and includes exactly two generated task prompts:
+        one for today's agenda with a JSON-only contract and one for this
+        week's agenda with a Markdown-only contract, all using valid Skill
+        Arena compare schema keys and supported V1 assertion types.
+    - type: contains
+      value: "schemaVersion: 1"
+    - type: contains
+      value: "id: gws-calendar-agenda-compare-generated"
+    - type: contains
+      value: "path: fixtures/gws-calendar-agenda-compare/base"
+    - type: contains
+      value: "comparison:"
+    - type: contains
+      value: "id: today-json"
+    - type: contains
+      value: "id: week-markdown"
+    - type: contains
+      value: "skillMode: disabled"
+    - type: contains
+      value: "skillMode: enabled"
+    - type: contains
+      value: "type: git"
+    - type: contains
+      value: "repo: https://github.com/googleworkspace/cli.git"
+    - type: contains
+      value: "skillPath: skills/gws-calendar-agenda"
+    - type: contains
+      value: "skillId: gws-calendar-agenda"
+    - type: contains
+      value: "strategy: workspace-overlay"
+    - type: contains
+      value: "id: codex-mini"
+    - type: contains
+      value: "model: gpt-5.1-codex-mini"
+    - type: contains
+      value: "executionMethod: command"
+    - type: contains
+      value: "commandPath: codex"
+    - type: contains
+      value: "sandboxMode: danger-full-access"
+    - type: contains
+      value: "webSearchEnabled: false"
+    - type: contains
+      value: "networkAccessEnabled: true"
+    - type: contains
+      value: "type: is-json"
+    - type: contains
+      value: "provider: skill-arena:judge:codex"
+    - type: contains
+      value: "type: regex"
+    - type: file-contains
+      path: deliverables/compare.yaml
+      value: "schemaVersion: 1"
+    - type: file-contains
+      path: deliverables/compare.yaml
+      value: "id: today-json"
+    - type: file-contains
+      path: deliverables/compare.yaml
+      value: "id: week-markdown"
+    - type: javascript
+      value: 'output.trimStart().startsWith("schemaVersion: 1")'
+    - type: javascript
+      value: "!output.includes('```')"
+    - type: javascript
+      value: |
+        const normalized = output.replace(/\r\n/g, "\n");
+        const hasTwoPromptIds =
+          (normalized.match(/^\s+- id: today-json\s*$/gm) ?? []).length === 1
+          && (normalized.match(/^\s+- id: week-markdown\s*$/gm) ?? []).length === 1;
+        const invalidPatterns = [
+          /^skillModes:\s*$/m,
+          /^variants:\s*$/m,
+          /^\s+execution:\s*$/m,
+          /^\s+sandbox:\s+/m,
+          /^\s+webSearch:\s+/m,
+          /^\s+networkAccess:\s+/m,
+          /^\s+allowNetwork:\s+/m,
+          /^\s+disabled:\s+(true|false)\s*$/m,
+          /^\s+instructions:\s*$/m,
+          /^\s+template:\s*$/m,
+          /type:\s+is-markdown\b/,
+        ];
+        return hasTwoPromptIds
+          && normalized.includes("\ncomparison:\n")
+          && normalized.includes("\n  skillModes:\n")
+          && normalized.includes("\n  variants:\n")
+          && normalized.includes("JSON only")
+          && normalized.includes("Markdown only")
+          && normalized.includes("path: fixtures/gws-calendar-agenda-compare/base")
+          && normalized.includes("skillPath: skills/gws-calendar-agenda")
+          && normalized.includes("model: gpt-5.1-codex-mini")
+          && normalized.includes("networkAccessEnabled: true")
+          && normalized.includes("sandboxMode: danger-full-access")
+          && normalized.includes("executionMethod: command")
+          && normalized.includes("commandPath: codex")
+          && normalized.includes("type: regex")
+          && invalidPatterns.every((pattern) => !pattern.test(normalized));
+  requests: 2
+  timeoutMs: 600000
+  tracing: false
+  maxConcurrency: 4
+  noCache: true
+workspace:
+  fixture: fixtures/skill-arena-compare/base
+  initializeGit: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: Baseline without the compare-authoring skill.
+      skillMode: disabled
+      output:
+        tags:
+          - baseline
+        labels:
+          skillDisplayName: no-skill
+          skillModeId: no-skill
+    - id: skill
+      description: Workspace overlay with the repo-local skill-arena-compare skill enabled.
+      skillMode: enabled
+      skill:
+        source:
+          type: local-path
+          path: fixtures/skill-arena-compare/skill-overlay/skills/skill-arena-compare
+          skillId: skill-arena-compare
+        install:
+          strategy: workspace-overlay
+      output:
+        tags:
+          - skill
+        labels:
+          skillDisplayName: skill
+          skillModeId: skill
+  variants:
+    - id: codex-mini
+      description: Codex mini authoring benchmark variant.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: workspace-write
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - codex
+          - mini
+        labels:
+          variantDisplayName: codex mini

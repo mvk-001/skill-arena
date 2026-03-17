@@ -24,9 +24,14 @@ test("workspace materialization copies the fixture tree", async () => {
 
   const workspace = await materializeWorkspace({ manifest, scenario });
   const targetFile = path.join(workspace.workspaceDirectory, "notes", "target.txt");
+  const isolatedTargetFile = path.join(workspace.executionWorkspaceDirectory, "notes", "target.txt");
   const targetContents = await fs.readFile(targetFile, "utf8");
+  const isolatedTargetContents = await fs.readFile(isolatedTargetFile, "utf8");
 
   assert.match(targetContents, /ALPHA-42/);
+  assert.match(isolatedTargetContents, /ALPHA-42/);
+  assert.notEqual(workspace.executionWorkspaceDirectory, workspace.workspaceDirectory);
+  assert.match(workspace.executionEnvironment.CODEX_HOME, /skill-arena-execution-|skill-arena-run-/);
 });
 
 test("skill overlays are applied only when skill mode is enabled", async () => {
@@ -64,6 +69,238 @@ test("skill overlays are applied only when skill mode is enabled", async () => {
   assert.equal(disabledStats, null);
   assert.match(enabledContents, /Benchmark Skill Overlay/);
   assert.match(enabledSkillContents, /name: marker-guide/);
+  assert.equal(enabledWorkspace.isolation.mountedSkillIds[0], "marker-guide");
+  assert.equal(disabledWorkspace.isolation.mountedSkillIds.length, 0);
+  assert.match(enabledWorkspace.executionWorkspaceDirectory, /skill-arena-execution-/);
+  assert.equal(enabledWorkspace.executionEnvironment.CODEX_HOME.endsWith("codex-home"), true);
+});
+
+test("workspace sanitization strips base AGENTS.md and base skills from isolated runs", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-sanitize-"));
+  const baseDirectory = path.join(tempDirectory, "base");
+  const skillDirectory = path.join(tempDirectory, "skill-overlay");
+
+  await fs.mkdir(path.join(baseDirectory, "skills", "base-only"), { recursive: true });
+  await fs.mkdir(path.join(skillDirectory, "skills", "allowed-skill"), { recursive: true });
+  await fs.writeFile(path.join(baseDirectory, "AGENTS.md"), "# Base instructions\n", "utf8");
+  await fs.writeFile(
+    path.join(baseDirectory, "skills", "base-only", "SKILL.md"),
+    "---\nname: base-only\n---\n",
+    "utf8",
+  );
+  await fs.writeFile(path.join(skillDirectory, "AGENTS.md"), "# Allowed overlay\n", "utf8");
+  await fs.writeFile(
+    path.join(skillDirectory, "skills", "allowed-skill", "SKILL.md"),
+    "---\nname: allowed-skill\n---\n",
+    "utf8",
+  );
+
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-sanitized-isolation",
+      description: "Workspace sanitization",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: baseDirectory,
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "no-skill",
+        description: "No skill",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+      {
+        id: "with-skill",
+        description: "With skill",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "local-path",
+            path: skillDirectory,
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  const disabledWorkspace = await materializeWorkspace({
+    manifest,
+    scenario: manifest.scenarios[0],
+  });
+  const enabledWorkspace = await materializeWorkspace({
+    manifest,
+    scenario: manifest.scenarios[1],
+  });
+
+  assert.equal(
+    await fs.stat(path.join(disabledWorkspace.workspaceDirectory, "AGENTS.md")).catch(() => null),
+    null,
+  );
+  assert.equal(
+    await fs.stat(path.join(disabledWorkspace.workspaceDirectory, "skills")).catch(() => null),
+    null,
+  );
+  assert.match(
+    await fs.readFile(path.join(enabledWorkspace.workspaceDirectory, "AGENTS.md"), "utf8"),
+    /Allowed overlay/,
+  );
+  assert.equal(
+    await fs.stat(path.join(enabledWorkspace.workspaceDirectory, "skills", "base-only")).catch(() => null),
+    null,
+  );
+  assert.deepEqual(enabledWorkspace.isolation.mountedSkillIds, ["allowed-skill"]);
+});
+
+test("strict isolation rejects system-installed skills and multiple mounted skills", async () => {
+  const singleBaseManifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-strict-system-installed",
+      description: "Reject system installed skills",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "empty",
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "system-skill",
+        description: "System skill",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "system-installed",
+          },
+          install: {
+            strategy: "system-installed",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  await assert.rejects(
+    () => materializeWorkspace({
+      manifest: singleBaseManifest,
+      scenario: singleBaseManifest.scenarios[0],
+    }),
+    /Strict isolation does not support system-installed skills/,
+  );
+
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-multi-skill-"));
+  const baseDirectory = path.join(tempDirectory, "base");
+  const overlayDirectory = path.join(tempDirectory, "overlay");
+  await fs.mkdir(baseDirectory, { recursive: true });
+  await fs.mkdir(path.join(overlayDirectory, "skills", "one"), { recursive: true });
+  await fs.mkdir(path.join(overlayDirectory, "skills", "two"), { recursive: true });
+  await fs.writeFile(path.join(overlayDirectory, "skills", "one", "SKILL.md"), "one", "utf8");
+  await fs.writeFile(path.join(overlayDirectory, "skills", "two", "SKILL.md"), "two", "utf8");
+
+  const multiSkillManifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-strict-multi-skill",
+      description: "Reject multiple skills",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: baseDirectory,
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "multi-skill",
+        description: "Multiple skills",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "local-path",
+            path: overlayDirectory,
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  await assert.rejects(
+    () => materializeWorkspace({
+      manifest: multiSkillManifest,
+      scenario: multiSkillManifest.scenarios[0],
+    }),
+    /Strict isolation requires exactly one configured skill, found 2/,
+  );
 });
 
 test("workspace sources are applied in declaration order", async () => {
@@ -171,13 +408,9 @@ test("inline skill sources are written into the workspace only for enabled runs"
         skillMode: "enabled",
         skill: {
           source: {
-            type: "inline-files",
-            files: [
-              {
-                path: "AGENTS.md",
-                content: "# Inline overlay\n",
-              },
-            ],
+            type: "inline",
+            skillId: "inline-helper",
+            content: "---\nname: inline-helper\n---\n",
           },
           install: {
             strategy: "workspace-overlay",
@@ -204,15 +437,210 @@ test("inline skill sources are written into the workspace only for enabled runs"
     manifest,
     scenario: manifest.scenarios[0],
   });
-  const agentsContents = await fs.readFile(
-    path.join(workspace.workspaceDirectory, "AGENTS.md"),
+  const skillContents = await fs.readFile(
+    path.join(workspace.workspaceDirectory, "skills", "inline-helper", "SKILL.md"),
     "utf8",
   );
 
-  assert.match(agentsContents, /Inline overlay/);
+  assert.match(skillContents, /name: inline-helper/);
+  assert.equal(workspace.isolation.mountedSkillIds[0], "inline-helper");
 });
 
-test("skill overlays can be cloned from a git repository", async () => {
+test("workspace base sources strip AGENTS.md and skills while overlays remain visible", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-sanitize-"));
+  const baseDirectory = path.join(tempDirectory, "base");
+  const overlayDirectory = path.join(tempDirectory, "overlay");
+
+  await fs.mkdir(path.join(baseDirectory, "skills", "base-helper"), { recursive: true });
+  await fs.writeFile(path.join(baseDirectory, "AGENTS.md"), "# Base Instructions\n", "utf8");
+  await fs.writeFile(
+    path.join(baseDirectory, "skills", "base-helper", "SKILL.md"),
+    "---\nname: base-helper\n---\n",
+    "utf8",
+  );
+  await fs.writeFile(path.join(baseDirectory, "README.md"), "BASE", "utf8");
+
+  await fs.mkdir(path.join(overlayDirectory, "skills", "only-skill"), { recursive: true });
+  await fs.writeFile(path.join(overlayDirectory, "AGENTS.md"), "# Overlay Instructions\n", "utf8");
+  await fs.writeFile(
+    path.join(overlayDirectory, "skills", "only-skill", "SKILL.md"),
+    "---\nname: only-skill\n---\n",
+    "utf8",
+  );
+
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "sanitize-surface",
+      description: "Sanitize agent instructions",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: baseDirectory,
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "no-skill",
+        description: "No skill isolation",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+      {
+        id: "with-skill",
+        description: "With isolated skill",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "local-path",
+            path: overlayDirectory,
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  const noSkillWorkspace = await materializeWorkspace({
+    manifest,
+    scenario: manifest.scenarios[0],
+  });
+  const skillWorkspace = await materializeWorkspace({
+    manifest,
+    scenario: manifest.scenarios[1],
+  });
+
+  assert.equal(await fs.stat(path.join(noSkillWorkspace.workspaceDirectory, "AGENTS.md")).catch(() => null), null);
+  assert.equal(await fs.stat(path.join(noSkillWorkspace.workspaceDirectory, "skills")).catch(() => null), null);
+  assert.equal(await fs.readFile(path.join(noSkillWorkspace.workspaceDirectory, "README.md"), "utf8"), "BASE");
+
+  assert.match(
+    await fs.readFile(path.join(skillWorkspace.workspaceDirectory, "AGENTS.md"), "utf8"),
+    /Overlay Instructions/,
+  );
+  assert.match(
+    await fs.readFile(path.join(skillWorkspace.workspaceDirectory, "skills", "only-skill", "SKILL.md"), "utf8"),
+    /name: only-skill/,
+  );
+  assert.deepEqual(skillWorkspace.isolation.mountedSkillIds, ["only-skill"]);
+});
+
+test("workspace isolation rejects system-installed and multi-skill overlays", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-isolation-errors-"));
+  const baseDirectory = path.join(tempDirectory, "base");
+  const multiSkillDirectory = path.join(tempDirectory, "multi");
+  await fs.mkdir(baseDirectory, { recursive: true });
+  await fs.writeFile(path.join(baseDirectory, "README.md"), "BASE", "utf8");
+  await fs.mkdir(path.join(multiSkillDirectory, "skills", "one"), { recursive: true });
+  await fs.mkdir(path.join(multiSkillDirectory, "skills", "two"), { recursive: true });
+  await fs.writeFile(path.join(multiSkillDirectory, "AGENTS.md"), "# Overlay\n", "utf8");
+  await fs.writeFile(path.join(multiSkillDirectory, "skills", "one", "SKILL.md"), "---\nname: one\n---\n", "utf8");
+  await fs.writeFile(path.join(multiSkillDirectory, "skills", "two", "SKILL.md"), "---\nname: two\n---\n", "utf8");
+
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "isolation-errors",
+      description: "Isolation errors",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: baseDirectory,
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "system-installed",
+        description: "System skill",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "system-installed",
+          },
+          install: {
+            strategy: "system-installed",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+      {
+        id: "multi-skill",
+        description: "Multi skill",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "local-path",
+            path: multiSkillDirectory,
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  await assert.rejects(
+    () => materializeWorkspace({ manifest, scenario: manifest.scenarios[0] }),
+    /Strict isolation does not support system-installed skills/,
+  );
+  await assert.rejects(
+    () => materializeWorkspace({ manifest, scenario: manifest.scenarios[1] }),
+    /Strict isolation requires exactly one configured skill, found 2\./,
+  );
+});
+
+test("git skill sources can select one skill folder from a repository", async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-git-overlay-"));
   const fixtureDirectory = path.join(tempDirectory, "fixture");
   const skillRepoDirectory = path.join(tempDirectory, "skill-repo");
@@ -220,17 +648,20 @@ test("skill overlays can be cloned from a git repository", async () => {
   await fs.mkdir(path.join(fixtureDirectory, "notes"), { recursive: true });
   await fs.writeFile(path.join(fixtureDirectory, "notes", "target.txt"), "BASE", "utf8");
 
-  await fs.mkdir(path.join(skillRepoDirectory, "overlay", "skills", "remote-guide"), {
+  await fs.mkdir(path.join(skillRepoDirectory, "skills", "remote-guide"), {
     recursive: true,
   });
   await fs.writeFile(
-    path.join(skillRepoDirectory, "overlay", "AGENTS.md"),
-    "# Remote Overlay\n",
+    path.join(skillRepoDirectory, "skills", "remote-guide", "SKILL.md"),
+    "---\nname: remote-guide\n---\n",
     "utf8",
   );
+  await fs.mkdir(path.join(skillRepoDirectory, "skills", "unused-guide"), {
+    recursive: true,
+  });
   await fs.writeFile(
-    path.join(skillRepoDirectory, "overlay", "skills", "remote-guide", "SKILL.md"),
-    "---\nname: remote-guide\n---\n",
+    path.join(skillRepoDirectory, "skills", "unused-guide", "SKILL.md"),
+    "---\nname: unused-guide\n---\n",
     "utf8",
   );
 
@@ -282,14 +713,16 @@ test("skill overlays can be cloned from a git repository", async () => {
     scenarios: [
       {
         id: "git-skill",
-        description: "Uses a remote skill overlay",
+        description: "Uses one selected remote skill",
         skillMode: "enabled",
         skill: {
           source: {
             type: "git",
             repo: skillRepoDirectory,
             ref: "main",
-            subpath: "overlay",
+            subpath: ".",
+            skillPath: "skills/remote-guide",
+            skillId: "remote-guide",
           },
           install: {
             strategy: "workspace-overlay",
@@ -313,17 +746,16 @@ test("skill overlays can be cloned from a git repository", async () => {
   });
 
   const workspace = await materializeWorkspace({ manifest, scenario: manifest.scenarios[0] });
-  const agentsContents = await fs.readFile(
-    path.join(workspace.workspaceDirectory, "AGENTS.md"),
-    "utf8",
-  );
   const skillContents = await fs.readFile(
     path.join(workspace.workspaceDirectory, "skills", "remote-guide", "SKILL.md"),
     "utf8",
   );
+  const unusedSkillStats = await fs.stat(
+    path.join(workspace.workspaceDirectory, "skills", "unused-guide", "SKILL.md"),
+  ).catch(() => null);
 
-  assert.match(agentsContents, /Remote Overlay/);
   assert.match(skillContents, /name: remote-guide/);
+  assert.equal(unusedSkillStats, null);
 });
 
 test("workspace materialization supports empty sources and rejects escaping targets", async () => {

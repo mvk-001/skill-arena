@@ -1,0 +1,75 @@
+# Benchmark Notes
+
+Use these benchmark-specific requirements when `docs/benchmark-brief.md` cannot be read reliably.
+
+- Start from `BENCHMARK_COMPARE_SKELETON.yaml` and keep its schema keys unless the benchmark brief explicitly requires a different value.
+- Write `deliverables/compare.yaml`.
+- Return only the YAML content.
+- Use top-level keys in this exact order:
+  - `schemaVersion`
+  - `benchmark`
+  - `task`
+  - `workspace`
+  - `evaluation`
+  - `comparison`
+- Benchmark id: `gws-calendar-agenda-compare-generated`
+- Use exactly two prompts:
+  - `today-json`
+  - `week-markdown`
+- `today-json` must ask for today's agenda across all calendars and require JSON only.
+- `week-markdown` must ask for this week's agenda across all calendars and require Markdown only.
+- Both prompts should explicitly prefer `gws calendar +agenda` in read-only mode.
+- Workspace source must be runtime-relative:
+  - `type: local-path`
+  - `path: fixtures/gws-calendar-agenda-compare/base`
+  - `target: /`
+- `workspace.setup.initializeGit: true`
+- Shared evaluation includes one `llm-rubric` assertion with provider `skill-arena:judge:codex`.
+- Prompt-level checks:
+  - `today-json` includes `type: is-json`
+  - `week-markdown` uses supported Markdown-shaped checks such as `regex` or `llm-rubric`
+- `evaluation.requests: 2`
+- `evaluation.timeoutMs: 1200000`
+- `evaluation.maxConcurrency: 1`
+- Skill modes:
+  - `no-skill` with `skillMode: disabled`
+  - `skill` with `skillMode: enabled`
+- Enabled skill uses this exact Git source:
+  - `type: git`
+  - `repo: https://github.com/googleworkspace/cli.git`
+  - `ref: main`
+  - `subpath: .`
+  - `skillPath: skills/gws-calendar-agenda`
+  - `skillId: gws-calendar-agenda`
+  - `install.strategy: workspace-overlay`
+- One variant `codex-mini` with:
+  - `adapter: codex`
+  - `model: gpt-5.1-codex-mini`
+  - `executionMethod: command`
+  - `commandPath: codex`
+  - `sandboxMode: danger-full-access`
+  - `approvalPolicy: never`
+  - `webSearchEnabled: false`
+  - `networkAccessEnabled: true`
+  - `reasoningEffort: low`
+  - `output.labels.variantDisplayName: codex mini`
+
+Reject these invalid patterns:
+
+- top-level `skillModes`
+- top-level `variants`
+- `instructions`
+- `request`
+- `responseFormat`
+- `shared`
+- `enabled`
+- `reasoning`
+- `execution`
+- `sandbox`
+- `webSearch`
+- `networkAccess`
+- `allowNetwork`
+- `disabled`
+- `instructions`
+- `template`
+- `type: is-markdown`

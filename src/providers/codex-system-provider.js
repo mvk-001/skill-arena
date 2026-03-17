@@ -9,6 +9,7 @@ export default class CodexSystemProvider {
   constructor(options = {}) {
     this.options = options;
     this.config = options.config ?? {};
+    this.spawnProcess = options.spawnProcess ?? spawnProcess;
   }
 
   id() {
@@ -72,7 +73,7 @@ export default class CodexSystemProvider {
     const outputFile = path.join(outputDirectory, "final-response.txt");
 
     const args = this.buildCommandArguments(outputFile);
-    const { stdout, stderr, exitCode } = await spawnProcess({
+    const { stdout, stderr, exitCode } = await this.spawnProcess({
       command: this.config.command_path,
       args,
       cwd: this.config.working_dir,

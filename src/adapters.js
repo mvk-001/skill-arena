@@ -8,7 +8,7 @@ const adapterRegistry = {
   codex: {
     id: "codex",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, gitReady }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment, gitReady }) {
       const providerPath = fromPackageRoot("src", "providers", "codex-system-provider.js");
 
       return {
@@ -20,8 +20,8 @@ const adapterRegistry = {
           command_path: scenario.agent.commandPath,
           model: scenario.agent.model,
           working_dir: workspaceDirectory,
-          additional_directories: scenario.agent.additionalDirectories.map(
-            (directory) => path.resolve(workspaceDirectory, directory),
+          additional_directories: scenario.agent.additionalDirectories.map((directory) =>
+            resolveAdditionalDirectory(workspaceDirectory, directory)
           ),
           sandbox_mode: scenario.agent.sandboxMode,
           approval_policy: scenario.agent.approvalPolicy,
@@ -31,6 +31,7 @@ const adapterRegistry = {
           cli_env: {
             ...workspaceEnvironment,
             ...scenario.agent.cliEnv,
+            ...(isolatedEnvironment ?? {}),
           },
           enable_streaming: scenario.evaluation.tracing,
           deep_tracing: scenario.evaluation.tracing,
@@ -43,7 +44,7 @@ const adapterRegistry = {
   "copilot-cli": {
     id: "copilot-cli",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
       const providerPath = fromPackageRoot("src", "providers", "copilot-system-provider.js");
 
       return {
@@ -59,10 +60,13 @@ const adapterRegistry = {
           web_search_enabled: scenario.agent.webSearchEnabled,
           network_access_enabled: scenario.agent.networkAccessEnabled,
           model_reasoning_effort: scenario.agent.reasoningEffort,
-          additional_directories: scenario.agent.additionalDirectories,
+          additional_directories: scenario.agent.additionalDirectories.map((directory) =>
+            resolveAdditionalDirectory(workspaceDirectory, directory)
+          ),
           cli_env: {
             ...workspaceEnvironment,
             ...scenario.agent.cliEnv,
+            ...(isolatedEnvironment ?? {}),
           },
           copilot_config: scenario.agent.config,
         },
@@ -72,7 +76,7 @@ const adapterRegistry = {
   pi: {
     id: "pi",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
       const providerPath = fromPackageRoot("src", "providers", "pi-system-provider.js");
 
       return {
@@ -86,12 +90,24 @@ const adapterRegistry = {
           cli_env: {
             ...workspaceEnvironment,
             ...scenario.agent.cliEnv,
+            ...(isolatedEnvironment ?? {}),
           },
         },
       };
     },
   },
 };
+
+function resolveAdditionalDirectory(workspaceDirectory, directory) {
+  const resolvedDirectory = path.resolve(workspaceDirectory, directory);
+  const relative = path.relative(workspaceDirectory, resolvedDirectory);
+
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`Additional directory escapes the workspace root: ${directory}`);
+  }
+
+  return resolvedDirectory;
+}
 
 export function getAdapter(adapterId) {
   const adapter = adapterRegistry[adapterId];

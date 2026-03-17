@@ -1,105 +1,127 @@
 schemaVersion: 1
 benchmark:
-  id: skill-arena-compare
-  description: Evaluate the skill-arena-compare workspace skill on authoring a Skill Arena compare.yaml file.
+  id: brainstorming-compare-generated
+  description: Evaluate generation of a compare config for the remote brainstorming skill.
   tags:
     - compare
     - skill
-    - authoring
+    - brainstorming
 task:
   prompts:
-    - id: brief-driven
-      description: Author the compare config from the benchmark brief and write it into the current workspace.
+    - id: sunday-brainstorming-compare-file
+      description: Generate a compare.yaml for Sunday-only product brainstorming.
       prompt: >-
-        Read `docs/benchmark-brief.md` and author `./deliverables/compare.yaml`
-        in the current workspace. Write the file there instead of inside any
-        `skills/` directory. Update the generated compare config so each prompt
-        uses `evaluation.requests: 6`. If you can determine local machine
-        capacity from Node.js, set `evaluation.maxConcurrency` in the generated
-        file. Return only the full completed `compare.yaml` content as your
-        final answer.
+        Create `deliverables/compare.yaml` for this remote skill:
+        https://github.com/obra/superpowers/tree/main/skills/brainstorming.
+        The task inside the generated compare must ask the model to brainstorm ideas for
+        a product that can only be sold on Sundays.
+        Return only the final YAML.
+      evaluation:
+        assertions:
+          - type: contains
+            value: Sunday
+          - type: contains
+            value: brainstorming
+    - id: sunday-brainstorming-compare-jurisdiction
+      description: Generate a complete compare.yaml with both skill modes.
+      prompt: >-
+        Create `deliverables/compare.yaml` for
+        https://github.com/obra/superpowers/tree/main/skills/brainstorming.
+        Ensure the file includes both `no-skill` and `skill` modes,
+        with `skill` installed from git via `workspace-overlay`.
+        Return only valid YAML.
+      evaluation:
+        assertions:
+          - type: contains
+            value: "comparison:"
+          - type: contains
+            value: no-skill
+          - type: contains
+            value: "type: git"
 workspace:
-  fixture: fixtures/skill-arena-compare/base
-  skillOverlay: fixtures/skill-arena-compare/skill-overlay
-  initializeGit: true
+  sources:
+    - id: base
+      type: local-path
+      path: fixtures/skill-arena-compare/base
+      target: /
+  setup:
+    initializeGit: true
+    env: {}
 evaluation:
   assertions:
+    - type: regex
+      value: "^schemaVersion:\\s*1(?:\\r?\\n|$)"
     - type: contains
-      value: "schemaVersion: 1"
-    - type: contains
-      value: "id: repo-summary-generated"
-    - type: contains
-      value: "fixture: fixtures/repo-summary/base"
-    - type: contains
-      value: "path: fixtures/repo-summary/skill-overlay"
-    - type: contains
-      value: "requests: 6"
-    - type: contains
-      value: "maxConcurrency:"
-    - type: contains
-      value: "id: no-skill"
-    - type: contains
-      value: "id: skill"
-    - type: contains
-      value: "type: local-path"
-    - type: contains
-      value: "strategy: workspace-overlay"
-    - type: contains
-      value: "id: architecture"
-    - type: contains
-      value: "id: testing"
-    - type: contains
-      value: "variantDisplayName: codex mini"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "schemaVersion: 1"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "requests: 6"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "maxConcurrency:"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "type: local-path"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "strategy: workspace-overlay"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "fixture: fixtures/repo-summary/base"
-    - type: file-contains
-      path: "deliverables/compare.yaml"
-      value: "path: fixtures/repo-summary/skill-overlay"
+      value: "skills/brainstorming"
     - type: javascript
       value: |
-        !output.includes("compare-config-author")
-    - type: javascript
-      value: |
-        !output.includes("skills/skill-arena-compare")
-  requests: 6
-  timeoutMs: 300000
+        const normalized = output.replace(/\r\n/g, "\n");
+        const topLevelKeys = Array.from(
+          normalized.matchAll(/^([A-Za-z][A-Za-z0-9-]*):/gm),
+          (match) => match[1],
+        );
+        const workspaceSourceMatch = normalized.match(
+          /^workspace:\n  sources:\n    - (?:id: [^\n]+\n      )?type: local-path\n      path: ([^\n]+)\n      target: \//m,
+        );
+        const workspacePathValue = workspaceSourceMatch?.[1]?.trim() ?? "";
+        const hasRuntimeRelativeWorkspace =
+          Boolean(workspaceSourceMatch)
+          && workspacePathValue.length > 0
+          && !/^([A-Za-z]:[\\/]|\/)/.test(workspacePathValue);
+        const forbiddenPatterns = [
+          /^\s*```[A-Za-z0-9-]*\s*$/m,
+          /^task:\n  prompts:\n    [\w-]+:\s*$/m,
+          /^\s+shared:\s*$/m,
+          /^\s+enabled:\s+(true|false)\s*$/m,
+          /^\s+template:\s*[|>]/m,
+          /^\s+instructions:\s*[|>]/m,
+          /^\s+responseFormat:\s*$/m,
+          /^\s+text:\s*[|>]/m,
+          /^\s+pattern:\s+/m,
+          /^\s+rubric:\s*[|>]/m,
+        ];
+        return JSON.stringify(topLevelKeys) === JSON.stringify([
+          "schemaVersion",
+          "benchmark",
+          "task",
+          "workspace",
+          "evaluation",
+          "comparison",
+        ])
+          && /^task:\n  prompts:\n    - id:\s+[\w-]+/m.test(normalized)
+          && hasRuntimeRelativeWorkspace
+          && /^evaluation:\n  assertions:\n/m.test(normalized)
+          && /^\s+- id:\s+no-skill\s*$/m.test(normalized)
+          && /^\s+skillMode:\s+disabled\s*$/m.test(normalized)
+          && /^\s+- id:\s+skill\s*$/m.test(normalized)
+          && /^\s+skillMode:\s+enabled\s*$/m.test(normalized)
+          && /^\s+strategy:\s+workspace-overlay\s*$/m.test(normalized)
+          && /^\s+repo:\s+https:\/\/github\.com\/obra\/superpowers(?:\.git)?\s*$/m.test(normalized)
+          && /^\s+ref:\s+main\s*$/m.test(normalized)
+          && /^\s+subpath:\s+\.\s*$/m.test(normalized)
+          && /^\s+skillPath:\s+skills\/brainstorming\s*$/m.test(normalized)
+          && /^\s+skillId:\s+brainstorming\s*$/m.test(normalized)
+          && /^\s+executionMethod:\s+command\s*$/m.test(normalized)
+          && /^\s+commandPath:\s+codex\s*$/m.test(normalized)
+          && forbiddenPatterns.every((pattern) => !pattern.test(normalized));
+  requests: 8
+  timeoutMs: 1200000
   tracing: false
-  maxConcurrency: 12
+  maxConcurrency: 8
   noCache: true
 comparison:
   skillModes:
     - id: no-skill
-      description: Baseline without the skill-arena-compare skill overlay.
+      description: Baseline without the brainstorming skill.
       skillMode: disabled
-      output:
-        tags:
-          - baseline
-        labels:
-          skillDisplayName: no-skill
-          skillModeId: no-skill
     - id: skill
-      description: Workspace overlay with the skill-arena-compare skill enabled.
+      description: Enabled compare-authoring skill from the workspace overlay.
       skillMode: enabled
       skill:
         source:
           type: local-path
-          path: fixtures/skill-arena-compare/skill-overlay
+          path: skills/skill-arena-compare
+          skillId: skill-arena-compare
         install:
           strategy: workspace-overlay
       output:
@@ -110,16 +132,16 @@ comparison:
           skillModeId: skill
   variants:
     - id: codex-mini
-      description: Codex mini using workspace-write so it can author the target file.
+      description: gpt-5.1-codex-mini authoring variant.
       agent:
         adapter: codex
         model: gpt-5.1-codex-mini
         executionMethod: command
         commandPath: codex
-        sandboxMode: workspace-write
+        sandboxMode: danger-full-access
         approvalPolicy: never
         webSearchEnabled: false
-        networkAccessEnabled: false
+        networkAccessEnabled: true
         reasoningEffort: low
         additionalDirectories: []
         cliEnv: {}

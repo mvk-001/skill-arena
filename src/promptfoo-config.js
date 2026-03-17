@@ -6,11 +6,14 @@ import { buildPromptfooProvider } from "./adapters.js";
 import { toPromptfooGraderProvider } from "./judge-provider.js";
 
 export function buildPromptfooConfig({ manifest, scenario, workspace }) {
+  const executionWorkspaceDirectory =
+    workspace.executionWorkspaceDirectory ?? workspace.workspaceDirectory;
   const provider = buildPromptfooProvider({
     manifest,
     scenario,
-    workspaceDirectory: workspace.workspaceDirectory,
+    workspaceDirectory: executionWorkspaceDirectory,
     workspaceEnvironment: workspace.environment ?? {},
+    isolatedEnvironment: workspace.executionEnvironment ?? {},
     gitReady: workspace.gitReady,
   });
   const taskPrompts = getTaskPrompts(manifest);
@@ -36,8 +39,11 @@ export function buildPromptfooConfig({ manifest, scenario, workspace }) {
         labels: scenario.output.labels,
         ...flattenLabels(scenario.output.labels),
       },
-      assert: scenario.evaluation.assertions.map((assertion) =>
-        toPromptfooAssertion(assertion, workspace.workspaceDirectory),
+      assert: resolvePromptAssertions({
+        defaultAssertions: scenario.evaluation.assertions,
+        taskPrompt,
+      }).map((assertion) =>
+        toPromptfooAssertion(assertion, executionWorkspaceDirectory),
       ),
     })),
   };
@@ -70,6 +76,14 @@ export function getTaskPrompts(manifest) {
   return manifest.task.prompts;
 }
 
+export function resolvePromptAssertions({ defaultAssertions, taskPrompt }) {
+  if (!taskPrompt.evaluation?.assertions) {
+    return defaultAssertions;
+  }
+
+  return [...defaultAssertions, ...taskPrompt.evaluation.assertions];
+}
+
 export function toPromptfooAssertion(assertion, workspaceDirectory) {
   switch (assertion.type) {
     case "equals":
@@ -93,11 +107,9 @@ export function toPromptfooAssertion(assertion, workspaceDirectory) {
       return {
         type: "javascript",
         value: [
-          "(() => {",
-          "  const fs = process.getBuiltinModule('node:fs');",
-          `  const fileContents = fs.readFileSync(${escapedFilePath}, 'utf8');`,
-          `  return fileContents.includes(${escapedExpectedValue});`,
-          "})()",
+          "const fs = process.getBuiltinModule('node:fs');",
+          `const fileContents = fs.readFileSync(${escapedFilePath}, 'utf8');`,
+          `return fileContents.includes(${escapedExpectedValue});`,
         ].join("\n"),
       };
     }

@@ -6,7 +6,7 @@ import { buildPromptfooConfig, stringifyPromptfooConfig } from "./promptfoo-conf
 import { resolveEvaluationConcurrency } from "./concurrency.js";
 import { normalizePromptfooResults, writePromptfooArtifacts } from "./results.js";
 import { fromPackageRoot } from "./project-paths.js";
-import { materializeWorkspace } from "./workspace.js";
+import { materializeWorkspace, syncExecutionWorkspaceToArtifacts } from "./workspace.js";
 
 export async function runScenario({
   manifest,
@@ -43,6 +43,7 @@ export async function runScenario({
     promptfooResultsPath,
     scenario,
   });
+  await syncExecutionWorkspaceToArtifacts(workspace);
 
   const summary = await normalizePromptfooResults({
     manifest,

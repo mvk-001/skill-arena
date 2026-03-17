@@ -5,6 +5,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import { resolveManifestPath } from "./manifest.js";
+import { createRuntimeIsolation } from "./runtime-isolation.js";
 
 const execFileAsync = promisify(execFile);
 const gitSourceCache = new Map();
@@ -18,39 +19,76 @@ export async function materializeWorkspace({
   const runId = createRunId(scenario.id);
   const runDirectory = path.join(outputRootDirectory, "results", manifest.benchmark.id, runId);
   const workspaceDirectory = path.join(runDirectory, "workspace");
+  const executionRootDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-execution-"));
+  const executionWorkspaceDirectory = path.join(executionRootDirectory, "workspace");
+  const runtimeIsolation = await createRuntimeIsolation(executionRootDirectory, scenario);
 
-  await fs.mkdir(workspaceDirectory, { recursive: true });
+  await fs.mkdir(executionWorkspaceDirectory, { recursive: true });
 
   for (const source of manifest.workspace.sources) {
     await materializeWorkspaceSource({
       source,
-      workspaceDirectory,
+      workspaceDirectory: executionWorkspaceDirectory,
       labelPrefix: "workspace.sources",
       sourceBaseDirectory,
     });
   }
 
+  await sanitizeWorkspaceRoot(executionWorkspaceDirectory);
+
+  if (scenario.skill.install.strategy === "system-installed") {
+    throw new Error(
+      "Strict isolation does not support system-installed skills. Use a workspace-overlay skill source.",
+    );
+  }
+
   if (scenario.skill.install.strategy === "workspace-overlay") {
     await materializeSkillSource({
       skillSource: scenario.skill.source,
-      workspaceDirectory,
+      workspaceDirectory: executionWorkspaceDirectory,
       sourceBaseDirectory,
     });
   }
 
+  const mountedSkillIds = await mountConfiguredSkills({
+    scenario,
+    executionWorkspaceDirectory,
+    runtimeIsolation,
+  });
+
   const gitReady = manifest.workspace.setup.initializeGit
-    ? await initializeGitRepository(workspaceDirectory)
+    ? await initializeGitRepository(executionWorkspaceDirectory)
     : false;
 
-  return {
+  const workspace = {
     runId,
     runDirectory,
     workspaceDirectory,
+    executionRootDirectory,
+    executionWorkspaceDirectory,
     gitReady,
     environment: {
       ...manifest.workspace.setup.env,
     },
+    executionEnvironment: runtimeIsolation.environment,
+    isolation: {
+      executionRootDirectory,
+      homeDirectory: runtimeIsolation.homeDirectory,
+      codexHomeDirectory: runtimeIsolation.codexHome,
+      mountedSkillIds,
+    },
   };
+
+  await syncExecutionWorkspaceToArtifacts(workspace);
+  return workspace;
+}
+
+export async function syncExecutionWorkspaceToArtifacts(workspace) {
+  await fs.rm(workspace.workspaceDirectory, { recursive: true, force: true });
+  await fs.mkdir(path.dirname(workspace.workspaceDirectory), { recursive: true });
+  await fs.cp(workspace.executionWorkspaceDirectory, workspace.workspaceDirectory, {
+    recursive: true,
+  });
 }
 
 async function materializeWorkspaceSource({
@@ -99,20 +137,41 @@ async function materializeSkillSource({ skillSource, workspaceDirectory, sourceB
     case "local-path": {
       const sourceDirectory = resolveLocalPath(skillSource.path, sourceBaseDirectory);
       await assertDirectoryExists(sourceDirectory, "skill.source.path");
-      await copyDirectoryIntoTarget({
+      await materializeResolvedSkillDirectory({
         sourceDirectory,
         workspaceDirectory,
-        target: "/",
+        skillId: skillSource.skillId,
       });
       return;
     }
     case "git": {
       const sourceDirectory = await cloneGitSource(skillSource);
-      await copyDirectoryIntoTarget({
-        sourceDirectory,
+      const selectedSkillDirectory = skillSource.skillPath
+        ? path.join(sourceDirectory, skillSource.skillPath)
+        : sourceDirectory;
+      await assertDirectoryExists(selectedSkillDirectory, "skill.source.skillPath");
+      await materializeResolvedSkillDirectory({
+        sourceDirectory: selectedSkillDirectory,
         workspaceDirectory,
-        target: "/",
+        skillId: skillSource.skillId,
       });
+      return;
+    }
+    case "inline": {
+      const skillDirectory = resolveWorkspacePath(
+        workspaceDirectory,
+        path.posix.join("skills", skillSource.skillId),
+      );
+      await fs.mkdir(skillDirectory, { recursive: true });
+      await fs.writeFile(path.join(skillDirectory, "SKILL.md"), skillSource.content ?? "", "utf8");
+      for (const file of skillSource.files ?? []) {
+        const outputPath = resolveWorkspacePath(
+          workspaceDirectory,
+          path.posix.join("skills", skillSource.skillId, file.path),
+        );
+        await fs.mkdir(path.dirname(outputPath), { recursive: true });
+        await fs.writeFile(outputPath, file.content ?? "", "utf8");
+      }
       return;
     }
     case "inline-files": {
@@ -129,6 +188,27 @@ async function materializeSkillSource({ skillSource, workspaceDirectory, sourceB
     default:
       throw new Error(`Unsupported skill source type "${skillSource.type}".`);
   }
+}
+
+async function materializeResolvedSkillDirectory({
+  sourceDirectory,
+  workspaceDirectory,
+  skillId,
+}) {
+  if (await directoryContainsSkillFile(sourceDirectory)) {
+    await copyDirectoryIntoTarget({
+      sourceDirectory,
+      workspaceDirectory,
+      target: path.posix.join("/skills", skillId ?? path.basename(sourceDirectory)),
+    });
+    return;
+  }
+
+  await copyDirectoryIntoTarget({
+    sourceDirectory,
+    workspaceDirectory,
+    target: "/",
+  });
 }
 
 async function cloneGitSource(gitSource) {
@@ -197,6 +277,48 @@ async function copyDirectoryIntoTarget({ sourceDirectory, workspaceDirectory, ta
   }
 }
 
+async function sanitizeWorkspaceRoot(workspaceDirectory) {
+  await fs.rm(path.join(workspaceDirectory, "AGENTS.md"), { force: true });
+  await fs.rm(path.join(workspaceDirectory, "skills"), { recursive: true, force: true });
+}
+
+async function mountConfiguredSkills({
+  scenario,
+  executionWorkspaceDirectory,
+  runtimeIsolation,
+}) {
+  if (scenario.skillMode !== "enabled") {
+    runtimeIsolation.environment.SKILL_ARENA_ALLOWED_SKILLS = "";
+    return [];
+  }
+
+  const workspaceSkillsDirectory = path.join(executionWorkspaceDirectory, "skills");
+  const skillEntries = await fs.readdir(workspaceSkillsDirectory, { withFileTypes: true }).catch(() => []);
+  const skillDirectories = skillEntries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+
+  if (skillDirectories.length !== 1) {
+    throw new Error(
+      `Strict isolation requires exactly one configured skill, found ${skillDirectories.length}.`,
+    );
+  }
+
+  const skillId = skillDirectories[0];
+  if (!skillId) {
+    runtimeIsolation.environment.SKILL_ARENA_ALLOWED_SKILLS = "";
+    return [];
+  }
+
+  await fs.cp(
+    path.join(workspaceSkillsDirectory, skillId),
+    path.join(runtimeIsolation.codexHome, "skills", skillId),
+    { recursive: true },
+  );
+  runtimeIsolation.environment.SKILL_ARENA_ALLOWED_SKILLS = skillId;
+  return [skillId];
+}
+
 function resolveLocalPath(inputPath, sourceBaseDirectory) {
   return resolveManifestPath(inputPath, { baseDirectory: sourceBaseDirectory });
 }
@@ -222,6 +344,11 @@ async function assertDirectoryExists(directoryPath, label) {
   if (!stats || !stats.isDirectory()) {
     throw new Error(`${label} does not exist or is not a directory: ${directoryPath}`);
   }
+}
+
+async function directoryContainsSkillFile(directoryPath) {
+  const stats = await fs.stat(path.join(directoryPath, "SKILL.md")).catch(() => null);
+  return Boolean(stats?.isFile());
 }
 
 async function initializeGitRepository(workspaceDirectory) {

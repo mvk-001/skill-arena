@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
 import CopilotSystemProvider from "../src/providers/copilot-system-provider.js";
 
@@ -57,18 +60,23 @@ test("copilot provider builds best-effort CLI arguments", () => {
 });
 
 test("copilot provider returns trimmed output on success", async () => {
+  const isolatedHome = path.join(os.tmpdir(), "skill-arena-copilot-home");
   const provider = new CopilotSystemProvider({
     config: {
       command_path: "copilot",
       working_dir: "C:/temp/workspace",
       cli_env: {
         SAMPLE_FLAG: "1",
+        HOME: isolatedHome,
+        USERPROFILE: isolatedHome,
       },
     },
     spawnProcess: async (options) => {
       assert.equal(options.command, "copilot");
       assert.equal(options.cwd, "C:/temp/workspace");
       assert.equal(options.env.SAMPLE_FLAG, "1");
+      assert.equal(options.env.HOME, isolatedHome);
+      assert.equal(options.env.USERPROFILE, isolatedHome);
       return {
         stdout: "ALPHA-42\n",
         stderr: "",
@@ -184,4 +192,77 @@ test("copilot provider exposes ids, trims fallback fields, and handles empty out
 
   const emptyResponse = await emptyOutputProvider.callApi("Return the marker.");
   assert.equal(emptyResponse.output, "");
+});
+
+test("copilot provider executes a PATH-resolved Windows command and normalizes prompt whitespace", {
+  skip: process.platform !== "win32",
+}, async () => {
+  const tempDirectory = await fs.mkdtemp(
+    path.join(os.tmpdir(), "skill-arena-copilot-provider-"),
+  );
+
+  try {
+    const commandName = "skill-arena-test-copilot";
+    const commandPath = path.join(tempDirectory, `${commandName}.cmd`);
+    await fs.writeFile(
+      commandPath,
+      [
+        "@echo off",
+        "setlocal",
+        "set \"PROMPT=%~2\"",
+        "echo {\"type\":\"assistant.message\",\"data\":{\"content\":\"%PROMPT%\"}}",
+      ].join("\r\n"),
+      "utf8",
+    );
+
+    const provider = new CopilotSystemProvider({
+      config: {
+        command_path: commandName,
+        working_dir: tempDirectory,
+        cli_env: {
+          Path: `${tempDirectory}${path.delimiter}${process.env.Path ?? process.env.PATH ?? ""}`,
+        },
+      },
+    });
+
+    const response = await provider.callApi(" first \n second \t third ");
+    assert.equal(response.output, "first second third");
+    assert.equal(response.metadata.commandPath, commandName);
+  } finally {
+    await fs.rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test("copilot provider executes an absolute Windows command path and falls back to stdout on failure", {
+  skip: process.platform !== "win32",
+}, async () => {
+  const tempDirectory = await fs.mkdtemp(
+    path.join(os.tmpdir(), "skill-arena-copilot-provider-fail-"),
+  );
+
+  try {
+    const commandPath = path.join(tempDirectory, "copilot-fail.cmd");
+    await fs.writeFile(
+      commandPath,
+      [
+        "@echo off",
+        "echo command failed from stdout",
+        "exit /b 7",
+      ].join("\r\n"),
+      "utf8",
+    );
+
+    const provider = new CopilotSystemProvider({
+      config: {
+        command_path: commandPath,
+        working_dir: tempDirectory,
+      },
+    });
+
+    const response = await provider.callApi("Return the marker.");
+    assert.equal(response.error, "command failed from stdout");
+    assert.equal(response.metadata.commandPath, commandPath);
+  } finally {
+    await fs.rm(tempDirectory, { recursive: true, force: true });
+  }
 });

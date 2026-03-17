@@ -1,8 +1,25 @@
 # Skill Arena Agent Guide
 
+## User Preferences
+if there is another step to improve your progress, another stage, a validation that can be done, coverage test, unit testing, manual verification using playwright, research to understand better best way to go, do not ask it for confirmation, just do it, do your best effort to have your work as polished as possible.
+
+
 ## Project goal
 
-This repository benchmarks coding agents on reproducible workspace fixtures so we can compare skill usage, no-skill baselines, and agent-specific overhead with minimal execution context.
+This repository is a CLI-first benchmark harness for measuring whether Codex/Copilot/PI agents perform better with or without skills under the same task, workspace, and constraint conditions.
+The package goal is to generate and execute reproducible, declarative evaluation runs (`manifest` and `compare` configs) and compare skill-mode behavior across variants.
+
+## Packaging and runtime scope
+
+The npm package intentionally ships only the CLI runtime surface:
+- `bin/skill-arena.js`
+- `src/**/*.js` (including manifests, workspace materialization, adapters, Promptfoo config building, and result normalization)
+
+This keeps installation focused on what the CLI needs to:
+- create prompt evaluation configs,
+- materialize run workspaces,
+- execute evaluations, and
+- report deterministic skill vs no-skill outcomes.
 
 ## Language policy
 

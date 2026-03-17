@@ -9,14 +9,26 @@ task:
     - id: main
       description: Primary benchmark prompt
       prompt: Exact task prompt sent to every provider.
+      # Preserve exact prompt ids from the benchmark brief when they are given.
+      # Optional prompt-level assertions for row-specific checks.
+      # evaluation:
+      #   assertions:
+      #     - type: contains
+      #       value: Prompt-specific expectation.
 workspace:
-  fixture: fixtures/example/base
-  initializeGit: true
+  sources:
+    - id: base
+      type: local-path
+      path: fixtures/example/base
+      target: /
+  setup:
+    initializeGit: true
 evaluation:
   assertions:
     - type: llm-rubric
       provider: skill-arena:judge:codex
       value: Score 1.0 only if the answer satisfies the benchmark goal.
+  # Keep shared assertions here. Format-specific checks belong under the prompt.
   requests: 10
   timeoutMs: 180000
   tracing: false
@@ -33,9 +45,14 @@ comparison:
       skillMode: enabled
       skill:
         source:
-          type: system-installed
+          type: git
+          repo: https://github.com/example/repo.git
+          ref: main
+          subpath: .
+          skillPath: skills/example-skill
+          skillId: example-skill
         install:
-          strategy: system-installed
+          strategy: workspace-overlay
   variants:
     - id: codex-mini
       description: Codex mini comparison variant.
@@ -44,7 +61,7 @@ comparison:
         model: gpt-5.1-codex-mini
         executionMethod: command
         commandPath: codex
-        sandboxMode: read-only
+        sandboxMode: workspace-write
         approvalPolicy: never
         webSearchEnabled: false
         networkAccessEnabled: false

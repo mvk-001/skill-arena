@@ -96,6 +96,7 @@ test("normalizePromptfooResults extracts stable summary fields", async () => {
   assert.equal(summary.outputs[0].provider, "openai:codex-sdk");
   assert.equal(summary.outputLabels.skill, "off");
   assert.equal(summary.stats.successes, 1);
+  assert.equal(summary.workspaceDirectory, "C:/temp/workspace");
 });
 
 test("merged benchmark summary groups outputs by prompt and scenario", () => {

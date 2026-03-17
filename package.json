@@ -1,8 +1,21 @@
 {
   "name": "skill-arena",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
+  "license": "UNLICENSED",
   "type": "module",
+  "keywords": [
+    "benchmark",
+    "promptfoo",
+    "codex",
+    "copilot",
+    "agent-evaluation"
+  ],
+  "files": [
+    "bin/skill-arena.js",
+    "src/**/*.js",
+    "README.md"
+  ],
   "bin": {
     "skill-arena": "./bin/skill-arena.js"
   },
@@ -14,6 +27,7 @@
     "test": "node --test",
     "test:coverage": "c8 --reporter=text --all --include=src/**/*.js --exclude=src/cli/** --exclude=src/runner.js --exclude=src/providers/codex-system-provider.js --exclude=src/providers/pi-system-provider.js --check-coverage --statements 93 --branches 80 --functions 95 --lines 93 node --test",
     "validate:manifest": "node ./src/cli/validate-manifest.js",
+    "evolve": "node ./src/cli/evolve-cli.js",
     "generate:config": "node ./src/cli/generate-promptfoo-config.js",
     "run:benchmark": "node ./src/cli/run-benchmark.js",
     "benchmark:compare": "node ./src/cli/run-compare.js",

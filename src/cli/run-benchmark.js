@@ -13,20 +13,32 @@ async function main() {
   const scenarioFlagIndex = process.argv.indexOf("--scenario");
   const dryRun = process.argv.includes("--dry-run");
   const scenarioId = scenarioFlagIndex > -1 ? process.argv[scenarioFlagIndex + 1] : null;
+  const requestsOverride = parsePositiveIntegerOption(process.argv, "--requests");
+  const maxConcurrencyOverride = parsePositiveIntegerOption(
+    process.argv,
+    ["--max-concurrency", "--maxConcurrency"],
+  );
   const outputRootDirectory = process.cwd();
 
   if (!manifestPath) {
     throw new Error(
-      "Usage: node ./src/cli/run-benchmark.js <manifest-path> [--scenario <scenario-id>] [--dry-run]",
+      "Usage: node ./src/cli/run-benchmark.js <manifest-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--dry-run]",
     );
   }
 
   const { manifest, workspaceRootDirectory } = await loadBenchmarkManifest(manifestPath, {
     cwd: outputRootDirectory,
   });
-  const scenarios = scenarioId
+  const configuredScenarios = scenarioId
     ? [findScenario(manifest, scenarioId)]
     : manifest.scenarios;
+  const scenarios = configuredScenarios.map((scenario) =>
+    applyRuntimeOverrides({
+      scenario,
+      requestsOverride,
+      maxConcurrencyOverride,
+    }),
+  );
 
   const results = await mapWithConcurrency(
     scenarios,
@@ -74,6 +86,46 @@ async function main() {
   }
 
   console.log(JSON.stringify({ results, mergedArtifacts }, null, 2));
+}
+
+function applyRuntimeOverrides({
+  scenario,
+  requestsOverride,
+  maxConcurrencyOverride,
+}) {
+  if (requestsOverride == null && maxConcurrencyOverride == null) {
+    return scenario;
+  }
+
+  return {
+    ...scenario,
+    evaluation: {
+      ...scenario.evaluation,
+      ...(requestsOverride == null ? {} : { requests: requestsOverride }),
+      ...(maxConcurrencyOverride == null ? {} : { maxConcurrency: maxConcurrencyOverride }),
+    },
+  };
+}
+
+function parsePositiveIntegerOption(argv, optionNames) {
+  const names = Array.isArray(optionNames) ? optionNames : [optionNames];
+  const optionIndex = argv.findIndex((value) => names.includes(value));
+
+  if (optionIndex === -1) {
+    return null;
+  }
+
+  const rawValue = argv[optionIndex + 1];
+  if (!rawValue || rawValue.startsWith("--")) {
+    throw new Error(`Missing value for option "${argv[optionIndex]}".`);
+  }
+
+  const parsedValue = Number.parseInt(rawValue, 10);
+  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
+    throw new Error(`Option "${argv[optionIndex]}" requires a positive integer.`);
+  }
+
+  return parsedValue;
 }
 
 main().catch((error) => {

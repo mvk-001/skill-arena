@@ -144,6 +144,24 @@ test("normalizeSkill handles disabled, legacy, explicit, and default system-inst
   assert.deepEqual(
     normalizeSkill({
       source: {
+        type: "inline",
+        skillId: "inline-helper",
+        content: "---\nname: inline-helper\n---\n",
+      },
+    }, { skillMode: "enabled" }),
+    {
+      source: {
+        type: "inline",
+        skillId: "inline-helper",
+        content: "---\nname: inline-helper\n---\n",
+      },
+      install: { strategy: "workspace-overlay" },
+    },
+  );
+
+  assert.deepEqual(
+    normalizeSkill({
+      source: {
         type: "inline-files",
         files: [{ path: "AGENTS.md", content: "x" }],
       },

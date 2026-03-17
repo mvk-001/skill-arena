@@ -9,6 +9,7 @@ export function normalizeTask(task) {
         id: prompt.id ?? `prompt-${index + 1}`,
         prompt: prompt.prompt,
         ...(prompt.description ? { description: prompt.description } : {}),
+        ...(prompt.evaluation ? { evaluation: prompt.evaluation } : {}),
       })),
     };
   }
@@ -207,6 +208,7 @@ function normalizeSkillSource(source) {
       return {
         type: "local-path",
         path: source.path,
+        ...(source.skillId ? { skillId: source.skillId } : {}),
       };
     case "git":
       return {
@@ -214,6 +216,20 @@ function normalizeSkillSource(source) {
         repo: source.repo,
         ...(source.ref ? { ref: source.ref } : {}),
         ...(source.subpath ? { subpath: source.subpath } : {}),
+        ...(source.skillPath ? { skillPath: source.skillPath } : {}),
+        ...(source.skillId ? { skillId: source.skillId } : {}),
+      };
+    case "inline":
+      return {
+        type: "inline",
+        skillId: source.skillId,
+        ...(source.content !== undefined ? { content: source.content } : {}),
+        ...(source.files ? {
+          files: source.files.map((file) => ({
+            path: file.path,
+            ...(file.content !== undefined ? { content: file.content } : {}),
+          })),
+        } : {}),
       };
     case "inline-files":
       return {

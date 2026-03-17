@@ -180,7 +180,7 @@ skillMode: enabled
 skill:
   source:
     type: local-path
-    path: fixtures/example/skill-overlay
+    path: fixtures/example/skills/repo-summary
   install:
     strategy: workspace-overlay
 ```
@@ -188,10 +188,22 @@ skill:
 Supported skill source types in V1:
 
 - `none`
-- `local-path`
-- `git`
 - `system-installed`
+- `local-path`
+  - points to one local skill folder that contains `SKILL.md`
+  - optional `skillId` overrides the installed folder name; otherwise the basename of `path` is used
+- `inline`
+  - defines one skill directly in YAML
+  - requires `skillId`
+  - writes `SKILL.md` from `content`
+  - optional `files` add extra files under that skill folder
+- `git`
+  - clones a Git repository and selects one skill folder from it
+  - `subpath` may narrow the checkout root before selection
+  - optional `skillPath` selects the skill folder relative to the cloned root or selected `subpath`
+  - optional `skillId` overrides the installed folder name
 - `inline-files`
+  - legacy compatibility form for full workspace overlays
 
 Supported install strategies in V1:
 
@@ -207,6 +219,10 @@ Required skill behavior:
 - For `system-installed`, the harness does not inject skill files into the workspace and relies on the local agent runtime environment.
 - Skill materialization for `enabled` runs must not leak into `disabled` runs.
 - Skill definitions may include root instructions and bundled skill folders, for example `AGENTS.md` plus `skills/<skill-id>/SKILL.md`.
+- Preferred explicit skill definitions should use exactly one of these three source modes:
+  - `local-path`
+  - `inline`
+  - `git`
 
 Normalization rules for backward-compatible manifests:
 
@@ -271,6 +287,10 @@ task:
   prompts:
     - id: primary
       prompt: Exact task prompt sent to every provider.
+      evaluation:
+        assertions:
+          - type: contains
+            value: Prompt-specific expectation.
 workspace:
   sources:
     - id: base
@@ -315,6 +335,7 @@ comparison:
 - `evaluation.requests` is the execution count per compare cell.
 - When `evaluation.requests` is omitted in a compare config, it defaults to `10`.
 - `evaluation.maxConcurrency` is optional. When omitted, the harness uses the local machine parallelism.
+- `task.prompts[*].evaluation.assertions` is optional and appends prompt-specific assertions for that row.
 - The compare runner expands the Cartesian product of `comparison.skillModes` and `comparison.variants`.
 - `comparison.skillModes[*].skill` is required when `skillMode: enabled`.
 - Each expanded unit must resolve:
@@ -329,6 +350,7 @@ comparison:
 - Provider labels in compare mode should prefer concise skill mode ids such as `no-skill` and `skill`.
 - Compare reports should show rows as `prompt x variant` and columns as skill modes.
 - Compare cells should report pass ratios against the requested execution count, for example `40% (4/10)`.
+- Shared compare execution settings such as `requests`, `timeoutMs`, `tracing`, `maxConcurrency`, and `noCache` still come from top-level `evaluation`.
 
 ### Compare normalization rules
 
@@ -349,12 +371,18 @@ skill:
 
 Compare configs must declare the evaluated skill explicitly so the benchmark target is unambiguous.
 
+Preferred explicit compare skill definitions use the same three source modes:
+
+- `local-path`
+- `inline`
+- `git`
+
 ### Compare local path resolution
 
 For compare configs, local filesystem paths are resolved using this contract:
 
 - absolute local paths are used as-is
-- relative local paths are resolved from the current runtime working directory where `skill-arena compare` is executed
+- relative local paths are resolved from the current runtime working directory where compare-mode execution runs
 - relative local paths are not resolved against the installed package location
 - when a relative local path is missing in compare mode, the runner may bootstrap that relative directory from a unique packaged fixture match before workspace materialization
 

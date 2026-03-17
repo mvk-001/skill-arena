@@ -6,6 +6,7 @@ import { benchmarkManifestSchema } from "../src/manifest-schema.js";
 import {
   buildPromptfooConfig,
   flattenLabels,
+  resolvePromptAssertions,
   stringifyPromptfooConfig,
   toPromptfooAssertion,
 } from "../src/promptfoo-config.js";
@@ -43,6 +44,44 @@ test("codex scenarios generate Promptfoo custom script providers", async () => {
   assert.equal(config.tests[0].metadata.model, "gpt-5.1-codex-mini");
 });
 
+test("promptfoo config prefers the isolated execution workspace and merged execution environment", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = structuredClone(findScenario(manifest, "codex-mini-no-skill"));
+  scenario.evaluation.assertions = [
+    {
+      type: "file-contains",
+      path: "notes/target.txt",
+      value: "ALPHA-42",
+    },
+  ];
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario,
+    workspace: {
+      workspaceDirectory: "C:/artifacts/workspace",
+      executionWorkspaceDirectory: "C:/isolated/workspace",
+      environment: {
+        BASE_FLAG: "1",
+      },
+      executionEnvironment: {
+        HOME: "C:/isolated/home",
+      },
+      gitReady: true,
+    },
+  });
+
+  assert.equal(config.providers[0].config.working_dir, "C:/isolated/workspace");
+  assert.equal(config.providers[0].config.cli_env.BASE_FLAG, "1");
+  assert.equal(config.providers[0].config.cli_env.HOME, "C:/isolated/home");
+  assert.match(config.tests[0].assert[0].value ?? "", /isolated[\\/]{2,4}workspace|isolated\/workspace/);
+});
+
 test("file-contains assertions become Promptfoo javascript assertions", async () => {
   const manifestPath = fromProjectRoot(
     "benchmarks",
@@ -73,6 +112,8 @@ test("file-contains assertions become Promptfoo javascript assertions", async ()
   assert.equal(config.tests[0].assert[0].type, "javascript");
   assert.match(config.tests[0].assert[0].value, /notes\/target\.txt|notes\\\\target\.txt/);
   assert.match(config.tests[0].assert[0].value, /process\.getBuiltinModule\('node:fs'\)/);
+  assert.match(config.tests[0].assert[0].value, /^const fs =/);
+  assert.match(config.tests[0].assert[0].value, /return fileContents\.includes/);
 });
 
 test("llm-rubric assertions pass through to Promptfoo", async () => {
@@ -241,6 +282,64 @@ test("multiple task prompts become multiple Promptfoo tests", async () => {
   assert.equal(config.tests[0].vars.taskPrompt, "Return the marker.");
   assert.equal(config.tests[1].metadata.promptId, "prompt-two");
   assert.equal(config.tests[1].vars.taskPrompt, "Return the canonical token.");
+});
+
+test("prompt-level assertions are appended to scenario assertions", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = structuredClone(findScenario(manifest, "codex-mini-no-skill"));
+
+  manifest.task = {
+    prompts: [
+      {
+        id: "prompt-one",
+        prompt: "Return the marker.",
+        evaluation: {
+          assertions: [
+            {
+              type: "contains",
+              value: "ALPHA",
+            },
+          ],
+        },
+      },
+    ],
+  };
+  scenario.evaluation.assertions = [
+    {
+      type: "contains",
+      value: "42",
+    },
+  ];
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      environment: {},
+      gitReady: true,
+    },
+  });
+
+  assert.equal(config.tests[0].assert.length, 2);
+  assert.deepEqual(resolvePromptAssertions({
+    defaultAssertions: scenario.evaluation.assertions,
+    taskPrompt: manifest.task.prompts[0],
+  }), [
+    {
+      type: "contains",
+      value: "42",
+    },
+    {
+      type: "contains",
+      value: "ALPHA",
+    },
+  ]);
 });
 
 test("system skill benchmarks generate valid custom providers", async () => {

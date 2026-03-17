@@ -243,13 +243,9 @@ test("manifest validation accepts declarative workspace sources and explicit ski
         skillMode: "enabled",
         skill: {
           source: {
-            type: "inline-files",
-            files: [
-              {
-                path: "AGENTS.md",
-                content: "# Inline skill\n",
-              },
-            ],
+            type: "inline",
+            skillId: "inline-skill",
+            content: "# Inline skill\n",
           },
           install: {
             strategy: "workspace-overlay",
@@ -274,7 +270,55 @@ test("manifest validation accepts declarative workspace sources and explicit ski
 
   assert.equal(manifest.task.prompts[0].id, "prompt-1");
   assert.equal(manifest.workspace.setup.env.SAMPLE_FLAG, "1");
-  assert.equal(manifest.scenarios[0].skill.source.type, "inline-files");
+  assert.equal(manifest.scenarios[0].skill.source.type, "inline");
+});
+
+test("manifest validation accepts git skills that select a skill folder inside the repo", () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "git-skill-selection",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    scenarios: [
+      {
+        id: "git-selected-skill",
+        description: "Selects one skill from a repo",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "git",
+            repo: "./skill-overlay-repo",
+            ref: "main",
+            subpath: ".",
+            skillPath: "skills/example-skill",
+            skillId: "example-skill",
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  assert.equal(manifest.scenarios[0].skill.source.type, "git");
+  assert.equal(manifest.scenarios[0].skill.source.skillPath, "skills/example-skill");
+  assert.equal(manifest.scenarios[0].skill.source.skillId, "example-skill");
 });
 
 test("yaml manifests load successfully", async () => {
