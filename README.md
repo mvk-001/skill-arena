@@ -116,6 +116,21 @@ $report = Get-ChildItem .\results\skill-arena-compare\*\merged\report.md |
 Start-Process $report
 ```
 
+## Repository hygiene
+
+The following paths are generated runtime artifacts and should not be pushed:
+
+- `.tmp/`
+- `tmp/`
+- `coverage/`
+- `reports/`
+- `results/`
+- `node_modules/`
+- `deliverables/`
+- `skill-arena-*.tgz`
+
+These paths are ignored in `.gitignore`.
+
 ## CLI usage
 
 ```bash

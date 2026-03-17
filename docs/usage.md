@@ -359,6 +359,20 @@ Preferred explicit skill source options:
 - `inline`: define one `SKILL.md` directly in YAML
 - `git`: clone a repo and select one skill folder with optional `skillPath`
 
+## Repository hygiene
+
+Scenario and compare outputs are generated in `results/` and are not intended to be committed. Do not push the following generated paths:
+
+- `.tmp/`
+- `tmp/`
+- `coverage/`
+- `reports/`
+- `results/`
+- `node_modules/`
+- `deliverables/`
+- `skill-arena-*.tgz`
+- These paths are ignored in `.gitignore`.
+
 ## Artifacts
 
 Scenario runs write to:

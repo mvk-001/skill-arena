@@ -2,6 +2,11 @@ node_modules/
 results/
 coverage/
 reports/
+.tmp/
+tmp/
+deliverables/
 bin/
 !bin/
 !bin/skill-arena.js
+*.tgz
+*.log
