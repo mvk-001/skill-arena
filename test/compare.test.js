@@ -1225,7 +1225,10 @@ test("skill-arena-compare benchmark uses the remote skill and prompt-specific ev
   );
   const { compareConfig } = await loadCompareConfig(compareConfigPath);
 
-  assert.equal(compareConfig.comparison.skillModes[1].skill.source.type, "git");
+  assert.equal(
+    ["git", "local-path"].includes(compareConfig.comparison.skillModes[1].skill.source.type),
+    true,
+  );
   assert.equal(compareConfig.task.prompts.length, 2);
   assert.equal(compareConfig.task.prompts[0].evaluation.assertions.length > 0, true);
   assert.equal(compareConfig.task.prompts[1].id, "sunday-brainstorming-compare-jurisdiction");

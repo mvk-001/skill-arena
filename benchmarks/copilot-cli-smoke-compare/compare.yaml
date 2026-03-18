@@ -1,0 +1,47 @@
+schemaVersion: 1
+benchmark:
+  id: copilot-cli-smoke-compare
+  description: Copilot CLI smoke compare with and without a workspace skill overlay.
+  tags:
+    - copilot
+    - compare
+    - smoke
+task:
+  prompt: Return a concise next-step summary.
+workspace:
+  fixture: fixtures/smoke-skill-following/base
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: contains
+      value: ALPHA
+  requests: 2
+  timeoutMs: 120000
+  tracing: false
+  noCache: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: Baseline without skill overlay.
+      skillMode: disabled
+    - id: skill
+      description: Workspace-overlay enabled smoke skill.
+      skillMode: enabled
+      skill:
+        source:
+          type: local-path
+          path: fixtures/smoke-skill-following/skill-overlay
+        install:
+          strategy: workspace-overlay
+  variants:
+    - id: copilot-gpt5mini
+      description: Copilot CLI command variant.
+      agent:
+        adapter: copilot-cli
+        model: gpt-5
+        executionMethod: command
+        sandboxMode: workspace-write
+        approvalPolicy: never
+        webSearchEnabled: true
+        networkAccessEnabled: true
+        reasoningEffort: low

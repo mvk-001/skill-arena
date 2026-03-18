@@ -7,9 +7,19 @@ import {
 import { getDefaultParallelism, mapWithConcurrency } from "../concurrency.js";
 import { runScenario } from "../runner.js";
 import path from "node:path";
+import { ensureKnownLongOptions, parsePositiveIntegerOption } from "./cli-options.js";
 
 async function main() {
   const manifestPath = process.argv[2];
+  const knownOptionSchema = {
+    "--scenario": true,
+    "--requests": true,
+    "--max-concurrency": true,
+    "--maxConcurrency": true,
+    "--dry-run": false,
+  };
+  ensureKnownLongOptions(process.argv, knownOptionSchema);
+
   const scenarioFlagIndex = process.argv.indexOf("--scenario");
   const dryRun = process.argv.includes("--dry-run");
   const scenarioId = scenarioFlagIndex > -1 ? process.argv[scenarioFlagIndex + 1] : null;
@@ -105,27 +115,6 @@ function applyRuntimeOverrides({
       ...(maxConcurrencyOverride == null ? {} : { maxConcurrency: maxConcurrencyOverride }),
     },
   };
-}
-
-function parsePositiveIntegerOption(argv, optionNames) {
-  const names = Array.isArray(optionNames) ? optionNames : [optionNames];
-  const optionIndex = argv.findIndex((value) => names.includes(value));
-
-  if (optionIndex === -1) {
-    return null;
-  }
-
-  const rawValue = argv[optionIndex + 1];
-  if (!rawValue || rawValue.startsWith("--")) {
-    throw new Error(`Missing value for option "${argv[optionIndex]}".`);
-  }
-
-  const parsedValue = Number.parseInt(rawValue, 10);
-  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
-    throw new Error(`Option "${argv[optionIndex]}" requires a positive integer.`);
-  }
-
-  return parsedValue;
 }
 
 main().catch((error) => {

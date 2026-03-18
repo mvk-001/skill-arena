@@ -22,11 +22,20 @@ import { mapWithConcurrency, resolveEvaluationConcurrency } from "../concurrency
 import { ensureCompareScenarioLocalPaths } from "../compare-bootstrap.js";
 import { fromPackageRoot } from "../project-paths.js";
 import { materializeWorkspace, syncExecutionWorkspaceToArtifacts } from "../workspace.js";
+import { ensureKnownLongOptions, parsePositiveIntegerOption } from "./cli-options.js";
 
 let latestCompareArtifacts = null;
 
 async function main() {
   const compareConfigPath = process.argv[2];
+  const knownOptionSchema = {
+    "--requests": true,
+    "--max-concurrency": true,
+    "--maxConcurrency": true,
+    "--dry-run": false,
+    "--verbose": false,
+  };
+  ensureKnownLongOptions(process.argv, knownOptionSchema);
   const dryRun = process.argv.includes("--dry-run");
   const requestsOverride = parsePositiveIntegerOption(process.argv, "--requests");
   const maxConcurrencyOverride = parsePositiveIntegerOption(
@@ -860,27 +869,6 @@ function applyRuntimeOverrides({
       ...(maxConcurrencyOverride == null ? {} : { maxConcurrency: maxConcurrencyOverride }),
     },
   };
-}
-
-function parsePositiveIntegerOption(argv, optionNames) {
-  const names = Array.isArray(optionNames) ? optionNames : [optionNames];
-  const optionIndex = argv.findIndex((value) => names.includes(value));
-
-  if (optionIndex === -1) {
-    return null;
-  }
-
-  const rawValue = argv[optionIndex + 1];
-  if (!rawValue || rawValue.startsWith("--")) {
-    throw new Error(`Missing value for option "${argv[optionIndex]}".`);
-  }
-
-  const parsedValue = Number.parseInt(rawValue, 10);
-  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
-    throw new Error(`Option "${argv[optionIndex]}" requires a positive integer.`);
-  }
-
-  return parsedValue;
 }
 
 main().catch((error) => {

@@ -38,7 +38,7 @@ const adapterRegistry = {
           skip_git_repo_check: !gitReady,
           codex_config: mergeCodexSkillConfig({
             baseConfig: scenario.agent.config,
-            strategy: scenario.skill.install.strategy,
+            strategy: resolveSkillStrategy(scenario),
             allowedSkillIds: getAllowedSkillIds(isolatedEnvironment),
             codexHome: isolatedEnvironment?.CODEX_HOME,
           }),
@@ -98,7 +98,7 @@ const adapterRegistry = {
             ...(isolatedEnvironment ?? {}),
           },
           allowed_skills: getAllowedSkillIds(isolatedEnvironment),
-          disable_other_skills: scenario.skill.install.strategy !== "system-installed",
+          disable_other_skills: resolveSkillStrategy(scenario) !== "system-installed",
         },
       };
     },
@@ -114,6 +114,22 @@ function resolveAdditionalDirectory(workspaceDirectory, directory) {
   }
 
   return resolvedDirectory;
+}
+
+function resolveSkillStrategy(scenario) {
+  if (scenario?.skill?.install?.strategy) {
+    return scenario.skill.install.strategy;
+  }
+
+  if (scenario?.skillSource === "system-installed") {
+    return "system-installed";
+  }
+
+  if (scenario?.skillSource === "workspace-overlay" || scenario?.skillMode === "enabled") {
+    return "workspace-overlay";
+  }
+
+  return "none";
 }
 
 function getAllowedSkillIds(isolatedEnvironment) {

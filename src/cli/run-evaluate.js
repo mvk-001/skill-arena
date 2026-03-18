@@ -5,6 +5,7 @@ import { spawn } from "node:child_process";
 import YAML from "yaml";
 
 import { fromPackageRoot } from "../project-paths.js";
+import { ensureKnownLongOptions } from "./cli-options.js";
 
 const runBenchmarkScript = fromPackageRoot("src", "cli", "run-benchmark.js");
 const runCompareScript = fromPackageRoot("src", "cli", "run-compare.js");
@@ -63,6 +64,15 @@ async function main() {
       "Usage: node ./src/cli/run-evaluate.js <manifest-or-compare-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--dry-run] [--verbose]",
     );
   }
+  const knownOptionSchema = {
+    "--scenario": true,
+    "--requests": true,
+    "--max-concurrency": true,
+    "--maxConcurrency": true,
+    "--dry-run": false,
+    "--verbose": false,
+  };
+  ensureKnownLongOptions(process.argv, knownOptionSchema);
 
   const absoluteConfigPath = path.resolve(process.cwd(), configPath);
 

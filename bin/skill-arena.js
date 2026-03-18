@@ -13,6 +13,7 @@ const commandMap = {
   evaluate: fromPackageRoot("src", "cli", "run-evaluate.js"),
   "gen-conf": fromPackageRoot("src", "cli", "generate-compare-template.js"),
   "val-conf": fromPackageRoot("src", "cli", "validate-manifest.js"),
+  "val-gen": fromPackageRoot("src", "cli", "validate-manifest.js"),
 };
 
 const commandDetails = {
@@ -24,6 +25,7 @@ const commandDetails = {
       "--scenario <scenario-id>: run only one manifest scenario (not valid for compare configs)",
       "--requests <n>: override effective evaluation requests for this run",
       "--max-concurrency <n>: override effective maxConcurrency for this run",
+      "--maxConcurrency <n>: alias for --max-concurrency",
       "--dry-run: generate promptfoo config and skip execution",
       "--verbose: print full internal artifact paths and raw output",
       "--help: show evaluate usage",
@@ -41,20 +43,64 @@ const commandDetails = {
       "Generate a commented compare config template with TODO placeholders for fast authoring.",
     options: [
       "--output <path>: destination file path (default: ./compare.generated.yaml)",
-      "--prompt <text>: add one task prompt row; repeat to add more rows",
+      "--prompt <text>: add one task prompt row; repeatable",
       "--prompt-description <text>: optional description for the next prompt row; repeatable",
+      "--benchmark-id <slug>: override benchmark.id",
+      "--description <text>: override benchmark.description",
+      "--benchmark-description <text>: synonym for --description",
+      "--tag <text>: add one benchmark tag",
       "--evaluation-type <type>: add one shared assertion type; repeatable",
       "--evaluation-value <value>: add one shared assertion value; repeatable and paired by order",
+      "--evaluation-provider <id>: grader provider for llm-rubric",
       "--skill-type <type>: enabled skill source template (git, local-path, system-installed, inline-files)",
+      "--skill-path <path>: skill source path for local skill overlays",
+      "--skill-id <slug>: skill identifier",
+      "--skill-repo <url>: repository for git skills",
+      "--skill-ref <ref>: git ref for git skills",
+      "--skill-subpath <path>: git repo subpath for git skills",
+      "--skill-path-in-repo <path>: skill folder inside git repo",
+      "--workspace-source-type <type>: workspace source type (local-path, git, inline-files, empty)",
+      "--workspace-path <path>: path for local workspace source",
+      "--workspace-target <path>: workspace source target path",
+      "--workspace-repo <url>: repository for workspace git source",
+      "--workspace-ref <ref>: workspace git ref",
+      "--workspace-subpath <path>: workspace git repo subpath",
+      "--initialize-git <true|false>: set workspace setup initializeGit",
       "--requests <n>: set evaluation.requests",
       "--max-concurrency <n>: set evaluation.maxConcurrency",
       "--maxConcurrency <n>: alias for --max-concurrency",
+      "--timeout-ms <ms>: set evaluation.timeoutMs",
+      "--no-cache <true|false>: set evaluation.noCache",
+      "--tracing <true|false>: set evaluation.tracing",
+      "--variant-id <id>: variant id override",
+      "--variant-description <text>: variant description override",
+      "--variant-display-name <text>: variant row label",
+      "--adapter <id>: variant agent adapter (codex, copilot-cli, pi)",
+      "--model <id>: variant model",
+      "--execution-method <id>: variant execution method",
+      "--command-path <path>: variant command path",
+      "--sandbox-mode <id>: variant sandbox mode",
+      "--approval-policy <id>: variant approval policy",
+      "--web-search-enabled <true|false>: set variant webSearchEnabled",
+      "--network-access-enabled <true|false>: set variant networkAccessEnabled",
+      "--reasoning-effort <id>: variant reasoning effort",
       "--help: show gen-conf usage",
     ],
     examples: [
       "--prompt \"summarize file A\" --evaluation-type javascript --evaluation-value @checks.js",
       "--prompt \"summarize file A\" --evaluation-type llm-rubric --evaluation-value \"Score 1.0 only if the file is summarized.\" --requests 3 --skill-type git",
       "--output ./benchmarks/my-benchmark/compare.yaml --prompt \"create a compare config\" --skill-type local-path",
+    ],
+  },
+  "val-gen": {
+    usage: "val-gen <manifest-or-compare-path>",
+    description: "Alias for val-conf.",
+    options: [
+      "--help: show val-conf usage",
+    ],
+    examples: [
+      "./benchmarks/smoke-skill-following/manifest.yaml",
+      "./benchmarks/smoke-skill-following/compare.yaml",
     ],
   },
   "val-conf": {
@@ -70,7 +116,7 @@ const commandDetails = {
   },
 };
 
-const commandOrder = ["evaluate", "gen-conf", "val-conf"];
+const commandOrder = ["evaluate", "gen-conf", "val-conf", "val-gen"];
 
 if (!command || command === "--help" || command === "-h") {
   printUsage();
