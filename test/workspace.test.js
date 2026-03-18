@@ -977,3 +977,165 @@ test("workspace materialization rejects missing directories and broken git sourc
     /Failed to clone git repo/,
   );
 });
+
+test("workspace materialization initializes a git repo when requested", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-git-init-"));
+  const baseDirectory = path.join(tempDirectory, "base");
+  await fs.mkdir(path.join(baseDirectory, "notes"), { recursive: true });
+  await fs.writeFile(path.join(baseDirectory, "notes", "target.txt"), "ALPHA-42", "utf8");
+
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-git-init",
+      description: "Workspace git initialization",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: baseDirectory,
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: true,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "with-git",
+        description: "Initialize git repo",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  const workspace = await materializeWorkspace({ manifest, scenario: manifest.scenarios[0] });
+
+  assert.equal(workspace.gitReady, true);
+  assert.notEqual(await fs.stat(path.join(workspace.executionWorkspaceDirectory, ".git")).catch(() => null), null);
+  assert.notEqual(await fs.stat(path.join(workspace.workspaceDirectory, ".git")).catch(() => null), null);
+});
+
+test("workspace materialization rejects unsupported workspace source types", async () => {
+  const manifest = {
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-invalid-source",
+      description: "Unsupported workspace source type",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "unsupported",
+          type: "mystery-source",
+          path: "fixtures/does-not-exist",
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "invalid-source",
+        description: "Invalid source",
+        skillMode: "disabled",
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  };
+
+  await assert.rejects(
+    () => materializeWorkspace({
+      manifest,
+      scenario: manifest.scenarios[0],
+    }),
+    /Unsupported workspace source type \"mystery-source\"/,
+  );
+});
+
+test("workspace materialization rejects unsupported skill source types", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-bad-skill-source-"));
+  const baseDirectory = path.join(tempDirectory, "base");
+  await fs.mkdir(path.join(baseDirectory, "notes"), { recursive: true });
+
+  const manifest = {
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-invalid-skill",
+      description: "Unsupported skill source type",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: baseDirectory,
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "invalid-skill",
+        description: "Invalid skill",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "mystery-skill",
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  };
+
+  await assert.rejects(
+    () => materializeWorkspace({
+      manifest,
+      scenario: manifest.scenarios[0],
+    }),
+    /Unsupported skill source type \"mystery-skill\"/,
+  );
+});

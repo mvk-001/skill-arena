@@ -841,6 +841,57 @@ test("compare dry-run accepts absolute local paths", async () => {
   assert.equal(runDirectories.some((entry) => entry.endsWith("-codex-mini-skill")), true);
 });
 
+test("compare expansion uses skill mode id as report label when only one variant exists", () => {
+  const manifest = expandCompareConfigToManifest(compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "single-variant-report-labels",
+      description: "Single variant label behavior",
+      tags: ["compare"],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    evaluation: {
+      assertions: [
+        {
+          type: "equals",
+          value: "HELLO",
+        },
+      ],
+      requests: 1,
+    },
+    comparison: {
+      skillModes: [
+        {
+          id: "no-skill",
+          description: "No skill",
+          skillMode: "disabled",
+        },
+      ],
+      variants: [
+        {
+          id: "codex-mini",
+          description: "Codex mini",
+          agent: {
+            adapter: "codex",
+            executionMethod: "command",
+            commandPath: "codex",
+          },
+        },
+      ],
+    },
+  }));
+
+  assert.equal(manifest.scenarios.length, 1);
+  assert.equal(manifest.scenarios[0].output.labels.reportDisplayName, "no-skill");
+  assert.equal(manifest.scenarios[0].output.labels.variantDisplayName, "codex");
+});
+
 test("compare dry-run rejects unknown relative source paths when no packaged fixture matches exist", async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-missing-"));
   const compareConfigPath = path.join(tempDirectory, "compare.yaml");

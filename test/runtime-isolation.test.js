@@ -55,3 +55,112 @@ test("runtime isolation seeds auth, config, and system skills from CODEX_HOME", 
     }
   }
 });
+
+test("runtime isolation skips global AGENTS for codex adapter", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-runtime-isolation-codex-"));
+  const sourceCodexHome = path.join(tempDirectory, "source-codex-home");
+  const executionRoot = path.join(tempDirectory, "execution-root");
+  const agentsPath = path.join(sourceCodexHome, "AGENTS.md");
+
+  await fs.mkdir(sourceCodexHome, { recursive: true });
+  await fs.writeFile(agentsPath, "# Source instructions\n", "utf8");
+
+  const previousCodexHome = process.env.CODEX_HOME;
+  process.env.CODEX_HOME = sourceCodexHome;
+
+  try {
+    const isolation = await createRuntimeIsolation(executionRoot, {
+      agent: {
+        adapter: "codex",
+      },
+      skillMode: "enabled",
+      skill: {
+        source: {
+          type: "none",
+        },
+      },
+    });
+
+    const copiedAgents = await fs.stat(path.join(isolation.codexHome, "AGENTS.md")).catch(() => null);
+
+    assert.equal(copiedAgents, null);
+    assert.equal(isolation.environment.SKILL_ARENA_ALLOWED_SKILLS, "");
+  } finally {
+    if (previousCodexHome === undefined) {
+      delete process.env.CODEX_HOME;
+    } else {
+      process.env.CODEX_HOME = previousCodexHome;
+    }
+  }
+});
+
+test("runtime isolation infers allowed skills from inline-files sources", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-runtime-isolation-inline-"));
+  const sourceCodexHome = path.join(tempDirectory, "source-codex-home");
+  const executionRoot = path.join(tempDirectory, "execution-root");
+
+  await fs.mkdir(sourceCodexHome, { recursive: true });
+  const previousCodexHome = process.env.CODEX_HOME;
+  process.env.CODEX_HOME = sourceCodexHome;
+
+  try {
+    const isolation = await createRuntimeIsolation(executionRoot, {
+      agent: {
+        adapter: "openai",
+      },
+      skillMode: "enabled",
+      skill: {
+        source: {
+          type: "inline-files",
+          files: [
+            {
+              path: "skills/inline-guide/notes.md",
+              content: "inline",
+            },
+          ],
+        },
+      },
+    });
+
+    assert.equal(isolation.environment.SKILL_ARENA_ALLOWED_SKILLS, "inline-guide");
+  } finally {
+    if (previousCodexHome === undefined) {
+      delete process.env.CODEX_HOME;
+    } else {
+      process.env.CODEX_HOME = previousCodexHome;
+    }
+  }
+});
+
+test("runtime isolation defaults visible skill id to workspace-overlay", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-runtime-isolation-overlay-"));
+  const sourceCodexHome = path.join(tempDirectory, "source-codex-home");
+  const executionRoot = path.join(tempDirectory, "execution-root");
+
+  await fs.mkdir(sourceCodexHome, { recursive: true });
+  const previousCodexHome = process.env.CODEX_HOME;
+  process.env.CODEX_HOME = sourceCodexHome;
+
+  try {
+    const isolation = await createRuntimeIsolation(executionRoot, {
+      agent: {
+        adapter: "openai",
+      },
+      skillMode: "enabled",
+      skill: {
+        source: {
+          type: "local-path",
+          path: "/path/does/not/matter",
+        },
+      },
+    });
+
+    assert.equal(isolation.environment.SKILL_ARENA_ALLOWED_SKILLS, "workspace-overlay");
+  } finally {
+    if (previousCodexHome === undefined) {
+      delete process.env.CODEX_HOME;
+    } else {
+      process.env.CODEX_HOME = previousCodexHome;
+    }
+  }
+});
