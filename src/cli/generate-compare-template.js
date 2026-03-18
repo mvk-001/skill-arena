@@ -18,6 +18,177 @@ const SUPPORTED_SKILL_TYPES = new Set([
   "system-installed",
   "inline-files",
 ]);
+const OPTION_DEFAULTS = {
+  help: false,
+  outputPath: DEFAULT_OUTPUT_PATH,
+  benchmarkId: null,
+  benchmarkDescription: null,
+  tags: [],
+  prompts: [],
+  promptDescriptions: [],
+  evaluationTypes: [],
+  evaluationValues: [],
+  evaluationProvider: null,
+  requests: null,
+  timeoutMs: null,
+  maxConcurrency: null,
+  noCache: null,
+  tracing: null,
+  workspaceSourceType: "local-path",
+  workspacePath: null,
+  workspaceTarget: "/",
+  workspaceRepo: null,
+  workspaceRef: null,
+  workspaceSubpath: null,
+  initializeGit: null,
+  skillType: "local-path",
+  skillPath: null,
+  skillId: null,
+  skillRepo: null,
+  skillRef: null,
+  skillSubpath: null,
+  skillPathInRepo: null,
+  variantId: null,
+  variantDescription: null,
+  variantDisplayName: null,
+  adapter: null,
+  model: null,
+  executionMethod: null,
+  commandPath: null,
+  sandboxMode: null,
+  approvalPolicy: null,
+  webSearchEnabled: null,
+  networkAccessEnabled: null,
+  reasoningEffort: null,
+};
+const OPTION_HANDLERS = {
+  "--output": (options, value) => {
+    options.outputPath = value;
+  },
+  "--benchmark-id": (options, value) => {
+    options.benchmarkId = value;
+  },
+  "--description": (options, value) => {
+    options.benchmarkDescription = value;
+  },
+  "--benchmark-description": (options, value) => {
+    options.benchmarkDescription = value;
+  },
+  "--tag": (options, value) => {
+    options.tags.push(value);
+  },
+  "--prompt": (options, value) => {
+    options.prompts.push(value);
+  },
+  "--prompt-description": (options, value) => {
+    options.promptDescriptions.push(value);
+  },
+  "--evaluation-type": (options, value) => {
+    options.evaluationTypes.push(value);
+  },
+  "--evaluation-value": (options, value) => {
+    options.evaluationValues.push(value);
+  },
+  "--evaluation-provider": (options, value) => {
+    options.evaluationProvider = value;
+  },
+  "--requests": (options, value, flagName) => {
+    options.requests = parseIntegerOption(flagName, value);
+  },
+  "--timeout-ms": (options, value, flagName) => {
+    options.timeoutMs = parseIntegerOption(flagName, value);
+  },
+  "--max-concurrency": (options, value, flagName) => {
+    options.maxConcurrency = parseIntegerOption(flagName, value);
+  },
+  "--maxConcurrency": (options, value, flagName) => {
+    options.maxConcurrency = parseIntegerOption(flagName, value);
+  },
+  "--no-cache": (options, value, flagName) => {
+    options.noCache = parseBooleanOption(flagName, value);
+  },
+  "--tracing": (options, value, flagName) => {
+    options.tracing = parseBooleanOption(flagName, value);
+  },
+  "--workspace-source-type": (options, value) => {
+    options.workspaceSourceType = value;
+  },
+  "--workspace-path": (options, value) => {
+    options.workspacePath = value;
+  },
+  "--workspace-target": (options, value) => {
+    options.workspaceTarget = value;
+  },
+  "--workspace-repo": (options, value) => {
+    options.workspaceRepo = value;
+  },
+  "--workspace-ref": (options, value) => {
+    options.workspaceRef = value;
+  },
+  "--workspace-subpath": (options, value) => {
+    options.workspaceSubpath = value;
+  },
+  "--initialize-git": (options, value, flagName) => {
+    options.initializeGit = parseBooleanOption(flagName, value);
+  },
+  "--skill-type": (options, value) => {
+    options.skillType = value;
+  },
+  "--skill-path": (options, value) => {
+    options.skillPath = value;
+  },
+  "--skill-id": (options, value) => {
+    options.skillId = value;
+  },
+  "--skill-repo": (options, value) => {
+    options.skillRepo = value;
+  },
+  "--skill-ref": (options, value) => {
+    options.skillRef = value;
+  },
+  "--skill-subpath": (options, value) => {
+    options.skillSubpath = value;
+  },
+  "--skill-path-in-repo": (options, value) => {
+    options.skillPathInRepo = value;
+  },
+  "--variant-id": (options, value) => {
+    options.variantId = value;
+  },
+  "--variant-description": (options, value) => {
+    options.variantDescription = value;
+  },
+  "--variant-display-name": (options, value) => {
+    options.variantDisplayName = value;
+  },
+  "--adapter": (options, value) => {
+    options.adapter = value;
+  },
+  "--model": (options, value) => {
+    options.model = value;
+  },
+  "--execution-method": (options, value) => {
+    options.executionMethod = value;
+  },
+  "--command-path": (options, value) => {
+    options.commandPath = value;
+  },
+  "--sandbox-mode": (options, value) => {
+    options.sandboxMode = value;
+  },
+  "--approval-policy": (options, value) => {
+    options.approvalPolicy = value;
+  },
+  "--web-search-enabled": (options, value, flagName) => {
+    options.webSearchEnabled = parseBooleanOption(flagName, value);
+  },
+  "--network-access-enabled": (options, value, flagName) => {
+    options.networkAccessEnabled = parseBooleanOption(flagName, value);
+  },
+  "--reasoning-effort": (options, value) => {
+    options.reasoningEffort = value;
+  },
+};
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
@@ -51,47 +222,12 @@ async function main() {
 
 function parseArguments(argv) {
   const options = {
-    help: false,
-    outputPath: DEFAULT_OUTPUT_PATH,
-    benchmarkId: null,
-    benchmarkDescription: null,
+    ...OPTION_DEFAULTS,
     tags: [],
     prompts: [],
     promptDescriptions: [],
     evaluationTypes: [],
     evaluationValues: [],
-    evaluationProvider: null,
-    requests: null,
-    timeoutMs: null,
-    maxConcurrency: null,
-    noCache: null,
-    tracing: null,
-    workspaceSourceType: "local-path",
-    workspacePath: null,
-    workspaceTarget: "/",
-    workspaceRepo: null,
-    workspaceRef: null,
-    workspaceSubpath: null,
-    initializeGit: null,
-    skillType: "local-path",
-    skillPath: null,
-    skillId: null,
-    skillRepo: null,
-    skillRef: null,
-    skillSubpath: null,
-    skillPathInRepo: null,
-    variantId: null,
-    variantDescription: null,
-    variantDisplayName: null,
-    adapter: null,
-    model: null,
-    executionMethod: null,
-    commandPath: null,
-    sandboxMode: null,
-    approvalPolicy: null,
-    webSearchEnabled: null,
-    networkAccessEnabled: null,
-    reasoningEffort: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -115,132 +251,12 @@ function parseArguments(argv) {
       return value;
     };
 
-    switch (argument) {
-      case "--output":
-        options.outputPath = nextValue();
-        break;
-      case "--benchmark-id":
-        options.benchmarkId = nextValue();
-        break;
-      case "--description":
-      case "--benchmark-description":
-        options.benchmarkDescription = nextValue();
-        break;
-      case "--tag":
-        options.tags.push(nextValue());
-        break;
-      case "--prompt":
-        options.prompts.push(nextValue());
-        break;
-      case "--prompt-description":
-        options.promptDescriptions.push(nextValue());
-        break;
-      case "--evaluation-type":
-        options.evaluationTypes.push(nextValue());
-        break;
-      case "--evaluation-value":
-        options.evaluationValues.push(nextValue());
-        break;
-      case "--evaluation-provider":
-        options.evaluationProvider = nextValue();
-        break;
-      case "--requests":
-        options.requests = parseIntegerOption(argument, nextValue());
-        break;
-      case "--timeout-ms":
-        options.timeoutMs = parseIntegerOption(argument, nextValue());
-        break;
-      case "--max-concurrency":
-      case "--maxConcurrency":
-        options.maxConcurrency = parseIntegerOption(argument, nextValue());
-        break;
-      case "--no-cache":
-        options.noCache = parseBooleanOption(argument, nextValue());
-        break;
-      case "--tracing":
-        options.tracing = parseBooleanOption(argument, nextValue());
-        break;
-      case "--workspace-source-type":
-        options.workspaceSourceType = nextValue();
-        break;
-      case "--workspace-path":
-        options.workspacePath = nextValue();
-        break;
-      case "--workspace-target":
-        options.workspaceTarget = nextValue();
-        break;
-      case "--workspace-repo":
-        options.workspaceRepo = nextValue();
-        break;
-      case "--workspace-ref":
-        options.workspaceRef = nextValue();
-        break;
-      case "--workspace-subpath":
-        options.workspaceSubpath = nextValue();
-        break;
-      case "--initialize-git":
-        options.initializeGit = parseBooleanOption(argument, nextValue());
-        break;
-      case "--skill-type":
-        options.skillType = nextValue();
-        break;
-      case "--skill-path":
-        options.skillPath = nextValue();
-        break;
-      case "--skill-id":
-        options.skillId = nextValue();
-        break;
-      case "--skill-repo":
-        options.skillRepo = nextValue();
-        break;
-      case "--skill-ref":
-        options.skillRef = nextValue();
-        break;
-      case "--skill-subpath":
-        options.skillSubpath = nextValue();
-        break;
-      case "--skill-path-in-repo":
-        options.skillPathInRepo = nextValue();
-        break;
-      case "--variant-id":
-        options.variantId = nextValue();
-        break;
-      case "--variant-description":
-        options.variantDescription = nextValue();
-        break;
-      case "--variant-display-name":
-        options.variantDisplayName = nextValue();
-        break;
-      case "--adapter":
-        options.adapter = nextValue();
-        break;
-      case "--model":
-        options.model = nextValue();
-        break;
-      case "--execution-method":
-        options.executionMethod = nextValue();
-        break;
-      case "--command-path":
-        options.commandPath = nextValue();
-        break;
-      case "--sandbox-mode":
-        options.sandboxMode = nextValue();
-        break;
-      case "--approval-policy":
-        options.approvalPolicy = nextValue();
-        break;
-      case "--web-search-enabled":
-        options.webSearchEnabled = parseBooleanOption(argument, nextValue());
-        break;
-      case "--network-access-enabled":
-        options.networkAccessEnabled = parseBooleanOption(argument, nextValue());
-        break;
-      case "--reasoning-effort":
-        options.reasoningEffort = nextValue();
-        break;
-      default:
-        throw new Error(`Unknown option "${argument}". Use --help for usage.`);
+    const handler = OPTION_HANDLERS[argument];
+    if (!handler) {
+      throw new Error(`Unknown option "${argument}". Use --help for usage.`);
     }
+
+    handler(options, nextValue(), argument);
   }
 
   if (!SUPPORTED_SKILL_TYPES.has(options.skillType)) {

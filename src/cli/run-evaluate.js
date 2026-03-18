@@ -1,58 +1,12 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
-import YAML from "yaml";
-
 import { fromPackageRoot } from "../project-paths.js";
+import { detectConfigKind, parseConfigFile } from "./config-file.js";
 import { ensureKnownLongOptions } from "./cli-options.js";
 
 const runBenchmarkScript = fromPackageRoot("src", "cli", "run-benchmark.js");
 const runCompareScript = fromPackageRoot("src", "cli", "run-compare.js");
-
-function parseConfigFile(configFilePath) {
-  const extension = path.extname(configFilePath).toLowerCase();
-
-  return fs.readFile(configFilePath, "utf8").then((contents) => {
-    try {
-      if (extension === ".yaml" || extension === ".yml") {
-        return YAML.parse(contents);
-      }
-
-      return JSON.parse(contents);
-    } catch (error) {
-      const parsedType = extension === ".yaml" || extension === ".yml" ? "YAML" : "JSON";
-      throw new Error(
-        `Failed to parse config "${configFilePath}". Expected valid ${parsedType}. ${error.message}`,
-      );
-    }
-  });
-}
-
-function detectConfigKind(parsedConfig, configPath) {
-  if (!parsedConfig || typeof parsedConfig !== "object" || Array.isArray(parsedConfig)) {
-    throw new Error(`Invalid config format in "${configPath}".`);
-  }
-
-  const hasComparison = parsedConfig?.comparison
-    && typeof parsedConfig.comparison === "object"
-    && "variants" in parsedConfig.comparison
-    && "skillModes" in parsedConfig.comparison;
-  const hasScenarios = Array.isArray(parsedConfig.scenarios);
-
-  if (hasComparison) {
-    return "compare";
-  }
-
-  if (hasScenarios) {
-    return "manifest";
-  }
-
-  throw new Error(
-    `Unable to detect config type for "${configPath}". Expected either a manifest (` +
-      "`scenarios`) or a compare config (`comparison`).",
-  );
-}
 
 async function main() {
   const configPath = process.argv[2];
