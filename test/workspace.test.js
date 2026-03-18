@@ -13,6 +13,22 @@ import { materializeWorkspace } from "../src/workspace.js";
 
 const execFileAsync = promisify(execFile);
 
+async function initializeGitRepository(directoryPath) {
+  const execOptions = {
+    cwd: directoryPath,
+    windowsHide: true,
+  };
+
+  try {
+    await execFileAsync("git", ["init", "--initial-branch=main"], execOptions);
+    return;
+  } catch {
+    await execFileAsync("git", ["init"], execOptions);
+    await execFileAsync("git", ["symbolic-ref", "HEAD", "refs/heads/main"], execOptions)
+      .catch(() => {});
+  }
+}
+
 test("workspace materialization copies the fixture tree", async () => {
   const manifestPath = fromProjectRoot(
     "benchmarks",
@@ -665,10 +681,7 @@ test("git skill sources can select one skill folder from a repository", async ()
     "utf8",
   );
 
-  await execFileAsync("git", ["init", "--initial-branch=main"], {
-    cwd: skillRepoDirectory,
-    windowsHide: true,
-  });
+  await initializeGitRepository(skillRepoDirectory);
   await execFileAsync("git", ["config", "user.name", "Skill Arena"], {
     cwd: skillRepoDirectory,
     windowsHide: true,

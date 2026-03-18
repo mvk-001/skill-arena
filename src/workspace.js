@@ -352,14 +352,23 @@ async function directoryContainsSkillFile(directoryPath) {
 }
 
 async function initializeGitRepository(workspaceDirectory) {
+  const execOptions = {
+    cwd: workspaceDirectory,
+    windowsHide: true,
+  };
+
   try {
-    await execFileAsync("git", ["init", "--initial-branch=main"], {
-      cwd: workspaceDirectory,
-      windowsHide: true,
-    });
+    await execFileAsync("git", ["init", "--initial-branch=main"], execOptions);
     return true;
   } catch {
-    return false;
+    try {
+      await execFileAsync("git", ["init"], execOptions);
+      await execFileAsync("git", ["symbolic-ref", "HEAD", "refs/heads/main"], execOptions)
+        .catch(() => {});
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

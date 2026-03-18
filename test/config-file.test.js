@@ -32,7 +32,12 @@ test("parseConfigFile reports invalid JSON with file context", async () => {
 
   await assert.rejects(
     () => parseConfigFile(filePath),
-    new RegExp(`Failed to parse config "${filePath.replaceAll("\\\\", "\\\\\\\\")}"`),
+    (error) => {
+      assert.equal(typeof error?.message, "string");
+      assert.equal(error.message.includes(`Failed to parse config "${filePath}"`), true);
+      assert.equal(error.message.includes("Expected valid JSON."), true);
+      return true;
+    },
   );
 });
 

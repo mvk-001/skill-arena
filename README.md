@@ -114,6 +114,13 @@ $report = Get-ChildItem .\results\skill-arena-compare\*\merged\report.md |
 Start-Process $report
 ```
 
+Open the latest merged report on macOS or Linux:
+
+```bash
+report="$(find ./results/skill-arena-compare -path '*/merged/report.md' -print | tail -n 1)"
+open "$report" 2>/dev/null || xdg-open "$report"
+```
+
 ## Repository hygiene
 
 The following paths are generated runtime artifacts and should not be pushed:
