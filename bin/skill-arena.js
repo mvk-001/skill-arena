@@ -31,8 +31,6 @@ const commandDetails = {
       "--help: show evaluate usage",
     ],
     examples: [
-      "./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill",
-      "./benchmarks/smoke-skill-following/manifest.json --dry-run",
       "./benchmarks/skill-arena-compare/compare.yaml --dry-run",
       "./benchmarks/skill-arena-compare/compare.yaml",
     ],
@@ -99,8 +97,7 @@ const commandDetails = {
       "--help: show val-conf usage",
     ],
     examples: [
-      "./benchmarks/smoke-skill-following/manifest.yaml",
-      "./benchmarks/smoke-skill-following/compare.yaml",
+      "./benchmarks/skill-arena-compare/compare.yaml",
     ],
   },
   "val-conf": {
@@ -110,8 +107,7 @@ const commandDetails = {
       "--help: show val-conf usage",
     ],
     examples: [
-      "./benchmarks/smoke-skill-following/manifest.yaml",
-      "./benchmarks/smoke-skill-following/compare.yaml",
+      "./benchmarks/skill-arena-compare/compare.yaml",
     ],
   },
 };

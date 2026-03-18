@@ -43,8 +43,7 @@ Run with one of:
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
-npm run benchmark:copilot:compare
-node ./src/cli/skill-arena.js --help
+npx . --help
 ```
 
 ### Published package
@@ -94,7 +93,6 @@ npx skill-arena gen-conf \
 
 ```bash
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
-skill-arena evaluate ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill
 npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
@@ -144,7 +142,6 @@ Useful aliases and one-off runs:
 
 ```bash
 npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
-npx . evaluate ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill
 pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
@@ -181,7 +178,7 @@ npx promptfoo@latest view
 For workflows that still generate an intermediate Promptfoo config for single scenario manifests:
 
 ```bash
-npm run generate:config -- ./benchmarks/smoke-skill-following/manifest.json --scenario codex-mini-no-skill
+npm run generate:config -- ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
 ```
 
 ## Notes

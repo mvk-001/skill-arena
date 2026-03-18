@@ -62,8 +62,8 @@ All are above the requested 90% minimum.
 Use this before running a live benchmark if the manifest changed.
 
 ```bash
-npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.yaml
-skill-arena val-conf ./benchmarks/smoke-skill-following/manifest.yaml
+npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 YAML is the recommended manifest format. JSON also works if needed.
@@ -145,32 +145,12 @@ Behavior to expect in compare mode:
 - `evaluation.requests` controls the pass ratio denominator for each compare cell
 - unsupported adapters such as reserved V1 adapters are listed as skipped entries in the merged report
 
-For the smoke comparison across Codex and PI:
+### 4. Run the maintained sample compare benchmark
+
+Use the benchmark kept in this repository:
 
 ```bash
-npm run benchmark:smoke:compare
-```
-
-For the minimal smoke comparison across `copilot-cli` with `no-skill` and `skill`:
-
-```bash
-npm run benchmark:copilot:compare
-```
-
-### 4. Run the current skill smoke benchmarks
-
-The repository currently ships one live benchmark: `smoke-skill-following`.
-
-Run the no-skill baseline:
-
-```bash
-npm run benchmark:smoke:no-skill
-```
-
-Run the skill-enabled variant:
-
-```bash
-npm run benchmark:smoke:skill
+npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 ### 4a. Recommended benchmark test flow after runtime changes
@@ -179,22 +159,18 @@ Use this short sequence when you change the runner, Promptfoo integration, works
 
 ```bash
 npm test
-npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.json
-npm run benchmark:smoke:no-skill
-npm run benchmark:smoke:skill
+npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 What this covers:
 
 - `npm test` catches unit-level regressions in config generation and result normalization.
 - `validate:manifest` confirms the benchmark input still parses cleanly.
-- `benchmark:smoke:no-skill` verifies the live baseline path.
-- `benchmark:smoke:skill` verifies the live workspace-overlay skill path.
-
 For compare-mode validation after changing `src/cli/run-compare.js`, also run:
 
 ```bash
-npm run benchmark:smoke:compare
+npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 All benchmark commands:
@@ -256,66 +232,11 @@ At the end of `skill-arena evaluate` in compare mode, the CLI prints:
 
 ## Latest validated results
 
-Validated on March 15, 2026 in `America/New_York` on Windows with:
+Use the maintained benchmark in this repository as the smoke-style baseline:
 
-- Promptfoo `0.121.2`
-- Node `v24.14.0`
-- Codex via the `command` backend
-- Copilot CLI via the `command` backend
-- model `gpt-5.1-codex-mini`
+```bash
+npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
+```
 
-The run artifact paths below are local validation outputs under the ignored `results/` directory.
-
-### Unit and manifest checks
-
-- `npm test`: passed, `76/76` tests
-- `npm run test:coverage`: passed with statements `93.9%`, lines `93.9%`, branches `80.88%`, functions `95.23%`
-- `npm run validate:manifest -- ./benchmarks/smoke-skill-following/manifest.yaml`: passed
-
-### Live smoke benchmark results
-
-#### `codex-mini-no-skill`
-
-- Result: passed
-- Output: `ALPHA-42`
-- Duration: `24,732 ms`
-- Token usage:
-  - prompt: `52,548`
-  - completion: `1,396`
-  - cached: `39,296`
-  - total: `53,944`
-- Summary path:
-  - `results/smoke-skill-following/2026-03-14T00-05-41-853Z-codex-mini-no-skill/summary.json`
-
-#### `codex-mini-with-skill`
-
-- Result: passed
-- Output: `ALPHA-42`
-- Duration: `8,327 ms`
-- Token usage:
-  - prompt: `16,337`
-  - completion: `78`
-  - cached: `8,704`
-  - total: `16,415`
-- Summary path:
-  - `results/smoke-skill-following/2026-03-14T00-05-41-889Z-codex-mini-with-skill/summary.json`
-
-### Live Copilot compare result
-
-#### `copilot-cli-smoke-compare`
-
-- Result: passed
-- Rows: `1`
-- Requests per cell: `2`
-- Matrix:
-  - `no-skill`: `100% (2/2)`
-  - `skill`: `100% (2/2)`
-- Summary path:
-  - `results/copilot-cli-smoke-compare/2026-03-15T16-10-05-720Z-compare/summary.json`
-
-## Notes from validation
-
-- The live benchmark now uses `reasoningEffort: "low"` because the active Codex backend in this environment rejected `"minimal"`.
-- Codex emitted non-fatal warnings on stderr about PowerShell shell snapshots and model personality fallback. They did not prevent successful benchmark completion.
-- The `copilot-cli` provider uses Copilot JSON output mode and extracts the final `assistant.message` content so Promptfoo assertions see only the terminal answer.
-
+Run outputs are written under `results/skill-arena-compare/<timestamp>-compare/`.

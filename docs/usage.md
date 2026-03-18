@@ -11,10 +11,10 @@ In both formats, `evaluation.requests` is the execution count. For compare confi
 Use the packaged CLI directly when you prefer a single command shape:
 
 ```bash
-skill-arena evaluate ./benchmarks/repo-summary/manifest.yaml --scenario codex-mini-no-skill
-npx . evaluate ./benchmarks/repo-summary/manifest.yaml --scenario codex-mini-no-skill
-npx skill-arena evaluate ./benchmarks/repo-summary/compare.yaml --dry-run
-pnpm exec skill-arena evaluate ./benchmarks/repo-summary/manifest.yaml --scenario codex-mini-no-skill
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
+npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 ## Installation and execution options
@@ -23,35 +23,35 @@ pnpm exec skill-arena evaluate ./benchmarks/repo-summary/manifest.yaml --scenari
 
 ```bash
 npm install -g skill-arena
-skill-arena val-conf ./benchmarks/repo-summary/manifest.yaml
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 - pnpm install from registry:
 
 ```bash
 pnpm add -g skill-arena
-skill-arena val-conf ./benchmarks/repo-summary/manifest.yaml
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 - Local checkout via `npx`:
 
 ```bash
-npx . evaluate ./benchmarks/repo-summary/manifest.yaml --scenario codex-mini-with-skill
-npx . evaluate ./benchmarks/repo-summary/manifest.yaml --scenario codex-mini-no-skill
+npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 - Local checkout via `pnpm exec` (after `npm install` / `pnpm install`):
 
 ```bash
-pnpm exec skill-arena evaluate ./benchmarks/repo-summary/compare.yaml --dry-run
-pnpm exec skill-arena evaluate ./benchmarks/repo-summary/compare.yaml
+pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 You can keep one command for both config types:
 
 ```bash
-skill-arena evaluate ./benchmarks/repo-summary/manifest.yaml --scenario codex-mini-no-skill
-skill-arena evaluate ./benchmarks/repo-summary/compare.yaml
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 Every command also accepts `--help`:
@@ -66,7 +66,7 @@ skill-arena val-conf --help
 
 ```bash
 npx skill-arena gen-conf \
-  --output ./benchmarks/repo-summary/compare.yaml \
+  --output ./benchmarks/skill-arena-compare/compare.yaml \
   --prompt "Read the repository and summarize the architecture." \
   --evaluation-type llm-rubric \
   --evaluation-value "Score 1.0 only if the answer covers the main architecture." \
@@ -88,7 +88,7 @@ For exploratory runs, you can override `evaluation.requests` and `evaluation.max
 the command line:
 
 ```bash
-skill-arena evaluate ./benchmarks/repo-summary/manifest.yaml --requests 2 --max-concurrency 2 --scenario codex-mini-no-skill
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --requests 2 --max-concurrency 2
 ```
 
 Example for the requested exploratory compare run:
@@ -198,9 +198,9 @@ scenarios:
 Run it:
 
 ```bash
-npm run validate:manifest -- ./benchmarks/repo-summary/manifest.yaml
-npm run run:benchmark -- ./benchmarks/repo-summary/manifest.yaml
-skill-arena evaluate ./benchmarks/repo-summary/manifest.yaml --scenario codex-mini-no-skill
+npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 If `requests` is greater than `1`, Promptfoo repeats each prompt that many times for the scenario.
@@ -284,22 +284,22 @@ comparison:
 Run it:
 
 ```bash
-npm run benchmark:compare -- ./benchmarks/repo-summary/compare.yaml
-skill-arena evaluate ./benchmarks/repo-summary/compare.yaml
+npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 Use `--dry-run` to generate the Promptfoo config without live evaluation:
 
 ```bash
-npm run benchmark:compare -- ./benchmarks/repo-summary/compare.yaml --dry-run
-skill-arena evaluate ./benchmarks/repo-summary/compare.yaml --dry-run
+npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 ```
 
 For repeated local runs, keep installation out of the hot path. Install once, then run the CLI directly:
 
 ```powershell
 npm install
-npx . evaluate .\benchmarks\repo-summary\compare.yaml --dry-run
+npx . evaluate .\benchmarks\skill-arena-compare\compare.yaml --dry-run
 ```
 
 If you want to force one machine-wide cap without editing YAML, set `SKILL_ARENA_MAX_PARALLELISM` before running the command.
@@ -332,13 +332,7 @@ If you plan to run `compare.yaml` outside the repository root, use either absolu
 
 When a compare benchmark needs different checks per prompt row, keep shared assertions at top-level `evaluation.assertions` and add prompt-specific assertions under `task.prompts[*].evaluation.assertions`. Prompt-level assertions are appended to the shared set for that row.
 
-The repository also includes a versioned minimal `copilot-cli` compare benchmark:
-
-```bash
-npm run benchmark:copilot:compare
-```
-
-It uses one prompt with `requests: 2` and compares `no-skill` versus `skill` against the smoke marker fixture.
+A practical maintenance compare example is `benchmarks/skill-arena-compare/compare.yaml`.
 
 What compare mode produces:
 
