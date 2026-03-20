@@ -274,6 +274,37 @@ test("compare matrix report renders pass ratios by skill-mode column", () => {
   assert.match(report, /\| Unread Gmail triage \| codex \| 40% \(4\/10\) \| 100% \(10\/10\) \|/);
 });
 
+test("compare matrix report renders unsupported profile cells", () => {
+  const report = renderCompareMatrixReport({
+    benchmarkId: "benchmark-id",
+    benchmarkDescription: "Benchmark",
+    matrix: {
+      columns: [
+        { id: "baseline", label: "baseline" },
+        { id: "agent-profile", label: "agent-profile" },
+      ],
+      rows: [
+        {
+          rowId: "codex-mini:prompt-1",
+          variantDisplayName: "codex mini",
+          promptId: "prompt-1",
+          promptDescription: "Prompt 1",
+          cells: {
+            baseline: {
+              displayValue: "100% (1/1)",
+            },
+            "agent-profile": {
+              displayValue: "unsupported",
+            },
+          },
+        },
+      ],
+    },
+  });
+
+  assert.match(report, /\| Prompt 1 \| codex mini \| 100% \(1\/1\) \| unsupported \|/);
+});
+
 test("writePromptfooArtifacts persists config, summary, and copies result files", async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-artifacts-"));
   const sourceResultsPath = path.join(tempDirectory, "source-results.json");
@@ -483,8 +514,16 @@ test("compare matrix summary appends skipped variants and render handles empty c
         reason: "unsupported",
       },
     ],
+    unsupportedCells: [
+      {
+        variantId: "variant-b",
+        profileId: "agent-profile",
+        reason: "unsupported capability bundle",
+      },
+    ],
   });
 
   assert.equal(mergedSummary.matrix.rows[0].skipped, true);
+  assert.equal(mergedSummary.unsupportedCells.length, 1);
   assert.equal(renderCompareMatrixReport(mergedSummary), "# benchmark-id\n\nBenchmark\n");
 });

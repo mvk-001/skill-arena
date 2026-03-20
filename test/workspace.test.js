@@ -198,7 +198,7 @@ test("workspace sanitization strips base AGENTS.md and base skills from isolated
   assert.deepEqual(enabledWorkspace.isolation.mountedSkillIds, ["allowed-skill"]);
 });
 
-test("strict isolation rejects system-installed skills and multiple mounted skills", async () => {
+test("strict isolation rejects system-installed skills and mounts multiple declared skills", async () => {
   const singleBaseManifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,
     benchmark: {
@@ -300,6 +300,33 @@ test("strict isolation rejects system-installed skills and multiple mounted skil
             strategy: "workspace-overlay",
           },
         },
+        profile: {
+          id: "skill-group",
+          capabilities: {
+            skills: [
+              {
+                source: {
+                  type: "inline",
+                  skillId: "one",
+                  content: "one",
+                },
+                install: {
+                  strategy: "workspace-overlay",
+                },
+              },
+              {
+                source: {
+                  type: "inline",
+                  skillId: "two",
+                  content: "two",
+                },
+                install: {
+                  strategy: "workspace-overlay",
+                },
+              },
+            ],
+          },
+        },
         agent: {
           adapter: "codex",
         },
@@ -310,13 +337,12 @@ test("strict isolation rejects system-installed skills and multiple mounted skil
     ],
   });
 
-  await assert.rejects(
-    () => materializeWorkspace({
-      manifest: multiSkillManifest,
-      scenario: multiSkillManifest.scenarios[0],
-    }),
-    /Strict isolation requires exactly one configured skill, found 2/,
-  );
+  const workspace = await materializeWorkspace({
+    manifest: multiSkillManifest,
+    scenario: multiSkillManifest.scenarios[0],
+  });
+
+  assert.deepEqual(new Set(workspace.isolation.mountedSkillIds), new Set(["one", "two"]));
 });
 
 test("workspace sources are applied in declaration order", async () => {
@@ -567,7 +593,7 @@ test("workspace base sources strip AGENTS.md and skills while overlays remain vi
   assert.deepEqual(skillWorkspace.isolation.mountedSkillIds, ["only-skill"]);
 });
 
-test("workspace isolation rejects system-installed and multi-skill overlays", async () => {
+test("workspace isolation rejects system-installed and supports multi-skill overlays", async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-isolation-errors-"));
   const baseDirectory = path.join(tempDirectory, "base");
   const multiSkillDirectory = path.join(tempDirectory, "multi");
@@ -650,10 +676,8 @@ test("workspace isolation rejects system-installed and multi-skill overlays", as
     () => materializeWorkspace({ manifest, scenario: manifest.scenarios[0] }),
     /Strict isolation does not support system-installed skills/,
   );
-  await assert.rejects(
-    () => materializeWorkspace({ manifest, scenario: manifest.scenarios[1] }),
-    /Strict isolation requires exactly one configured skill, found 2\./,
-  );
+  const multiWorkspace = await materializeWorkspace({ manifest, scenario: manifest.scenarios[1] });
+  assert.deepEqual(new Set(multiWorkspace.isolation.mountedSkillIds), new Set(["one", "two"]));
 });
 
 test("git skill sources can select one skill folder from a repository", async () => {

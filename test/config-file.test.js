@@ -56,6 +56,21 @@ test("detectConfigKind identifies compare configs", () => {
   );
 });
 
+test("detectConfigKind identifies profile-based compare configs", () => {
+  assert.equal(
+    detectConfigKind(
+      {
+        comparison: {
+          variants: [],
+          profiles: [],
+        },
+      },
+      "compare.yaml",
+    ),
+    "compare",
+  );
+});
+
 test("detectConfigKind identifies manifest configs", () => {
   assert.equal(detectConfigKind({ scenarios: [] }, "manifest.yaml"), "manifest");
 });

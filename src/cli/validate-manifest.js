@@ -67,9 +67,9 @@ async function main() {
         promptCount: compareConfig.task.prompts.length,
         promptIds: compareConfig.task.prompts.map((prompt) => prompt.id),
         variantCount: compareConfig.comparison.variants.length,
-        skillModeCount: compareConfig.comparison.skillModes.length,
+        profileCount: compareConfig.comparison.profiles.length,
         variantIds: compareConfig.comparison.variants.map((variant) => variant.id),
-        skillModeIds: compareConfig.comparison.skillModes.map((skillMode) => skillMode.id),
+        profileIds: compareConfig.comparison.profiles.map((profile) => profile.id),
         todoCount: todoFindings.length,
         todoSamples: todoFindings.slice(0, MAX_TODO_REPORTS),
         recommendation:

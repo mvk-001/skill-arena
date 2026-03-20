@@ -1,10 +1,13 @@
 # Architecture
 
+Read this after [README.md](../README.md) or [Usage Guide](./usage.md). Use [Specs](./specs.md) for exact schema rules and [Testing](./testing.md) for the validation loop.
+
 ## Purpose
 
 Skill Arena evaluates coding agents on repeatable repository tasks under constrained execution settings. The main comparisons are:
 
-- skill-enabled vs. skill-disabled runs
+- manifest scenario runs with and without skills
+- isolated baseline vs. explicit capability-profile runs
 - the same task across different agents
 - smaller and cheaper models under the same benchmark conditions
 
@@ -14,29 +17,29 @@ The harness keeps execution context small, but it does not remove hidden provide
 
 ### Benchmark manifest
 
-The benchmark manifest is the main authoring surface. It defines:
+The benchmark manifest is the scenario-oriented authoring surface. It defines:
 
 - benchmark identity and description
 - the exact task prompt or prompt set
 - the declarative workspace sources to materialize
 - the optional declarative skill definition
-- scenario variants for agent, model, and skill mode
+- scenario variants for agent, model, and manifest skill state
 - assertions, tracing, concurrency, and request-count settings
 
 ### Compare config
 
-The compare config is the second authoring surface. It defines:
+The compare config is the matrix-oriented authoring surface. It defines:
 
 - benchmark identity and description
 - the exact task prompt or prompt set
 - the declarative workspace sources to materialize
 - shared evaluation settings plus optional prompt-specific row assertions
 - compare variants for adapter and model
-- compare skill modes such as `no-skill` and `skill`
+- compare profiles such as `baseline`, `skill`, or explicit capability bundles
 
-The compare runner expands the matrix internally, materializes a separate workspace for each supported variant and skill mode, and then executes one Promptfoo eval with:
+The compare runner expands the matrix internally, materializes a separate workspace for each supported variant and profile, and then executes one Promptfoo eval with:
 
-- Promptfoo providers mapped to skill-mode columns
+- Promptfoo providers mapped to profile columns
 - Promptfoo test rows mapped to variant and prompt pairs
 
 ### Workspace sources
@@ -129,13 +132,44 @@ Compare runs write under `results/<benchmark-id>/<timestamp>-compare/` and inclu
 ### Compare flow
 
 1. Load and validate a compare config.
-2. Expand compare variants and skill modes into internal scenario-like units.
+2. Expand compare variants and profiles into internal scenario-like units.
 3. Materialize a fresh workspace for each supported unit.
-4. Build one Promptfoo config with skill-mode providers and variant/prompt test rows.
-5. Run one `promptfoo eval` so Promptfoo shows skill modes side by side for each row.
-6. Record unsupported adapters as skipped comparison entries.
+4. Build one Promptfoo config with profile providers and variant/prompt test rows.
+5. Run one `promptfoo eval` so Promptfoo shows profiles side by side for each row.
+6. Record unsupported adapters as skipped comparison entries and unsupported capability bundles as per-cell unsupported entries.
 7. Export Promptfoo results as JSON.
 8. Normalize the results into a stable comparison matrix plus a merged report.
+
+For concrete config examples, see [Usage Guide](./usage.md) and the maintained [compare benchmark](../benchmarks/skill-arena-compare/compare.yaml).
+
+## Cross-Tool Capability Mapping
+
+Compare profiles are capability-oriented on purpose. Similar names across tools do not imply identical runtime semantics.
+
+- `Native`: first-class documented runtime support
+- `Analogous`: similar outcome through a different mechanism
+- `IDE-only`: available in an IDE context, not as a comparable runtime primitive
+- `No`: not documented as a supported capability
+- `Planned`: relevant for future adapter support in Skill Arena
+
+| Capability | Codex | Copilot CLI | OpenCode | Pi | Claude Code |
+| --- | --- | --- | --- | --- | --- |
+| Project instruction file | Native (`AGENTS.md`) | Native | Native (`AGENTS.md`) | Native (`AGENTS.md`) | Native (`CLAUDE.md`) |
+| Skills | Native | Native | Native | Native | No |
+| Skill groups / multiple skills | Native | Native | Native | Native | No |
+| Hooks / event hooks | No | Native | Analogous via plugins | Analogous via extensions | Native |
+| Custom agents | Native | Native | Native | No | Native |
+| Subagents / delegation | Native | Native | Native | Analogous via extensions/packages | Native |
+| MCP servers | Native | Native | Native | Analogous via extensions | Native |
+| Runtime plugin / extension API | No | No | Native plugins | Native extensions/packages | No |
+| IDE plugin / IDE extension | No | No | IDE-only | No | Native IDE integration |
+
+Notes:
+
+- OpenCode runtime plugins are not the same thing as Claude Code IDE plugins.
+- Pi extensions and packages are closer to runtime extensibility than to a benchmark-stable plugin marketplace.
+- Copilot CLI hooks are native. OpenCode plugin hooks and Pi extension handlers are analogous, not equivalent.
+- Codex should remain `No` for hooks unless OpenAI documents a stable runtime hook surface suitable for deterministic benchmarking.
 
 ## Design constraints
 

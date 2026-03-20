@@ -24,7 +24,7 @@ to lose track of long instructions.
 - Keep prompts inside one `task.prompts` YAML list.
 - Keep shared checks in top-level `evaluation.assertions`.
 - Keep prompt-specific checks under each prompt object.
-- Keep enabled skill settings under `comparison.skillModes[*].skill`.
+- Keep profile capability settings under `comparison.profiles[*].capabilities`.
 - Keep agent settings under `comparison.variants[*].agent`.
 
 ## 3. Avoid the common failures
@@ -33,7 +33,7 @@ to lose track of long instructions.
 - No prose after the YAML.
 - No Markdown fences.
 - Do not invent aliases such as `execution`, `sandbox`, `webSearch`,
-  `networkAccess`, top-level `skillModes`, or top-level `variants`.
+  `networkAccess`, top-level `profiles`, or top-level `variants`.
 - Do not replace `workspace.sources` with `workspace.fixture` unless the task
   explicitly asks for legacy shape.
 

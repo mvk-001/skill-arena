@@ -106,6 +106,7 @@ export function normalizeOutput(output, index) {
     variantDisplayName:
       metadata.variantDisplayName ?? metadata.label_variantDisplayName ?? null,
     rowId: metadata.rowId ?? null,
+    profileId: metadata.profileId ?? metadata.skillModeId ?? null,
     provider:
       typeof output.provider === "string"
         ? output.provider
@@ -208,6 +209,7 @@ export function buildCompareMatrixSummary({
   manifest,
   matrix,
   skippedVariants = [],
+  unsupportedCells = [],
   generatedAt,
 }) {
   const rows = (matrix?.rows ?? []).map((row) => ({
@@ -239,6 +241,7 @@ export function buildCompareMatrixSummary({
     benchmarkId: manifest.benchmark.id,
     benchmarkDescription: manifest.benchmark.description ?? null,
     generatedAt,
+    unsupportedCells,
     matrix: {
       columns: matrix?.columns ?? [],
       rows,

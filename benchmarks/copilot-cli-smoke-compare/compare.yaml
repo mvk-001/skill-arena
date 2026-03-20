@@ -20,19 +20,23 @@ evaluation:
   tracing: false
   noCache: true
 comparison:
-  skillModes:
+  profiles:
     - id: no-skill
-      description: Baseline without skill overlay.
-      skillMode: disabled
+      description: Fully isolated baseline without skill overlay.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
-      description: Workspace-overlay enabled smoke skill.
-      skillMode: enabled
-      skill:
-        source:
-          type: local-path
-          path: fixtures/smoke-skill-following/skill-overlay
-        install:
-          strategy: workspace-overlay
+      description: Smoke profile with the declared workspace-overlay skill only.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: fixtures/smoke-skill-following/skill-overlay
+            install:
+              strategy: workspace-overlay
   variants:
     - id: copilot-gpt5mini
       description: Copilot CLI command variant.

@@ -1,5 +1,7 @@
 # Testing
 
+Read this after [Usage Guide](./usage.md). Use [Specs](./specs.md) for canonical fields and [Architecture](./architecture.md) when a failure looks like a runner or adapter problem.
+
 ## Prerequisites
 
 - Node.js 24 or newer
@@ -7,6 +9,22 @@
 - Local Codex CLI available on `PATH` as `codex`
 - Local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
 - Codex authenticated on the machine before running live benchmarks
+
+## Recommended loop
+
+Use this by default after runtime or benchmark changes:
+
+```bash
+npm test
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+```
+
+Run the live compare only when the dry-run and unit tests look clean:
+
+```bash
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+```
 
 ## What to run
 
@@ -104,7 +122,7 @@ skill-arena gen-conf --output ./benchmarks/<benchmark-id>/compare.yaml --prompt 
 
 ### 3a. Run a compare config
 
-Use this when you want one file to drive one Promptfoo eval with multiple side-by-side providers across adapters, models, and skill modes.
+Use this when you want one file to drive one Promptfoo eval with multiple side-by-side providers across adapters, models, and isolated capability profiles.
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/<benchmark-id>/compare.yaml
@@ -121,6 +139,7 @@ To validate the scenario expansion without executing live evals:
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/<benchmark-id>/compare.yaml --dry-run
+npm run benchmark:compare:dry-run -- ./benchmarks/<benchmark-id>/compare.yaml
 skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --dry-run
 ```
 
@@ -140,10 +159,11 @@ Compare local path contract:
 
 Behavior to expect in compare mode:
 
-- skill modes appear as side-by-side columns in the same Promptfoo eval
+- profiles appear as side-by-side columns in the same Promptfoo eval
 - rows are variant and prompt pairs
 - `evaluation.requests` controls the pass ratio denominator for each compare cell
-- unsupported adapters such as reserved V1 adapters are listed as skipped entries in the merged report
+- unsupported adapters are listed as skipped entries in the merged report
+- unsupported profile capability bundles are rendered as `unsupported` cells instead of aborting the compare run
 
 ### 4. Run the maintained sample compare benchmark
 
@@ -229,6 +249,13 @@ At the end of `skill-arena evaluate` in compare mode, the CLI prints:
 - explicit artifact paths for `Compare summary`, `Final merged summary`, and `Final merged report`
 
 `summary.json` includes a `matrix` section with compare columns, rows, and per-cell pass ratios such as `40% (4/10)`.
+
+For profile-isolation validation after runtime changes, add at least one compare dry-run that:
+
+- uses `comparison.profiles`
+- includes one empty baseline profile with `inheritSystem: false`
+- includes one explicit capability profile
+- includes one intentionally unsupported capability family and verifies the cell is reported as `unsupported`
 
 ## Latest validated results
 

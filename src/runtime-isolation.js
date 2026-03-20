@@ -15,9 +15,7 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
   const codexSkillsDirectory = path.join(codexHome, "skills");
   const codexSystemSkillsDirectory = path.join(codexSkillsDirectory, ".system");
   const gitConfigPath = path.join(executionRootDirectory, "gitconfig");
-  const allowedSkills = scenario?.skillMode === "enabled"
-    ? inferVisibleSkills(scenario.skill?.source)
-    : [];
+  const allowedSkills = inferVisibleSkillsForScenario(scenario);
   const skipHomeAgents = scenario?.agent?.adapter === "pi" || scenario?.agent?.adapter === "codex";
 
   await Promise.all([
@@ -64,6 +62,18 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
       SKILL_ARENA_ALLOWED_SKILLS: allowedSkills.join(","),
     },
   };
+}
+
+function inferVisibleSkillsForScenario(scenario) {
+  const declaredSkills = scenario?.profile?.capabilities?.skills;
+
+  if (Array.isArray(declaredSkills)) {
+    return declaredSkills.flatMap((skill) => inferVisibleSkills(skill.source));
+  }
+
+  return scenario?.skillMode === "enabled"
+    ? inferVisibleSkills(scenario.skill?.source)
+    : [];
 }
 
 async function seedCodexHome({

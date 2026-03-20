@@ -550,23 +550,27 @@ function renderCompareTemplate(options) {
   lines.push("  # TODO: noCache is a closed choice: true or false. Keep true for reproducible repeated evaluations; switch to false only when you intentionally want Promptfoo caching.");
 
   lines.push("comparison:");
-  lines.push("  skillModes:");
-  lines.push("    # TODO: keep at least no-skill and skill so the report shows a direct baseline vs enabled comparison.");
-  lines.push("    - id: no-skill");
+  lines.push("  profiles:");
+  lines.push("    # TODO: keep at least one isolated baseline profile and one explicit capability profile so the report shows a direct control vs capability comparison.");
+  lines.push("    - id: baseline");
   lines.push("      # TODO: id should be slug-like. Use short ids because they become compare column labels.");
-  lines.push("      description: Baseline without the skill.");
-  lines.push("      # TODO: description is free text. Explain what is disabled or what baseline behavior this column represents.");
-  lines.push("      skillMode: disabled");
-  lines.push("      # TODO: skillMode choices are exactly enabled or disabled.");
+  lines.push("      description: Fully isolated control with no declared capabilities.");
+  lines.push("      # TODO: description is free text. Explain what this control profile represents.");
+  lines.push("      isolation:");
+  lines.push("        inheritSystem: false");
+  lines.push("        # TODO: keep inheritSystem false so compare profiles remain deny-all and explicit.");
+  lines.push("      capabilities: {}");
+  lines.push("      # TODO: capabilities is an explicit object. Leave it empty for the control profile.");
   lines.push("    - id: skill");
-  lines.push("      # TODO: add more enabled columns only when you want to compare multiple skills or multiple skill source shapes side by side.");
-  lines.push("      description: Enabled skill mode.");
-  lines.push("      # TODO: description should identify the skill source or benchmark intent, for example remote git skill, local overlay skill, or system-installed skill.");
-  lines.push("      skillMode: enabled");
-  lines.push("      # TODO: skillMode choices are exactly enabled or disabled.");
-  lines.push("      # TODO: if this benchmark uses a system-installed skill, prefer source.type: system-installed and install.strategy: system-installed.");
-  lines.push("      skill:");
-  lines.push(...renderSkillSource(options));
+  lines.push("      # TODO: add more profiles only when each one encodes a clear benchmark hypothesis.");
+  lines.push("      description: Declared capability profile with one explicit skill.");
+  lines.push("      # TODO: description should identify the capability bundle, for example remote git skill, local skill group, or skill plus agent.");
+  lines.push("      isolation:");
+  lines.push("        inheritSystem: false");
+  lines.push("      capabilities:");
+  lines.push("        skills:");
+  lines.push("          -");
+  lines.push(...indentLines(renderSkillSource(options), 12));
   lines.push("  variants:");
   lines.push("    # TODO: add one variant per adapter/model/runtime configuration you want as separate rows for each prompt.");
   lines.push(`    - id: ${yamlString(variant.id)}`);
@@ -804,6 +808,11 @@ function renderSkillSource(options) {
     "        # TODO: system-installed -> rely on a skill already installed outside the workspace",
     "        # TODO: inline-files -> define the whole skill overlay directly inside compare.yaml",
   ];
+}
+
+function indentLines(lines, spaces) {
+  const prefix = " ".repeat(spaces);
+  return lines.map((line) => `${prefix}${line.replace(/^ {8}/, "")}`);
 }
 
 function yamlString(value) {

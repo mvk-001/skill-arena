@@ -68,8 +68,8 @@ and shell access is blocked or unreliable.
 
 - Keep `task.prompts` as a YAML list with exactly two prompt objects.
 - Keep the shared `llm-rubric` under top-level `evaluation.assertions`.
-- Keep `skillMode: disabled` and `skillMode: enabled` exactly as written.
-- Keep the enabled skill block nested under `comparison.skillModes[*].skill`.
+- Keep the baseline profile explicit with `capabilities: {}`.
+- Keep the enabled skill block nested under `comparison.profiles[*].capabilities.skills[*]`.
 - Keep the variant agent keys inside `comparison.variants[*].agent`.
 
 ## Required shape
@@ -82,7 +82,7 @@ and shell access is blocked or unreliable.
   - `evaluation`
   - `comparison`
 - Use `workspace.sources`, not `workspace.fixture`.
-- Use `comparison.skillModes` and `comparison.variants`.
+- Use `comparison.profiles` and `comparison.variants`.
 - Put shared checks in top-level `evaluation.assertions`.
 - Put row-specific format checks under each prompt:
   - `today-json`: `type: is-json`
@@ -131,23 +131,27 @@ evaluation:
   maxConcurrency: 1
   noCache: true
 comparison:
-  skillModes:
+  profiles:
     - id: no-skill
-      description: Baseline without the skill.
-      skillMode: disabled
+      description: Fully isolated baseline without the skill.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
-      description: Skill-enabled run.
-      skillMode: enabled
-      skill:
-        source:
-          type: git
-          repo: https://github.com/googleworkspace/cli.git
-          ref: main
-          subpath: .
-          skillPath: skills/gws-calendar-agenda
-          skillId: gws-calendar-agenda
-        install:
-          strategy: workspace-overlay
+      description: Skill-enabled profile.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: git
+              repo: https://github.com/googleworkspace/cli.git
+              ref: main
+              subpath: .
+              skillPath: skills/gws-calendar-agenda
+              skillId: gws-calendar-agenda
+            install:
+              strategy: workspace-overlay
   variants:
     - id: codex-mini
       description: Codex mini comparison variant.
@@ -171,7 +175,7 @@ comparison:
 
 ## Reject these mistakes
 
-- top-level `skillModes`
+- top-level `profiles`
 - top-level `variants`
 - `workspace.fixture`
 - `execution`

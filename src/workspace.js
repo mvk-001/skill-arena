@@ -22,6 +22,7 @@ export async function materializeWorkspace({
   const executionRootDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-execution-"));
   const executionWorkspaceDirectory = path.join(executionRootDirectory, "workspace");
   const runtimeIsolation = await createRuntimeIsolation(executionRootDirectory, scenario);
+  const scenarioSkills = getScenarioSkills(scenario);
 
   await fs.mkdir(executionWorkspaceDirectory, { recursive: true });
 
@@ -36,22 +37,24 @@ export async function materializeWorkspace({
 
   await sanitizeWorkspaceRoot(executionWorkspaceDirectory);
 
-  if (scenario.skill.install.strategy === "system-installed") {
-    throw new Error(
-      "Strict isolation does not support system-installed skills. Use a workspace-overlay skill source.",
-    );
-  }
+  for (const skill of scenarioSkills) {
+    if (skill.install.strategy === "system-installed") {
+      throw new Error(
+        "Strict isolation does not support system-installed skills. Use a workspace-overlay skill source.",
+      );
+    }
 
-  if (scenario.skill.install.strategy === "workspace-overlay") {
-    await materializeSkillSource({
-      skillSource: scenario.skill.source,
-      workspaceDirectory: executionWorkspaceDirectory,
-      sourceBaseDirectory,
-    });
+    if (skill.install.strategy === "workspace-overlay") {
+      await materializeSkillSource({
+        skillSource: skill.source,
+        workspaceDirectory: executionWorkspaceDirectory,
+        sourceBaseDirectory,
+      });
+    }
   }
 
   const mountedSkillIds = await mountConfiguredSkills({
-    scenario,
+    scenarioSkills,
     executionWorkspaceDirectory,
     runtimeIsolation,
   });
@@ -283,11 +286,11 @@ async function sanitizeWorkspaceRoot(workspaceDirectory) {
 }
 
 async function mountConfiguredSkills({
-  scenario,
+  scenarioSkills,
   executionWorkspaceDirectory,
   runtimeIsolation,
 }) {
-  if (scenario.skillMode !== "enabled") {
+  if (scenarioSkills.length === 0) {
     runtimeIsolation.environment.SKILL_ARENA_ALLOWED_SKILLS = "";
     return [];
   }
@@ -298,25 +301,32 @@ async function mountConfiguredSkills({
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
 
-  if (skillDirectories.length !== 1) {
-    throw new Error(
-      `Strict isolation requires exactly one configured skill, found ${skillDirectories.length}.`,
-    );
-  }
-
-  const skillId = skillDirectories[0];
-  if (!skillId) {
+  if (skillDirectories.length === 0) {
     runtimeIsolation.environment.SKILL_ARENA_ALLOWED_SKILLS = "";
     return [];
   }
 
-  await fs.cp(
-    path.join(workspaceSkillsDirectory, skillId),
-    path.join(runtimeIsolation.codexHome, "skills", skillId),
-    { recursive: true },
-  );
-  runtimeIsolation.environment.SKILL_ARENA_ALLOWED_SKILLS = skillId;
-  return [skillId];
+  for (const skillId of skillDirectories) {
+    await fs.cp(
+      path.join(workspaceSkillsDirectory, skillId),
+      path.join(runtimeIsolation.codexHome, "skills", skillId),
+      { recursive: true },
+    );
+  }
+  runtimeIsolation.environment.SKILL_ARENA_ALLOWED_SKILLS = skillDirectories.join(",");
+  return skillDirectories;
+}
+
+function getScenarioSkills(scenario) {
+  if (Array.isArray(scenario?.profile?.capabilities?.skills)) {
+    return scenario.profile.capabilities.skills;
+  }
+
+  if (scenario?.skill?.install?.strategy && scenario.skill.install.strategy !== "none") {
+    return [scenario.skill];
+  }
+
+  return [];
 }
 
 function resolveLocalPath(inputPath, sourceBaseDirectory) {

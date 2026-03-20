@@ -611,14 +611,19 @@ ${sharedAssertions}
   maxConcurrency: ${cfg.maxConcurrency}
   noCache: ${cfg.noCache}
 comparison:
-  skillModes:
+  profiles:
     - id: no-skill
-      description: Baseline without the skill.
-      skillMode: disabled
+      description: Fully isolated baseline without the skill.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
-      description: Skill-enabled run.
-      skillMode: enabled
-${skillBlock}
+      description: Skill-enabled profile.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          -${skillBlock}
   variants:
     - id: ${cfg.variantId}
       description: ${quote(cfg.variantDescription)}
@@ -675,36 +680,36 @@ ${indentBy(assertionText, 10)}`
 
 function buildSkillBlock(cfg) {
   if (cfg.skillSourceType === "system-installed") {
-    return `      skill:
-        source:
-          type: system-installed
-          # If your skill is local, set --skill-source-type local-path.
-          # If it is remote, set --skill-source-type git.
-          # Use --skill-id to override the installed id if needed.
-        install:
-          strategy: system-installed`;
+    return `
+            source:
+              type: system-installed
+              # If your skill is local, set --skill-source-type local-path.
+              # If it is remote, set --skill-source-type git.
+              # Use --skill-id to override the installed id if needed.
+            install:
+              strategy: system-installed`;
   }
 
   if (cfg.skillSourceType === "local-path") {
-    return `      skill:
-        source:
-          type: local-path
-          path: ${quote(cfg.skillSourcePath)}
-          skillId: ${cfg.skillId}
-        install:
-          strategy: ${cfg.skillSourceInstallStrategy ?? "workspace-overlay"}`;
+    return `
+            source:
+              type: local-path
+              path: ${quote(cfg.skillSourcePath)}
+              skillId: ${cfg.skillId}
+            install:
+              strategy: ${cfg.skillSourceInstallStrategy ?? "workspace-overlay"}`;
   }
 
-  return `      skill:
-        source:
-          type: git
-          repo: ${quote(cfg.skillSourceRepo)}
-          ref: ${quote(cfg.skillSourceRef)}
-          subpath: ${quote(cfg.skillSourceSubpath)}
-          skillPath: ${quote(cfg.skillSourceSkillPath)}
-          skillId: ${cfg.skillSourceSkillId}
-        install:
-          strategy: ${cfg.skillSourceInstallStrategy ?? "workspace-overlay"}`;
+  return `
+            source:
+              type: git
+              repo: ${quote(cfg.skillSourceRepo)}
+              ref: ${quote(cfg.skillSourceRef)}
+              subpath: ${quote(cfg.skillSourceSubpath)}
+              skillPath: ${quote(cfg.skillSourceSkillPath)}
+              skillId: ${cfg.skillSourceSkillId}
+            install:
+              strategy: ${cfg.skillSourceInstallStrategy ?? "workspace-overlay"}`;
 }
 
 function buildAssertionLine(assertion, indent) {

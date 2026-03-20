@@ -25,7 +25,7 @@ task:
         agenda that returns Markdown only. Improve the prompt wording a little,
         but keep the benchmark concise and executable. Use the exact Skill
         Arena compare schema keys and supported V1 assertion types; do not
-        invent aliases such as top-level `skillModes`, top-level `variants`,
+        invent aliases such as top-level `profiles`, top-level `variants`,
         `execution`, `sandbox`, `webSearch`, `networkAccess`,
         `allowNetwork`, `instructions`, `template`, or `type: is-markdown`.
         Use a Git
@@ -59,9 +59,9 @@ evaluation:
     - type: contains
       value: "id: week-markdown"
     - type: contains
-      value: "skillMode: disabled"
+      value: "capabilities: {}"
     - type: contains
-      value: "skillMode: enabled"
+      value: "skills:"
     - type: contains
       value: "type: git"
     - type: contains
@@ -112,7 +112,7 @@ evaluation:
           (normalized.match(/^\s+- id: today-json\s*$/gm) ?? []).length === 1
           && (normalized.match(/^\s+- id: week-markdown\s*$/gm) ?? []).length === 1;
         const invalidPatterns = [
-          /^skillModes:\s*$/m,
+          /^profiles:\s*$/m,
           /^variants:\s*$/m,
           /^\s+execution:\s*$/m,
           /^\s+sandbox:\s+/m,
@@ -126,7 +126,7 @@ evaluation:
         ];
         return hasTwoPromptIds
           && normalized.includes("\ncomparison:\n")
-          && normalized.includes("\n  skillModes:\n")
+          && normalized.includes("\n  profiles:\n")
           && normalized.includes("\n  variants:\n")
           && normalized.includes("JSON only")
           && normalized.includes("Markdown only")
@@ -148,10 +148,12 @@ workspace:
   fixture: fixtures/skill-arena-compare/base
   initializeGit: true
 comparison:
-  skillModes:
+  profiles:
     - id: no-skill
-      description: Baseline without the compare-authoring skill.
-      skillMode: disabled
+      description: Fully isolated baseline without the compare-authoring skill.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
       output:
         tags:
           - baseline
@@ -160,14 +162,16 @@ comparison:
           skillModeId: no-skill
     - id: skill
       description: Workspace overlay with the repo-local skill-arena-compare skill enabled.
-      skillMode: enabled
-      skill:
-        source:
-          type: local-path
-          path: fixtures/skill-arena-compare/skill-overlay/skills/skill-arena-compare
-          skillId: skill-arena-compare
-        install:
-          strategy: workspace-overlay
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: fixtures/skill-arena-compare/skill-overlay/skills/skill-arena-compare
+              skillId: skill-arena-compare
+            install:
+              strategy: workspace-overlay
       output:
         tags:
           - skill

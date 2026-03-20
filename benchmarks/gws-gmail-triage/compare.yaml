@@ -1,7 +1,7 @@
 schemaVersion: 1
 benchmark:
   id: gws-gmail-triage-compare
-  description: Compare Gmail triage behavior with and without the system skill.
+  description: Compare Gmail triage behavior with an isolated baseline and one explicit Gmail skill profile.
   tags:
     - gmail
     - triage
@@ -21,18 +21,27 @@ evaluation:
   maxConcurrency: 4
   noCache: true
 comparison:
-  skillModes:
+  profiles:
     - id: no-skill
-      description: Baseline without the Gmail triage skill.
-      skillMode: disabled
+      description: Fully isolated baseline without the Gmail triage skill.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
-      description: Run with system-installed Gmail triage skill.
-      skillMode: enabled
-      skill:
-        source:
-          type: system-installed
-        install:
-          strategy: system-installed
+      description: Run with only the declared Gmail triage skill from the Google Workspace CLI repository.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: git
+              repo: https://github.com/googleworkspace/cli.git
+              ref: main
+              subpath: .
+              skillPath: skills/gws-gmail-triage
+              skillId: gws-gmail-triage
+            install:
+              strategy: workspace-overlay
   variants:
     - id: codex-worst
       description: Codex worst-case scenario comparison variant.

@@ -1,14 +1,18 @@
 # Usage Guide
 
+Read this after [README.md](../README.md). Use [Specs](./specs.md) for field-level rules, [Architecture](./architecture.md) for execution flow, and [Testing](./testing.md) for the validation loop.
+
 Use `manifest.yaml` when you want scenario-oriented runs. Use `compare.yaml` when you want one Promptfoo eval with:
 
-- skill-mode columns such as `no-skill` and `skill`
+- profile columns such as `baseline`, `skill`, or `skill-plus-agent`
 - rows by `prompt x agent/configuration`
 - per-cell pass ratios such as `40% (4/10)`
 
 In both formats, `evaluation.requests` is the execution count. For compare configs, it defaults to `10` when omitted. `evaluation.maxConcurrency` is optional; when omitted, the harness uses the local machine parallelism.
 
-Use the packaged CLI directly when you prefer a single command shape:
+## Fast path
+
+Use the packaged CLI directly when you want one command shape for both config types:
 
 ```bash
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
@@ -16,6 +20,12 @@ npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
 npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
+
+Useful references:
+
+- [Maintained compare benchmark](../benchmarks/skill-arena-compare/compare.yaml)
+- [Smoke compare benchmark](../benchmarks/smoke-skill-following/compare.yaml)
+- [Copilot compare benchmark](../benchmarks/copilot-cli-smoke-compare/compare.yaml)
 
 ## Installation and execution options
 
@@ -104,6 +114,10 @@ Command reference:
 - `--maxConcurrency <n>`: alias accepted by the evaluator CLI for convenience.
 
 `skill-arena --help` prints the top-level help, and `skill-arena help <command>` prints per-command usage.
+
+## Choose a config shape
+
+Use [Specs](./specs.md) for the canonical schema. The examples below are intentionally minimal.
 
 ## Benchmark manifest
 
@@ -208,7 +222,7 @@ In compare mode, the resolved concurrency now applies to both workspace material
 
 ## Compare config
 
-Create `benchmarks/<benchmark-id>/compare.yaml` when you want one Promptfoo eval with multiple skill-mode columns.
+Create `benchmarks/<benchmark-id>/compare.yaml` when you want one Promptfoo eval with multiple isolated profile columns.
 
 Minimal shape:
 
@@ -242,24 +256,28 @@ evaluation:
   tracing: false
   noCache: true
 comparison:
-  skillModes:
-    - id: no-skill
-      description: Baseline
-      skillMode: disabled
+  profiles:
+    - id: baseline
+      description: Fully isolated control
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
-      description: Skill enabled
-      skillMode: enabled
-      skill:
-        source:
-          type: inline
-          skillId: repo-summary
-          content: |
-            ---
-            name: repo-summary
-            ---
-            Summarize the repository using the provided workspace files only.
-        install:
-          strategy: workspace-overlay
+      description: Only the declared repo-summary skill
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: inline
+              skillId: repo-summary
+              content: |
+                ---
+                name: repo-summary
+                ---
+                Summarize the repository using the provided workspace files only.
+            install:
+              strategy: workspace-overlay
   variants:
     - id: codex-mini
       description: Codex mini
@@ -292,6 +310,7 @@ Use `--dry-run` to generate the Promptfoo config without live evaluation:
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+npm run benchmark:compare:dry-run -- ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 ```
 
@@ -336,7 +355,7 @@ A practical maintenance compare example is `benchmarks/skill-arena-compare/compa
 
 What compare mode produces:
 
-- Promptfoo columns by skill mode
+- Promptfoo columns by profile
 - Promptfoo rows by variant and prompt
 - `summary.json` with a `matrix` section
 - `merged/report.md` with cells like `40% (4/10)`
@@ -346,12 +365,25 @@ Legacy compatibility:
 - `workspace.fixture` normalizes to the first `workspace.sources` entry
 - `workspace.skillOverlay` can still supply the default enabled skill
 - `task.prompt` still works and normalizes to a single prompt entry
+- Legacy `comparison.skillModes` still parses, but new authoring should use `comparison.profiles`
 
 Preferred explicit skill source options:
 
 - `local-path`: point to one local skill folder containing `SKILL.md`
 - `inline`: define one `SKILL.md` directly in YAML
 - `git`: clone a repo and select one skill folder with optional `skillPath`
+
+## Validation loop
+
+Use this sequence for most changes:
+
+```bash
+npm test
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+```
+
+For live compare execution and artifact review, continue in [Testing](./testing.md).
 
 ## Repository hygiene
 
