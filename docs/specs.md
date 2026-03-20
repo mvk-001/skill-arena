@@ -308,18 +308,23 @@ evaluation:
   maxConcurrency: 4
   noCache: true
 comparison:
-  skillModes:
-    - id: no-skill
-      description: Baseline without the skill.
-      skillMode: disabled
+  profiles:
+    - id: baseline
+      description: Fully isolated control.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
       description: Skill-enabled run.
-      skillMode: enabled
-      skill:
-        source:
-          type: system-installed
-        install:
-          strategy: system-installed
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: fixtures/example/skills/repo-summary
+            install:
+              strategy: workspace-overlay
   variants:
     - id: codex-worst
       description: Codex comparison variant.
@@ -331,32 +336,35 @@ comparison:
 ### Required behavior
 
 - `schemaVersion` must be `1`.
-- `comparison.skillModes[*].id` and `comparison.variants[*].id` must be slug-like identifiers.
+- `comparison.profiles[*].id` and `comparison.variants[*].id` must be slug-like identifiers.
 - `evaluation.requests` is the execution count per compare cell.
 - When `evaluation.requests` is omitted in a compare config, it defaults to `10`.
 - `evaluation.maxConcurrency` is optional. When omitted, the harness uses the local machine parallelism.
 - `task.prompts[*].evaluation.assertions` is optional and appends prompt-specific assertions for that row.
-- The compare runner expands the Cartesian product of `comparison.skillModes` and `comparison.variants`.
-- `comparison.skillModes[*].skill` is required when `skillMode: enabled`.
+- The compare runner expands the Cartesian product of `comparison.profiles` and `comparison.variants`.
+- `comparison.profiles[*].isolation.inheritSystem` must resolve to `false` in V1.
 - Each expanded unit must resolve:
   - one materialized workspace
-  - one effective skill configuration
+  - one explicit capability profile
   - one agent configuration
 - The compare runner must materialize a separate workspace per supported expanded unit.
 - The compare runner must execute one Promptfoo eval with:
-  - Promptfoo providers keyed by skill mode
+  - Promptfoo providers keyed by profile
   - Promptfoo test rows keyed by variant and prompt
 - Unsupported adapters must be reported as skipped comparison entries instead of aborting the whole compare run.
-- Provider labels in compare mode should prefer concise skill mode ids such as `no-skill` and `skill`.
-- Compare reports should show rows as `prompt x variant` and columns as skill modes.
+- Unsupported capability bundles must be reported as per-cell `unsupported` entries instead of aborting the whole compare run.
+- Provider labels in compare mode should prefer concise profile ids such as `baseline` or `skill`.
+- Compare reports should show rows as `prompt x variant` and columns as profiles.
 - Compare cells should report pass ratios against the requested execution count, for example `40% (4/10)`.
 - Shared compare execution settings such as `requests`, `timeoutMs`, `tracing`, `maxConcurrency`, and `noCache` still come from top-level `evaluation`.
 
 ### Compare normalization rules
 
-For each `comparison.skillModes[*]` entry:
+For each `comparison.profiles[*]` entry:
 
-- `skillMode: disabled` resolves to:
+- The effective runtime starts from deny-all isolation.
+- `capabilities.skills` may declare zero, one, or many skills.
+- When `capabilities.skills` is empty, the effective legacy skill state resolves to:
 
 ```yaml
 skill:
@@ -366,10 +374,22 @@ skill:
     strategy: none
 ```
 
-- `skillMode: enabled` resolves to the explicit `skill` block when provided.
-- `skillMode: enabled` without an explicit `skill` block is invalid.
+- When `capabilities.skills` contains one skill, the effective legacy skill state resolves to that skill for adapter compatibility.
+- Legacy `comparison.skillModes` is still accepted and normalizes into `comparison.profiles`.
 
-Compare configs must declare the evaluated skill explicitly so the benchmark target is unambiguous.
+### Compare capability families
+
+V1 compare profiles accept these capability families:
+
+- `instructions`
+- `skills`
+- `agents`
+- `hooks`
+- `mcp`
+- `extensions`
+- `plugins`
+
+These capability families are benchmark-facing abstractions. Adapters may translate them natively, approximately, or mark them unsupported per cell.
 
 Preferred explicit compare skill definitions use the same three source modes:
 
@@ -386,7 +406,7 @@ For compare configs, local filesystem paths are resolved using this contract:
 - relative local paths are not resolved against the installed package location
 - when a relative local path is missing in compare mode, the runner may bootstrap that relative directory from a unique packaged fixture match before workspace materialization
 
-This applies to legacy fields such as `workspace.fixture` and `workspace.skillOverlay` and to declarative `local-path` entries such as `workspace.sources[*].path` and `comparison.skillModes[*].skill.source.path`.
+This applies to legacy fields such as `workspace.fixture` and `workspace.skillOverlay` and to declarative `local-path` entries such as `workspace.sources[*].path` and `comparison.profiles[*].capabilities.skills[*].source.path`.
 
 Bootstrap behavior in compare mode:
 
@@ -429,8 +449,8 @@ Each adapter receives:
 - the manifest or compare-derived scenario unit
 - the selected scenario or comparison variant
 - the run workspace path
-- the resolved skill mode
-- the normalized skill configuration
+- the resolved profile id
+- the normalized capability profile
 - execution constraints such as sandbox mode, approval policy, web access, and network access
 
 ### Output
@@ -464,6 +484,7 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 - The workspace and skill environment for a run must be derivable from the benchmark YAML plus any external references declared in it.
 - System-installed skills are not copied into the workspace.
 - Workspace-injected skills are copied or written only for `skillMode: "enabled"` runs that resolve to `workspace-overlay`.
+- Compare profiles must default to deny-all isolation and expose only explicitly declared capabilities.
 - The harness must not require a benchmark to live under `benchmarks/` in order to run it.
 
 ## Result directories
@@ -475,7 +496,7 @@ Each run must produce:
 - `results/<benchmark-id>/<timestamp>-<scenario-id>/promptfoo-results.json`
 - `results/<benchmark-id>/<timestamp>-<scenario-id>/summary.json`
 
-`summary.json` is the stable machine-readable output for later comparisons across agents and skill modes.
+`summary.json` is the stable machine-readable output for later comparisons across agents and profiles.
 
 Compare runs must produce:
 
@@ -490,9 +511,9 @@ Compare `summary.json` must include:
 - provider metadata for supported scenario units
 - scenario-oriented normalized summaries
 - a `matrix` object with:
-  - `columns`: skill mode ids and labels
+  - `columns`: profile ids and labels
   - `rows`: variant and prompt pairs
-  - per-cell aggregates including requested runs, completed runs, pass counts, error counts, and a display string such as `40% (4/10)`
+  - per-cell aggregates including requested runs, completed runs, pass counts, error counts, and a display string such as `40% (4/10)` or `unsupported`
 
 ## Minimal execution defaults
 

@@ -51,23 +51,27 @@ evaluation:
   maxConcurrency: 1
   noCache: true
 comparison:
-  skillModes:
+  profiles:
     - id: no-skill
-      description: Baseline without the skill.
-      skillMode: disabled
+      description: Fully isolated baseline without the skill.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
-      description: Skill-enabled run.
-      skillMode: enabled
-      skill:
-        source:
-          type: git
-          repo: https://github.com/googleworkspace/cli.git
-          ref: main
-          subpath: .
-          skillPath: skills/gws-calendar-agenda
-          skillId: gws-calendar-agenda
-        install:
-          strategy: workspace-overlay
+      description: Skill-enabled profile.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: git
+              repo: https://github.com/googleworkspace/cli.git
+              ref: main
+              subpath: .
+              skillPath: skills/gws-calendar-agenda
+              skillId: gws-calendar-agenda
+            install:
+              strategy: workspace-overlay
   variants:
     - id: codex-mini
       description: Codex mini comparison variant.

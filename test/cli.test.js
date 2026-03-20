@@ -111,6 +111,10 @@ test("gen-conf writes a commented compare template with requested options", asyn
   assert.match(generated, /choose equals for exact output, contains\/icontains for stable substrings/);
   assert.match(generated, /sandboxMode is adapter-specific policy text/);
   assert.match(generated, /target is the destination inside the materialized run workspace/);
+  assert.match(generated, /comparison:\n  profiles:/);
+  assert.match(generated, /id: baseline/);
+  assert.match(generated, /capabilities:\s+\{\}/);
+  assert.match(generated, /capabilities:\n        skills:/);
   assert.match(generated, /requests: 3/);
   assert.match(generated, /maxConcurrency: 8/);
 });

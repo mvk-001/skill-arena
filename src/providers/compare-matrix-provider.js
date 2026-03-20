@@ -20,6 +20,7 @@ export default class CompareMatrixProvider {
         error: `No compare route configured for variant "${variantId}".`,
         metadata: {
           variantId,
+          profileId: this.config.profile_id ?? this.config.skill_mode_id ?? this.id(),
           skillModeId: this.config.skill_mode_id ?? this.id(),
         },
       };
@@ -38,6 +39,7 @@ export default class CompareMatrixProvider {
         variantDisplayName: context?.vars?.variantDisplayName
           ?? context?.test?.metadata?.variantDisplayName
           ?? variantId,
+        profileId: this.config.profile_id ?? this.config.skill_mode_id ?? this.id(),
         skillModeId: this.config.skill_mode_id ?? this.id(),
       },
     };

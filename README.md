@@ -9,7 +9,7 @@ It supports:
 - scenario-based runs via `manifest.*` files
 - matrix comparisons via `compare.*` files
 - reproducible, isolated execution workspaces
-- skill-enabled vs no-skill control paths
+- isolated capability profiles such as baseline, skill-only, or explicit capability bundles
 - deterministic output artifacts for review and reporting
 
 Execution is routed through Promptfoo with custom local providers for supported adapters.
@@ -43,6 +43,7 @@ Run with one of:
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:compare:dry-run -- ./benchmarks/skill-arena-compare/compare.yaml
 npx . --help
 ```
 
@@ -62,6 +63,7 @@ npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 
 - `manifest.*` files define scenario runs.
 - `compare.*` files define prompt × adapter/mode matrices.
+- Compare columns are declared as `comparison.profiles`.
 - Both can be authored in YAML or JSON in the canonical project formats.
 
 Useful references before authoring:
@@ -155,8 +157,8 @@ pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ## Runtime behavior highlights
 
 - Isolation is workspace-centered and per scenario.
+- Compare runs default to deny-all profile isolation and expose only explicitly declared capabilities.
 - Scenario skill mounting is deterministic and based on the manifest/compare specification.
-- `system-installed` skills follow the explicit behavior documented in the manifest model.
 - `codex` and `pi` adapters can run with strict default skill scope.
 - No task-specific hidden instructions are injected by the harness outside benchmark-defined data.
 

@@ -27,8 +27,8 @@ test("compare config expands into adapter x skill-mode scenarios", async () => {
   assert.equal(manifest.scenarios[0].id, "codex-worst-no-skill");
   assert.equal(manifest.scenarios[1].id, "codex-worst-skill");
   assert.equal(manifest.scenarios[0].skillSource, "none");
-  assert.equal(manifest.scenarios[1].skillSource, "system-installed");
-  assert.equal(manifest.scenarios[1].skill.source.type, "system-installed");
+  assert.equal(manifest.scenarios[1].skillSource, "workspace-overlay");
+  assert.equal(manifest.scenarios[1].skill.source.type, "git");
   assert.equal(compareConfig.evaluation.requests, 10);
 });
 
@@ -166,6 +166,73 @@ test("compare config supports explicit declarative skill definitions", () => {
 
   assert.equal(compareConfig.task.prompts[0].id, "prompt-1");
   assert.equal(manifest.scenarios[0].skill.source.type, "inline");
+});
+
+test("compare config supports direct profile declarations", () => {
+  const compareConfig = compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "compare-explicit-profile",
+      description: "Compare explicit profile scenarios.",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    evaluation: {
+      assertions: [{ type: "equals", value: "HELLO" }],
+      requests: 1,
+    },
+    comparison: {
+      profiles: [
+        {
+          id: "baseline",
+          description: "Baseline",
+          isolation: {
+            inheritSystem: false,
+          },
+          capabilities: {},
+        },
+        {
+          id: "skill",
+          description: "Skill profile",
+          isolation: {
+            inheritSystem: false,
+          },
+          capabilities: {
+            skills: [
+              {
+                source: {
+                  type: "inline",
+                  skillId: "profile-skill",
+                  content: "# profile skill",
+                },
+                install: {
+                  strategy: "workspace-overlay",
+                },
+              },
+            ],
+          },
+        },
+      ],
+      variants: [
+        {
+          id: "codex-mini",
+          description: "Codex mini",
+          agent: {
+            adapter: "codex",
+          },
+        },
+      ],
+    },
+  });
+
+  assert.equal(compareConfig.comparison.profiles[0].skillMode, "disabled");
+  assert.equal(compareConfig.comparison.profiles[1].capabilities.skills[0].source.skillId, "profile-skill");
 });
 
 test("compare config supports prompt-level evaluation assertions", () => {
@@ -529,7 +596,7 @@ test("compare config validation rejects duplicate ids and invalid normalized ski
     },
   }), (error) => {
     assert.equal(error.message.includes("Duplicate comparison variant id"), true);
-    assert.equal(error.message.includes("Duplicate comparison skill mode id"), true);
+    assert.equal(error.message.includes("Duplicate comparison profile id"), true);
     return true;
   });
 
@@ -575,7 +642,7 @@ test("compare config validation rejects duplicate ids and invalid normalized ski
         },
       ],
     },
-  }), /Enabled skill variants must resolve to a concrete skill source\./);
+  }), /Enabled compare profiles must resolve to a concrete skill source\./);
 
   assert.throws(() => compareConfigSchema.parse({
     schemaVersion: 1,
@@ -1268,6 +1335,67 @@ test("compare dry-run appends prompt-level assertions to shared assertions", asy
   assert.equal((promptfooConfigContents.match(/value: BASELINE/g) ?? []).length >= 2, true);
 });
 
+test("compare dry-run keeps unsupported capability profiles as unsupported cells instead of failing", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-unsupported-profile-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: unsupported-profile-compare",
+    "  description: Compare unsupported profile capabilities.",
+    "  tags: [compare]",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: fixtures/smoke-skill-following/base",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: equals",
+    "      value: HELLO",
+    "  requests: 1",
+    "comparison:",
+    "  profiles:",
+    "    - id: baseline",
+    "      description: Baseline",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities: {}",
+    "    - id: agent-profile",
+    "      description: Unsupported agent capability profile",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities:",
+    "        agents:",
+    "          - source:",
+    "              type: inline-files",
+    "            agentId: reviewer",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex mini",
+    "      agent:",
+    "        adapter: codex",
+  ].join("\n"), "utf8");
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"],
+    {
+      cwd: tempDirectory,
+      windowsHide: true,
+    },
+  );
+
+  assert.match(stdout, /\| Profiles \| 2 \|/);
+  assert.match(stdout, /\| Unsupported cells \| 1 \|/);
+
+  const resultsRoot = path.join(tempDirectory, "results", "unsupported-profile-compare");
+  const runDirectories = await fs.readdir(resultsRoot);
+  assert.equal(runDirectories.some((entry) => entry.endsWith("-codex-mini-baseline")), true);
+  assert.equal(runDirectories.some((entry) => entry.endsWith("-codex-mini-agent-profile")), false);
+});
+
 test("skill-arena-compare benchmark uses the remote skill and prompt-specific evaluations", async () => {
   const compareConfigPath = fromProjectRoot(
     "benchmarks",
@@ -1277,7 +1405,7 @@ test("skill-arena-compare benchmark uses the remote skill and prompt-specific ev
   const { compareConfig } = await loadCompareConfig(compareConfigPath);
 
   assert.equal(
-    ["git", "local-path"].includes(compareConfig.comparison.skillModes[1].skill.source.type),
+    ["git", "local-path"].includes(compareConfig.comparison.profiles[1].capabilities.skills[0].source.type),
     true,
   );
   assert.equal(compareConfig.task.prompts.length, 2);

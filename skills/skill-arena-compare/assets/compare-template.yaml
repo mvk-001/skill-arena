@@ -30,23 +30,27 @@ evaluation:
   maxConcurrency: 1
   noCache: true
 comparison:
-  skillModes:
-    - id: no-skill
-      description: Baseline without the skill.
-      skillMode: disabled
+  profiles:
+    - id: baseline
+      description: Fully isolated control.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
-      description: Skill-enabled run.
-      skillMode: enabled
-      skill:
-        source:
-          type: git
-          repo: https://github.com/example/repo.git
-          ref: main
-          subpath: .
-          skillPath: skills/example-skill
-          skillId: example-skill
-        install:
-          strategy: workspace-overlay
+      description: Skill-enabled profile.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: git
+              repo: https://github.com/example/repo.git
+              ref: main
+              subpath: .
+              skillPath: skills/example-skill
+              skillId: example-skill
+            install:
+              strategy: workspace-overlay
   variants:
     - id: codex-mini
       description: Codex mini comparison variant.

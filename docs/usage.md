@@ -2,7 +2,7 @@
 
 Use `manifest.yaml` when you want scenario-oriented runs. Use `compare.yaml` when you want one Promptfoo eval with:
 
-- skill-mode columns such as `no-skill` and `skill`
+- profile columns such as `baseline`, `skill`, or `skill-plus-agent`
 - rows by `prompt x agent/configuration`
 - per-cell pass ratios such as `40% (4/10)`
 
@@ -208,7 +208,7 @@ In compare mode, the resolved concurrency now applies to both workspace material
 
 ## Compare config
 
-Create `benchmarks/<benchmark-id>/compare.yaml` when you want one Promptfoo eval with multiple skill-mode columns.
+Create `benchmarks/<benchmark-id>/compare.yaml` when you want one Promptfoo eval with multiple isolated profile columns.
 
 Minimal shape:
 
@@ -242,24 +242,28 @@ evaluation:
   tracing: false
   noCache: true
 comparison:
-  skillModes:
-    - id: no-skill
-      description: Baseline
-      skillMode: disabled
+  profiles:
+    - id: baseline
+      description: Fully isolated control
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
-      description: Skill enabled
-      skillMode: enabled
-      skill:
-        source:
-          type: inline
-          skillId: repo-summary
-          content: |
-            ---
-            name: repo-summary
-            ---
-            Summarize the repository using the provided workspace files only.
-        install:
-          strategy: workspace-overlay
+      description: Only the declared repo-summary skill
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: inline
+              skillId: repo-summary
+              content: |
+                ---
+                name: repo-summary
+                ---
+                Summarize the repository using the provided workspace files only.
+            install:
+              strategy: workspace-overlay
   variants:
     - id: codex-mini
       description: Codex mini
@@ -292,6 +296,7 @@ Use `--dry-run` to generate the Promptfoo config without live evaluation:
 
 ```bash
 npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+npm run benchmark:compare:dry-run -- ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 ```
 
@@ -336,7 +341,7 @@ A practical maintenance compare example is `benchmarks/skill-arena-compare/compa
 
 What compare mode produces:
 
-- Promptfoo columns by skill mode
+- Promptfoo columns by profile
 - Promptfoo rows by variant and prompt
 - `summary.json` with a `matrix` section
 - `merged/report.md` with cells like `40% (4/10)`
@@ -346,6 +351,7 @@ Legacy compatibility:
 - `workspace.fixture` normalizes to the first `workspace.sources` entry
 - `workspace.skillOverlay` can still supply the default enabled skill
 - `task.prompt` still works and normalizes to a single prompt entry
+- Legacy `comparison.skillModes` still parses, but new authoring should use `comparison.profiles`
 
 Preferred explicit skill source options:
 

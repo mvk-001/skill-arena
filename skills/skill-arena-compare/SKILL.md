@@ -44,7 +44,7 @@ instructions:
 
 Produce a concise compare config that gives:
 
-- skill-mode columns such as `no-skill` and `skill`
+- profile columns such as `baseline`, `no-skill`, or `skill`
 - rows by prompt and agent/configuration
 - explicit repeated executions through `evaluation.requests`
 - labels that read well in Promptfoo and in `merged/report.md`
@@ -68,9 +68,9 @@ Produce a concise compare config that gives:
   otherwise.
 - Set `evaluation.maxConcurrency` explicitly only when the benchmark wants a
   machine-specific value.
-- Prefer two skill modes by default: `no-skill` and `skill`.
-- For every enabled skill mode, define `comparison.skillModes[*].skill`
-  explicitly.
+- Prefer two profiles by default: one isolated baseline and one explicit skill profile.
+- For every capability profile, define the capability under
+  `comparison.profiles[*].capabilities` explicitly.
 - Keep shared checks in top-level `evaluation.assertions`.
 - Keep row-specific checks under `task.prompts[*].evaluation.assertions`.
 - Write the file to the user-requested path before returning YAML when the task
@@ -115,7 +115,7 @@ Produce a concise compare config that gives:
 8. If the task needs multiple prompt rows, vary only the prompt text and nested
    prompt assertions. Use `assets/prompt-assertions-reference.md`.
 9. Replace placeholders with benchmark-specific metadata, prompts, workspace,
-   evaluation, skill modes, and variants.
+   evaluation, profiles, and variants.
 10. If the task asks for an output path such as `deliverables/compare.yaml`,
    write the file there before the final answer.
 11. Run the smallest useful validation:
@@ -193,10 +193,10 @@ The required output is one compare config for the remote
 - `evaluation.requests: 2`
 - `evaluation.timeoutMs: 1200000`
 - `evaluation.maxConcurrency: 1`
-- skill modes:
-  - `no-skill` with `skillMode: disabled`
-  - `skill` with `skillMode: enabled` and explicit
-    `skill.install.strategy: workspace-overlay`
+- profiles:
+  - `no-skill` with `isolation.inheritSystem: false` and `capabilities: {}`
+  - `skill` with `isolation.inheritSystem: false` and explicit
+    `capabilities.skills[*].install.strategy: workspace-overlay`
 - enabled skill source uses exactly:
   - `type: git`
   - `repo: https://github.com/googleworkspace/cli.git`
@@ -244,8 +244,8 @@ Before returning, verify all of these:
 - `evaluation.requests` and `evaluation.maxConcurrency` match the task
 - `evaluation.assertions` exists and contains the shared assertions
 - prompt-specific assertions stay under `task.prompts[*].evaluation.assertions`
-- every enabled skill mode has an explicit `skill` block
-- `comparison.skillModes` and `comparison.variants` are nested under
+- every enabled capability profile has an explicit capability block
+- `comparison.profiles` and `comparison.variants` are nested under
   `comparison`
 - the chosen skill source shape matches the prompt exactly
 - Git workspace-overlay blocks use `source.type: git`, `skillPath`, `skillId`,
@@ -325,20 +325,24 @@ evaluation:
   maxConcurrency: 1
   noCache: true
 comparison:
-  skillModes:
-    - id: no-skill
+  profiles:
+    - id: baseline
       description: ...
-      skillMode: disabled
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
       description: ...
-      skillMode: enabled
-      skill:
-        source:
-          type: local-path
-          path: ...
-          skillId: ...
-        install:
-          strategy: workspace-overlay
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: ...
+              skillId: ...
+            install:
+              strategy: workspace-overlay
   variants:
     - id: codex-mini
       description: ...
@@ -366,7 +370,7 @@ returning:
 - `task.prompts:` followed by `author-compare:` or any other direct mapping key
 - top-level `benchmarks:` or `tasks:`
 - `llm-rubric:` or `llmRubric:` outside `evaluation.assertions`
-- top-level `skillModes:` or `variants:`
+- top-level `profiles:` or `variants:`
 - top-level `modes:`
 - `workspace.fixture` when the task explicitly asks for `workspace.sources`
 - `workspace.sources` written as `- local-path:` instead of
@@ -383,7 +387,7 @@ returning:
 - Returning headings such as `Status`, `Testing`, `Changes`, or `Deliverable`
   before the YAML.
 - Moving `task`, `workspace`, or `evaluation` under `benchmark`.
-- Emitting top-level `variants`, `skillModes`, or `modes` instead of nesting
+- Emitting top-level `variants`, `profiles`, or `modes` instead of nesting
   them under `comparison`.
 - Rewriting `task.prompts` as a mapping keyed by prompt id instead of a YAML
   list of prompt objects.

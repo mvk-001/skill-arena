@@ -28,24 +28,28 @@ evaluation:
   maxConcurrency: 4
   noCache: true
 comparison:
-  skillModes:
+  profiles:
     - id: no-skill
-      description: Baseline without the workspace skill overlay.
-      skillMode: disabled
+      description: Fully isolated baseline without the workspace skill overlay.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
       output:
         tags:
           - baseline
         labels:
           skill_state: off
     - id: skill
-      description: Workspace overlay enabled.
-      skillMode: enabled
-      skill:
-        source:
-          type: local-path
-          path: fixtures/smoke-skill-following/skill-overlay
-        install:
-          strategy: workspace-overlay
+      description: Profile with only the declared workspace skill overlay enabled.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: fixtures/smoke-skill-following/skill-overlay
+            install:
+              strategy: workspace-overlay
       output:
         tags:
           - skill

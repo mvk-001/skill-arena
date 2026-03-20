@@ -30,7 +30,8 @@
     "evolve": "node ./src/cli/evolve-cli.js",
     "generate:config": "node ./src/cli/generate-promptfoo-config.js",
     "run:benchmark": "node ./src/cli/run-benchmark.js",
-    "benchmark:compare": "node ./src/cli/run-compare.js"
+    "benchmark:compare": "node ./src/cli/run-compare.js",
+    "benchmark:compare:dry-run": "node ./src/cli/run-compare-dry-run.js"
   },
   "dependencies": {
     "@openai/codex-sdk": "^0.114.0",

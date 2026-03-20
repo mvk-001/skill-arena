@@ -40,50 +40,58 @@ export function expandCompareConfigToManifest(compareConfig) {
     task: compareConfig.task,
     workspace: compareConfig.workspace,
     scenarios: compareConfig.comparison.variants.flatMap((variant) =>
-      compareConfig.comparison.skillModes.map((skillModeVariant) =>
-        buildScenario(compareConfig, variant, skillModeVariant),
+      compareConfig.comparison.profiles.map((profile) =>
+        buildScenario(compareConfig, variant, profile),
       ),
     ),
   };
 }
 
-function buildScenario(compareConfig, variant, skillModeVariant) {
-  const skillSource = skillModeVariant.skillSource;
-  const skillStateLabel = skillModeVariant.skillMode === "enabled" ? "on" : "off";
+function buildScenario(compareConfig, variant, profile) {
+  const skillSource = profile.skillSource;
+  const skillStateLabel = profile.skillMode === "enabled" ? "on" : "off";
   const adapterDisplayName = variant.output?.labels?.adapterDisplayName ?? variant.agent.adapter;
   const variantDisplayName = variant.output?.labels?.variantDisplayName ?? adapterDisplayName ?? variant.id;
   const reportDisplayName = compareConfig.comparison.variants.length > 1
-    ? `${adapterDisplayName}:${skillModeVariant.id}`
-    : skillModeVariant.id;
+    ? `${adapterDisplayName}:${profile.id}`
+    : profile.id;
 
   return {
-    id: `${variant.id}-${skillModeVariant.id}`,
-    description: `${variant.description} | ${skillModeVariant.description}`,
-    skillMode: skillModeVariant.skillMode,
-    skill: skillModeVariant.skill,
+    id: `${variant.id}-${profile.id}`,
+    description: `${variant.description} | ${profile.description}`,
+    skillMode: profile.skillMode,
+    skill: profile.skill,
     skillSource,
+    profile: {
+      id: profile.id,
+      description: profile.description,
+      isolation: profile.isolation,
+      capabilities: profile.capabilities,
+    },
     agent: variant.agent,
     evaluation: compareConfig.evaluation,
     output: {
       tags: [
         ...compareConfig.benchmark.tags,
         ...(variant.output?.tags ?? []),
-        ...(skillModeVariant.output?.tags ?? []),
+        ...(profile.output?.tags ?? []),
       ],
       labels: {
         adapter: variant.agent.adapter,
         adapterDisplayName,
-        displayName: skillModeVariant.id,
+        displayName: profile.id,
+        profileDisplayName: profile.id,
+        profileId: profile.id,
         reportDisplayName,
         model: variant.agent.model ?? "default",
         skill: skillStateLabel,
-        skillDisplayName: skillModeVariant.id,
-        skillModeId: skillModeVariant.id,
+        skillDisplayName: profile.id,
+        skillModeId: profile.id,
         skillSource,
         variant: variant.id,
         variantDisplayName,
         ...(variant.output?.labels ?? {}),
-        ...(skillModeVariant.output?.labels ?? {}),
+        ...(profile.output?.labels ?? {}),
       },
     },
   };

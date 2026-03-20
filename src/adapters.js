@@ -117,6 +117,15 @@ function resolveAdditionalDirectory(workspaceDirectory, directory) {
 }
 
 function resolveSkillStrategy(scenario) {
+  const profileSkills = scenario?.profile?.capabilities?.skills;
+  if (Array.isArray(profileSkills) && profileSkills.length > 0) {
+    const strategies = new Set(profileSkills.map((skill) => skill.install?.strategy ?? "none"));
+    if (strategies.size === 1) {
+      return [...strategies][0];
+    }
+    return "mixed";
+  }
+
   if (scenario?.skill?.install?.strategy) {
     return scenario.skill.install.strategy;
   }
@@ -146,7 +155,7 @@ function mergeCodexSkillConfig({
   allowedSkillIds,
   codexHome,
 }) {
-  if (strategy === "system-installed") {
+  if (strategy === "system-installed" || strategy === "mixed") {
     return baseConfig;
   }
 

@@ -40,12 +40,39 @@ const outputSchema = z.object({
   labels: {},
 });
 
+const genericCapabilityEntrySchema = z.object({
+  source: z.object({
+    type: z.string().min(1),
+  }).passthrough().optional(),
+  install: z.object({
+    strategy: z.string().min(1),
+  }).optional(),
+}).passthrough();
+
 const rawSkillModeVariantSchema = z.object({
   id: slugSchema,
   description: z.string().min(1),
   skillMode: z.enum(["enabled", "disabled"]),
   skillSource: z.enum(["workspace-overlay", "system-installed", "none"]).optional(),
   skill: skillSchema.optional(),
+  output: outputSchema.optional(),
+});
+
+const rawProfileSchema = z.object({
+  id: slugSchema,
+  description: z.string().min(1),
+  isolation: z.object({
+    inheritSystem: z.boolean().default(false),
+  }).optional(),
+  capabilities: z.object({
+    instructions: z.array(genericCapabilityEntrySchema).optional(),
+    skills: z.array(skillSchema).optional(),
+    agents: z.array(genericCapabilityEntrySchema).optional(),
+    hooks: z.array(genericCapabilityEntrySchema).optional(),
+    mcp: z.array(genericCapabilityEntrySchema).optional(),
+    extensions: z.array(genericCapabilityEntrySchema).optional(),
+    plugins: z.array(genericCapabilityEntrySchema).optional(),
+  }).default({}),
   output: outputSchema.optional(),
 });
 
@@ -70,11 +97,23 @@ const rawCompareConfigSchema = z.object({
   workspace: workspaceSchema,
   evaluation: evaluationSchema,
   comparison: z.object({
-    skillModes: z.array(rawSkillModeVariantSchema).min(1),
+    profiles: z.array(rawProfileSchema).min(1).optional(),
+    skillModes: z.array(rawSkillModeVariantSchema).min(1).optional(),
     variants: z.array(compareVariantSchema).min(1),
   }),
 }).superRefine((config, context) => {
-  config.comparison.skillModes.forEach((skillMode, index) => {
+  const hasProfiles = Array.isArray(config.comparison.profiles);
+  const hasSkillModes = Array.isArray(config.comparison.skillModes);
+
+  if (!hasProfiles && !hasSkillModes) {
+    context.addIssue({
+      code: "custom",
+      message: "Compare configs must define comparison.profiles or legacy comparison.skillModes.",
+      path: ["comparison"],
+    });
+  }
+
+  config.comparison.skillModes?.forEach((skillMode, index) => {
     if (skillMode.skillMode === "enabled" && !skillMode.skill) {
       context.addIssue({
         code: "custom",
@@ -107,19 +146,38 @@ const normalizedCompareConfigSchema = z.object({
     noCache: z.boolean(),
   }),
   comparison: z.object({
-    skillModes: z.array(z.object({
+    profiles: z.array(z.object({
       id: slugSchema,
       description: z.string().min(1),
+      isolation: z.object({
+        inheritSystem: z.boolean(),
+      }),
+      capabilities: z.object({
+        instructions: z.array(genericCapabilityEntrySchema),
+        skills: z.array(z.object({
+          source: z.object({
+            type: z.string().min(1),
+          }).passthrough(),
+          install: z.object({
+            strategy: z.enum(["none", "workspace-overlay", "system-installed"]),
+          }),
+        })),
+        agents: z.array(genericCapabilityEntrySchema),
+        hooks: z.array(genericCapabilityEntrySchema),
+        mcp: z.array(genericCapabilityEntrySchema),
+        extensions: z.array(genericCapabilityEntrySchema),
+        plugins: z.array(genericCapabilityEntrySchema),
+      }),
       skillMode: z.enum(["enabled", "disabled"]),
       skill: z.object({
         source: z.object({
           type: z.string().min(1),
         }).passthrough(),
         install: z.object({
-          strategy: z.enum(["none", "workspace-overlay", "system-installed"]),
+          strategy: z.enum(["none", "workspace-overlay", "system-installed", "mixed"]),
         }),
       }),
-      skillSource: z.enum(["workspace-overlay", "system-installed", "none"]),
+      skillSource: z.enum(["workspace-overlay", "system-installed", "none", "mixed"]),
       output: outputSchema,
     })).min(1),
     variants: z.array(compareVariantSchema).min(1),
@@ -131,7 +189,7 @@ export const compareConfigSchema = rawCompareConfigSchema
   .pipe(normalizedCompareConfigSchema)
   .superRefine((config, context) => {
     const variantIds = new Set();
-    const skillModeIds = new Set();
+    const profileIds = new Set();
 
     for (const variant of config.comparison.variants) {
       if (variantIds.has(variant.id)) {
@@ -144,29 +202,53 @@ export const compareConfigSchema = rawCompareConfigSchema
       variantIds.add(variant.id);
     }
 
-    for (const skillMode of config.comparison.skillModes) {
-      if (skillModeIds.has(skillMode.id)) {
+    for (const profile of config.comparison.profiles) {
+      if (profileIds.has(profile.id)) {
         context.addIssue({
           code: "custom",
-          message: `Duplicate comparison skill mode id "${skillMode.id}".`,
-          path: ["comparison", "skillModes"],
+          message: `Duplicate comparison profile id "${profile.id}".`,
+          path: ["comparison", "profiles"],
         });
       }
-      skillModeIds.add(skillMode.id);
+      profileIds.add(profile.id);
 
-      if (skillMode.skillMode === "disabled" && skillMode.skill.install.strategy !== "none") {
+      if (profile.isolation.inheritSystem) {
         context.addIssue({
           code: "custom",
-          message: "Disabled skill variants must resolve to skill.install.strategy \"none\".",
-          path: ["comparison", "skillModes"],
+          message: "Compare profiles must keep isolation.inheritSystem set to false in V1.",
+          path: ["comparison", "profiles"],
         });
       }
 
-      if (skillMode.skillMode === "enabled" && skillMode.skill.source.type === "none") {
+      if (profile.skillMode === "disabled" && profile.capabilities.skills.length > 0) {
         context.addIssue({
           code: "custom",
-          message: "Enabled skill variants must resolve to a concrete skill source.",
-          path: ["comparison", "skillModes"],
+          message: "Disabled compare profiles must not resolve visible skills.",
+          path: ["comparison", "profiles"],
+        });
+      }
+
+      if (profile.skillMode === "enabled" && profile.capabilities.skills.length === 0) {
+        context.addIssue({
+          code: "custom",
+          message: "Enabled compare profiles must resolve to at least one skill capability.",
+          path: ["comparison", "profiles"],
+        });
+      }
+
+      if (profile.skillMode === "disabled" && profile.skill.install.strategy !== "none") {
+        context.addIssue({
+          code: "custom",
+          message: "Disabled compare profiles must resolve to skill.install.strategy \"none\".",
+          path: ["comparison", "profiles"],
+        });
+      }
+
+      if (profile.skillMode === "enabled" && profile.skill.source.type === "none") {
+        context.addIssue({
+          code: "custom",
+          message: "Enabled compare profiles must resolve to a concrete skill source.",
+          path: ["comparison", "profiles"],
         });
       }
     }

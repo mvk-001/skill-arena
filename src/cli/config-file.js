@@ -33,7 +33,7 @@ export function detectConfigKind(parsedConfig, configPath) {
   const hasComparison = parsedConfig?.comparison
     && typeof parsedConfig.comparison === "object"
     && "variants" in parsedConfig.comparison
-    && "skillModes" in parsedConfig.comparison;
+    && ("skillModes" in parsedConfig.comparison || "profiles" in parsedConfig.comparison);
   const hasScenarios = Array.isArray(parsedConfig.scenarios);
 
   if (hasComparison) {

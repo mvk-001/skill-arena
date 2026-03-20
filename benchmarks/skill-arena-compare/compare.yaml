@@ -23,11 +23,11 @@ task:
           - type: contains
             value: brainstorming
     - id: sunday-brainstorming-compare-jurisdiction
-      description: Generate a complete compare.yaml with both skill modes.
+      description: Generate a complete compare.yaml with isolated profiles.
       prompt: >-
         Create `deliverables/compare.yaml` for
         https://github.com/obra/superpowers/tree/main/skills/brainstorming.
-        Ensure the file includes both `no-skill` and `skill` modes,
+        Ensure the file includes both `no-skill` and `skill` profiles,
         with `skill` installed from git via `workspace-overlay`.
         Return only valid YAML.
       evaluation:
@@ -92,9 +92,9 @@ evaluation:
           && hasRuntimeRelativeWorkspace
           && /^evaluation:\n  assertions:\n/m.test(normalized)
           && /^\s+- id:\s+no-skill\s*$/m.test(normalized)
-          && /^\s+skillMode:\s+disabled\s*$/m.test(normalized)
+          && /^\s+capabilities:\s+\{\}\s*$/m.test(normalized)
           && /^\s+- id:\s+skill\s*$/m.test(normalized)
-          && /^\s+skillMode:\s+enabled\s*$/m.test(normalized)
+          && /^\s+skills:\s*$/m.test(normalized)
           && /^\s+strategy:\s+workspace-overlay\s*$/m.test(normalized)
           && /^\s+repo:\s+https:\/\/github\.com\/obra\/superpowers(?:\.git)?\s*$/m.test(normalized)
           && /^\s+ref:\s+main\s*$/m.test(normalized)
@@ -110,20 +110,24 @@ evaluation:
   maxConcurrency: 8
   noCache: true
 comparison:
-  skillModes:
+  profiles:
     - id: no-skill
-      description: Baseline without the brainstorming skill.
-      skillMode: disabled
+      description: Fully isolated baseline without the brainstorming skill.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
     - id: skill
-      description: Enabled compare-authoring skill from the workspace overlay.
-      skillMode: enabled
-      skill:
-        source:
-          type: local-path
-          path: skills/skill-arena-compare
-          skillId: skill-arena-compare
-        install:
-          strategy: workspace-overlay
+      description: Compare-authoring profile with only the local skill-arena-compare skill enabled.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: skills/skill-arena-compare
+              skillId: skill-arena-compare
+            install:
+              strategy: workspace-overlay
       output:
         tags:
           - skill
