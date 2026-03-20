@@ -1,5 +1,7 @@
 # Testing
 
+Read this after [Usage Guide](./usage.md). Use [Specs](./specs.md) for canonical fields and [Architecture](./architecture.md) when a failure looks like a runner or adapter problem.
+
 ## Prerequisites
 
 - Node.js 24 or newer
@@ -7,6 +9,22 @@
 - Local Codex CLI available on `PATH` as `codex`
 - Local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
 - Codex authenticated on the machine before running live benchmarks
+
+## Recommended loop
+
+Use this by default after runtime or benchmark changes:
+
+```bash
+npm test
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+```
+
+Run the live compare only when the dry-run and unit tests look clean:
+
+```bash
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+```
 
 ## What to run
 

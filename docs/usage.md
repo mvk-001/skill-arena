@@ -1,5 +1,7 @@
 # Usage Guide
 
+Read this after [README.md](../README.md). Use [Specs](./specs.md) for field-level rules, [Architecture](./architecture.md) for execution flow, and [Testing](./testing.md) for the validation loop.
+
 Use `manifest.yaml` when you want scenario-oriented runs. Use `compare.yaml` when you want one Promptfoo eval with:
 
 - profile columns such as `baseline`, `skill`, or `skill-plus-agent`
@@ -8,7 +10,9 @@ Use `manifest.yaml` when you want scenario-oriented runs. Use `compare.yaml` whe
 
 In both formats, `evaluation.requests` is the execution count. For compare configs, it defaults to `10` when omitted. `evaluation.maxConcurrency` is optional; when omitted, the harness uses the local machine parallelism.
 
-Use the packaged CLI directly when you prefer a single command shape:
+## Fast path
+
+Use the packaged CLI directly when you want one command shape for both config types:
 
 ```bash
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
@@ -16,6 +20,12 @@ npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
 npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
+
+Useful references:
+
+- [Maintained compare benchmark](../benchmarks/skill-arena-compare/compare.yaml)
+- [Smoke compare benchmark](../benchmarks/smoke-skill-following/compare.yaml)
+- [Copilot compare benchmark](../benchmarks/copilot-cli-smoke-compare/compare.yaml)
 
 ## Installation and execution options
 
@@ -104,6 +114,10 @@ Command reference:
 - `--maxConcurrency <n>`: alias accepted by the evaluator CLI for convenience.
 
 `skill-arena --help` prints the top-level help, and `skill-arena help <command>` prints per-command usage.
+
+## Choose a config shape
+
+Use [Specs](./specs.md) for the canonical schema. The examples below are intentionally minimal.
 
 ## Benchmark manifest
 
@@ -358,6 +372,18 @@ Preferred explicit skill source options:
 - `local-path`: point to one local skill folder containing `SKILL.md`
 - `inline`: define one `SKILL.md` directly in YAML
 - `git`: clone a repo and select one skill folder with optional `skillPath`
+
+## Validation loop
+
+Use this sequence for most changes:
+
+```bash
+npm test
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+```
+
+For live compare execution and artifact review, continue in [Testing](./testing.md).
 
 ## Repository hygiene
 

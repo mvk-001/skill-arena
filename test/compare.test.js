@@ -1210,9 +1210,10 @@ test("skill-arena-compare plan scales eval timeout by batched compare workload",
     },
   );
 
-  assert.match(stdout, /\| Total requests \| 32 \|/);
+  assert.match(stdout, /\| Unsupported cells \| 0 \|/);
+  assert.match(stdout, /\| Total requests \| 48 \|/);
   assert.match(stdout, /\| Parallel requests \| 8 \|/);
-  assert.match(stdout, /\| Effective timeout \| 4800000 ms \|/);
+  assert.match(stdout, /\| Effective timeout \| 7200000 ms \|/);
 });
 
 test("compare dry-run rewrites local judge shorthand into a packaged Promptfoo provider", async () => {
@@ -1408,13 +1409,28 @@ test("skill-arena-compare benchmark uses the remote skill and prompt-specific ev
     ["git", "local-path"].includes(compareConfig.comparison.profiles[1].capabilities.skills[0].source.type),
     true,
   );
-  assert.equal(compareConfig.task.prompts.length, 2);
+  assert.equal(compareConfig.comparison.profiles.length, 2);
+  assert.deepEqual(
+    compareConfig.comparison.profiles.map((profile) => profile.id),
+    ["no-skill", "skill"],
+  );
+  assert.equal(compareConfig.task.prompts.length, 3);
   assert.equal(compareConfig.task.prompts[0].evaluation.assertions.length > 0, true);
   assert.equal(compareConfig.task.prompts[1].id, "sunday-brainstorming-compare-jurisdiction");
+  assert.equal(compareConfig.task.prompts[2].id, "sunday-brainstorming-compare-multi-prompt");
   assert.equal(compareConfig.evaluation.requests, 8);
   assert.equal(
     compareConfig.evaluation.assertions.some((assertion) =>
-      assertion.type === "contains" && assertion.value === "skills/brainstorming"),
+      assertion.type === "javascript"
+      && assertion.value.includes('JSON.stringify(profileIds) === JSON.stringify(["no-skill", "skill"])')
+      && assertion.value.includes("(agents|extensions|hooks|mcp|plugins)")),
+    true,
+  );
+  assert.equal(
+    compareConfig.evaluation.assertions.some((assertion) =>
+      assertion.type === "javascript"
+      && assertion.value.includes('path.resolve(process.cwd(), "deliverables", "compare.yaml")')
+      && assertion.value.includes("fileText.trim() === normalized.trim()")),
     true,
   );
 });

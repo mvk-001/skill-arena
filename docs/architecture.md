@@ -1,5 +1,7 @@
 # Architecture
 
+Read this after [README.md](../README.md) or [Usage Guide](./usage.md). Use [Specs](./specs.md) for exact schema rules and [Testing](./testing.md) for the validation loop.
+
 ## Purpose
 
 Skill Arena evaluates coding agents on repeatable repository tasks under constrained execution settings. The main comparisons are:
@@ -15,7 +17,7 @@ The harness keeps execution context small, but it does not remove hidden provide
 
 ### Benchmark manifest
 
-The benchmark manifest is the main authoring surface. It defines:
+The benchmark manifest is the scenario-oriented authoring surface. It defines:
 
 - benchmark identity and description
 - the exact task prompt or prompt set
@@ -26,7 +28,7 @@ The benchmark manifest is the main authoring surface. It defines:
 
 ### Compare config
 
-The compare config is the second authoring surface. It defines:
+The compare config is the matrix-oriented authoring surface. It defines:
 
 - benchmark identity and description
 - the exact task prompt or prompt set
@@ -137,6 +139,8 @@ Compare runs write under `results/<benchmark-id>/<timestamp>-compare/` and inclu
 6. Record unsupported adapters as skipped comparison entries and unsupported capability bundles as per-cell unsupported entries.
 7. Export Promptfoo results as JSON.
 8. Normalize the results into a stable comparison matrix plus a merged report.
+
+For concrete config examples, see [Usage Guide](./usage.md) and the maintained [compare benchmark](../benchmarks/skill-arena-compare/compare.yaml).
 
 ## Cross-Tool Capability Mapping
 

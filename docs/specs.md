@@ -1,5 +1,7 @@
 # Specs
 
+Read this after [README.md](../README.md). Use [Usage Guide](./usage.md) for examples, [Architecture](./architecture.md) for flow, and [Testing](./testing.md) for the recommended validation sequence.
+
 ## Goals
 
 The benchmark configuration must be declarative and skill-agnostic. A manifest or compare config should describe enough information for the harness to:
@@ -10,6 +12,16 @@ The benchmark configuration must be declarative and skill-agnostic. A manifest o
 - compare outputs under consistent, reproducible conditions
 
 The repository may contain example fixtures, overlays, and benchmark definitions, but the execution model must not depend on benchmarks being pre-registered in this repository.
+
+Quick links:
+
+- [Benchmark manifest](#benchmark-manifest)
+- [Compare config](#compare-config)
+- [Supported assertion types in V1](#supported-assertion-types-in-v1)
+- [Agent adapter contract](#agent-adapter-contract)
+- [Workspace rules](#workspace-rules)
+- [Result directories](#result-directories)
+- [Minimal execution defaults](#minimal-execution-defaults)
 
 ## Benchmark manifest
 

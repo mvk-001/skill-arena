@@ -1,7 +1,5 @@
 # Skill Arena
 
-## What this project is
-
 Skill Arena is a CLI-first benchmark harness to compare agent behavior in controlled conditions.
 
 It supports:
@@ -13,6 +11,16 @@ It supports:
 - deterministic output artifacts for review and reporting
 
 Execution is routed through Promptfoo with custom local providers for supported adapters.
+
+## Documentation loop
+
+Start here, then go deeper only where needed:
+
+- [Usage guide](./docs/usage.md): author, validate, and run manifests or compare configs
+- [Specs](./docs/specs.md): canonical schema and normalization rules
+- [Architecture](./docs/architecture.md): execution flow and runtime design
+- [Testing](./docs/testing.md): unit tests, coverage, smoke runs, and artifact inspection
+- [Maintained compare benchmark](./benchmarks/skill-arena-compare/compare.yaml): concrete end-to-end example
 
 ## Supported adapters
 
@@ -31,8 +39,6 @@ Current adapters:
 
 ## Installation and invocation
 
-### Repository development mode
-
 ```bash
 git clone <your-fork-or-this-repo-url>
 cd skill-arena
@@ -47,8 +53,6 @@ npm run benchmark:compare:dry-run -- ./benchmarks/skill-arena-compare/compare.ya
 npx . --help
 ```
 
-### Published package
-
 ```bash
 # global install
 npm install -g skill-arena
@@ -59,21 +63,13 @@ npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 
 ## Quickstart
 
-### 1) Create or load a benchmark definition
+### 1. Create or load a benchmark definition
 
-- `manifest.*` files define scenario runs.
-- `compare.*` files define prompt × adapter/mode matrices.
-- Compare columns are declared as `comparison.profiles`.
-- Both can be authored in YAML or JSON in the canonical project formats.
+- Use `manifest.*` for scenario-oriented runs.
+- Use `compare.*` for prompt × variant × profile matrices.
+- Keep authoring against the canonical formats in [docs/specs.md](./docs/specs.md).
 
-Useful references before authoring:
-
-- [Architecture](./docs/architecture.md)
-- [Specs](./docs/specs.md)
-- [Usage guide](./docs/usage.md)
-- [Testing](./docs/testing.md)
-
-### 2) Generate a compare template
+### 2. Generate a compare template
 
 Use the built-in generator to bootstrap a `compare.yaml` with guided TODO fields:
 
@@ -91,14 +87,14 @@ npx skill-arena gen-conf \
   --skill-type git
 ```
 
-### 3) Run an evaluation
+### 3. Run an evaluation
 
 ```bash
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
-### 4) Open the artifacts
+### 4. Open the artifacts
 
 Compare runs write:
 
@@ -123,6 +119,8 @@ report="$(find ./results/skill-arena-compare -path '*/merged/report.md' -print |
 open "$report" 2>/dev/null || xdg-open "$report"
 ```
 
+For authoring details, examples, and artifact expectations, continue in [docs/usage.md](./docs/usage.md).
+
 ## Repository hygiene
 
 The following paths are generated runtime artifacts and should not be pushed:
@@ -145,13 +143,6 @@ skill-arena --help
 skill-arena evaluate <manifest-or-compare-path> [--scenario <scenario-id>] [--dry-run]
 skill-arena gen-conf --help
 skill-arena val-conf --help
-```
-
-Useful aliases and one-off runs:
-
-```bash
-npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
-pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 ## Runtime behavior highlights
