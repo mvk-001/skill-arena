@@ -18,10 +18,18 @@ task:
         Return only the final YAML.
       evaluation:
         assertions:
-          - type: contains
-            value: Sunday
-          - type: contains
-            value: brainstorming
+          - type: javascript
+            value: |
+              const normalized = output.replace(/\r\n/g, "\n");
+              const promptSection = normalized.match(/^task:\n([\s\S]*?)(?=^workspace:\s*$)/m)?.[1] ?? "";
+              const promptCount = (promptSection.match(/^\s+- id:\s+/gm) ?? []).length;
+              const promptText = promptSection.toLowerCase();
+              return promptCount === 1
+                && /sunday/.test(promptText)
+                && /product/.test(promptText)
+                && /brainstorm/.test(promptText)
+                && /only be sold on sundays/.test(promptText)
+                && /skills\/brainstorming/.test(normalized);
     - id: sunday-brainstorming-compare-jurisdiction
       description: Generate a complete compare.yaml with isolated profiles.
       prompt: >-
@@ -32,12 +40,47 @@ task:
         Return only valid YAML.
       evaluation:
         assertions:
-          - type: contains
-            value: "comparison:"
-          - type: contains
-            value: no-skill
-          - type: contains
-            value: "type: git"
+          - type: javascript
+            value: |
+              const normalized = output.replace(/\r\n/g, "\n");
+              const comparisonSection = normalized.match(/^comparison:\n([\s\S]*)$/m)?.[1] ?? "";
+              return /^\s+profiles:\s*$/m.test(normalized)
+                && /^\s+- id:\s+no-skill\s*$/m.test(comparisonSection)
+                && /^\s+- id:\s+skill\s*$/m.test(comparisonSection)
+                && /^\s+inheritSystem:\s+false\s*$/m.test(comparisonSection)
+                && /^\s+capabilities:\s+\{\}\s*$/m.test(comparisonSection)
+                && /^\s+skills:\s*$/m.test(comparisonSection)
+                && /^\s+type:\s+git\s*$/m.test(comparisonSection)
+                && /^\s+strategy:\s+workspace-overlay\s*$/m.test(comparisonSection);
+    - id: sunday-brainstorming-compare-multi-prompt
+      description: Generate a compare.yaml that exercises prompt matrices and prompt-specific assertions.
+      prompt: >-
+        Create `deliverables/compare.yaml` for
+        https://github.com/obra/superpowers/tree/main/skills/brainstorming.
+        The generated compare must use exactly two `task.prompts` for a Sunday-only
+        product brainstorming benchmark: one prompt that expects Markdown and another
+        prompt that expects JSON. Use prompt-specific assertions to distinguish the two
+        response formats. Return only valid YAML.
+      evaluation:
+        assertions:
+          - type: javascript
+            value: |
+              const normalized = output.replace(/\r\n/g, "\n");
+              const promptSection = normalized.match(/^task:\n([\s\S]*?)(?=^workspace:\s*$)/m)?.[1] ?? "";
+              const promptBlocks = promptSection.match(/^\s+- id:\s+[\w-]+\s*\n[\s\S]*?(?=^\s+- id:\s+[\w-]+\s*$|$)/gm) ?? [];
+              if (promptBlocks.length !== 2) {
+                return false;
+              }
+              const hasJsonPrompt = promptBlocks.some((block) =>
+                /json/i.test(block)
+                && /type:\s+is-json\b/.test(block)
+              );
+              const hasMarkdownPrompt = promptBlocks.some((block) =>
+                /markdown/i.test(block)
+                && /type:\s+regex\b/.test(block)
+                && !/type:\s+is-json\b/.test(block)
+              );
+              return hasJsonPrompt && hasMarkdownPrompt;
 workspace:
   sources:
     - id: base
@@ -51,11 +94,21 @@ evaluation:
   assertions:
     - type: regex
       value: "^schemaVersion:\\s*1(?:\\r?\\n|$)"
-    - type: contains
+    - type: file-contains
+      path: deliverables/compare.yaml
+      value: "schemaVersion: 1"
+    - type: file-contains
+      path: deliverables/compare.yaml
       value: "skills/brainstorming"
     - type: javascript
       value: |
         const normalized = output.replace(/\r\n/g, "\n");
+        const fs = process.getBuiltinModule("node:fs");
+        const path = process.getBuiltinModule("node:path");
+        const comparePath = path.resolve(process.cwd(), "deliverables", "compare.yaml");
+        if (!fs.existsSync(comparePath)) {
+          return false;
+        }
         const topLevelKeys = Array.from(
           normalized.matchAll(/^([A-Za-z][A-Za-z0-9-]*):/gm),
           (match) => match[1],
@@ -68,6 +121,9 @@ evaluation:
           Boolean(workspaceSourceMatch)
           && workspacePathValue.length > 0
           && !/^([A-Za-z]:[\\/]|\/)/.test(workspacePathValue);
+        const promptSection = normalized.match(/^task:\n([\s\S]*?)(?=^workspace:\s*$)/m)?.[1] ?? "";
+        const evaluationSection = normalized.match(/^evaluation:\n([\s\S]*?)(?=^comparison:\s*$)/m)?.[1] ?? "";
+        const comparisonSection = normalized.match(/^comparison:\n([\s\S]*)$/m)?.[1] ?? "";
         const forbiddenPatterns = [
           /^\s*```[A-Za-z0-9-]*\s*$/m,
           /^task:\n  prompts:\n    [\w-]+:\s*$/m,
@@ -89,13 +145,26 @@ evaluation:
           "comparison",
         ])
           && /^task:\n  prompts:\n    - id:\s+[\w-]+/m.test(normalized)
+          && /^\s+- id:\s+codex-mini\s*$/m.test(normalized)
+          && /^\s+adapter:\s+codex\s*$/m.test(normalized)
+          && /^\s+model:\s+gpt-5\.1-codex-mini\s*$/m.test(normalized)
           && hasRuntimeRelativeWorkspace
           && /^evaluation:\n  assertions:\n/m.test(normalized)
+          && /^\s+requests:\s+\d+\s*$/m.test(evaluationSection)
+          && /^\s+timeoutMs:\s+\d+\s*$/m.test(evaluationSection)
+          && /^\s+maxConcurrency:\s+\d+\s*$/m.test(evaluationSection)
+          && /^\s+noCache:\s+(true|false)\s*$/m.test(evaluationSection)
+          && /^\s+approvalPolicy:\s+never\s*$/m.test(normalized)
+          && /^\s+reasoningEffort:\s+low\s*$/m.test(normalized)
+          && /^\s+sandboxMode:\s+danger-full-access\s*$/m.test(normalized)
+          && /^\s+webSearchEnabled:\s+false\s*$/m.test(normalized)
+          && /^\s+networkAccessEnabled:\s+true\s*$/m.test(normalized)
           && /^\s+- id:\s+no-skill\s*$/m.test(normalized)
           && /^\s+capabilities:\s+\{\}\s*$/m.test(normalized)
           && /^\s+- id:\s+skill\s*$/m.test(normalized)
           && /^\s+skills:\s*$/m.test(normalized)
           && /^\s+strategy:\s+workspace-overlay\s*$/m.test(normalized)
+          && /^\s+variantDisplayName:\s+codex mini\s*$/m.test(normalized)
           && /^\s+repo:\s+https:\/\/github\.com\/obra\/superpowers(?:\.git)?\s*$/m.test(normalized)
           && /^\s+ref:\s+main\s*$/m.test(normalized)
           && /^\s+subpath:\s+\.\s*$/m.test(normalized)
@@ -103,6 +172,11 @@ evaluation:
           && /^\s+skillId:\s+brainstorming\s*$/m.test(normalized)
           && /^\s+executionMethod:\s+command\s*$/m.test(normalized)
           && /^\s+commandPath:\s+codex\s*$/m.test(normalized)
+          && /brainstorm/i.test(promptSection)
+          && /Sunday/i.test(promptSection)
+          && !/comparison:\n  skillModes:/m.test(normalized)
+          && !/^\s+-\s+local-path:\s*$/m.test(normalized)
+          && !/^\s+approval:\s+/m.test(comparisonSection)
           && forbiddenPatterns.every((pattern) => !pattern.test(normalized));
   requests: 8
   timeoutMs: 1200000
