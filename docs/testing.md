@@ -36,6 +36,8 @@ These validate manifest parsing, Promptfoo config generation, workspace material
 npm test
 ```
 
+The repository test scripts intentionally target `test/*.test.js` only. This keeps generated benchmark artifacts under `results/` from being picked up as accidental test inputs by Node's default test discovery.
+
 With `pnpm`:
 
 ```bash
@@ -162,6 +164,7 @@ Behavior to expect in compare mode:
 - profiles appear as side-by-side columns in the same Promptfoo eval
 - rows are variant and prompt pairs
 - `evaluation.requests` controls the pass ratio denominator for each compare cell
+- compare cells report pass ratio plus total-token aggregates as average and standard deviation when token usage is available
 - unsupported adapters are listed as skipped entries in the merged report
 - unsupported profile capability bundles are rendered as `unsupported` cells instead of aborting the compare run
 
@@ -248,7 +251,7 @@ At the end of `skill-arena evaluate` in compare mode, the CLI prints:
 - the merged JSON summary
 - explicit artifact paths for `Compare summary`, `Final merged summary`, and `Final merged report`
 
-`summary.json` includes a `matrix` section with compare columns, rows, and per-cell pass ratios such as `40% (4/10)`.
+`summary.json` includes a `matrix` section with compare columns, rows, and per-cell summaries such as `40% (4/10)<br>tokens avg 120, sd 15.5`.
 
 For profile-isolation validation after runtime changes, add at least one compare dry-run that:
 

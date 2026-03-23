@@ -6,7 +6,7 @@ Use `manifest.yaml` when you want scenario-oriented runs. Use `compare.yaml` whe
 
 - profile columns such as `baseline`, `skill`, or `skill-plus-agent`
 - rows by `prompt x agent/configuration`
-- per-cell pass ratios such as `40% (4/10)`
+- per-cell pass ratios such as `40% (4/10)<br>tokens avg 120, sd 15.5`
 
 In both formats, `evaluation.requests` is the execution count. For compare configs, it defaults to `10` when omitted. `evaluation.maxConcurrency` is optional; when omitted, the harness uses the local machine parallelism.
 
@@ -358,7 +358,7 @@ What compare mode produces:
 - Promptfoo columns by profile
 - Promptfoo rows by variant and prompt
 - `summary.json` with a `matrix` section
-- `merged/report.md` with cells like `40% (4/10)`
+- `merged/report.md` with cells like `40% (4/10)<br>tokens avg 120, sd 15.5`
 
 Legacy compatibility:
 

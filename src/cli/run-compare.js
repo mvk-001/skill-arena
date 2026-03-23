@@ -586,6 +586,12 @@ function buildMatrix({
         errors: 0,
         passRate: 0,
         displayValue: "unsupported",
+        tokenUsage: {
+          count: 0,
+          averageTotalTokens: null,
+          stddevTotalTokens: null,
+          samples: [],
+        },
         sampleOutputs: [],
         reason: skippedCell.reason,
       };
@@ -620,6 +626,12 @@ function buildMatrix({
       errors: 0,
       passRate: 0,
       displayValue: "-",
+      tokenUsage: {
+        count: 0,
+        averageTotalTokens: null,
+        stddevTotalTokens: null,
+        samples: [],
+      },
       sampleOutputs: [],
     };
 
@@ -628,7 +640,13 @@ function buildMatrix({
     cellEntry.failedRuns += output.success === false ? 1 : 0;
     cellEntry.errors += output.error ? 1 : 0;
     cellEntry.passRate = evaluationRequests > 0 ? cellEntry.passedRuns / evaluationRequests : 0;
-    cellEntry.displayValue = `${formatPercent(cellEntry.passRate)} (${cellEntry.passedRuns}/${evaluationRequests})`;
+    cellEntry.tokenUsage = buildTokenUsageSummary(cellEntry.tokenUsage, output.tokenUsage);
+    cellEntry.displayValue = formatCellDisplayValue({
+      passRate: cellEntry.passRate,
+      passedRuns: cellEntry.passedRuns,
+      evaluationRequests,
+      tokenUsage: cellEntry.tokenUsage,
+    });
 
     if (cellEntry.sampleOutputs.length < 3 && output.text !== null) {
       cellEntry.sampleOutputs.push(output.text);
@@ -651,7 +669,7 @@ function buildMatrix({
       return (left.promptDescription ?? left.promptId).localeCompare(
         right.promptDescription ?? right.promptId,
       );
-    }),
+    }).map(stripCellComputationState),
   };
 }
 
@@ -692,6 +710,118 @@ function buildScenarioStats(outputs) {
 
 function formatPercent(value) {
   return `${(value * 100).toFixed(0)}%`;
+}
+
+function formatCellDisplayValue({ passRate, passedRuns, evaluationRequests, tokenUsage }) {
+  const passRatioText = `${formatPercent(passRate)} (${passedRuns}/${evaluationRequests})`;
+  const tokensText = formatTokenUsageDisplay(tokenUsage);
+
+  if (!tokensText) {
+    return passRatioText;
+  }
+
+  return `${passRatioText}<br>tokens avg ${tokensText.average}, sd ${tokensText.stddev}`;
+}
+
+function formatTokenUsageDisplay(tokenUsage) {
+  if (!tokenUsage || tokenUsage.count === 0) {
+    return null;
+  }
+
+  return {
+    average: formatNumericMetric(tokenUsage.averageTotalTokens),
+    stddev: formatNumericMetric(tokenUsage.stddevTotalTokens),
+  };
+}
+
+function buildTokenUsageSummary(currentSummary, tokenUsage) {
+  const previous = currentSummary ?? {
+    count: 0,
+    averageTotalTokens: null,
+    stddevTotalTokens: null,
+    samples: [],
+  };
+  const totalTokens = extractTotalTokens(tokenUsage);
+
+  if (typeof totalTokens !== "number") {
+    return previous;
+  }
+
+  const samples = [
+    ...(Array.isArray(previous.samples) ? previous.samples : []),
+    totalTokens,
+  ];
+
+  return summarizeTokenSamples(samples);
+}
+
+function summarizeTokenSamples(samples) {
+  if (!Array.isArray(samples) || samples.length === 0) {
+    return {
+      count: 0,
+      averageTotalTokens: null,
+      stddevTotalTokens: null,
+    };
+  }
+
+  const count = samples.length;
+  const averageTotalTokens = samples.reduce((sum, value) => sum + value, 0) / count;
+  const variance = samples.reduce(
+    (sum, value) => sum + ((value - averageTotalTokens) ** 2),
+    0,
+  ) / count;
+
+  return {
+    count,
+    averageTotalTokens,
+    stddevTotalTokens: Math.sqrt(variance),
+    samples,
+  };
+}
+
+function extractTotalTokens(tokenUsage) {
+  if (typeof tokenUsage === "number" && Number.isFinite(tokenUsage)) {
+    return tokenUsage;
+  }
+
+  if (
+    tokenUsage
+    && typeof tokenUsage.total === "number"
+    && Number.isFinite(tokenUsage.total)
+  ) {
+    return tokenUsage.total;
+  }
+
+  return null;
+}
+
+function formatNumericMetric(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "n/a";
+  }
+
+  return value.toFixed(value >= 100 ? 0 : 1);
+}
+
+function stripCellComputationState(row) {
+  return {
+    ...row,
+    cells: Object.fromEntries(
+      Object.entries(row.cells ?? {}).map(([cellId, cell]) => [
+        cellId,
+        {
+          ...cell,
+          tokenUsage: cell.tokenUsage
+            ? {
+              count: cell.tokenUsage.count ?? 0,
+              averageTotalTokens: cell.tokenUsage.averageTotalTokens ?? null,
+              stddevTotalTokens: cell.tokenUsage.stddevTotalTokens ?? null,
+            }
+            : null,
+        },
+      ]),
+    ),
+  };
 }
 
 function printExecutionPlan({

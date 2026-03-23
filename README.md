@@ -167,6 +167,8 @@ Compare runs include the merged report and merged summary under:
 - `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
 - `results/<benchmark-id>/<timestamp>-compare/merged/merged-summary.json`
 
+Compare result cells include pass ratio and, when the provider reports usage, total-token average plus standard deviation for the runs in that cell.
+
 You can inspect Promptfoo output directly when needed:
 
 ```bash
