@@ -1,194 +1,118 @@
 # Skill Arena
 
-Skill Arena is a CLI-first benchmark harness to evaluate agent behavior in controlled conditions.
+Skill Arena is a CLI-first benchmark harness for comparing coding agents under the same task, workspace, and constraint conditions.
 
-It supports:
+Use it to measure whether an agent performs better:
 
-- scenario-based runs via `manifest.*` files
-- matrix evaluation configs via `compare.*` files
-- reproducible, isolated execution workspaces
-- isolated capability profiles such as baseline, skill-only, or explicit capability bundles
-- deterministic output artifacts for review and reporting
+- with or without a skill
+- across different adapters or models
+- under isolated capability profiles such as `baseline` and `skill`
+- with reproducible workspaces and stable result artifacts
 
-Execution is routed through Promptfoo with custom local providers for supported adapters.
+Execution runs through Promptfoo, but benchmark authoring stays in Skill Arena manifests and compare configs.
 
-## Documentation loop
+## What You Can Do
 
-Start here, then go deeper only where needed:
+- Run scenario benchmarks from `manifest.yaml` files.
+- Run side-by-side matrix evaluations from `compare.yaml` files.
+- Materialize clean per-run workspaces from local, inline, or Git sources.
+- Compare adapters such as `codex`, `copilot-cli`, and `pi`.
+- Generate deterministic artifacts under `results/` for review and reporting.
 
-- [Usage guide](./docs/usage.md): author, validate, and run manifests or matrix evaluation configs
-- [Specs](./docs/specs.md): canonical schema and normalization rules
-- [Architecture](./docs/architecture.md): execution flow and runtime design
-- [Testing](./docs/testing.md): unit tests, coverage, smoke runs, artifact inspection, and optional `rust-code-analysis` usage
-- [Maintained evaluation benchmark](./benchmarks/skill-arena-compare/compare.yaml): concrete end-to-end example
+## Quick Start
 
-## Supported adapters
-
-Current adapters:
-
-- `codex`
-- `copilot-cli`
-- `pi`
-
-## Requirements
+### Requirements
 
 - Node.js 24+
+- `git` on `PATH`
 - Local `codex` CLI installed and authenticated
-- Local `copilot` CLI on `PATH` (only for `copilot-cli` variants)
-- `git` available in PATH (for git-based workspace/skill sources)
+- Optional: local `copilot` CLI on `PATH` for `copilot-cli` variants
 
-## Installation and invocation
+### Install
 
 ```bash
-git clone <your-fork-or-this-repo-url>
+git clone <repo-url>
 cd skill-arena
 npm install
 ```
 
-Run with one of:
+### Run the maintained example
 
 ```bash
-npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
-npm run benchmark:evaluate:dry-run -- ./benchmarks/skill-arena-compare/compare.yaml
-npx . --help
+npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
-```bash
-# global install
-npm install -g skill-arena
+### Validate a config
 
-# or one-off execution
-npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+```bash
+npx . val-conf ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
-## Quickstart
-
-### 1. Create or load a benchmark definition
-
-- Use `manifest.*` for scenario-oriented runs.
-- Use `compare.*` for prompt × variant × profile evaluation matrices.
-- Keep authoring against the canonical formats in [docs/specs.md](./docs/specs.md).
-
-### 2. Generate an evaluation template
-
-Use the built-in generator to bootstrap an evaluation config with guided TODO fields:
+### Generate a starter compare config
 
 ```bash
-npx skill-arena gen-conf \
+npx . gen-conf \
   --output ./benchmarks/my-benchmark/compare.yaml \
-  --prompt "summarize file A" \
-  --evaluation-type javascript \
-  --evaluation-value @checks.js \
-  --prompt "create an evaluation script" \
+  --prompt "Read the repository and summarize the architecture." \
   --evaluation-type llm-rubric \
-  --evaluation-value "Score 1.0 only if the script is present and correct." \
+  --evaluation-value "Score 1.0 only if the answer covers the main architecture." \
   --requests 3 \
-  --maxConcurrency 8 \
-  --skill-type git
+  --skill-type local-path
 ```
 
-### 3. Run an evaluation
+## Start Here
 
-```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
-npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+If you are new to the repository, this is the shortest path:
+
+1. Read [Usage Guide](./docs/usage.md) for the common workflows.
+2. Open [maintained compare benchmark](./benchmarks/skill-arena-compare/compare.yaml) for a concrete example.
+3. Use [Specs](./docs/specs.md) when you need field-level rules.
+4. Use [Testing](./docs/testing.md) when you are changing runtime code or benchmark definitions.
+
+## Choose The Config Shape
+
+- Use `manifest.yaml` for scenario-oriented runs.
+- Use `compare.yaml` for one matrix evaluation with profile columns and variant/prompt rows.
+
+Examples in this repository:
+
+- [Maintained compare benchmark](./benchmarks/skill-arena-compare/compare.yaml)
+- [Smoke benchmark](./benchmarks/smoke-skill-following/compare.yaml)
+- [Copilot smoke benchmark](./benchmarks/copilot-cli-smoke-compare/compare.yaml)
+
+## Result Artifacts
+
+Runs write predictable artifacts under `results/`.
+
+Scenario runs write to:
+
+```text
+results/<benchmark-id>/<timestamp>-<scenario-id>/
 ```
 
-### 4. Open the artifacts
+Compare runs write to:
 
-Matrix evaluation runs write:
-
-- `results/<benchmark-id>/<timestamp>-compare/promptfooconfig.yaml`
-- `results/<benchmark-id>/<timestamp>-compare/promptfoo-results.json`
-- `results/<benchmark-id>/<timestamp>-compare/summary.json`
-- `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
-
-Open the latest merged report (PowerShell):
-
-```powershell
-$report = Get-ChildItem .\results\skill-arena-compare\*\merged\report.md |
-  Sort-Object LastWriteTime -Descending |
-  Select-Object -First 1 -ExpandProperty FullName
-Start-Process $report
+```text
+results/<benchmark-id>/<timestamp>-compare/
 ```
 
-Open the latest merged report on macOS or Linux:
+Most useful files:
 
-```bash
-report="$(find ./results/skill-arena-compare -path '*/merged/report.md' -print | tail -n 1)"
-open "$report" 2>/dev/null || xdg-open "$report"
-```
+- `promptfooconfig.yaml`
+- `promptfoo-results.json`
+- `summary.json`
+- `merged/report.md` for compare runs
 
-For authoring details, examples, and artifact expectations, continue in [docs/usage.md](./docs/usage.md).
+## Documentation
 
-## Repository hygiene
+- [Usage Guide](./docs/usage.md): common commands and authoring flow
+- [Specs](./docs/specs.md): canonical schema and normalization rules
+- [Architecture](./docs/architecture.md): execution model and adapter/runtime design
+- [Testing](./docs/testing.md): validation loop, coverage, and live benchmark checks
 
-The following paths are generated runtime artifacts and should not be pushed:
+## Supported Adapters
 
-- `.tmp/`
-- `tmp/`
-- `coverage/`
-- `reports/`
-- `results/`
-- `node_modules/`
-- `deliverables/`
-- `skill-arena-*.tgz`
-
-These paths are ignored in `.gitignore`.
-
-## CLI usage
-
-```bash
-skill-arena --help
-skill-arena evaluate <benchmark-config-path> [--scenario <scenario-id>] [--dry-run]
-skill-arena gen-conf --help
-skill-arena val-conf --help
-```
-
-## Runtime behavior highlights
-
-- Isolation is workspace-centered and per scenario.
-- Matrix evaluation runs default to deny-all profile isolation and expose only explicitly declared capabilities.
-- Scenario skill mounting is deterministic and based on the manifest and matrix-evaluation specification.
-- `codex` and `pi` adapters can run with strict default skill scope.
-- No task-specific hidden instructions are injected by the harness outside benchmark-defined data.
-
-## Output and reporting
-
-Scenario runs create:
-
-- `results/<benchmark-id>/<timestamp>-<scenario-id>/workspace/`
-- `results/<benchmark-id>/<timestamp>-<scenario-id>/promptfooconfig.yaml`
-- `results/<benchmark-id>/<timestamp>-<scenario-id>/promptfoo-results.json`
-- `results/<benchmark-id>/<timestamp>-<scenario-id>/summary.json`
-
-Matrix evaluation runs include the merged report and merged summary under:
-
-- `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
-- `results/<benchmark-id>/<timestamp>-compare/merged/merged-summary.json`
-
-Matrix evaluation result cells include pass ratio and, when available:
-
-- total-token average plus standard deviation for the runs in that cell
-- per-metric code deltas from `rust-code-analysis` for modified original files only, reported as cell-level average plus standard deviation
-
-For standalone installation and local complexity analysis commands, see [docs/testing.md](./docs/testing.md).
-
-You can inspect Promptfoo output directly when needed:
-
-```bash
-npx promptfoo@latest view
-```
-
-## Legacy helper scripts
-
-For workflows that still generate an intermediate Promptfoo config for single scenario manifests:
-
-```bash
-npm run generate:config -- ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
-```
-
-## Notes
-
-- This repository intentionally ships the CLI runtime surface under `bin/` and `src/`.
-- Artifact-driven runs are preferred: keep your benchmark definitions as the source of truth and avoid hidden prompt overrides.
+- `codex`
+- `copilot-cli`
+- `pi`

@@ -1,6 +1,6 @@
 # Testing
 
-Read this after [Usage Guide](./usage.md). Use [Specs](./specs.md) for canonical fields and [Architecture](./architecture.md) when a failure looks like a runner or adapter problem.
+Read this after [Usage Guide](./usage.md). This page is the validation and verification playbook. Use [Specs](./specs.md) for canonical fields and [Architecture](./architecture.md) when a failure looks like a runner or adapter problem.
 
 ## Prerequisites
 
@@ -10,7 +10,7 @@ Read this after [Usage Guide](./usage.md). Use [Specs](./specs.md) for canonical
 - Local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
 - Codex authenticated on the machine before running live benchmarks
 
-## Recommended loop
+## Recommended Loop
 
 Use this by default after runtime or benchmark changes:
 
@@ -26,7 +26,7 @@ Run the live evaluation only when the dry-run and unit tests look clean:
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
-## What to run
+## What To Run
 
 ### 1. Run unit tests
 
@@ -68,15 +68,6 @@ Coverage scope for this threshold includes `src/**/*.js` and excludes:
 
 These exclusions keep the quota focused on the unit-testable runtime surface while live benchmark flows continue to exercise the excluded command-oriented entrypoints.
 
-This project currently requires:
-
-- lines >= 93%
-- statements >= 93%
-- branches >= 80%
-- functions >= 95%
-
-All are above the requested 90% minimum.
-
 ### 1b. Optional `rust-code-analysis` usage
 
 Use `rust-code-analysis` only when you want standalone complexity and maintainability metrics in addition to test coverage. Skill Arena also uses this tool opportunistically during matrix evaluation runs to report changed code metrics for modified original files.
@@ -88,7 +79,7 @@ Recommended approach:
 - Prebuilt release binary:
 
 ```powershell
-$toolDir = ".tools/rust-code-analysis"
+$toolDir = Join-Path $env:LOCALAPPDATA "skill-arena\\tools\\rust-code-analysis"
 New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
 Invoke-WebRequest `
   -Uri "https://github.com/mozilla/rust-code-analysis/releases/latest/download/rust-code-analysis-win-cli-x86_64.zip" `
@@ -102,7 +93,7 @@ Expand-Archive `
 Run it directly against this repository:
 
 ```powershell
-.\.tools\rust-code-analysis\target\release\rust-code-analysis-cli.exe `
+& (Join-Path $toolDir "target\\release\\rust-code-analysis-cli.exe") `
   -m --pr -O json `
   -p src -p test -p bin `
   -I "*.js" `
@@ -123,78 +114,40 @@ Useful follow-up checks:
 - rank hotspots by cognitive complexity to identify refactor targets
 - rerun after a refactor and compare the changed metric deltas in the merged compare report
 
-### 2. Validate a benchmark manifest
+### 2. Validate a benchmark config
 
-Use this before running a live benchmark if the manifest changed.
+Use this before running a live benchmark if the config changed:
 
 ```bash
-npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
-YAML is the recommended manifest format. JSON also works if needed.
+### 3. Run a benchmark
 
-### 3. Run any benchmark manifest
-
-The generic command is:
+Use the same command for either config shape:
 
 ```bash
-npm run run:benchmark -- ./benchmarks/<benchmark-id>/manifest.yaml
 skill-arena evaluate ./benchmarks/<benchmark-id>/manifest.yaml
+skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
 ```
 
-To run only one scenario:
-
-```bash
-npm run run:benchmark -- ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
-skill-arena evaluate ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
-```
-
-You can run the same command through auto-detect:
+Run only one manifest scenario with:
 
 ```bash
 skill-arena evaluate ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
 ```
 
-To generate the intermediate Promptfoo config without executing the live eval:
+Generate the Promptfoo config without executing the live eval:
 
 ```bash
-npm run generate:config -- ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
+skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --dry-run
+skill-arena evaluate ./benchmarks/<benchmark-id>/manifest.yaml --dry-run
 ```
 
-To scaffold a commented evaluation config quickly:
+Scaffold a compare config quickly:
 
 ```bash
 skill-arena gen-conf --output ./benchmarks/<benchmark-id>/compare.yaml --prompt "Describe the task." --skill-type local-path
-```
-
-### 3a. Run a matrix evaluation config
-
-Use this when you want one file to drive one Promptfoo eval with multiple side-by-side providers across adapters, models, and isolated capability profiles.
-
-```bash
-npm run benchmark:evaluate -- ./benchmarks/<benchmark-id>/compare.yaml
-skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
-```
-
-You can also use the same path with auto-detect:
-
-```bash
-skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
-```
-
-To validate the scenario expansion without executing live evals:
-
-```bash
-npm run benchmark:evaluate -- ./benchmarks/<benchmark-id>/compare.yaml --dry-run
-npm run benchmark:evaluate:dry-run -- ./benchmarks/<benchmark-id>/compare.yaml
-skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --dry-run
-```
-
-Also for auto-detect:
-
-```bash
-skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --dry-run
 ```
 
 Matrix evaluation local path contract:
@@ -215,12 +168,12 @@ Behavior to expect in matrix evaluation mode:
 - unsupported adapters are listed as skipped entries in the merged report
 - unsupported profile capability bundles are rendered as `unsupported` cells instead of aborting the evaluation run
 
-### 4. Run the maintained sample evaluation benchmark
+### 4. Run the maintained sample benchmark
 
 Use the benchmark kept in this repository:
 
 ```bash
-npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 ### 4a. Recommended benchmark test flow after runtime changes
@@ -229,19 +182,15 @@ Use this short sequence when you change the runner, Promptfoo integration, works
 
 ```bash
 npm test
-npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
-npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 ```
 
 What this covers:
 
-- `npm test` catches unit-level regressions in config generation and result normalization.
-- `validate:manifest` confirms the benchmark input still parses cleanly.
-For matrix-evaluation validation after changing `src/cli/run-compare.js`, also run:
-
-```bash
-npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
-```
+- `npm test` catches unit-level regressions in config generation and result normalization
+- `val-conf` confirms the benchmark input still parses cleanly
+- `evaluate --dry-run` confirms workspace materialization and Promptfoo config generation still work
 
 All benchmark commands:
 
@@ -249,28 +198,21 @@ All benchmark commands:
 - materialize `workspace.sources` in declaration order
 - resolve the skill from local path, Git, inline files, or the system-installed environment when configured
 - generate a Promptfoo config for the selected scenario
-- execute Codex through the custom Promptfoo provider
+- execute the configured adapter through the custom Promptfoo provider
 - write `promptfoo-results.json` and `summary.json`
-- write a benchmark-level `merged-summary.json` and `report.md` when multiple scenarios run in one command
+- write a benchmark-level merged summary and report when compare mode produces merged outputs
 
-If your manifest uses an `llm-rubric` assertion, Promptfoo also runs the judge model configured on that assertion.
+If your config uses an `llm-rubric` assertion, Promptfoo also runs the judge model configured on that assertion.
 
 If the assertion uses `skill-arena:judge:codex`, `skill-arena:judge:copilot-cli`, or `skill-arena:judge:pi`, Promptfoo runs the packaged local custom provider instead of a hosted model API.
 
-If your manifest uses Git-backed workspace or skill sources, the harness downloads them before the agent run. The agent itself still follows the scenario sandbox and network settings.
+If your config uses Git-backed workspace or skill sources, the harness downloads them before the agent run. The agent itself still follows the declared sandbox and network settings.
 
-If your manifest uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `requests` to each one.
+If your config uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `requests` to each one.
 
-If `maxConcurrency` is omitted in a manifest or matrix evaluation config, the harness uses the local machine parallelism by default. In matrix evaluation mode, that resolved value also governs the pre-eval workspace materialization phase so setup and evaluation follow the same concurrency cap.
+If `maxConcurrency` is omitted in a manifest or matrix evaluation config, the harness uses the local machine parallelism by default. In matrix evaluation mode, that resolved value also governs the pre-eval workspace materialization phase.
 
-## `copilot-cli` adapter notes
-
-- V1 supports `copilot-cli` through the local `copilot` command only.
-- `executionMethod: "sdk"` is not supported for `copilot-cli`.
-- Sandbox, network, web search, and approval settings are mapped on a best-effort basis because Copilot CLI does not expose the same control surface as Codex.
-- If `copilot` is not installed or not on `PATH`, the scenario fails with a command execution error.
-
-## Where to inspect results
+## Where To Inspect Results
 
 Each run writes artifacts under:
 
@@ -284,21 +226,13 @@ The most useful files are:
 - `promptfoo-results.json`
 - `summary.json`
 
-`summary.json` is the normalized output to evaluate runs across scenarios.
-
 For matrix evaluation runs, inspect:
 
 - `results/<benchmark-id>/<timestamp>-compare/promptfoo-results.json`
 - `results/<benchmark-id>/<timestamp>-compare/summary.json`
 - `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
 
-At the end of `skill-arena evaluate` in matrix evaluation mode, the CLI prints:
-
-- the final merged markdown report
-- the merged JSON summary
-- explicit artifact paths for `Evaluation summary`, `Final merged summary`, and `Final merged report`
-
-`summary.json` includes a `matrix` section with columns, rows, and per-cell summaries such as `40% (4/10)<br>tokens avg 120, sd 15.5`, plus optional code-metric delta aggregates when static analysis data is available.
+At the end of `skill-arena evaluate` in matrix evaluation mode, the CLI prints the artifact paths for the summary and merged report.
 
 For profile-isolation validation after runtime changes, add at least one matrix-evaluation dry-run that:
 
@@ -306,14 +240,3 @@ For profile-isolation validation after runtime changes, add at least one matrix-
 - includes one empty baseline profile with `inheritSystem: false`
 - includes one explicit capability profile
 - includes one intentionally unsupported capability family and verifies the cell is reported as `unsupported`
-
-## Latest validated results
-
-Use the maintained benchmark in this repository as the smoke-style baseline:
-
-```bash
-npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
-npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
-```
-
-Run outputs are written under `results/skill-arena-compare/<timestamp>-compare/`.

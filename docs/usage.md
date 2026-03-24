@@ -1,19 +1,12 @@
 # Usage Guide
 
-Read this after [README.md](../README.md). Use [Specs](./specs.md) for field-level rules, [Architecture](./architecture.md) for execution flow, and [Testing](./testing.md) for the validation loop.
+Read this after [README.md](../README.md). This page covers the common workflows. Use [Specs](./specs.md) for canonical fields, [Architecture](./architecture.md) for internals, and [Testing](./testing.md) for the validation loop.
 
-Use `manifest.yaml` when you want scenario-oriented runs. Use `compare.yaml` when you want one matrix evaluation with:
+Use `manifest.yaml` for scenario-oriented runs. Use `compare.yaml` for one matrix evaluation with profile columns and variant/prompt rows.
 
-- profile columns such as `baseline`, `skill`, or `skill-plus-agent`
-- rows by `prompt x agent/configuration`
-- per-cell pass ratios such as `40% (4/10)<br>tokens avg 120, sd 15.5`
-- optional per-cell code metric deltas from `rust-code-analysis`, shown only for metrics that changed in modified original files and aggregated as `avg` plus standard deviation
+## Fast Path
 
-In both formats, `evaluation.requests` is the execution count. For matrix evaluation configs, it defaults to `10` when omitted. `evaluation.maxConcurrency` is optional; when omitted, the harness uses the local machine parallelism.
-
-## Fast path
-
-Use the packaged CLI directly when you want one command shape for both config types:
+Start with the maintained example:
 
 ```bash
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
@@ -22,48 +15,11 @@ npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
-Useful references:
+Useful examples:
 
 - [Maintained evaluation benchmark](../benchmarks/skill-arena-compare/compare.yaml)
 - [Smoke evaluation benchmark](../benchmarks/smoke-skill-following/compare.yaml)
 - [Copilot evaluation benchmark](../benchmarks/copilot-cli-smoke-compare/compare.yaml)
-
-## Installation and execution options
-
-- npm install from registry:
-
-```bash
-npm install -g skill-arena
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
-```
-
-- pnpm install from registry:
-
-```bash
-pnpm add -g skill-arena
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
-```
-
-- Local checkout via `npx`:
-
-```bash
-npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
-npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
-```
-
-- Local checkout via `pnpm exec` (after `npm install` / `pnpm install`):
-
-```bash
-pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
-pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
-```
-
-You can keep one command for both config types:
-
-```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
-```
 
 Every command also accepts `--help`:
 
@@ -73,7 +29,17 @@ skill-arena gen-conf --help
 skill-arena val-conf --help
 ```
 
-`gen-conf` is the evaluation authoring helper. It writes a commented `compare.yaml` starter with `TODO:` notes for the fields you still need to customize:
+## Common Workflows
+
+### Validate a config
+
+```bash
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
+```
+
+### Generate a starter config
+
+`gen-conf` writes a commented `compare.yaml` starter with `TODO:` markers for fields you still need to customize:
 
 ```bash
 npx skill-arena gen-conf \
@@ -95,14 +61,15 @@ Useful `gen-conf` flags:
 - `--requests <n>` and `--max-concurrency <n>` / `--maxConcurrency <n>`: prefill evaluation settings
 - `--adapter <id>` and `--model <id>`: prefill the first variant
 
-For exploratory runs, you can override `evaluation.requests` and `evaluation.maxConcurrency` directly from
-the command line:
+### Override requests or concurrency for a local run
+
+For exploratory runs, override `evaluation.requests` and `evaluation.maxConcurrency` directly from the command line:
 
 ```bash
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --requests 2 --max-concurrency 2
 ```
 
-Example for the requested exploratory evaluation run:
+Example:
 
 ```bash
 npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --requests 1 --maxConcurrency 2
@@ -110,17 +77,15 @@ npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --request
 
 Command reference:
 
-- `--requests <n>`: override how many times each prompt is repeated for that run.
-- `--max-concurrency <n>`: override `evaluation.maxConcurrency` for that run.
-- `--maxConcurrency <n>`: alias accepted by the evaluator CLI for convenience.
+- `--requests <n>`: override how many times each prompt is repeated for that run
+- `--max-concurrency <n>`: override `evaluation.maxConcurrency` for that run
+- `--maxConcurrency <n>`: alias accepted by the evaluator CLI
 
-`skill-arena --help` prints the top-level help, and `skill-arena help <command>` prints per-command usage.
+## Choose A Config Shape
 
-## Choose a config shape
+Use [Specs](./specs.md) for the canonical schema. The examples below are intentionally minimal and focus on authoring shape rather than every supported field.
 
-Use [Specs](./specs.md) for the canonical schema. The examples below are intentionally minimal.
-
-## Benchmark manifest
+## Benchmark Manifest
 
 Preferred shape: declare the workspace with `workspace.sources` and declare the skill explicitly per scenario. Legacy `fixture` and `skillOverlay` fields still work, but they are compatibility inputs now.
 
@@ -213,13 +178,12 @@ scenarios:
 Run it:
 
 ```bash
-npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
-npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 If `requests` is greater than `1`, Promptfoo repeats each prompt that many times for the scenario.
-In matrix evaluation mode, the resolved concurrency now applies to both workspace materialization and `promptfoo eval`. If `maxConcurrency` is omitted, the harness uses the local machine parallelism for both phases. Set it explicitly only when you need a stricter cap.
+In matrix evaluation mode, the resolved concurrency also applies to workspace materialization. If `maxConcurrency` is omitted, the harness uses the local machine parallelism for both phases.
 
 ## Matrix Evaluation Config
 
@@ -303,23 +267,13 @@ comparison:
 Run it:
 
 ```bash
-npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 Use `--dry-run` to generate the Promptfoo config without live evaluation:
 
 ```bash
-npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml --dry-run
-npm run benchmark:evaluate:dry-run -- ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
-```
-
-For repeated local runs, keep installation out of the hot path. Install once, then run the CLI directly:
-
-```powershell
-npm install
-npx . evaluate .\benchmarks\skill-arena-compare\compare.yaml --dry-run
 ```
 
 If you want to force one machine-wide cap without editing YAML, set `SKILL_ARENA_MAX_PARALLELISM` before running the command.
@@ -348,18 +302,7 @@ For matrix evaluation configs, local paths follow a runtime contract:
 - if a relative local path is missing, the evaluator can bootstrap the runtime-relative directory from a unique packaged fixture match
 - bootstrap excludes `AGENTS.md`
 
-If you plan to run `compare.yaml` outside the repository root, use either absolute paths or relative paths that the installed package can bootstrap into the current working directory.
-
-When a matrix evaluation benchmark needs different checks per prompt row, keep shared assertions at top-level `evaluation.assertions` and add prompt-specific assertions under `task.prompts[*].evaluation.assertions`. Prompt-level assertions are appended to the shared set for that row.
-
-A practical maintenance evaluation example is `benchmarks/skill-arena-compare/compare.yaml`.
-
-What matrix evaluation mode produces:
-
-- Promptfoo columns by profile
-- Promptfoo rows by variant and prompt
-- `summary.json` with a `matrix` section
-- `merged/report.md` with cells like `40% (4/10)<br>tokens avg 120, sd 15.5`, optionally followed by changed code-metric delta lines
+When a matrix evaluation benchmark needs different checks per prompt row, keep shared assertions at top-level `evaluation.assertions` and add prompt-specific assertions under `task.prompts[*].evaluation.assertions`.
 
 Legacy compatibility:
 
@@ -373,32 +316,6 @@ Preferred explicit skill source options:
 - `local-path`: point to one local skill folder containing `SKILL.md`
 - `inline`: define one `SKILL.md` directly in YAML
 - `git`: clone a repo and select one skill folder with optional `skillPath`
-
-## Validation loop
-
-Use this sequence for most changes:
-
-```bash
-npm test
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
-```
-
-For live evaluation execution and artifact review, continue in [Testing](./testing.md).
-
-## Repository hygiene
-
-Scenario and matrix evaluation outputs are generated in `results/` and are not intended to be committed. Do not push the following generated paths:
-
-- `.tmp/`
-- `tmp/`
-- `coverage/`
-- `reports/`
-- `results/`
-- `node_modules/`
-- `deliverables/`
-- `skill-arena-*.tgz`
-- These paths are ignored in `.gitignore`.
 
 ## Artifacts
 
@@ -427,18 +344,3 @@ After at least one run, open the Promptfoo web viewer:
 ```bash
 npx promptfoo@latest view
 ```
-
-## Reusable config-author skill
-
-The repository includes a reusable skill overlay for authoring evaluation configs:
-
-```text
-fixtures/skill-arena-compare/skill-overlay/
-```
-
-Use it when you want a workspace skill that helps produce:
-
-- a concise evaluation config
-- clear `variantDisplayName` labels
-- explicit `evaluation.requests`
-- `no-skill` and `skill` columns by default

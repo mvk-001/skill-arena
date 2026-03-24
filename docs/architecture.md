@@ -1,17 +1,8 @@
 # Architecture
 
-Read this after [README.md](../README.md) or [Usage Guide](./usage.md). Use [Specs](./specs.md) for exact schema rules and [Testing](./testing.md) for the validation loop.
+Read this after [README.md](../README.md) and [Usage Guide](./usage.md). This page explains the runtime model and execution flow. Use [Specs](./specs.md) for field-level rules.
 
-## Purpose
-
-Skill Arena evaluates coding agents on repeatable repository tasks under constrained execution settings. The main comparisons are:
-
-- manifest scenario runs with and without skills
-- isolated baseline vs. explicit capability-profile runs
-- the same task across different agents
-- smaller and cheaper models under the same benchmark conditions
-
-The harness keeps execution context small, but it does not remove hidden provider runtime behavior.
+Skill Arena evaluates coding agents on repeatable repository tasks under constrained execution settings. It keeps benchmark authoring declarative and pushes agent-specific behavior into adapters.
 
 ## Core components
 
@@ -94,8 +85,8 @@ For `copilot-cli`, the generated provider is also a file-based custom script. V1
 
 For `pi`, the generated provider runs with strict skill isolation by default:
 
-- `--no-skills` disables implicit skill discovery.
-- When a test enables a workspace-overlay skill, it passes explicit `--skill` paths for those declared skill IDs.
+- `--no-skills` disables implicit skill discovery
+- when a test enables a workspace-overlay skill, it passes explicit `--skill` paths for those declared skill IDs
 
 For `codex`, skill scope defaults are applied through generated `skills.config` values unless the scenario uses `system-installed` skills.
 
@@ -142,7 +133,7 @@ Compare runs write under `results/<benchmark-id>/<timestamp>-compare/` and inclu
 
 For concrete config examples, see [Usage Guide](./usage.md) and the maintained [compare benchmark](../benchmarks/skill-arena-compare/compare.yaml).
 
-## Cross-Tool Capability Mapping
+## Cross-tool capability mapping
 
 Compare profiles are capability-oriented on purpose. Similar names across tools do not imply identical runtime semantics.
 
