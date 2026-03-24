@@ -18,11 +18,11 @@ const commandMap = {
 
 const commandDetails = {
   evaluate: {
-    usage: "evaluate <manifest-or-compare-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--dry-run] [--verbose]",
+    usage: "evaluate <benchmark-config-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--dry-run] [--verbose]",
     description:
-      "Run one benchmark manifest or compare config. Compare configs auto-route to compare execution.",
+      "Run one benchmark manifest or matrix evaluation config.",
     options: [
-      "--scenario <scenario-id>: run only one manifest scenario (not valid for compare configs)",
+      "--scenario <scenario-id>: run only one manifest scenario (not valid for matrix evaluation configs)",
       "--requests <n>: override effective evaluation requests for this run",
       "--max-concurrency <n>: override effective maxConcurrency for this run",
       "--maxConcurrency <n>: alias for --max-concurrency",
@@ -38,9 +38,9 @@ const commandDetails = {
   "gen-conf": {
     usage: "gen-conf [--output <path>] [--prompt <text>] [options]",
     description:
-      "Generate a commented compare config template with TODO placeholders for fast authoring.",
+      "Generate a commented evaluation config template with TODO placeholders for fast authoring.",
     options: [
-      "--output <path>: destination file path (default: ./compare.generated.yaml)",
+      "--output <path>: destination file path (default: ./evaluate.generated.yaml)",
       "--prompt <text>: add one task prompt row; repeatable",
       "--prompt-description <text>: optional description for the next prompt row; repeatable",
       "--benchmark-id <slug>: override benchmark.id",
@@ -87,11 +87,11 @@ const commandDetails = {
     examples: [
       "--prompt \"summarize file A\" --evaluation-type javascript --evaluation-value @checks.js",
       "--prompt \"summarize file A\" --evaluation-type llm-rubric --evaluation-value \"Score 1.0 only if the file is summarized.\" --requests 3 --skill-type git",
-      "--output ./benchmarks/my-benchmark/compare.yaml --prompt \"create a compare config\" --skill-type local-path",
+      "--output ./benchmarks/my-benchmark/evaluate.yaml --prompt \"create an evaluation config\" --skill-type local-path",
     ],
   },
   "val-gen": {
-    usage: "val-gen <manifest-or-compare-path>",
+    usage: "val-gen <benchmark-config-path>",
     description: "Alias for val-conf.",
     options: [
       "--help: show val-conf usage",
@@ -101,8 +101,8 @@ const commandDetails = {
     ],
   },
   "val-conf": {
-    usage: "val-conf <manifest-or-compare-path>",
-    description: "Validate a manifest or compare config and print a normalized summary.",
+    usage: "val-conf <benchmark-config-path>",
+    description: "Validate a manifest or matrix evaluation config and print a normalized summary.",
     options: [
       "--help: show val-conf usage",
     ],

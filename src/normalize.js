@@ -27,6 +27,41 @@ function createEmptyCapabilities() {
   };
 }
 
+function includeOptionalProperty(key, value) {
+  return value !== undefined ? { [key]: value } : {};
+}
+
+function includeOptionalStringProperty(key, value) {
+  return value ? { [key]: value } : {};
+}
+
+function normalizeInlineFiles(files = []) {
+  return files.map((file) => ({
+    path: file.path,
+    ...includeOptionalProperty("content", file.content),
+  }));
+}
+
+function buildLegacyWorkspaceOverlaySkill(skillOverlay) {
+  return buildNormalizedSkill({
+    source: normalizeLegacySkillOverlay(skillOverlay),
+    install: {
+      strategy: "workspace-overlay",
+    },
+  });
+}
+
+function createNormalizedSkill(sourceType, strategy = sourceType) {
+  return buildNormalizedSkill({
+    source: {
+      type: sourceType,
+    },
+    install: {
+      strategy,
+    },
+  });
+}
+
 export function normalizeTask(task) {
   if ("prompts" in task) {
     return {
@@ -75,39 +110,32 @@ export function normalizeWorkspace(workspace) {
 }
 
 export function normalizeWorkspaceSource(source) {
+  const normalizedSource = {
+    ...includeOptionalStringProperty("id", source.id),
+    type: source.type,
+    target: source.target,
+  };
+
   switch (source.type) {
     case "local-path":
       return {
-        ...(source.id ? { id: source.id } : {}),
-        type: "local-path",
+        ...normalizedSource,
         path: source.path,
-        target: source.target,
       };
     case "git":
       return {
-        ...(source.id ? { id: source.id } : {}),
-        type: "git",
+        ...normalizedSource,
         repo: source.repo,
-        ...(source.ref ? { ref: source.ref } : {}),
-        ...(source.subpath ? { subpath: source.subpath } : {}),
-        target: source.target,
+        ...includeOptionalStringProperty("ref", source.ref),
+        ...includeOptionalStringProperty("subpath", source.subpath),
       };
     case "inline-files":
       return {
-        ...(source.id ? { id: source.id } : {}),
-        type: "inline-files",
-        target: source.target,
-        files: source.files.map((file) => ({
-          path: file.path,
-          ...(file.content !== undefined ? { content: file.content } : {}),
-        })),
+        ...normalizedSource,
+        files: normalizeInlineFiles(source.files),
       };
     case "empty":
-      return {
-        ...(source.id ? { id: source.id } : {}),
-        type: "empty",
-        target: source.target,
-      };
+      return normalizedSource;
     default:
       throw new Error(`Unsupported workspace source type "${source.type}".`);
   }
@@ -115,14 +143,7 @@ export function normalizeWorkspaceSource(source) {
 
 export function normalizeSkill(sourceSkill, { skillMode, legacySkillOverlay, legacySkillSource }) {
   if (skillMode === "disabled") {
-    return buildNormalizedSkill({
-      source: {
-        type: "none",
-      },
-      install: {
-        strategy: "none",
-      },
-    });
+    return createNormalizedSkill("none", "none");
   }
 
   if (sourceSkill) {
@@ -130,42 +151,14 @@ export function normalizeSkill(sourceSkill, { skillMode, legacySkillOverlay, leg
   }
 
   if (legacySkillSource === "system-installed") {
-    return buildNormalizedSkill({
-      source: {
-        type: "system-installed",
-      },
-      install: {
-        strategy: "system-installed",
-      },
-    });
+    return createNormalizedSkill("system-installed");
   }
 
-  if (legacySkillSource === "workspace-overlay") {
-    return buildNormalizedSkill({
-      source: normalizeLegacySkillOverlay(legacySkillOverlay),
-      install: {
-        strategy: "workspace-overlay",
-      },
-    });
+  if (legacySkillSource === "workspace-overlay" || legacySkillOverlay) {
+    return buildLegacyWorkspaceOverlaySkill(legacySkillOverlay);
   }
 
-  if (legacySkillOverlay) {
-    return buildNormalizedSkill({
-      source: normalizeLegacySkillOverlay(legacySkillOverlay),
-      install: {
-        strategy: "workspace-overlay",
-      },
-    });
-  }
-
-  return buildNormalizedSkill({
-    source: {
-      type: "system-installed",
-    },
-    install: {
-      strategy: "system-installed",
-    },
-  });
+  return createNormalizedSkill("system-installed");
 }
 
 function normalizeLegacySkillOverlay(skillOverlay) {
@@ -193,8 +186,8 @@ function normalizeLegacySkillOverlay(skillOverlay) {
     return {
       type: "git",
       repo: skillOverlay.git.repo,
-      ...(skillOverlay.git.ref ? { ref: skillOverlay.git.ref } : {}),
-      ...(skillOverlay.git.subpath ? { subpath: skillOverlay.git.subpath } : {}),
+      ...includeOptionalStringProperty("ref", skillOverlay.git.ref),
+      ...includeOptionalStringProperty("subpath", skillOverlay.git.subpath),
     };
   }
 
@@ -233,36 +226,28 @@ function normalizeSkillSource(source) {
       return {
         type: "local-path",
         path: source.path,
-        ...(source.skillId ? { skillId: source.skillId } : {}),
+        ...includeOptionalStringProperty("skillId", source.skillId),
       };
     case "git":
       return {
         type: "git",
         repo: source.repo,
-        ...(source.ref ? { ref: source.ref } : {}),
-        ...(source.subpath ? { subpath: source.subpath } : {}),
-        ...(source.skillPath ? { skillPath: source.skillPath } : {}),
-        ...(source.skillId ? { skillId: source.skillId } : {}),
+        ...includeOptionalStringProperty("ref", source.ref),
+        ...includeOptionalStringProperty("subpath", source.subpath),
+        ...includeOptionalStringProperty("skillPath", source.skillPath),
+        ...includeOptionalStringProperty("skillId", source.skillId),
       };
     case "inline":
       return {
         type: "inline",
         skillId: source.skillId,
-        ...(source.content !== undefined ? { content: source.content } : {}),
-        ...(source.files ? {
-          files: source.files.map((file) => ({
-            path: file.path,
-            ...(file.content !== undefined ? { content: file.content } : {}),
-          })),
-        } : {}),
+        ...includeOptionalProperty("content", source.content),
+        ...(source.files ? { files: normalizeInlineFiles(source.files) } : {}),
       };
     case "inline-files":
       return {
         type: "inline-files",
-        files: source.files.map((file) => ({
-          path: file.path,
-          ...(file.content !== undefined ? { content: file.content } : {}),
-        })),
+        files: normalizeInlineFiles(source.files),
       };
     default:
       throw new Error(`Unsupported skill source type "${source.type}".`);

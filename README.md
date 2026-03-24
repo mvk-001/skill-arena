@@ -1,11 +1,11 @@
 # Skill Arena
 
-Skill Arena is a CLI-first benchmark harness to compare agent behavior in controlled conditions.
+Skill Arena is a CLI-first benchmark harness to evaluate agent behavior in controlled conditions.
 
 It supports:
 
 - scenario-based runs via `manifest.*` files
-- matrix comparisons via `compare.*` files
+- matrix evaluation configs via `compare.*` files
 - reproducible, isolated execution workspaces
 - isolated capability profiles such as baseline, skill-only, or explicit capability bundles
 - deterministic output artifacts for review and reporting
@@ -16,11 +16,11 @@ Execution is routed through Promptfoo with custom local providers for supported 
 
 Start here, then go deeper only where needed:
 
-- [Usage guide](./docs/usage.md): author, validate, and run manifests or compare configs
+- [Usage guide](./docs/usage.md): author, validate, and run manifests or matrix evaluation configs
 - [Specs](./docs/specs.md): canonical schema and normalization rules
 - [Architecture](./docs/architecture.md): execution flow and runtime design
-- [Testing](./docs/testing.md): unit tests, coverage, smoke runs, and artifact inspection
-- [Maintained compare benchmark](./benchmarks/skill-arena-compare/compare.yaml): concrete end-to-end example
+- [Testing](./docs/testing.md): unit tests, coverage, smoke runs, artifact inspection, and optional `rust-code-analysis` usage
+- [Maintained evaluation benchmark](./benchmarks/skill-arena-compare/compare.yaml): concrete end-to-end example
 
 ## Supported adapters
 
@@ -48,8 +48,8 @@ npm install
 Run with one of:
 
 ```bash
-npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
-npm run benchmark:compare:dry-run -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:evaluate:dry-run -- ./benchmarks/skill-arena-compare/compare.yaml
 npx . --help
 ```
 
@@ -66,12 +66,12 @@ npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ### 1. Create or load a benchmark definition
 
 - Use `manifest.*` for scenario-oriented runs.
-- Use `compare.*` for prompt × variant × profile matrices.
+- Use `compare.*` for prompt × variant × profile evaluation matrices.
 - Keep authoring against the canonical formats in [docs/specs.md](./docs/specs.md).
 
-### 2. Generate a compare template
+### 2. Generate an evaluation template
 
-Use the built-in generator to bootstrap a `compare.yaml` with guided TODO fields:
+Use the built-in generator to bootstrap an evaluation config with guided TODO fields:
 
 ```bash
 npx skill-arena gen-conf \
@@ -96,7 +96,7 @@ npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 
 ### 4. Open the artifacts
 
-Compare runs write:
+Matrix evaluation runs write:
 
 - `results/<benchmark-id>/<timestamp>-compare/promptfooconfig.yaml`
 - `results/<benchmark-id>/<timestamp>-compare/promptfoo-results.json`
@@ -140,7 +140,7 @@ These paths are ignored in `.gitignore`.
 
 ```bash
 skill-arena --help
-skill-arena evaluate <manifest-or-compare-path> [--scenario <scenario-id>] [--dry-run]
+skill-arena evaluate <benchmark-config-path> [--scenario <scenario-id>] [--dry-run]
 skill-arena gen-conf --help
 skill-arena val-conf --help
 ```
@@ -148,8 +148,8 @@ skill-arena val-conf --help
 ## Runtime behavior highlights
 
 - Isolation is workspace-centered and per scenario.
-- Compare runs default to deny-all profile isolation and expose only explicitly declared capabilities.
-- Scenario skill mounting is deterministic and based on the manifest/compare specification.
+- Matrix evaluation runs default to deny-all profile isolation and expose only explicitly declared capabilities.
+- Scenario skill mounting is deterministic and based on the manifest and matrix-evaluation specification.
 - `codex` and `pi` adapters can run with strict default skill scope.
 - No task-specific hidden instructions are injected by the harness outside benchmark-defined data.
 
@@ -162,10 +162,17 @@ Scenario runs create:
 - `results/<benchmark-id>/<timestamp>-<scenario-id>/promptfoo-results.json`
 - `results/<benchmark-id>/<timestamp>-<scenario-id>/summary.json`
 
-Compare runs include the merged report and merged summary under:
+Matrix evaluation runs include the merged report and merged summary under:
 
 - `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
 - `results/<benchmark-id>/<timestamp>-compare/merged/merged-summary.json`
+
+Matrix evaluation result cells include pass ratio and, when available:
+
+- total-token average plus standard deviation for the runs in that cell
+- per-metric code deltas from `rust-code-analysis` for modified original files only, reported as cell-level average plus standard deviation
+
+For standalone installation and local complexity analysis commands, see [docs/testing.md](./docs/testing.md).
 
 You can inspect Promptfoo output directly when needed:
 

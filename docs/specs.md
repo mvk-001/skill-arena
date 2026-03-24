@@ -368,6 +368,8 @@ comparison:
 - Provider labels in compare mode should prefer concise profile ids such as `baseline` or `skill`.
 - Compare reports should show rows as `prompt x variant` and columns as profiles.
 - Compare cells should report pass ratios against the requested execution count, for example `40% (4/10)`.
+- When token usage is available, compare cells must also report total-token aggregates for the observed runs, including average and standard deviation.
+- When `rust-code-analysis` is available, compare cells may also report per-metric deltas between original and proposed code for modified original files only, including cell-level average and standard deviation for each changed metric.
 - Shared compare execution settings such as `requests`, `timeoutMs`, `tracing`, `maxConcurrency`, and `noCache` still come from top-level `evaluation`.
 
 ### Compare normalization rules
@@ -525,7 +527,7 @@ Compare `summary.json` must include:
 - a `matrix` object with:
   - `columns`: profile ids and labels
   - `rows`: variant and prompt pairs
-  - per-cell aggregates including requested runs, completed runs, pass counts, error counts, and a display string such as `40% (4/10)` or `unsupported`
+  - per-cell aggregates including requested runs, completed runs, pass counts, error counts, token usage aggregates, optional code-metric delta aggregates, and a display string such as `40% (4/10)<br>tokens avg 120, sd 15.5` or `unsupported`
 
 ## Minimal execution defaults
 

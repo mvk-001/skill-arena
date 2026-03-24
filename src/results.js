@@ -1,6 +1,56 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+function collectPromptfooRows(resultEnvelope) {
+  if (Array.isArray(resultEnvelope.results)) {
+    return resultEnvelope.results;
+  }
+
+  if (Array.isArray(resultEnvelope.outputs)) {
+    return resultEnvelope.outputs;
+  }
+
+  return [];
+}
+
+function extractPromptfooResultEnvelope(rawResults) {
+  const resultEnvelope = rawResults.results ?? {};
+  return {
+    stats: resultEnvelope.stats ?? {},
+    rowResults: collectPromptfooRows(resultEnvelope),
+  };
+}
+
+async function loadNormalizedPromptfooEnvelope(promptfooResultsPath) {
+  const rawResults = JSON.parse(await fs.readFile(promptfooResultsPath, "utf8"));
+  const { stats, rowResults } = extractPromptfooResultEnvelope(rawResults);
+
+  return {
+    rawResults,
+    stats,
+    outputs: rowResults.map((output, index) => normalizeOutput(output, index)),
+  };
+}
+
+function createReportLines(benchmarkId, benchmarkDescription) {
+  return [
+    `# ${benchmarkId}`,
+    "",
+    benchmarkDescription ?? "",
+    "",
+  ];
+}
+
+function joinMarkdownLines(lines) {
+  return lines.filter((line, index, array) => {
+    if (line !== "") {
+      return true;
+    }
+
+    return array[index - 1] !== "";
+  }).join("\n");
+}
+
 export async function writePromptfooArtifacts({
   runDirectory,
   promptfooConfigYaml,
@@ -57,14 +107,7 @@ export async function normalizePromptfooResults({
   workspace,
   promptfooResultsPath,
 }) {
-  const rawResults = JSON.parse(await fs.readFile(promptfooResultsPath, "utf8"));
-  const resultEnvelope = rawResults.results ?? {};
-  const stats = resultEnvelope.stats ?? {};
-  const rowResults = Array.isArray(resultEnvelope.results)
-    ? resultEnvelope.results
-    : Array.isArray(resultEnvelope.outputs)
-      ? resultEnvelope.outputs
-      : [];
+  const { rawResults, stats, outputs } = await loadNormalizedPromptfooEnvelope(promptfooResultsPath);
 
   return {
     evalId: rawResults.evalId ?? null,
@@ -82,7 +125,7 @@ export async function normalizePromptfooResults({
     workspaceDirectory: workspace.workspaceDirectory,
     promptfooResultsPath,
     stats,
-    outputs: rowResults.map((output, index) => normalizeOutput(output, index)),
+    outputs,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -118,25 +161,13 @@ export function normalizeOutput(output, index) {
     latencyMs: output.latencyMs ?? output.latency ?? null,
     cost: output.cost ?? null,
     tokenUsage: output.tokenUsage ?? output.gradingResult?.tokensUsed ?? null,
+    codeMetricsDelta: metadata.codeMetricsDelta ?? null,
     error: output.error ?? failureReason ?? null,
   };
 }
 
 export async function normalizeRawPromptfooResults(promptfooResultsPath) {
-  const rawResults = JSON.parse(await fs.readFile(promptfooResultsPath, "utf8"));
-  const resultEnvelope = rawResults.results ?? {};
-  const stats = resultEnvelope.stats ?? {};
-  const rowResults = Array.isArray(resultEnvelope.results)
-    ? resultEnvelope.results
-    : Array.isArray(resultEnvelope.outputs)
-      ? resultEnvelope.outputs
-      : [];
-
-  return {
-    rawResults,
-    stats,
-    outputs: rowResults.map((output, index) => normalizeOutput(output, index)),
-  };
+  return await loadNormalizedPromptfooEnvelope(promptfooResultsPath);
 }
 
 export function buildMergedBenchmarkSummary({
@@ -252,12 +283,10 @@ export function buildCompareMatrixSummary({
 
 export function renderMergedBenchmarkReport(mergedSummary) {
   const scenarioColumns = buildScenarioColumns(mergedSummary);
-  const lines = [
-    `# ${mergedSummary.benchmarkId}`,
-    "",
-    mergedSummary.benchmarkDescription ?? "",
-    "",
-  ];
+  const lines = createReportLines(
+    mergedSummary.benchmarkId,
+    mergedSummary.benchmarkDescription,
+  );
 
   if (scenarioColumns.length > 0) {
     lines.push("| Prompt | " + scenarioColumns.map((scenario) => scenario.displayName).join(" | ") + " |");
@@ -273,23 +302,16 @@ export function renderMergedBenchmarkReport(mergedSummary) {
     }
   }
 
-  return lines.filter((line, index, array) => {
-    if (line !== "") {
-      return true;
-    }
-    return array[index - 1] !== "";
-  }).join("\n");
+  return joinMarkdownLines(lines);
 }
 
 export function renderCompareMatrixReport(mergedSummary) {
   const matrix = mergedSummary.matrix ?? { columns: [], rows: [] };
   const columns = matrix.columns ?? [];
-  const lines = [
-    `# ${mergedSummary.benchmarkId}`,
-    "",
-    mergedSummary.benchmarkDescription ?? "",
-    "",
-  ];
+  const lines = createReportLines(
+    mergedSummary.benchmarkId,
+    mergedSummary.benchmarkDescription,
+  );
 
   if (columns.length > 0) {
     lines.push(
@@ -304,12 +326,7 @@ export function renderCompareMatrixReport(mergedSummary) {
     }
   }
 
-  return lines.filter((line, index, array) => {
-    if (line !== "") {
-      return true;
-    }
-    return array[index - 1] !== "";
-  }).join("\n");
+  return joinMarkdownLines(lines);
 }
 
 function buildScenarioColumns(mergedSummary) {

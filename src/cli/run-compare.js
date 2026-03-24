@@ -3,6 +3,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 import { buildPromptfooProvider, getAdapter } from "../adapters.js";
+import { summarizeSamples } from "../code-metrics.js";
 import { expandCompareConfigToManifest, loadCompareConfig } from "../compare.js";
 import {
   buildCompareMatrixSummary,
@@ -27,23 +28,15 @@ import { ensureKnownLongOptions, parsePositiveIntegerOption } from "./cli-option
 let latestCompareArtifacts = null;
 
 async function main() {
-  const compareConfigPath = process.argv[2];
-  const knownOptionSchema = {
-    "--requests": true,
-    "--max-concurrency": true,
-    "--maxConcurrency": true,
-    "--dry-run": false,
-    "--verbose": false,
-  };
-  ensureKnownLongOptions(process.argv, knownOptionSchema);
-  const dryRun = process.argv.includes("--dry-run");
-  const requestsOverride = parsePositiveIntegerOption(process.argv, "--requests");
-  const maxConcurrencyOverride = parsePositiveIntegerOption(
-    process.argv,
-    ["--max-concurrency", "--maxConcurrency"],
-  );
-  const verboseOutput = process.argv.includes("--verbose");
-  const outputRootDirectory = process.cwd();
+  const runtimeOptions = parseCompareRuntimeOptions(process.argv);
+  const {
+    compareConfigPath,
+    dryRun,
+    requestsOverride,
+    maxConcurrencyOverride,
+    verboseOutput,
+    outputRootDirectory,
+  } = runtimeOptions;
 
   if (!compareConfigPath) {
     throw new Error(
@@ -62,50 +55,12 @@ async function main() {
   const effectiveConcurrency = resolveEvaluationConcurrency(compareConfig.evaluation);
   const effectiveEvalTimeoutMs = resolveCompareEvalTimeoutMs(compareConfig, effectiveConcurrency);
   const manifest = expandCompareConfigToManifest(compareConfig);
+  const {
+    supportedScenarios,
+    skippedVariants,
+    skippedCells,
+  } = classifyCompareScenarios(manifest.scenarios);
   const supportedRuns = [];
-  const skippedVariants = [];
-  const skippedCells = [];
-  const skippedVariantIds = new Set();
-
-  const supportedScenarios = [];
-
-  for (const scenario of manifest.scenarios) {
-    const adapter = getAdapter(scenario.agent.adapter);
-    const variantId = scenario.output.labels.variant ?? scenario.id;
-
-    if (!adapter.supported) {
-      if (!skippedVariantIds.has(variantId)) {
-        skippedVariantIds.add(variantId);
-        skippedVariants.push({
-          variantId,
-          variantDisplayName:
-            scenario.output.labels.variantDisplayName
-            ?? scenario.output.labels.adapterDisplayName
-            ?? variantId,
-          adapter: scenario.agent.adapter,
-          model: scenario.agent.model ?? null,
-          reason: `Adapter "${scenario.agent.adapter}" is reserved but not implemented in V1.`,
-        });
-      }
-      continue;
-    }
-
-    const support = resolveScenarioSupport(scenario);
-    if (!support.supported) {
-      skippedCells.push({
-        variantId,
-        variantDisplayName: getScenarioVariantDisplayName(scenario),
-        profileId: getScenarioProfileId(scenario),
-        profileDisplayName: getScenarioProfileLabel(scenario),
-        adapter: scenario.agent.adapter,
-        model: scenario.agent.model ?? null,
-        reason: support.reason,
-      });
-      continue;
-    }
-
-    supportedScenarios.push(scenario);
-  }
 
   printExecutionPlan({
     compareConfig,
@@ -120,17 +75,14 @@ async function main() {
   });
   console.log("");
 
-  const batchRunId = new Date().toISOString().replace(/[:.]/g, "-");
-  const benchmarkRunDirectory = path.join(
+  const {
+    benchmarkRunDirectory,
+    executionLogPath,
+  } = await initializeCompareRunArtifacts({
     outputRootDirectory,
-    "results",
-    manifest.benchmark.id,
-    `${batchRunId}-compare`,
-  );
-  await fs.mkdir(benchmarkRunDirectory, { recursive: true });
-  const executionLogPath = path.join(benchmarkRunDirectory, "execution.log");
-  await logExecution(executionLogPath, "compare run initialized");
-  await logExecution(executionLogPath, `effective concurrency: ${effectiveConcurrency}`);
+    benchmarkId: manifest.benchmark.id,
+    effectiveConcurrency,
+  });
   const materializationStartMs = Date.now();
 
   const materializedRuns = await mapWithConcurrency(
@@ -169,15 +121,14 @@ async function main() {
   const promptfooResultsPath = path.join(benchmarkRunDirectory, "promptfoo-results.json");
   const summaryPath = path.join(benchmarkRunDirectory, "summary.json");
 
-  await fs.writeFile(promptfooConfigPath, promptfooConfigYaml, "utf8");
-  await logExecution(executionLogPath, `promptfoo config written to ${promptfooConfigPath}`);
-  latestCompareArtifacts = {
+  latestCompareArtifacts = await writeInitialCompareArtifacts({
     compareRunDirectory: benchmarkRunDirectory,
     promptfooConfigPath,
     promptfooResultsPath,
     summaryPath,
     executionLogPath,
-  };
+    promptfooConfigYaml,
+  });
   if (verboseOutput) {
     printCompareArtifactPaths(latestCompareArtifacts);
   }
@@ -296,6 +247,132 @@ async function main() {
       ],
     }, null, 2));
   }
+}
+
+function parseCompareRuntimeOptions(argv) {
+  const knownOptionSchema = {
+    "--requests": true,
+    "--max-concurrency": true,
+    "--maxConcurrency": true,
+    "--dry-run": false,
+    "--verbose": false,
+  };
+  ensureKnownLongOptions(argv, knownOptionSchema);
+
+  return {
+    compareConfigPath: argv[2],
+    dryRun: argv.includes("--dry-run"),
+    requestsOverride: parsePositiveIntegerOption(argv, "--requests"),
+    maxConcurrencyOverride: parsePositiveIntegerOption(
+      argv,
+      ["--max-concurrency", "--maxConcurrency"],
+    ),
+    verboseOutput: argv.includes("--verbose"),
+    outputRootDirectory: process.cwd(),
+  };
+}
+
+function classifyCompareScenarios(scenarios) {
+  const supportedScenarios = [];
+  const skippedVariants = [];
+  const skippedCells = [];
+  const skippedVariantIds = new Set();
+
+  for (const scenario of scenarios) {
+    const adapter = getAdapter(scenario.agent.adapter);
+    const variantId = scenario.output.labels.variant ?? scenario.id;
+
+    if (!adapter.supported) {
+      if (!skippedVariantIds.has(variantId)) {
+        skippedVariantIds.add(variantId);
+        skippedVariants.push(buildSkippedVariantEntry(scenario, variantId));
+      }
+      continue;
+    }
+
+    const support = resolveScenarioSupport(scenario);
+    if (!support.supported) {
+      skippedCells.push(buildSkippedCellEntry(scenario, variantId, support.reason));
+      continue;
+    }
+
+    supportedScenarios.push(scenario);
+  }
+
+  return {
+    supportedScenarios,
+    skippedVariants,
+    skippedCells,
+  };
+}
+
+function buildSkippedVariantEntry(scenario, variantId) {
+  return {
+    variantId,
+    variantDisplayName:
+      scenario.output.labels.variantDisplayName
+      ?? scenario.output.labels.adapterDisplayName
+      ?? variantId,
+    adapter: scenario.agent.adapter,
+    model: scenario.agent.model ?? null,
+    reason: `Adapter "${scenario.agent.adapter}" is reserved but not implemented in V1.`,
+  };
+}
+
+function buildSkippedCellEntry(scenario, variantId, reason) {
+  return {
+    variantId,
+    variantDisplayName: getScenarioVariantDisplayName(scenario),
+    profileId: getScenarioProfileId(scenario),
+    profileDisplayName: getScenarioProfileLabel(scenario),
+    adapter: scenario.agent.adapter,
+    model: scenario.agent.model ?? null,
+    reason,
+  };
+}
+
+async function initializeCompareRunArtifacts({
+  outputRootDirectory,
+  benchmarkId,
+  effectiveConcurrency,
+}) {
+  const batchRunId = new Date().toISOString().replace(/[:.]/g, "-");
+  const benchmarkRunDirectory = path.join(
+    outputRootDirectory,
+    "results",
+    benchmarkId,
+    `${batchRunId}-compare`,
+  );
+  await fs.mkdir(benchmarkRunDirectory, { recursive: true });
+
+  const executionLogPath = path.join(benchmarkRunDirectory, "execution.log");
+  await logExecution(executionLogPath, "compare run initialized");
+  await logExecution(executionLogPath, `effective concurrency: ${effectiveConcurrency}`);
+
+  return {
+    benchmarkRunDirectory,
+    executionLogPath,
+  };
+}
+
+async function writeInitialCompareArtifacts({
+  compareRunDirectory,
+  promptfooConfigPath,
+  promptfooResultsPath,
+  summaryPath,
+  executionLogPath,
+  promptfooConfigYaml,
+}) {
+  await fs.writeFile(promptfooConfigPath, promptfooConfigYaml, "utf8");
+  await logExecution(executionLogPath, `promptfoo config written to ${promptfooConfigPath}`);
+
+  return {
+    compareRunDirectory,
+    promptfooConfigPath,
+    promptfooResultsPath,
+    summaryPath,
+    executionLogPath,
+  };
 }
 
 function buildComparePromptfooConfig({ manifest, runs }) {
@@ -520,119 +597,19 @@ function buildMatrix({
   compareRunDirectory,
   skippedCells,
 }) {
-  const columns = new Map();
-  const rows = new Map();
-
-  for (const { scenario } of supportedRuns) {
-    columns.set(getScenarioProfileId(scenario), {
-      id: getScenarioProfileId(scenario),
-      label: getScenarioProfileLabel(scenario),
-    });
-  }
-
-  for (const skippedCell of skippedCells) {
-    columns.set(skippedCell.profileId, {
-      id: skippedCell.profileId,
-      label: skippedCell.profileDisplayName ?? skippedCell.profileId,
-    });
-  }
-
-  const variantEntries = new Map();
-  for (const { scenario } of supportedRuns) {
-    variantEntries.set(getScenarioVariantId(scenario), {
-      variantId: getScenarioVariantId(scenario),
-      variantDisplayName: getScenarioVariantDisplayName(scenario),
-    });
-  }
-  for (const skippedCell of skippedCells) {
-    variantEntries.set(skippedCell.variantId, {
-      variantId: skippedCell.variantId,
-      variantDisplayName: skippedCell.variantDisplayName ?? skippedCell.variantId,
-    });
-  }
-
-  for (const variant of variantEntries.values()) {
-    for (const taskPrompt of manifest.task.prompts) {
-      const rowId = buildRowId(variant.variantId, taskPrompt.id);
-      rows.set(rowId, {
-        rowId,
-        variantId: variant.variantId,
-        variantDisplayName: variant.variantDisplayName,
-        promptId: taskPrompt.id,
-        promptDescription: taskPrompt.description ?? null,
-        prompt: taskPrompt.prompt,
-        cells: {},
-      });
-    }
-  }
-
-  for (const skippedCell of skippedCells) {
-    for (const taskPrompt of manifest.task.prompts) {
-      const rowId = buildRowId(skippedCell.variantId, taskPrompt.id);
-      const rowEntry = rows.get(rowId);
-      if (!rowEntry) {
-        continue;
-      }
-
-      rowEntry.cells[skippedCell.profileId] = {
-        status: "unsupported",
-        profileId: skippedCell.profileId,
-        adapter: skippedCell.adapter,
-        model: skippedCell.model,
-        requestedRuns: 0,
-        completedRuns: 0,
-        passedRuns: 0,
-        failedRuns: 0,
-        errors: 0,
-        passRate: 0,
-        displayValue: "unsupported",
-        sampleOutputs: [],
-        reason: skippedCell.reason,
-      };
-    }
-  }
+  const columns = buildMatrixColumns(supportedRuns, skippedCells);
+  const rows = buildMatrixRows(manifest.task.prompts, supportedRuns, skippedCells);
+  applyUnsupportedCells(rows, manifest.task.prompts, skippedCells);
 
   for (const output of outputs) {
-    const rowId = output.rowId ?? buildRowId(output.variantId ?? "unknown", output.promptId ?? "default");
-    const rowEntry = rows.get(rowId) ?? {
-      rowId,
-      variantId: output.variantId ?? "unknown",
-      variantDisplayName: output.variantDisplayName ?? output.variantId ?? "unknown",
-      promptId: output.promptId ?? "default",
-      promptDescription: output.promptDescription ?? null,
-      prompt: output.prompt,
-      cells: {},
-    };
+    const rowId = output.rowId ?? buildOutputRowId(output);
+    const rowEntry = rows.get(rowId) ?? createOutputRowEntry(output, rowId);
     const routeEntry = routeMap.get(buildRouteKey(output.variantId, output.provider));
-    const cellEntry = rowEntry.cells[output.provider] ?? {
-      scenarioId: routeEntry?.scenario.id ?? null,
-      scenarioDescription: routeEntry?.scenario.description ?? null,
-      adapter: routeEntry?.scenario.agent.adapter ?? null,
-      model: routeEntry?.scenario.agent.model ?? null,
-      profileId: routeEntry ? getScenarioProfileId(routeEntry.scenario) : null,
-      skillMode: routeEntry?.scenario.skillMode ?? null,
-      skillSource: routeEntry?.scenario.skillSource ?? null,
-      labels: routeEntry?.scenario.output.labels ?? {},
-      requestedRuns: evaluationRequests,
-      completedRuns: 0,
-      passedRuns: 0,
-      failedRuns: 0,
-      errors: 0,
-      passRate: 0,
-      displayValue: "-",
-      sampleOutputs: [],
-    };
-
-    cellEntry.completedRuns += 1;
-    cellEntry.passedRuns += output.success ? 1 : 0;
-    cellEntry.failedRuns += output.success === false ? 1 : 0;
-    cellEntry.errors += output.error ? 1 : 0;
-    cellEntry.passRate = evaluationRequests > 0 ? cellEntry.passedRuns / evaluationRequests : 0;
-    cellEntry.displayValue = `${formatPercent(cellEntry.passRate)} (${cellEntry.passedRuns}/${evaluationRequests})`;
-
-    if (cellEntry.sampleOutputs.length < 3 && output.text !== null) {
-      cellEntry.sampleOutputs.push(output.text);
-    }
+    const cellEntry = updateCellEntry({
+      cellEntry: rowEntry.cells[output.provider] ?? createMatrixCellEntry(routeEntry, evaluationRequests),
+      output,
+      evaluationRequests,
+    });
 
     rowEntry.cells[output.provider] = cellEntry;
     rows.set(rowId, rowEntry);
@@ -651,8 +628,169 @@ function buildMatrix({
       return (left.promptDescription ?? left.promptId).localeCompare(
         right.promptDescription ?? right.promptId,
       );
-    }),
+    }).map(stripCellComputationState),
   };
+}
+
+function buildMatrixColumns(supportedRuns, skippedCells) {
+  const columns = new Map();
+
+  for (const { scenario } of supportedRuns) {
+    columns.set(getScenarioProfileId(scenario), {
+      id: getScenarioProfileId(scenario),
+      label: getScenarioProfileLabel(scenario),
+    });
+  }
+
+  for (const skippedCell of skippedCells) {
+    columns.set(skippedCell.profileId, {
+      id: skippedCell.profileId,
+      label: skippedCell.profileDisplayName ?? skippedCell.profileId,
+    });
+  }
+
+  return columns;
+}
+
+function buildMatrixVariantEntries(supportedRuns, skippedCells) {
+  const variantEntries = new Map();
+
+  for (const { scenario } of supportedRuns) {
+    variantEntries.set(getScenarioVariantId(scenario), {
+      variantId: getScenarioVariantId(scenario),
+      variantDisplayName: getScenarioVariantDisplayName(scenario),
+    });
+  }
+
+  for (const skippedCell of skippedCells) {
+    variantEntries.set(skippedCell.variantId, {
+      variantId: skippedCell.variantId,
+      variantDisplayName: skippedCell.variantDisplayName ?? skippedCell.variantId,
+    });
+  }
+
+  return variantEntries;
+}
+
+function buildMatrixRows(taskPrompts, supportedRuns, skippedCells) {
+  const rows = new Map();
+
+  for (const variant of buildMatrixVariantEntries(supportedRuns, skippedCells).values()) {
+    for (const taskPrompt of taskPrompts) {
+      const rowId = buildRowId(variant.variantId, taskPrompt.id);
+      rows.set(rowId, {
+        rowId,
+        variantId: variant.variantId,
+        variantDisplayName: variant.variantDisplayName,
+        promptId: taskPrompt.id,
+        promptDescription: taskPrompt.description ?? null,
+        prompt: taskPrompt.prompt,
+        cells: {},
+      });
+    }
+  }
+
+  return rows;
+}
+
+function applyUnsupportedCells(rows, taskPrompts, skippedCells) {
+  for (const skippedCell of skippedCells) {
+    for (const taskPrompt of taskPrompts) {
+      const rowId = buildRowId(skippedCell.variantId, taskPrompt.id);
+      const rowEntry = rows.get(rowId);
+
+      if (!rowEntry) {
+        continue;
+      }
+
+      rowEntry.cells[skippedCell.profileId] = createUnsupportedCellEntry(skippedCell);
+    }
+  }
+}
+
+function createUnsupportedCellEntry(skippedCell) {
+  return {
+    status: "unsupported",
+    profileId: skippedCell.profileId,
+    adapter: skippedCell.adapter,
+    model: skippedCell.model,
+    requestedRuns: 0,
+    completedRuns: 0,
+    passedRuns: 0,
+    failedRuns: 0,
+    errors: 0,
+    passRate: 0,
+    displayValue: "unsupported",
+    tokenUsage: createEmptyTokenUsageSummary(),
+    codeMetrics: null,
+    sampleOutputs: [],
+    reason: skippedCell.reason,
+  };
+}
+
+function buildOutputRowId(output) {
+  return buildRowId(output.variantId ?? "unknown", output.promptId ?? "default");
+}
+
+function createOutputRowEntry(output, rowId) {
+  return {
+    rowId,
+    variantId: output.variantId ?? "unknown",
+    variantDisplayName: output.variantDisplayName ?? output.variantId ?? "unknown",
+    promptId: output.promptId ?? "default",
+    promptDescription: output.promptDescription ?? null,
+    prompt: output.prompt,
+    cells: {},
+  };
+}
+
+function createMatrixCellEntry(routeEntry, evaluationRequests) {
+  return {
+    scenarioId: routeEntry?.scenario.id ?? null,
+    scenarioDescription: routeEntry?.scenario.description ?? null,
+    adapter: routeEntry?.scenario.agent.adapter ?? null,
+    model: routeEntry?.scenario.agent.model ?? null,
+    profileId: routeEntry ? getScenarioProfileId(routeEntry.scenario) : null,
+    skillMode: routeEntry?.scenario.skillMode ?? null,
+    skillSource: routeEntry?.scenario.skillSource ?? null,
+    labels: routeEntry?.scenario.output.labels ?? {},
+    requestedRuns: evaluationRequests,
+    completedRuns: 0,
+    passedRuns: 0,
+    failedRuns: 0,
+    errors: 0,
+    passRate: 0,
+    displayValue: "-",
+    tokenUsage: createEmptyTokenUsageSummary(),
+    codeMetrics: null,
+    sampleOutputs: [],
+  };
+}
+
+function updateCellEntry({ cellEntry, output, evaluationRequests }) {
+  cellEntry.completedRuns += 1;
+  cellEntry.passedRuns += output.success ? 1 : 0;
+  cellEntry.failedRuns += output.success === false ? 1 : 0;
+  cellEntry.errors += output.error ? 1 : 0;
+  cellEntry.passRate = evaluationRequests > 0 ? cellEntry.passedRuns / evaluationRequests : 0;
+  cellEntry.tokenUsage = buildTokenUsageSummary(cellEntry.tokenUsage, output.tokenUsage);
+  cellEntry.codeMetrics = buildCodeMetricsSummary(cellEntry.codeMetrics, output.codeMetricsDelta);
+  cellEntry.displayValue = formatCellDisplayValue({
+    passRate: cellEntry.passRate,
+    passedRuns: cellEntry.passedRuns,
+    evaluationRequests,
+    tokenUsage: cellEntry.tokenUsage,
+    codeMetrics: cellEntry.codeMetrics,
+  });
+
+  maybeAddSampleOutput(cellEntry.sampleOutputs, output.text);
+  return cellEntry;
+}
+
+function maybeAddSampleOutput(sampleOutputs, text) {
+  if (sampleOutputs.length < 3 && text !== null) {
+    sampleOutputs.push(text);
+  }
 }
 
 function buildRouteKey(variantId, skillModeId) {
@@ -660,38 +798,265 @@ function buildRouteKey(variantId, skillModeId) {
 }
 
 function buildScenarioStats(outputs) {
-  let successes = 0;
-  let failures = 0;
-  let errors = 0;
-  let durationMs = 0;
-
-  for (const output of outputs) {
-    if (output.success) {
-      successes += 1;
-    } else if (output.success === false) {
-      failures += 1;
-    }
-
-    if (output.error) {
-      errors += 1;
-    }
-
-    if (typeof output.latencyMs === "number") {
-      durationMs += output.latencyMs;
-    }
-  }
+  const stats = outputs.reduce((summary, output) => {
+    summary.successes += output.success ? 1 : 0;
+    summary.failures += output.success === false ? 1 : 0;
+    summary.errors += output.error ? 1 : 0;
+    summary.durationMs += typeof output.latencyMs === "number" ? output.latencyMs : 0;
+    return summary;
+  }, createEmptyScenarioStats());
 
   return {
-    successes,
-    failures,
-    errors,
-    durationMs,
-    evaluationDurationMs: durationMs,
+    ...stats,
+    evaluationDurationMs: stats.durationMs,
+  };
+}
+
+function createEmptyScenarioStats() {
+  return {
+    successes: 0,
+    failures: 0,
+    errors: 0,
+    durationMs: 0,
   };
 }
 
 function formatPercent(value) {
   return `${(value * 100).toFixed(0)}%`;
+}
+
+function formatCellDisplayValue({
+  passRate,
+  passedRuns,
+  evaluationRequests,
+  tokenUsage,
+  codeMetrics,
+}) {
+  const passRatioText = `${formatPercent(passRate)} (${passedRuns}/${evaluationRequests})`;
+  const tokensText = formatTokenUsageDisplay(tokenUsage);
+  const codeMetricsText = formatCodeMetricsDisplay(codeMetrics);
+  const lines = [passRatioText];
+
+  if (tokensText) {
+    lines.push(`tokens avg ${tokensText.average}, sd ${tokensText.stddev}`);
+  }
+
+  lines.push(...codeMetricsText);
+  return lines.join("<br>");
+}
+
+function formatTokenUsageDisplay(tokenUsage) {
+  if (!tokenUsage || tokenUsage.count === 0) {
+    return null;
+  }
+
+  return {
+    average: formatNumericMetric(tokenUsage.averageTotalTokens),
+    stddev: formatNumericMetric(tokenUsage.stddevTotalTokens),
+  };
+}
+
+function buildTokenUsageSummary(currentSummary, tokenUsage) {
+  const previous = currentSummary ?? createEmptyTokenUsageSummary();
+  const totalTokens = extractTotalTokens(tokenUsage);
+
+  if (typeof totalTokens !== "number") {
+    return previous;
+  }
+
+  const samples = [
+    ...(Array.isArray(previous.samples) ? previous.samples : []),
+    totalTokens,
+  ];
+
+  return summarizeTokenSamples(samples);
+}
+
+function createEmptyTokenUsageSummary() {
+  return {
+    count: 0,
+    averageTotalTokens: null,
+    stddevTotalTokens: null,
+    samples: [],
+  };
+}
+
+function buildCodeMetricsSummary(currentSummary, codeMetricsDelta) {
+  if (!currentSummary && !hasMetricSummaryMap(codeMetricsDelta?.metrics)) {
+    return null;
+  }
+
+  const previous = currentSummary ?? createEmptyCodeMetricsSummary();
+
+  if (!hasMetricSummaryMap(codeMetricsDelta?.metrics)) {
+    return previous;
+  }
+
+  const changedOriginalFiles = new Set([
+    ...(Array.isArray(previous.changedOriginalFiles) ? previous.changedOriginalFiles : []),
+    ...(Array.isArray(codeMetricsDelta.changedOriginalFiles) ? codeMetricsDelta.changedOriginalFiles : []),
+  ]);
+  const metrics = mergeCodeMetricSummaries(previous.metrics, codeMetricsDelta.metrics);
+
+  if (Object.keys(metrics).length === 0) {
+    return previous;
+  }
+
+  return {
+    changedOriginalFiles: [...changedOriginalFiles].sort(),
+    metrics,
+  };
+}
+
+function hasMetricSummaryMap(metrics) {
+  return metrics && typeof metrics === "object";
+}
+
+function createEmptyCodeMetricsSummary() {
+  return {
+    changedOriginalFiles: [],
+    metrics: {},
+  };
+}
+
+function mergeCodeMetricSummaries(previousMetrics, nextMetrics) {
+  const metrics = {};
+  const metricNames = new Set([
+    ...Object.keys(previousMetrics ?? {}),
+    ...Object.keys(nextMetrics ?? {}),
+  ]);
+
+  for (const metricName of metricNames) {
+    const samples = [
+      ...readMetricSamples(previousMetrics, metricName),
+      ...readMetricSamples(nextMetrics, metricName),
+    ];
+
+    if (samples.length === 0) {
+      continue;
+    }
+
+    metrics[metricName] = summarizeSamples(samples);
+  }
+
+  return metrics;
+}
+
+function readMetricSamples(metrics, metricName) {
+  return Array.isArray(metrics?.[metricName]?.samples)
+    ? metrics[metricName].samples
+    : [];
+}
+
+function summarizeTokenSamples(samples) {
+  if (!Array.isArray(samples) || samples.length === 0) {
+    return {
+      count: 0,
+      averageTotalTokens: null,
+      stddevTotalTokens: null,
+    };
+  }
+
+  const count = samples.length;
+  const averageTotalTokens = samples.reduce((sum, value) => sum + value, 0) / count;
+  const variance = samples.reduce(
+    (sum, value) => sum + ((value - averageTotalTokens) ** 2),
+    0,
+  ) / count;
+
+  return {
+    count,
+    averageTotalTokens,
+    stddevTotalTokens: Math.sqrt(variance),
+    samples,
+  };
+}
+
+function extractTotalTokens(tokenUsage) {
+  if (typeof tokenUsage === "number" && Number.isFinite(tokenUsage)) {
+    return tokenUsage;
+  }
+
+  if (
+    tokenUsage
+    && typeof tokenUsage.total === "number"
+    && Number.isFinite(tokenUsage.total)
+  ) {
+    return tokenUsage.total;
+  }
+
+  return null;
+}
+
+function formatCodeMetricsDisplay(codeMetrics) {
+  const metricEntries = Object.entries(codeMetrics?.metrics ?? {});
+
+  if (metricEntries.length === 0) {
+    return [];
+  }
+
+  return metricEntries
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([metricName, metricSummary]) =>
+      `code ${metricName} avg ${formatSignedNumericMetric(metricSummary.avg)}, sd ${formatNumericMetric(metricSummary.standardDeviation)}`,
+    );
+}
+
+function formatNumericMetric(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "n/a";
+  }
+
+  return value.toFixed(value >= 100 ? 0 : 1);
+}
+
+function formatSignedNumericMetric(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "n/a";
+  }
+
+  const formatted = formatNumericMetric(Math.abs(value));
+  if (formatted === "n/a") {
+    return formatted;
+  }
+
+  return `${value >= 0 ? "+" : "-"}${formatted}`;
+}
+
+function stripCellComputationState(row) {
+  return {
+    ...row,
+    cells: Object.fromEntries(
+      Object.entries(row.cells ?? {}).map(([cellId, cell]) => [
+        cellId,
+        {
+          ...cell,
+          tokenUsage: cell.tokenUsage
+            ? {
+              count: cell.tokenUsage.count ?? 0,
+              averageTotalTokens: cell.tokenUsage.averageTotalTokens ?? null,
+              stddevTotalTokens: cell.tokenUsage.stddevTotalTokens ?? null,
+            }
+            : null,
+          codeMetrics: cell.codeMetrics
+            ? {
+              changedOriginalFiles: cell.codeMetrics.changedOriginalFiles ?? [],
+              metrics: Object.fromEntries(
+                Object.entries(cell.codeMetrics.metrics ?? {}).map(([metricName, summary]) => [
+                  metricName,
+                  {
+                    count: summary.count ?? 0,
+                    avg: summary.avg ?? null,
+                    standardDeviation: summary.standardDeviation ?? null,
+                  },
+                ]),
+              ),
+            }
+            : null,
+        },
+      ]),
+    ),
+  };
 }
 
 function printExecutionPlan({
@@ -790,13 +1155,8 @@ function getScenarioProfileLabel(scenario) {
 }
 
 function resolveScenarioSupport(scenario) {
-  const unsupportedFamilies = [];
   const capabilities = scenario.profile?.capabilities ?? {};
-  for (const family of ["instructions", "agents", "hooks", "mcp", "extensions", "plugins"]) {
-    if (Array.isArray(capabilities[family]) && capabilities[family].length > 0) {
-      unsupportedFamilies.push(family);
-    }
-  }
+  const unsupportedFamilies = listUnsupportedCapabilityFamilies(capabilities);
 
   if (unsupportedFamilies.length > 0) {
     return {
@@ -819,28 +1179,33 @@ function resolveScenarioSupport(scenario) {
   return { supported: true };
 }
 
-function printExecutionTotals(mergedSummary, compareSummary) {
-  const cells = [];
-  for (const row of mergedSummary.matrix?.rows ?? []) {
-    for (const column of mergedSummary.matrix?.columns ?? []) {
-      const cell = row.cells?.[column.id];
-      if (cell) {
-        cells.push(cell);
-      }
+function listUnsupportedCapabilityFamilies(capabilities) {
+  const unsupportedFamilies = [];
+
+  for (const family of ["instructions", "agents", "hooks", "mcp", "extensions", "plugins"]) {
+    if (Array.isArray(capabilities[family]) && capabilities[family].length > 0) {
+      unsupportedFamilies.push(family);
     }
   }
 
-  const requested = cells.reduce((sum, cell) => sum + (cell.requestedRuns ?? 0), 0);
-  const passed = cells.reduce((sum, cell) => sum + (cell.passedRuns ?? 0), 0);
-  const failed = cells.reduce((sum, cell) => sum + (cell.failedRuns ?? 0), 0);
-  const errors = cells.reduce((sum, cell) => sum + (cell.errors ?? 0), 0);
-  const completed = cells.reduce((sum, cell) => sum + (cell.completedRuns ?? 0), 0);
+  return unsupportedFamilies;
+}
+
+function printExecutionTotals(mergedSummary, compareSummary) {
+  const cells = collectMatrixCells(mergedSummary.matrix);
+  const {
+    requested,
+    completed,
+    passed,
+    failed,
+    errors,
+  } = summarizeExecutionCells(cells);
   const passRate = requested > 0 ? `${((passed / requested) * 100).toFixed(0)}%` : "0%";
 
   console.log("### Overall summary");
   console.log("| Metric | Value |");
   console.log("| --- | --- |");
-  console.log(`| Status | ${errors > 0 ? "FAILED (errors)" : failed > 0 ? "FAILED" : "PASS"} |`);
+  console.log(`| Status | ${buildExecutionStatus({ failed, errors })} |`);
   console.log(`| Eval ID | ${compareSummary.evalId ?? "N/A"} |`);
   console.log(`| Requested evaluations | ${requested} |`);
   console.log(`| Completed evaluations | ${completed} |`);
@@ -848,6 +1213,46 @@ function printExecutionTotals(mergedSummary, compareSummary) {
   console.log(`| Failed | ${failed} |`);
   console.log(`| Errors | ${errors} |`);
   console.log(`| Overall rate | ${passed}/${requested} (${passRate}) |`);
+}
+
+function collectMatrixCells(matrix) {
+  const cells = [];
+
+  for (const row of matrix?.rows ?? []) {
+    for (const column of matrix?.columns ?? []) {
+      const cell = row.cells?.[column.id];
+      if (cell) {
+        cells.push(cell);
+      }
+    }
+  }
+
+  return cells;
+}
+
+function summarizeExecutionCells(cells) {
+  return cells.reduce((summary, cell) => {
+    summary.requested += cell.requestedRuns ?? 0;
+    summary.completed += cell.completedRuns ?? 0;
+    summary.passed += cell.passedRuns ?? 0;
+    summary.failed += cell.failedRuns ?? 0;
+    summary.errors += cell.errors ?? 0;
+    return summary;
+  }, {
+    requested: 0,
+    completed: 0,
+    passed: 0,
+    failed: 0,
+    errors: 0,
+  });
+}
+
+function buildExecutionStatus({ failed, errors }) {
+  if (errors > 0) {
+    return "FAILED (errors)";
+  }
+
+  return failed > 0 ? "FAILED" : "PASS";
 }
 
 function printCompareArtifactPaths({
@@ -888,6 +1293,68 @@ async function executePromptfoo({
   verbose,
   executionLogPath,
 }) {
+  const promptfooArgs = buildPromptfooEvalArgs({
+    promptfooConfigPath,
+    promptfooResultsPath,
+    requests,
+    maxConcurrency,
+    noCache,
+  });
+
+  const { executable, executableArgs } = await buildPromptfooCommand(promptfooArgs);
+
+  await new Promise((resolve, reject) => {
+    let timedOut = false;
+    const childProcess = spawn(executable, executableArgs, {
+      cwd: path.dirname(promptfooConfigPath),
+      env: createPromptfooProcessEnvironment(),
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+
+    const killTimer = setTimeout(() => {
+      timedOut = true;
+      childProcess.kill("SIGTERM");
+    }, timeoutMs);
+
+    childProcess.on("error", (error) => {
+      clearTimeout(killTimer);
+      reject(error);
+    });
+
+    attachExecutionStream({
+      stream: childProcess.stdout,
+      executionLogPath,
+      verbose,
+      outputWriter: process.stdout,
+    });
+    attachExecutionStream({
+      stream: childProcess.stderr,
+      executionLogPath,
+      verbose,
+      outputWriter: process.stderr,
+    });
+
+    childProcess.on("exit", (code, signal) => {
+      clearTimeout(killTimer);
+
+      if (isSuccessfulPromptfooExitCode(code)) {
+        resolve();
+        return;
+      }
+
+      reject(buildPromptfooExitError({ code, signal, timedOut, timeoutMs }));
+    });
+  });
+}
+
+function buildPromptfooEvalArgs({
+  promptfooConfigPath,
+  promptfooResultsPath,
+  requests,
+  maxConcurrency,
+  noCache,
+}) {
   const promptfooArgs = [
     "promptfoo",
     "eval",
@@ -906,66 +1373,52 @@ async function executePromptfoo({
     promptfooArgs.push("--no-cache");
   }
 
-  const { executable, executableArgs } = await buildPromptfooCommand(promptfooArgs);
+  return promptfooArgs;
+}
 
-  await new Promise((resolve, reject) => {
-    let timedOut = false;
-    const childProcess = spawn(executable, executableArgs, {
-      cwd: path.dirname(promptfooConfigPath),
-      env: {
-        ...process.env,
-        PROMPTFOO_DISABLE_TELEMETRY: "1",
-        PROMPTFOO_DISABLE_UPDATE: "1",
-      },
-      stdio: ["ignore", "pipe", "pipe"],
-      windowsHide: true,
-    });
+function createPromptfooProcessEnvironment() {
+  return {
+    ...process.env,
+    PROMPTFOO_DISABLE_TELEMETRY: "1",
+    PROMPTFOO_DISABLE_UPDATE: "1",
+  };
+}
 
-    const killTimer = setTimeout(() => {
-      timedOut = true;
-      childProcess.kill("SIGTERM");
-    }, timeoutMs);
-
-    childProcess.on("error", (error) => {
-      clearTimeout(killTimer);
-      reject(error);
-    });
-
-    childProcess.stdout.on("data", (chunk) => {
-      void fs.appendFile(executionLogPath, chunk);
-      if (verbose) {
-        process.stdout.write(chunk);
-      }
-    });
-
-    childProcess.stderr.on("data", (chunk) => {
-      void fs.appendFile(executionLogPath, chunk);
-      if (verbose) {
-        process.stderr.write(chunk);
-      }
-    });
-
-    childProcess.on("exit", (code, signal) => {
-      clearTimeout(killTimer);
-
-      if (code === 0 || code === 100) {
-        resolve();
-        return;
-      }
-
-      if (timedOut) {
-        reject(new Error(`promptfoo eval timed out after ${timeoutMs} ms and was terminated with signal ${signal ?? "unknown"}.`));
-        return;
-      }
-
-      if (signal) {
-        reject(new Error(`promptfoo eval was terminated with signal ${signal}.`));
-        return;
-      }
-
-      reject(new Error(`promptfoo eval exited with code ${code}.`));
-    });
+function attachExecutionStream({
+  stream,
+  executionLogPath,
+  verbose,
+  outputWriter,
+}) {
+  stream.on("data", (chunk) => {
+    void fs.appendFile(executionLogPath, chunk);
+    if (verbose) {
+      outputWriter.write(chunk);
+    }
   });
+}
+
+function isSuccessfulPromptfooExitCode(code) {
+  return code === 0 || code === 100;
+}
+
+function buildPromptfooExitError({
+  code,
+  signal,
+  timedOut,
+  timeoutMs,
+}) {
+  if (timedOut) {
+    return new Error(
+      `promptfoo eval timed out after ${timeoutMs} ms and was terminated with signal ${signal ?? "unknown"}.`,
+    );
+  }
+
+  if (signal) {
+    return new Error(`promptfoo eval was terminated with signal ${signal}.`);
+  }
+
+  return new Error(`promptfoo eval exited with code ${code}.`);
 }
 
 async function logExecution(logPath, message) {

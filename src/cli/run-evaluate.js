@@ -15,7 +15,7 @@ async function main() {
 
   if (!configPath || configPath.startsWith("--")) {
     throw new Error(
-      "Usage: node ./src/cli/run-evaluate.js <manifest-or-compare-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--dry-run] [--verbose]",
+      "Usage: node ./src/cli/run-evaluate.js <benchmark-config-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--dry-run] [--verbose]",
     );
   }
   const knownOptionSchema = {
@@ -35,7 +35,7 @@ async function main() {
   configKind = detectConfigKind(parsed, absoluteConfigPath);
 
   if (configKind === "compare" && hasScenario) {
-    throw new Error("The compare config does not support --scenario. Remove it and rerun.");
+    throw new Error("The matrix evaluation config does not support --scenario. Remove it and rerun.");
   }
 
   const script = configKind === "compare" ? runCompareScript : runBenchmarkScript;

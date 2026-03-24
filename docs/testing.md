@@ -20,7 +20,7 @@ skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 ```
 
-Run the live compare only when the dry-run and unit tests look clean:
+Run the live evaluation only when the dry-run and unit tests look clean:
 
 ```bash
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
@@ -35,6 +35,8 @@ These validate manifest parsing, Promptfoo config generation, workspace material
 ```bash
 npm test
 ```
+
+The repository test scripts intentionally target `test/*.test.js` only. This keeps generated benchmark artifacts under `results/` from being picked up as accidental test inputs by Node's default test discovery.
 
 With `pnpm`:
 
@@ -75,6 +77,52 @@ This project currently requires:
 
 All are above the requested 90% minimum.
 
+### 1b. Optional `rust-code-analysis` usage
+
+Use `rust-code-analysis` only when you want standalone complexity and maintainability metrics in addition to test coverage. Skill Arena also uses this tool opportunistically during matrix evaluation runs to report changed code metrics for modified original files.
+
+This tool is optional. Do not install it unless you specifically want those extra metrics.
+
+Recommended approach:
+
+- Prebuilt release binary:
+
+```powershell
+$toolDir = ".tools/rust-code-analysis"
+New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
+Invoke-WebRequest `
+  -Uri "https://github.com/mozilla/rust-code-analysis/releases/latest/download/rust-code-analysis-win-cli-x86_64.zip" `
+  -OutFile "$toolDir/rust-code-analysis-win-cli-x86_64.zip"
+Expand-Archive `
+  -Path "$toolDir/rust-code-analysis-win-cli-x86_64.zip" `
+  -DestinationPath $toolDir `
+  -Force
+```
+
+Run it directly against this repository:
+
+```powershell
+.\.tools\rust-code-analysis\target\release\rust-code-analysis-cli.exe `
+  -m --pr -O json `
+  -p src -p test -p bin `
+  -I "*.js" `
+  -o .tmp\rca-js
+```
+
+This writes one JSON metrics file per analyzed source file under `.tmp/rca-js/`.
+
+If the binary is on `PATH`, compare evaluations automatically pick it up. If it is not installed, evaluations continue without these code metrics. To force a specific binary path, set:
+
+```powershell
+$env:SKILL_ARENA_RUST_CODE_ANALYSIS_BIN = "C:\tools\rust-code-analysis-cli.exe"
+```
+
+Useful follow-up checks:
+
+- inspect the generated JSON for file-level `cognitive`, `cyclomatic`, `halstead`, and `loc` metrics
+- rank hotspots by cognitive complexity to identify refactor targets
+- rerun after a refactor and compare the changed metric deltas in the merged compare report
+
 ### 2. Validate a benchmark manifest
 
 Use this before running a live benchmark if the manifest changed.
@@ -114,18 +162,18 @@ To generate the intermediate Promptfoo config without executing the live eval:
 npm run generate:config -- ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
 ```
 
-To scaffold a commented compare config quickly:
+To scaffold a commented evaluation config quickly:
 
 ```bash
 skill-arena gen-conf --output ./benchmarks/<benchmark-id>/compare.yaml --prompt "Describe the task." --skill-type local-path
 ```
 
-### 3a. Run a compare config
+### 3a. Run a matrix evaluation config
 
 Use this when you want one file to drive one Promptfoo eval with multiple side-by-side providers across adapters, models, and isolated capability profiles.
 
 ```bash
-npm run benchmark:compare -- ./benchmarks/<benchmark-id>/compare.yaml
+npm run benchmark:evaluate -- ./benchmarks/<benchmark-id>/compare.yaml
 skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
 ```
 
@@ -138,8 +186,8 @@ skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
 To validate the scenario expansion without executing live evals:
 
 ```bash
-npm run benchmark:compare -- ./benchmarks/<benchmark-id>/compare.yaml --dry-run
-npm run benchmark:compare:dry-run -- ./benchmarks/<benchmark-id>/compare.yaml
+npm run benchmark:evaluate -- ./benchmarks/<benchmark-id>/compare.yaml --dry-run
+npm run benchmark:evaluate:dry-run -- ./benchmarks/<benchmark-id>/compare.yaml
 skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --dry-run
 ```
 
@@ -149,28 +197,30 @@ Also for auto-detect:
 skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --dry-run
 ```
 
-Compare local path contract:
+Matrix evaluation local path contract:
 
 - absolute paths always work
 - relative paths are resolved from the current command working directory
-- compare configs must not depend on package-relative path resolution
-- when a relative local path is missing, compare may bootstrap that source tree from packaged fixtures and then materialize a per-scenario workspace
-- compare bootstrap excludes `AGENTS.md`
+- matrix evaluation configs must not depend on package-relative path resolution
+- when a relative local path is missing, the evaluator may bootstrap that source tree from packaged fixtures and then materialize a per-scenario workspace
+- matrix evaluation bootstrap excludes `AGENTS.md`
 
-Behavior to expect in compare mode:
+Behavior to expect in matrix evaluation mode:
 
 - profiles appear as side-by-side columns in the same Promptfoo eval
 - rows are variant and prompt pairs
-- `evaluation.requests` controls the pass ratio denominator for each compare cell
+- `evaluation.requests` controls the pass ratio denominator for each matrix cell
+- matrix cells report pass ratio plus total-token aggregates as average and standard deviation when token usage is available
+- when `rust-code-analysis` is installed, matrix cells also report changed code metrics for modified original files only, aggregated as average and standard deviation per changed metric
 - unsupported adapters are listed as skipped entries in the merged report
-- unsupported profile capability bundles are rendered as `unsupported` cells instead of aborting the compare run
+- unsupported profile capability bundles are rendered as `unsupported` cells instead of aborting the evaluation run
 
-### 4. Run the maintained sample compare benchmark
+### 4. Run the maintained sample evaluation benchmark
 
 Use the benchmark kept in this repository:
 
 ```bash
-npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 ### 4a. Recommended benchmark test flow after runtime changes
@@ -180,17 +230,17 @@ Use this short sequence when you change the runner, Promptfoo integration, works
 ```bash
 npm test
 npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
-npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 What this covers:
 
 - `npm test` catches unit-level regressions in config generation and result normalization.
 - `validate:manifest` confirms the benchmark input still parses cleanly.
-For compare-mode validation after changing `src/cli/run-compare.js`, also run:
+For matrix-evaluation validation after changing `src/cli/run-compare.js`, also run:
 
 ```bash
-npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 All benchmark commands:
@@ -211,7 +261,7 @@ If your manifest uses Git-backed workspace or skill sources, the harness downloa
 
 If your manifest uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `requests` to each one.
 
-If `maxConcurrency` is omitted in a manifest or compare config, the harness uses the local machine parallelism by default. In compare mode, that resolved value also governs the pre-eval workspace materialization phase so setup and evaluation follow the same concurrency cap.
+If `maxConcurrency` is omitted in a manifest or matrix evaluation config, the harness uses the local machine parallelism by default. In matrix evaluation mode, that resolved value also governs the pre-eval workspace materialization phase so setup and evaluation follow the same concurrency cap.
 
 ## `copilot-cli` adapter notes
 
@@ -234,23 +284,23 @@ The most useful files are:
 - `promptfoo-results.json`
 - `summary.json`
 
-`summary.json` is the normalized output to compare runs across scenarios.
+`summary.json` is the normalized output to evaluate runs across scenarios.
 
-For compare runs, inspect:
+For matrix evaluation runs, inspect:
 
 - `results/<benchmark-id>/<timestamp>-compare/promptfoo-results.json`
 - `results/<benchmark-id>/<timestamp>-compare/summary.json`
 - `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
 
-At the end of `skill-arena evaluate` in compare mode, the CLI prints:
+At the end of `skill-arena evaluate` in matrix evaluation mode, the CLI prints:
 
 - the final merged markdown report
 - the merged JSON summary
-- explicit artifact paths for `Compare summary`, `Final merged summary`, and `Final merged report`
+- explicit artifact paths for `Evaluation summary`, `Final merged summary`, and `Final merged report`
 
-`summary.json` includes a `matrix` section with compare columns, rows, and per-cell pass ratios such as `40% (4/10)`.
+`summary.json` includes a `matrix` section with columns, rows, and per-cell summaries such as `40% (4/10)<br>tokens avg 120, sd 15.5`, plus optional code-metric delta aggregates when static analysis data is available.
 
-For profile-isolation validation after runtime changes, add at least one compare dry-run that:
+For profile-isolation validation after runtime changes, add at least one matrix-evaluation dry-run that:
 
 - uses `comparison.profiles`
 - includes one empty baseline profile with `inheritSystem: false`
@@ -263,7 +313,7 @@ Use the maintained benchmark in this repository as the smoke-style baseline:
 
 ```bash
 npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
-npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 Run outputs are written under `results/skill-arena-compare/<timestamp>-compare/`.

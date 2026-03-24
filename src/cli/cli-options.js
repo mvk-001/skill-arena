@@ -33,7 +33,7 @@ export function ensureKnownLongOptions(argv, optionSchema, positionalStartIndex 
   for (let index = positionalStartIndex; index < argv.length; index += 1) {
     const value = argv[index];
 
-    if (!value.startsWith("--")) {
+    if (typeof value !== "string" || !value.startsWith("--")) {
       continue;
     }
 
@@ -41,8 +41,7 @@ export function ensureKnownLongOptions(argv, optionSchema, positionalStartIndex 
       throw new Error(`Unknown option "${value}".`);
     }
 
-    const expectsValue = optionSchema[value];
-    if (!expectsValue) {
+    if (!optionSchema[value]) {
       continue;
     }
 

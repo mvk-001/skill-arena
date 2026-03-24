@@ -258,10 +258,10 @@ test("compare matrix report renders pass ratios by skill-mode column", () => {
           promptDescription: "Unread Gmail triage",
           cells: {
             "no-skill": {
-              displayValue: "40% (4/10)",
+              displayValue: "40% (4/10)<br>tokens avg 120, sd 15.5",
             },
             skill: {
-              displayValue: "100% (10/10)",
+              displayValue: "100% (10/10)<br>tokens avg 90.0, sd 0.0",
             },
           },
         },
@@ -271,7 +271,10 @@ test("compare matrix report renders pass ratios by skill-mode column", () => {
   const report = renderCompareMatrixReport(mergedSummary);
 
   assert.match(report, /\| Prompt \| Agent\/Config \| no-skill \| skill \|/);
-  assert.match(report, /\| Unread Gmail triage \| codex \| 40% \(4\/10\) \| 100% \(10\/10\) \|/);
+  assert.match(
+    report,
+    /\| Unread Gmail triage \| codex \| 40% \(4\/10\)<br>tokens avg 120, sd 15\.5 \| 100% \(10\/10\)<br>tokens avg 90\.0, sd 0\.0 \|/,
+  );
 });
 
 test("compare matrix report renders unsupported profile cells", () => {
@@ -291,7 +294,7 @@ test("compare matrix report renders unsupported profile cells", () => {
           promptDescription: "Prompt 1",
           cells: {
             baseline: {
-              displayValue: "100% (1/1)",
+              displayValue: "100% (1/1)<br>tokens avg 42.0, sd 0.0",
             },
             "agent-profile": {
               displayValue: "unsupported",
@@ -302,7 +305,40 @@ test("compare matrix report renders unsupported profile cells", () => {
     },
   });
 
-  assert.match(report, /\| Prompt 1 \| codex mini \| 100% \(1\/1\) \| unsupported \|/);
+  assert.match(
+    report,
+    /\| Prompt 1 \| codex mini \| 100% \(1\/1\)<br>tokens avg 42\.0, sd 0\.0 \| unsupported \|/,
+  );
+});
+
+test("compare matrix report renders code metric deltas in the cell", () => {
+  const report = renderCompareMatrixReport({
+    benchmarkId: "benchmark-id",
+    benchmarkDescription: "Benchmark",
+    matrix: {
+      columns: [
+        { id: "skill", label: "skill" },
+      ],
+      rows: [
+        {
+          rowId: "codex-mini:prompt-1",
+          variantDisplayName: "codex mini",
+          promptId: "prompt-1",
+          promptDescription: "Prompt 1",
+          cells: {
+            skill: {
+              displayValue: "100% (1/1)<br>tokens avg 42.0, sd 0.0<br>code loc.sloc avg +1.0, sd 0.0<br>code lexical.digits avg -2.0, sd 0.0",
+            },
+          },
+        },
+      ],
+    },
+  });
+
+  assert.match(
+    report,
+    /\| Prompt 1 \| codex mini \| 100% \(1\/1\)<br>tokens avg 42\.0, sd 0\.0<br>code loc\.sloc avg \+1\.0, sd 0\.0<br>code lexical\.digits avg -2\.0, sd 0\.0 \|/,
+  );
 });
 
 test("writePromptfooArtifacts persists config, summary, and copies result files", async () => {

@@ -18,20 +18,20 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
   const allowedSkills = inferVisibleSkillsForScenario(scenario);
   const skipHomeAgents = scenario?.agent?.adapter === "pi" || scenario?.agent?.adapter === "codex";
 
-  await Promise.all([
-    fs.mkdir(executionRootDirectory, { recursive: true }),
-    fs.mkdir(homeDirectory, { recursive: true }),
-    fs.mkdir(userProfileDirectory, { recursive: true }),
-    fs.mkdir(appDataDirectory, { recursive: true }),
-    fs.mkdir(localAppDataDirectory, { recursive: true }),
-    fs.mkdir(xdgConfigHome, { recursive: true }),
-    fs.mkdir(xdgCacheHome, { recursive: true }),
-    fs.mkdir(xdgDataHome, { recursive: true }),
-    fs.mkdir(xdgStateHome, { recursive: true }),
-    fs.mkdir(codexSkillsDirectory, { recursive: true }),
-    fs.mkdir(codexSystemSkillsDirectory, { recursive: true }),
-    fs.writeFile(gitConfigPath, "", "utf8"),
-  ]);
+  await prepareIsolationFilesystem({
+    executionRootDirectory,
+    homeDirectory,
+    userProfileDirectory,
+    appDataDirectory,
+    localAppDataDirectory,
+    xdgConfigHome,
+    xdgCacheHome,
+    xdgDataHome,
+    xdgStateHome,
+    codexSkillsDirectory,
+    codexSystemSkillsDirectory,
+    gitConfigPath,
+  });
 
   await seedCodexHome({
     destinationCodexHome: codexHome,
@@ -87,10 +87,7 @@ async function seedCodexHome({
     return;
   }
 
-  await copyIfPresent(path.join(sourceCodexHome, "auth.json"), path.join(destinationCodexHome, "auth.json"));
-  await copyIfPresent(path.join(sourceCodexHome, "config.toml"), path.join(destinationCodexHome, "config.toml"));
-  await copyIfPresent(path.join(sourceCodexHome, "version.json"), path.join(destinationCodexHome, "version.json"));
-  await copyIfPresent(path.join(sourceCodexHome, ".codex-global-state.json"), path.join(destinationCodexHome, ".codex-global-state.json"));
+  await copyOptionalCodexFiles(sourceCodexHome, destinationCodexHome);
   if (copyGlobalAgents) {
     await copyIfPresent(path.join(sourceCodexHome, "AGENTS.md"), path.join(destinationCodexHome, "AGENTS.md"));
   }
@@ -131,7 +128,7 @@ async function copyDirectoryIfPresent(sourcePath, destinationPath) {
 }
 
 function inferVisibleSkills(skillSource) {
-  if (!skillSource || skillSource.type === "none" || skillSource.type === "system-installed") {
+  if (!skillSource || isNonVisibleSkillSource(skillSource)) {
     return [];
   }
 
@@ -144,18 +141,43 @@ function inferVisibleSkills(skillSource) {
   }
 
   if (skillSource.type === "inline-files") {
-    return [
-      ...new Set(
-        skillSource.files
-          .map((file) => {
-            const normalizedPath = file.path.replace(/\\/g, "/").replace(/^\/+/, "");
-            const segments = normalizedPath.split("/").filter(Boolean);
-            return segments[0] === "skills" && segments.length >= 3 ? segments[1] : null;
-          })
-          .filter(Boolean),
-      ),
-    ];
+    return extractVisibleInlineFileSkills(skillSource.files);
   }
 
   return ["workspace-overlay"];
+}
+
+async function prepareIsolationFilesystem(paths) {
+  await Promise.all([
+    ...Object.values(paths)
+      .filter((targetPath) => targetPath !== paths.gitConfigPath)
+      .map((targetPath) => fs.mkdir(targetPath, { recursive: true })),
+    fs.writeFile(paths.gitConfigPath, "", "utf8"),
+  ]);
+}
+
+async function copyOptionalCodexFiles(sourceCodexHome, destinationCodexHome) {
+  await Promise.all([
+    copyIfPresent(path.join(sourceCodexHome, "auth.json"), path.join(destinationCodexHome, "auth.json")),
+    copyIfPresent(path.join(sourceCodexHome, "config.toml"), path.join(destinationCodexHome, "config.toml")),
+    copyIfPresent(path.join(sourceCodexHome, "version.json"), path.join(destinationCodexHome, "version.json")),
+    copyIfPresent(
+      path.join(sourceCodexHome, ".codex-global-state.json"),
+      path.join(destinationCodexHome, ".codex-global-state.json"),
+    ),
+  ]);
+}
+
+function isNonVisibleSkillSource(skillSource) {
+  return skillSource.type === "none" || skillSource.type === "system-installed";
+}
+
+function extractVisibleInlineFileSkills(files = []) {
+  return [...new Set(files.map((file) => extractSkillIdFromFilePath(file.path)).filter(Boolean))];
+}
+
+function extractSkillIdFromFilePath(filePath) {
+  const normalizedPath = filePath.replace(/\\/g, "/").replace(/^\/+/, "");
+  const segments = normalizedPath.split("/").filter(Boolean);
+  return segments[0] === "skills" && segments.length >= 3 ? segments[1] : null;
 }

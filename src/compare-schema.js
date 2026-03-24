@@ -101,28 +101,7 @@ const rawCompareConfigSchema = z.object({
     skillModes: z.array(rawSkillModeVariantSchema).min(1).optional(),
     variants: z.array(compareVariantSchema).min(1),
   }),
-}).superRefine((config, context) => {
-  const hasProfiles = Array.isArray(config.comparison.profiles);
-  const hasSkillModes = Array.isArray(config.comparison.skillModes);
-
-  if (!hasProfiles && !hasSkillModes) {
-    context.addIssue({
-      code: "custom",
-      message: "Compare configs must define comparison.profiles or legacy comparison.skillModes.",
-      path: ["comparison"],
-    });
-  }
-
-  config.comparison.skillModes?.forEach((skillMode, index) => {
-    if (skillMode.skillMode === "enabled" && !skillMode.skill) {
-      context.addIssue({
-        code: "custom",
-        message: "Enabled compare skill modes must define comparison.skillModes[*].skill explicitly.",
-        path: ["comparison", "skillModes", index, "skill"],
-      });
-    }
-  });
-});
+}).superRefine(validateRawCompareConfig);
 
 const normalizedCompareConfigSchema = z.object({
   schemaVersion: z.literal(1),
@@ -187,69 +166,114 @@ const normalizedCompareConfigSchema = z.object({
 export const compareConfigSchema = rawCompareConfigSchema
   .transform((config) => normalizeCompareConfigShape(config))
   .pipe(normalizedCompareConfigSchema)
-  .superRefine((config, context) => {
-    const variantIds = new Set();
-    const profileIds = new Set();
+  .superRefine(validateNormalizedCompareConfig);
 
-    for (const variant of config.comparison.variants) {
-      if (variantIds.has(variant.id)) {
-        context.addIssue({
-          code: "custom",
-          message: `Duplicate comparison variant id "${variant.id}".`,
-          path: ["comparison", "variants"],
-        });
-      }
-      variantIds.add(variant.id);
-    }
+function validateRawCompareConfig(config, context) {
+  if (!hasCompareProfiles(config) && !hasLegacySkillModes(config)) {
+    context.addIssue({
+      code: "custom",
+      message: "Compare configs must define comparison.profiles or legacy comparison.skillModes.",
+      path: ["comparison"],
+    });
+  }
 
-    for (const profile of config.comparison.profiles) {
-      if (profileIds.has(profile.id)) {
-        context.addIssue({
-          code: "custom",
-          message: `Duplicate comparison profile id "${profile.id}".`,
-          path: ["comparison", "profiles"],
-        });
-      }
-      profileIds.add(profile.id);
-
-      if (profile.isolation.inheritSystem) {
-        context.addIssue({
-          code: "custom",
-          message: "Compare profiles must keep isolation.inheritSystem set to false in V1.",
-          path: ["comparison", "profiles"],
-        });
-      }
-
-      if (profile.skillMode === "disabled" && profile.capabilities.skills.length > 0) {
-        context.addIssue({
-          code: "custom",
-          message: "Disabled compare profiles must not resolve visible skills.",
-          path: ["comparison", "profiles"],
-        });
-      }
-
-      if (profile.skillMode === "enabled" && profile.capabilities.skills.length === 0) {
-        context.addIssue({
-          code: "custom",
-          message: "Enabled compare profiles must resolve to at least one skill capability.",
-          path: ["comparison", "profiles"],
-        });
-      }
-
-      if (profile.skillMode === "disabled" && profile.skill.install.strategy !== "none") {
-        context.addIssue({
-          code: "custom",
-          message: "Disabled compare profiles must resolve to skill.install.strategy \"none\".",
-          path: ["comparison", "profiles"],
-        });
-      }
-
-      if (profile.skillMode === "enabled" && profile.skill.source.type === "none") {
-        context.addIssue({
-          code: "custom",
-          message: "Enabled compare profiles must resolve to a concrete skill source.",
-          path: ["comparison", "profiles"],
-        });
-      }
+  config.comparison.skillModes?.forEach((skillMode, index) => {
+    if (skillMode.skillMode === "enabled" && !skillMode.skill) {
+      context.addIssue({
+        code: "custom",
+        message: "Enabled compare skill modes must define comparison.skillModes[*].skill explicitly.",
+        path: ["comparison", "skillModes", index, "skill"],
+      });
     }
   });
+}
+
+function validateNormalizedCompareConfig(config, context) {
+  reportDuplicateIds(config.comparison.variants, "variant", context);
+  reportDuplicateIds(config.comparison.profiles, "profile", context);
+
+  for (const profile of config.comparison.profiles) {
+    validateProfileIsolation(profile, context);
+    validateProfileSkills(profile, context);
+  }
+}
+
+function hasCompareProfiles(config) {
+  return Array.isArray(config.comparison.profiles);
+}
+
+function hasLegacySkillModes(config) {
+  return Array.isArray(config.comparison.skillModes);
+}
+
+function reportDuplicateIds(entries, kind, context) {
+  const ids = new Set();
+
+  for (const entry of entries) {
+    if (ids.has(entry.id)) {
+      context.addIssue({
+        code: "custom",
+        message: `Duplicate comparison ${kind} id "${entry.id}".`,
+        path: ["comparison", `${kind}s`],
+      });
+    }
+
+    ids.add(entry.id);
+  }
+}
+
+function validateProfileIsolation(profile, context) {
+  if (!profile.isolation.inheritSystem) {
+    return;
+  }
+
+  context.addIssue({
+    code: "custom",
+    message: "Compare profiles must keep isolation.inheritSystem set to false in V1.",
+    path: ["comparison", "profiles"],
+  });
+}
+
+function validateProfileSkills(profile, context) {
+  const visibleSkillCount = profile.capabilities.skills.length;
+
+  if (profile.skillMode === "disabled") {
+    if (visibleSkillCount > 0) {
+      addProfilesIssue(
+        context,
+        "Disabled compare profiles must not resolve visible skills.",
+      );
+    }
+
+    if (profile.skill.install.strategy !== "none") {
+      addProfilesIssue(
+        context,
+        "Disabled compare profiles must resolve to skill.install.strategy \"none\".",
+      );
+    }
+
+    return;
+  }
+
+  if (visibleSkillCount === 0) {
+    addProfilesIssue(
+      context,
+      "Enabled compare profiles must resolve to at least one skill capability.",
+    );
+  }
+
+  if (profile.skill.source.type === "none") {
+    addProfilesIssue(
+      context,
+      "Enabled compare profiles must resolve to a concrete skill source.",
+    );
+  }
+}
+
+function addProfilesIssue(context, message) {
+  context.addIssue({
+    code: "custom",
+    message,
+    path: ["comparison", "profiles"],
+  });
+}
