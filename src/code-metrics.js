@@ -25,31 +25,23 @@ export async function analyzeWorkspaceMetricDelta({
   for (const [relativePath, beforeEntry] of beforeSnapshot.entries()) {
     const afterEntry = afterSnapshot.get(relativePath);
 
-    if (!afterEntry || beforeEntry.sha1 === afterEntry.sha1) {
+    if (!hasChangedContent(beforeEntry, afterEntry)) {
       continue;
     }
 
-    const beforeMetrics = await analyzeFileMetrics({
+    const metricDeltas = await analyzeMetricDiffForFile({
       relativePath,
-      fileContent: beforeEntry.content,
+      beforeEntry,
+      afterEntry,
+      analyzeFileMetrics,
     });
-    const afterMetrics = await analyzeFileMetrics({
-      relativePath,
-      fileContent: afterEntry.content,
-    });
-    const metricDeltas = diffMetricMaps(beforeMetrics, afterMetrics);
 
     if (metricDeltas.size === 0) {
       continue;
     }
 
     modifiedOriginalFiles.push(relativePath);
-
-    for (const [metricName, delta] of metricDeltas.entries()) {
-      const samples = metricSamples.get(metricName) ?? [];
-      samples.push(delta);
-      metricSamples.set(metricName, samples);
-    }
+    collectMetricSamples(metricSamples, metricDeltas);
   }
 
   if (modifiedOriginalFiles.length === 0 || metricSamples.size === 0) {
@@ -89,11 +81,7 @@ export async function analyzeFileWithRustCodeAnalysis({
     );
 
     return extractMetricMapFromRustCodeAnalysis(stdout);
-  } catch (error) {
-    if (isMissingCommandError(error)) {
-      return new Map();
-    }
-
+  } catch {
     return new Map();
   } finally {
     await fs.rm(tempDirectory, { recursive: true, force: true });
@@ -178,14 +166,11 @@ async function walkWorkspace(workspaceDirectory, currentDirectory, snapshot) {
 
   for (const entry of entries) {
     const absolutePath = path.join(currentDirectory, entry.name);
-    const relativePath = path.relative(workspaceDirectory, absolutePath).replaceAll("\\", "/");
 
     if (entry.isDirectory()) {
-      if (DEFAULT_IGNORED_DIRECTORIES.has(entry.name)) {
-        continue;
+      if (!DEFAULT_IGNORED_DIRECTORIES.has(entry.name)) {
+        await walkWorkspace(workspaceDirectory, absolutePath, snapshot);
       }
-
-      await walkWorkspace(workspaceDirectory, absolutePath, snapshot);
       continue;
     }
 
@@ -193,11 +178,8 @@ async function walkWorkspace(workspaceDirectory, currentDirectory, snapshot) {
       continue;
     }
 
-    const content = await fs.readFile(absolutePath);
-    snapshot.set(relativePath, {
-      content,
-      sha1: crypto.createHash("sha1").update(content).digest("hex"),
-    });
+    const relativePath = toWorkspaceRelativePath(workspaceDirectory, absolutePath);
+    snapshot.set(relativePath, await buildSnapshotEntry(absolutePath));
   }
 }
 
@@ -216,12 +198,6 @@ function flattenMetricObject(value, prefix, flattenedMetrics) {
   }
 }
 
-function isMissingCommandError(error) {
-  return error?.code === "ENOENT"
-    || /not recognized/i.test(error?.message ?? "")
-    || /not found/i.test(error?.message ?? "");
-}
-
 function buildRustCodeAnalysisCommand(command, filePath) {
   const args = ["-m", "-p", filePath, "--pr", "-O", "json"];
 
@@ -235,5 +211,49 @@ function buildRustCodeAnalysisCommand(command, filePath) {
   return {
     executable: command,
     args,
+  };
+}
+
+function hasChangedContent(beforeEntry, afterEntry) {
+  return Boolean(afterEntry) && beforeEntry.sha1 !== afterEntry.sha1;
+}
+
+async function analyzeMetricDiffForFile({
+  relativePath,
+  beforeEntry,
+  afterEntry,
+  analyzeFileMetrics,
+}) {
+  const [beforeMetrics, afterMetrics] = await Promise.all([
+    analyzeFileMetrics({
+      relativePath,
+      fileContent: beforeEntry.content,
+    }),
+    analyzeFileMetrics({
+      relativePath,
+      fileContent: afterEntry.content,
+    }),
+  ]);
+
+  return diffMetricMaps(beforeMetrics, afterMetrics);
+}
+
+function collectMetricSamples(metricSamples, metricDeltas) {
+  for (const [metricName, delta] of metricDeltas.entries()) {
+    const samples = metricSamples.get(metricName) ?? [];
+    samples.push(delta);
+    metricSamples.set(metricName, samples);
+  }
+}
+
+function toWorkspaceRelativePath(workspaceDirectory, absolutePath) {
+  return path.relative(workspaceDirectory, absolutePath).replaceAll("\\", "/");
+}
+
+async function buildSnapshotEntry(absolutePath) {
+  const content = await fs.readFile(absolutePath);
+  return {
+    content,
+    sha1: crypto.createHash("sha1").update(content).digest("hex"),
   };
 }

@@ -10,29 +10,31 @@ const adapterRegistry = {
     supported: true,
     buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment, gitReady }) {
       const providerPath = fromPackageRoot("src", "providers", "codex-system-provider.js");
+      const providerId = buildProviderId("codex", scenario.agent.executionMethod, scenario.agent.model);
 
       return {
         id: providerPath,
-        label: `codex:${scenario.agent.executionMethod}:${scenario.agent.model ?? "default"}`,
+        label: providerId,
         config: {
-          provider_id: `codex:${scenario.agent.executionMethod}:${scenario.agent.model ?? "default"}`,
+          provider_id: providerId,
           execution_method: scenario.agent.executionMethod,
           command_path: scenario.agent.commandPath,
           model: scenario.agent.model,
           working_dir: workspaceDirectory,
-          additional_directories: scenario.agent.additionalDirectories.map((directory) =>
-            resolveAdditionalDirectory(workspaceDirectory, directory)
+          additional_directories: resolveAdditionalDirectories(
+            workspaceDirectory,
+            scenario.agent.additionalDirectories,
           ),
           sandbox_mode: scenario.agent.sandboxMode,
           approval_policy: scenario.agent.approvalPolicy,
           web_search_enabled: scenario.agent.webSearchEnabled,
           network_access_enabled: scenario.agent.networkAccessEnabled,
           model_reasoning_effort: scenario.agent.reasoningEffort,
-          cli_env: {
-            ...workspaceEnvironment,
-            ...scenario.agent.cliEnv,
-            ...(isolatedEnvironment ?? {}),
-          },
+          cli_env: buildCliEnvironment(
+            workspaceEnvironment,
+            scenario.agent.cliEnv,
+            isolatedEnvironment,
+          ),
           enable_streaming: scenario.evaluation.tracing,
           deep_tracing: scenario.evaluation.tracing,
           skip_git_repo_check: !gitReady,
@@ -51,12 +53,13 @@ const adapterRegistry = {
     supported: true,
     buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
       const providerPath = fromPackageRoot("src", "providers", "copilot-system-provider.js");
+      const providerId = buildProviderId("copilot-cli", scenario.agent.model);
 
       return {
         id: providerPath,
-        label: `copilot-cli:${scenario.agent.model ?? "default"}`,
+        label: providerId,
         config: {
-          provider_id: `copilot-cli:${scenario.agent.model ?? "default"}`,
+          provider_id: providerId,
           command_path: scenario.agent.commandPath,
           model: scenario.agent.model,
           working_dir: workspaceDirectory,
@@ -65,14 +68,15 @@ const adapterRegistry = {
           web_search_enabled: scenario.agent.webSearchEnabled,
           network_access_enabled: scenario.agent.networkAccessEnabled,
           model_reasoning_effort: scenario.agent.reasoningEffort,
-          additional_directories: scenario.agent.additionalDirectories.map((directory) =>
-            resolveAdditionalDirectory(workspaceDirectory, directory)
+          additional_directories: resolveAdditionalDirectories(
+            workspaceDirectory,
+            scenario.agent.additionalDirectories,
           ),
-          cli_env: {
-            ...workspaceEnvironment,
-            ...scenario.agent.cliEnv,
-            ...(isolatedEnvironment ?? {}),
-          },
+          cli_env: buildCliEnvironment(
+            workspaceEnvironment,
+            scenario.agent.cliEnv,
+            isolatedEnvironment,
+          ),
           copilot_config: scenario.agent.config,
         },
       };
@@ -83,20 +87,21 @@ const adapterRegistry = {
     supported: true,
     buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
       const providerPath = fromPackageRoot("src", "providers", "pi-system-provider.js");
+      const providerId = buildProviderId("pi", scenario.agent.model);
 
       return {
         id: providerPath,
-        label: `pi:${scenario.agent.model ?? "default"}`,
+        label: providerId,
         config: {
-          provider_id: `pi:${scenario.agent.model ?? "default"}`,
+          provider_id: providerId,
           command_path: scenario.agent.commandPath,
           model: scenario.agent.model,
           working_dir: workspaceDirectory,
-          cli_env: {
-            ...workspaceEnvironment,
-            ...scenario.agent.cliEnv,
-            ...(isolatedEnvironment ?? {}),
-          },
+          cli_env: buildCliEnvironment(
+            workspaceEnvironment,
+            scenario.agent.cliEnv,
+            isolatedEnvironment,
+          ),
           allowed_skills: getAllowedSkillIds(isolatedEnvironment),
           disable_other_skills: resolveSkillStrategy(scenario) !== "system-installed",
         },
@@ -116,14 +121,14 @@ function resolveAdditionalDirectory(workspaceDirectory, directory) {
   return resolvedDirectory;
 }
 
+function resolveAdditionalDirectories(workspaceDirectory, directories = []) {
+  return directories.map((directory) => resolveAdditionalDirectory(workspaceDirectory, directory));
+}
+
 function resolveSkillStrategy(scenario) {
   const profileSkills = scenario?.profile?.capabilities?.skills;
   if (Array.isArray(profileSkills) && profileSkills.length > 0) {
-    const strategies = new Set(profileSkills.map((skill) => skill.install?.strategy ?? "none"));
-    if (strategies.size === 1) {
-      return [...strategies][0];
-    }
-    return "mixed";
+    return resolveProfileSkillStrategy(profileSkills);
   }
 
   if (scenario?.skill?.install?.strategy) {
@@ -139,6 +144,11 @@ function resolveSkillStrategy(scenario) {
   }
 
   return "none";
+}
+
+function resolveProfileSkillStrategy(profileSkills) {
+  const strategies = new Set(profileSkills.map((skill) => skill.install?.strategy ?? "none"));
+  return strategies.size === 1 ? [...strategies][0] : "mixed";
 }
 
 function getAllowedSkillIds(isolatedEnvironment) {
@@ -186,6 +196,18 @@ function mergeCodexSkillConfig({
         enabled: true,
       })),
     },
+  };
+}
+
+function buildProviderId(adapterId, ...parts) {
+  return [adapterId, ...parts.map((part) => part ?? "default")].join(":");
+}
+
+function buildCliEnvironment(workspaceEnvironment, cliEnvironment, isolatedEnvironment) {
+  return {
+    ...workspaceEnvironment,
+    ...cliEnvironment,
+    ...(isolatedEnvironment ?? {}),
   };
 }
 

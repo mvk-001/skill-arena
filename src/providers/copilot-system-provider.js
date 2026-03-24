@@ -1,7 +1,8 @@
-import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import {
+  spawnProviderCommand,
+  withPromptPlaceholder,
+} from "./command-process.js";
 
 const WINDOWS_PROMPT_PLACEHOLDER = "__SKILL_ARENA_PROMPT__";
 
@@ -61,63 +62,36 @@ export default class CopilotSystemProvider {
   buildCommandArguments(prompt) {
     const args = ["-p", prompt, "--output-format", "json", "--no-color"];
     const adapterConfig = this.config.copilot_config ?? {};
+    const additionalDirectories = this.config.additional_directories ?? [];
 
-    if (this.config.model) {
-      args.push("--model", this.config.model);
-    }
-
-    if (adapterConfig.agent) {
-      args.push("--agent", String(adapterConfig.agent));
-    }
-
-    if (adapterConfig.noCustomInstructions === true) {
-      args.push("--no-custom-instructions");
-    }
-
-    if (this.config.approval_policy === "never") {
-      args.push("--allow-all-tools");
-    }
-
-    if (
+    pushOption(args, "--model", this.config.model);
+    pushOption(args, "--agent", adapterConfig.agent);
+    pushFlag(args, "--no-custom-instructions", adapterConfig.noCustomInstructions === true);
+    pushFlag(args, "--allow-all-tools", this.config.approval_policy === "never");
+    pushFlag(
+      args,
+      "--allow-all-urls",
       this.config.network_access_enabled
-      || this.config.web_search_enabled
-      || this.config.sandbox_mode === "danger-full-access"
-    ) {
-      args.push("--allow-all-urls");
-    }
-
-    if (
-      this.config.sandbox_mode === "danger-full-access"
-      || (this.config.additional_directories?.length ?? 0) > 0
-    ) {
-      args.push("--allow-all-paths");
-    }
+        || this.config.web_search_enabled
+        || this.config.sandbox_mode === "danger-full-access",
+    );
+    pushFlag(
+      args,
+      "--allow-all-paths",
+      this.config.sandbox_mode === "danger-full-access" || additionalDirectories.length > 0,
+    );
 
     args.push("--no-ask-user");
 
-    for (const directory of this.config.additional_directories ?? []) {
+    for (const directory of additionalDirectories) {
       args.push("--add-dir", path.resolve(this.config.working_dir, directory));
     }
 
-    for (const toolName of toStringArray(adapterConfig.allowTool)) {
-      args.push("--allow-tool", toolName);
-    }
-
-    for (const toolName of toStringArray(adapterConfig.denyTool)) {
-      args.push("--deny-tool", toolName);
-    }
-
-    for (const urlPattern of toStringArray(adapterConfig.allowUrl)) {
-      args.push("--allow", urlPattern);
-    }
-
-    for (const envVarName of toStringArray(adapterConfig.extraContext)) {
-      args.push("--context", envVarName);
-    }
-
-    if (adapterConfig.share === true) {
-      args.push("--share");
-    }
+    pushRepeatedOptions(args, "--allow-tool", toStringArray(adapterConfig.allowTool));
+    pushRepeatedOptions(args, "--deny-tool", toStringArray(adapterConfig.denyTool));
+    pushRepeatedOptions(args, "--allow", toStringArray(adapterConfig.allowUrl));
+    pushRepeatedOptions(args, "--context", toStringArray(adapterConfig.extraContext));
+    pushFlag(args, "--share", adapterConfig.share === true);
 
     return args;
   }
@@ -165,28 +139,33 @@ function extractFinalOutput(stdout) {
 
 function extractMessageFromJsonLines(events) {
   for (const event of [...events].reverse()) {
-    if (event?.type === "assistant.message" && typeof event?.data?.content === "string") {
-      return event.data.content.trim();
-    }
-
-    if (typeof event?.message === "string" && event.message.trim()) {
-      return event.message.trim();
-    }
-
-    if (typeof event?.content === "string" && event.content.trim()) {
-      return event.content.trim();
-    }
-
-    if (typeof event?.text === "string" && event.text.trim()) {
-      return event.text.trim();
-    }
-
-    if (typeof event?.output === "string" && event.output.trim()) {
-      return event.output.trim();
+    for (const value of getEventMessageCandidates(event)) {
+      const message = trimNonEmptyString(value);
+      if (message) {
+        return message;
+      }
     }
   }
 
   return "";
+}
+
+function getEventMessageCandidates(event) {
+  return [
+    event?.type === "assistant.message" ? event?.data?.content : undefined,
+    event?.message,
+    event?.content,
+    event?.text,
+    event?.output,
+  ];
+}
+
+function trimNonEmptyString(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim();
 }
 
 function describeUnsupportedSettings(config) {
@@ -215,6 +194,24 @@ function toStringArray(value) {
   return value.filter((entry) => typeof entry === "string" && entry.length > 0);
 }
 
+function pushOption(args, optionName, optionValue) {
+  if (optionValue !== undefined && optionValue !== null && optionValue !== "") {
+    args.push(optionName, String(optionValue));
+  }
+}
+
+function pushFlag(args, optionName, enabled) {
+  if (enabled) {
+    args.push(optionName);
+  }
+}
+
+function pushRepeatedOptions(args, optionName, values) {
+  for (const value of values) {
+    args.push(optionName, value);
+  }
+}
+
 async function spawnProcess({
   command,
   args,
@@ -223,141 +220,13 @@ async function spawnProcess({
   promptText,
   abortSignal,
 }) {
-  const { executable, executableArgs, cleanup } = await buildSpawnCommand(command, args, env, promptText);
-
-  return await new Promise((resolve, reject) => {
-    const childProcess = spawn(executable, executableArgs, {
-      cwd,
-      env,
-      stdio: "pipe",
-      windowsHide: true,
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    childProcess.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-
-    childProcess.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    childProcess.on("error", (error) => {
-      cleanupAbortListener();
-      void cleanup();
-      reject(error);
-    });
-
-    childProcess.on("exit", (exitCode) => {
-      cleanupAbortListener();
-      void cleanup();
-      resolve({
-        stdout,
-        stderr,
-        exitCode: exitCode ?? 1,
-      });
-    });
-
-    childProcess.stdin.end();
-
-    const abortHandler = () => {
-      childProcess.kill("SIGTERM");
-    };
-
-    const cleanupAbortListener = () => {
-      abortSignal?.removeEventListener("abort", abortHandler);
-    };
-
-    abortSignal?.addEventListener("abort", abortHandler, { once: true });
+  return await spawnProviderCommand({
+    command,
+    args: withPromptPlaceholder(args, WINDOWS_PROMPT_PLACEHOLDER),
+    cwd,
+    env,
+    promptText,
+    promptDirectoryPrefix: "skill-arena-copilot-prompt-",
+    abortSignal,
   });
-}
-
-async function buildSpawnCommand(command, args, env, promptText) {
-  if (process.platform !== "win32") {
-    return {
-      executable: command,
-      executableArgs: args,
-      cleanup: async () => {},
-    };
-  }
-
-  if (typeof promptText === "string") {
-    return await buildWindowsPowerShellCommand(command, args, env, promptText);
-  }
-
-  return {
-    executable: "cmd.exe",
-    executableArgs: ["/d", "/s", "/c", resolveWindowsCommand(command), ...args],
-    cleanup: async () => {},
-  };
-}
-
-function resolveWindowsCommand(command) {
-  return path.extname(command) ? command : `${command}.cmd`;
-}
-
-async function buildWindowsPowerShellCommand(command, args, env, promptText) {
-  const promptDirectory = await fs.mkdtemp(
-    path.join(os.tmpdir(), "skill-arena-copilot-prompt-"),
-  );
-  const promptPath = path.join(promptDirectory, "prompt.txt");
-  await fs.writeFile(promptPath, promptText, "utf8");
-
-  const resolvedCommandPath = resolveWindowsScriptPath(command, env);
-  const script = [
-    `$skillArenaPrompt = ((Get-Content -Raw ${toPowerShellLiteral(promptPath)}) -replace '\\s+', ' ').Trim()`,
-    `$skillArenaArgs = @(${args.map((arg) =>
-      arg === WINDOWS_PROMPT_PLACEHOLDER ? "$skillArenaPrompt" : toPowerShellLiteral(arg)
-    ).join(", ")})`,
-    `& ${toPowerShellLiteral(resolvedCommandPath)} @skillArenaArgs`,
-  ].join("; ");
-
-  return {
-    executable: "powershell.exe",
-    executableArgs: [
-      "-NoProfile",
-      "-NonInteractive",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-Command",
-      script,
-    ],
-    cleanup: async () => {
-      await fs.rm(promptDirectory, { recursive: true, force: true });
-    },
-  };
-}
-
-function resolveWindowsScriptPath(command, env) {
-  if (path.isAbsolute(command) || path.extname(command)) {
-    return command;
-  }
-
-  const pathValue = env.Path ?? env.PATH ?? process.env.Path ?? process.env.PATH ?? "";
-  const searchDirectories = pathValue.split(path.delimiter).filter(Boolean);
-
-  for (const extension of [".ps1", ".cmd", ".exe", ""]) {
-    for (const directory of searchDirectories) {
-      const candidate = path.join(directory, `${command}${extension}`);
-      try {
-        if (candidate && requirePathExists(candidate)) {
-          return candidate;
-        }
-      } catch {
-        continue;
-      }
-    }
-  }
-
-  return command;
-}
-
-function requirePathExists(candidate) {
-  return process.getBuiltinModule("node:fs").existsSync(candidate);
-}
-
-function toPowerShellLiteral(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
 }

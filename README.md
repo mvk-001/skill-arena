@@ -19,7 +19,7 @@ Start here, then go deeper only where needed:
 - [Usage guide](./docs/usage.md): author, validate, and run manifests or matrix evaluation configs
 - [Specs](./docs/specs.md): canonical schema and normalization rules
 - [Architecture](./docs/architecture.md): execution flow and runtime design
-- [Testing](./docs/testing.md): unit tests, coverage, smoke runs, and artifact inspection
+- [Testing](./docs/testing.md): unit tests, coverage, smoke runs, artifact inspection, and optional `rust-code-analysis` usage
 - [Maintained evaluation benchmark](./benchmarks/skill-arena-compare/compare.yaml): concrete end-to-end example
 
 ## Supported adapters
@@ -171,6 +171,8 @@ Matrix evaluation result cells include pass ratio and, when available:
 
 - total-token average plus standard deviation for the runs in that cell
 - per-metric code deltas from `rust-code-analysis` for modified original files only, reported as cell-level average plus standard deviation
+
+For standalone installation and local complexity analysis commands, see [docs/testing.md](./docs/testing.md).
 
 You can inspect Promptfoo output directly when needed:
 

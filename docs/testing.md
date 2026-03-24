@@ -77,6 +77,52 @@ This project currently requires:
 
 All are above the requested 90% minimum.
 
+### 1b. Optional `rust-code-analysis` usage
+
+Use `rust-code-analysis` only when you want standalone complexity and maintainability metrics in addition to test coverage. Skill Arena also uses this tool opportunistically during matrix evaluation runs to report changed code metrics for modified original files.
+
+This tool is optional. Do not install it unless you specifically want those extra metrics.
+
+Recommended approach:
+
+- Prebuilt release binary:
+
+```powershell
+$toolDir = ".tools/rust-code-analysis"
+New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
+Invoke-WebRequest `
+  -Uri "https://github.com/mozilla/rust-code-analysis/releases/latest/download/rust-code-analysis-win-cli-x86_64.zip" `
+  -OutFile "$toolDir/rust-code-analysis-win-cli-x86_64.zip"
+Expand-Archive `
+  -Path "$toolDir/rust-code-analysis-win-cli-x86_64.zip" `
+  -DestinationPath $toolDir `
+  -Force
+```
+
+Run it directly against this repository:
+
+```powershell
+.\.tools\rust-code-analysis\target\release\rust-code-analysis-cli.exe `
+  -m --pr -O json `
+  -p src -p test -p bin `
+  -I "*.js" `
+  -o .tmp\rca-js
+```
+
+This writes one JSON metrics file per analyzed source file under `.tmp/rca-js/`.
+
+If the binary is on `PATH`, compare evaluations automatically pick it up. If it is not installed, evaluations continue without these code metrics. To force a specific binary path, set:
+
+```powershell
+$env:SKILL_ARENA_RUST_CODE_ANALYSIS_BIN = "C:\tools\rust-code-analysis-cli.exe"
+```
+
+Useful follow-up checks:
+
+- inspect the generated JSON for file-level `cognitive`, `cyclomatic`, `halstead`, and `loc` metrics
+- rank hotspots by cognitive complexity to identify refactor targets
+- rerun after a refactor and compare the changed metric deltas in the merged compare report
+
 ### 2. Validate a benchmark manifest
 
 Use this before running a live benchmark if the manifest changed.

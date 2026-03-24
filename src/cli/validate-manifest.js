@@ -8,13 +8,7 @@ const TODO_MARKER = /TODO:/i;
 const MAX_TODO_REPORTS = 30;
 
 async function main() {
-  const configPath = process.argv[2];
-
-  if (!configPath) {
-    throw new Error("Usage: node ./src/cli/validate-manifest.js <benchmark-config-path>");
-  }
-
-  const absoluteConfigPath = path.resolve(process.cwd(), configPath);
+  const absoluteConfigPath = resolveConfigPathArgument(process.argv[2]);
   const parsedConfig = await parseConfigFile(absoluteConfigPath);
   const configKind = detectConfigKind(parsedConfig, absoluteConfigPath);
   const todoFindings = findTodoFindings(parsedConfig);
@@ -24,32 +18,12 @@ async function main() {
       absoluteConfigPath,
     );
 
-    console.log(
-      JSON.stringify(
-        {
-          status: todoFindings.length > 0 ? "valid-with-todos" : "valid",
-          configPath: absoluteManifestPath,
-          configKind,
-          benchmarkId: manifest.benchmark.id,
-          scenarioCount: manifest.scenarios.length,
-          scenarioIds: manifest.scenarios.map((scenario) => scenario.id),
-          scenarioSummaries: manifest.scenarios.map((scenario) => ({
-            id: scenario.id,
-            description: scenario.description,
-            skillMode: scenario.skillMode,
-            skillSource: scenario.skillSource,
-          })),
-          todoCount: todoFindings.length,
-          todoSamples: todoFindings.slice(0, MAX_TODO_REPORTS),
-          recommendation:
-            todoFindings.length > 0
-              ? "Replace fields containing \"TODO:\" before running evaluate."
-              : "Ready to run evaluate.",
-        },
-        null,
-        2,
-      ),
-    );
+    console.log(JSON.stringify(buildManifestValidationSummary({
+      manifest,
+      configPath: absoluteManifestPath,
+      configKind,
+      todoFindings,
+    }), null, 2));
     return;
   }
 
@@ -57,30 +31,12 @@ async function main() {
     absoluteConfigPath,
   );
 
-  console.log(
-    JSON.stringify(
-      {
-        status: todoFindings.length > 0 ? "valid-with-todos" : "valid",
-        configPath: absoluteCompareConfigPath,
-        configKind,
-        benchmarkId: compareConfig.benchmark.id,
-        promptCount: compareConfig.task.prompts.length,
-        promptIds: compareConfig.task.prompts.map((prompt) => prompt.id),
-        variantCount: compareConfig.comparison.variants.length,
-        profileCount: compareConfig.comparison.profiles.length,
-        variantIds: compareConfig.comparison.variants.map((variant) => variant.id),
-        profileIds: compareConfig.comparison.profiles.map((profile) => profile.id),
-        todoCount: todoFindings.length,
-        todoSamples: todoFindings.slice(0, MAX_TODO_REPORTS),
-        recommendation:
-          todoFindings.length > 0
-            ? "Replace fields containing \"TODO:\" before running evaluate."
-            : "Ready to run evaluate.",
-      },
-      null,
-      2,
-    ),
-  );
+  console.log(JSON.stringify(buildCompareValidationSummary({
+    compareConfig,
+    configPath: absoluteCompareConfigPath,
+    configKind,
+    todoFindings,
+  }), null, 2));
 }
 
 function findTodoFindings(config) {
@@ -90,17 +46,12 @@ function findTodoFindings(config) {
 }
 
 function collectTodoFindings(value, pathParts, findings) {
-  if (value === null || value === undefined) {
+  if (value == null) {
     return;
   }
 
   if (typeof value === "string") {
-    if (TODO_MARKER.test(value)) {
-      findings.push({
-        path: formatPath(pathParts),
-        value,
-      });
-    }
+    appendTodoFinding(findings, pathParts, value);
     return;
   }
 
@@ -112,9 +63,9 @@ function collectTodoFindings(value, pathParts, findings) {
   }
 
   if (typeof value === "object") {
-    for (const [key, entry] of Object.entries(value)) {
+    Object.entries(value).forEach(([key, entry]) => {
       collectTodoFindings(entry, [...pathParts, key], findings);
-    }
+    });
   }
 }
 
@@ -137,3 +88,88 @@ main().catch((error) => {
   console.error(error.message);
   process.exitCode = 1;
 });
+
+function resolveConfigPathArgument(configPath) {
+  if (!configPath) {
+    throw new Error("Usage: node ./src/cli/validate-manifest.js <benchmark-config-path>");
+  }
+
+  return path.resolve(process.cwd(), configPath);
+}
+
+function buildManifestValidationSummary({
+  manifest,
+  configPath,
+  configKind,
+  todoFindings,
+}) {
+  return {
+    ...buildBaseValidationSummary({
+      benchmarkId: manifest.benchmark.id,
+      configPath,
+      configKind,
+      todoFindings,
+    }),
+    scenarioCount: manifest.scenarios.length,
+    scenarioIds: manifest.scenarios.map((scenario) => scenario.id),
+    scenarioSummaries: manifest.scenarios.map((scenario) => ({
+      id: scenario.id,
+      description: scenario.description,
+      skillMode: scenario.skillMode,
+      skillSource: scenario.skillSource,
+    })),
+  };
+}
+
+function buildCompareValidationSummary({
+  compareConfig,
+  configPath,
+  configKind,
+  todoFindings,
+}) {
+  return {
+    ...buildBaseValidationSummary({
+      benchmarkId: compareConfig.benchmark.id,
+      configPath,
+      configKind,
+      todoFindings,
+    }),
+    promptCount: compareConfig.task.prompts.length,
+    promptIds: compareConfig.task.prompts.map((prompt) => prompt.id),
+    variantCount: compareConfig.comparison.variants.length,
+    profileCount: compareConfig.comparison.profiles.length,
+    variantIds: compareConfig.comparison.variants.map((variant) => variant.id),
+    profileIds: compareConfig.comparison.profiles.map((profile) => profile.id),
+  };
+}
+
+function buildBaseValidationSummary({
+  benchmarkId,
+  configPath,
+  configKind,
+  todoFindings,
+}) {
+  const hasTodos = todoFindings.length > 0;
+  return {
+    status: hasTodos ? "valid-with-todos" : "valid",
+    configPath,
+    configKind,
+    benchmarkId,
+    todoCount: todoFindings.length,
+    todoSamples: todoFindings.slice(0, MAX_TODO_REPORTS),
+    recommendation: hasTodos
+      ? "Replace fields containing \"TODO:\" before running evaluate."
+      : "Ready to run evaluate.",
+  };
+}
+
+function appendTodoFinding(findings, pathParts, value) {
+  if (!TODO_MARKER.test(value)) {
+    return;
+  }
+
+  findings.push({
+    path: formatPath(pathParts),
+    value,
+  });
+}

@@ -22,24 +22,15 @@ export async function ensureCompareScenarioLocalPaths({
 }
 
 function collectScenarioLocalPaths({ manifest, scenario }) {
-  const localPaths = manifest.workspace.sources
-    .filter((source) => source.type === "local-path")
-    .map((source) => ({
-      path: source.path,
-      label: `workspace.sources.${source.id ?? source.type}.path`,
-    }));
-
-  if (
-    scenario.skill.install.strategy === "workspace-overlay"
-    && scenario.skill.source.type === "local-path"
-  ) {
-    localPaths.push({
-      path: scenario.skill.source.path,
-      label: "skill.source.path",
-    });
-  }
-
-  return localPaths;
+  return [
+    ...manifest.workspace.sources
+      .filter((source) => source.type === "local-path")
+      .map((source) => ({
+        path: source.path,
+        label: `workspace.sources.${source.id ?? source.type}.path`,
+      })),
+    ...collectScenarioSkillLocalPaths(scenario),
+  ];
 }
 
 async function ensureCompareLocalPath({
@@ -78,15 +69,7 @@ async function bootstrapMissingComparePath({
   label,
   resolvedPath,
 }) {
-  const existingStats = await fs.stat(resolvedPath).catch(() => null);
-
-  if (existingStats?.isDirectory()) {
-    return;
-  }
-
-  if (existingStats && !existingStats.isDirectory()) {
-    throw new Error(`${label} exists but is not a directory: ${resolvedPath}`);
-  }
+  await assertDirectoryMissingOrUsable(resolvedPath, label);
 
   const bootstrapSourceDirectory = await findBootstrapSourceDirectory(inputPath);
 
@@ -154,7 +137,7 @@ async function copyDirectoryWithoutAgents({
   const entries = await fs.readdir(sourceDirectory, { withFileTypes: true });
 
   for (const entry of entries) {
-    if (entry.name.toLowerCase() === "agents.md") {
+    if (isAgentsInstructionFile(entry.name)) {
       continue;
     }
 
@@ -169,10 +152,7 @@ async function copyDirectoryWithoutAgents({
       continue;
     }
 
-    if (entry.isFile()) {
-      await fs.mkdir(path.dirname(destinationPath), { recursive: true });
-      await fs.copyFile(sourcePath, destinationPath);
-    }
+    await copyFileEntryIfPresent(entry, sourcePath, destinationPath);
   }
 }
 
@@ -182,4 +162,41 @@ function normalizeRelativeSuffix(inputPath) {
     .replace(/\\/g, "/")
     .replace(/^\/+/, "")
     .toLowerCase();
+}
+
+function collectScenarioSkillLocalPaths(scenario) {
+  if (
+    scenario.skill.install.strategy !== "workspace-overlay"
+    || scenario.skill.source.type !== "local-path"
+  ) {
+    return [];
+  }
+
+  return [{
+    path: scenario.skill.source.path,
+    label: "skill.source.path",
+  }];
+}
+
+async function assertDirectoryMissingOrUsable(resolvedPath, label) {
+  const existingStats = await fs.stat(resolvedPath).catch(() => null);
+
+  if (!existingStats || existingStats.isDirectory()) {
+    return;
+  }
+
+  throw new Error(`${label} exists but is not a directory: ${resolvedPath}`);
+}
+
+function isAgentsInstructionFile(entryName) {
+  return entryName.toLowerCase() === "agents.md";
+}
+
+async function copyFileEntryIfPresent(entry, sourcePath, destinationPath) {
+  if (!entry.isFile()) {
+    return;
+  }
+
+  await fs.mkdir(path.dirname(destinationPath), { recursive: true });
+  await fs.copyFile(sourcePath, destinationPath);
 }

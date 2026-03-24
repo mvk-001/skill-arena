@@ -10,6 +10,90 @@ import { createRuntimeIsolation } from "./runtime-isolation.js";
 const execFileAsync = promisify(execFile);
 const gitSourceCache = new Map();
 
+async function writeInlineFiles(workspaceDirectory, files, target = "") {
+  for (const file of files) {
+    const outputPath = resolveWorkspacePath(workspaceDirectory, path.posix.join(target, file.path));
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    await fs.writeFile(outputPath, file.content ?? "", "utf8");
+  }
+}
+
+async function copySkillDirectoriesToCodexHome(skillDirectories, sourceDirectory, codexHome) {
+  for (const skillId of skillDirectories) {
+    await fs.cp(
+      path.join(sourceDirectory, skillId),
+      path.join(codexHome, "skills", skillId),
+      { recursive: true },
+    );
+  }
+}
+
+const WORKSPACE_SOURCE_HANDLERS = {
+  "local-path": async ({ source, workspaceDirectory, labelPrefix, sourceBaseDirectory }) => {
+    const sourceDirectory = resolveLocalPath(source.path, sourceBaseDirectory);
+    await assertDirectoryExists(sourceDirectory, `${labelPrefix}.${source.id ?? source.type}.path`);
+    await copyDirectoryIntoTarget({
+      sourceDirectory,
+      workspaceDirectory,
+      target: source.target,
+    });
+  },
+  git: async ({ source, workspaceDirectory }) => {
+    const sourceDirectory = await cloneGitSource(source);
+    await copyDirectoryIntoTarget({
+      sourceDirectory,
+      workspaceDirectory,
+      target: source.target,
+    });
+  },
+  "inline-files": async ({ source, workspaceDirectory }) => {
+    await writeInlineFiles(workspaceDirectory, source.files, source.target);
+  },
+  empty: async () => {},
+};
+
+const SKILL_SOURCE_HANDLERS = {
+  "local-path": async ({ skillSource, workspaceDirectory, sourceBaseDirectory }) => {
+    const sourceDirectory = resolveLocalPath(skillSource.path, sourceBaseDirectory);
+    await assertDirectoryExists(sourceDirectory, "skill.source.path");
+    await materializeResolvedSkillDirectory({
+      sourceDirectory,
+      workspaceDirectory,
+      skillId: skillSource.skillId,
+    });
+  },
+  git: async ({ skillSource, workspaceDirectory }) => {
+    const sourceDirectory = await cloneGitSource(skillSource);
+    const selectedSkillDirectory = skillSource.skillPath
+      ? path.join(sourceDirectory, skillSource.skillPath)
+      : sourceDirectory;
+    await assertDirectoryExists(selectedSkillDirectory, "skill.source.skillPath");
+    await materializeResolvedSkillDirectory({
+      sourceDirectory: selectedSkillDirectory,
+      workspaceDirectory,
+      skillId: skillSource.skillId,
+    });
+  },
+  inline: async ({ skillSource, workspaceDirectory }) => {
+    const skillDirectory = resolveWorkspacePath(
+      workspaceDirectory,
+      path.posix.join("skills", skillSource.skillId),
+    );
+    await fs.mkdir(skillDirectory, { recursive: true });
+    await fs.writeFile(path.join(skillDirectory, "SKILL.md"), skillSource.content ?? "", "utf8");
+    await writeInlineFiles(
+      workspaceDirectory,
+      skillSource.files ?? [],
+      path.posix.join("skills", skillSource.skillId),
+    );
+  },
+  "inline-files": async ({ skillSource, workspaceDirectory }) => {
+    await writeInlineFiles(workspaceDirectory, skillSource.files);
+  },
+  none: async () => {},
+  "system-installed": async () => {},
+};
+
 export async function materializeWorkspace({
   manifest,
   scenario,
@@ -100,97 +184,23 @@ async function materializeWorkspaceSource({
   labelPrefix,
   sourceBaseDirectory,
 }) {
-  switch (source.type) {
-    case "local-path": {
-      const sourceDirectory = resolveLocalPath(source.path, sourceBaseDirectory);
-      await assertDirectoryExists(sourceDirectory, `${labelPrefix}.${source.id ?? source.type}.path`);
-      await copyDirectoryIntoTarget({
-        sourceDirectory,
-        workspaceDirectory,
-        target: source.target,
-      });
-      return;
-    }
-    case "git": {
-      const sourceDirectory = await cloneGitSource(source);
-      await copyDirectoryIntoTarget({
-        sourceDirectory,
-        workspaceDirectory,
-        target: source.target,
-      });
-      return;
-    }
-    case "inline-files": {
-      for (const file of source.files) {
-        const outputPath = resolveWorkspacePath(workspaceDirectory, path.posix.join(source.target, file.path));
-        await fs.mkdir(path.dirname(outputPath), { recursive: true });
-        await fs.writeFile(outputPath, file.content ?? "", "utf8");
-      }
-      return;
-    }
-    case "empty":
-      return;
-    default:
-      throw new Error(`Unsupported workspace source type "${source.type}".`);
+  const handleSource = WORKSPACE_SOURCE_HANDLERS[source.type];
+
+  if (!handleSource) {
+    throw new Error(`Unsupported workspace source type "${source.type}".`);
   }
+
+  await handleSource({ source, workspaceDirectory, labelPrefix, sourceBaseDirectory });
 }
 
 async function materializeSkillSource({ skillSource, workspaceDirectory, sourceBaseDirectory }) {
-  switch (skillSource.type) {
-    case "local-path": {
-      const sourceDirectory = resolveLocalPath(skillSource.path, sourceBaseDirectory);
-      await assertDirectoryExists(sourceDirectory, "skill.source.path");
-      await materializeResolvedSkillDirectory({
-        sourceDirectory,
-        workspaceDirectory,
-        skillId: skillSource.skillId,
-      });
-      return;
-    }
-    case "git": {
-      const sourceDirectory = await cloneGitSource(skillSource);
-      const selectedSkillDirectory = skillSource.skillPath
-        ? path.join(sourceDirectory, skillSource.skillPath)
-        : sourceDirectory;
-      await assertDirectoryExists(selectedSkillDirectory, "skill.source.skillPath");
-      await materializeResolvedSkillDirectory({
-        sourceDirectory: selectedSkillDirectory,
-        workspaceDirectory,
-        skillId: skillSource.skillId,
-      });
-      return;
-    }
-    case "inline": {
-      const skillDirectory = resolveWorkspacePath(
-        workspaceDirectory,
-        path.posix.join("skills", skillSource.skillId),
-      );
-      await fs.mkdir(skillDirectory, { recursive: true });
-      await fs.writeFile(path.join(skillDirectory, "SKILL.md"), skillSource.content ?? "", "utf8");
-      for (const file of skillSource.files ?? []) {
-        const outputPath = resolveWorkspacePath(
-          workspaceDirectory,
-          path.posix.join("skills", skillSource.skillId, file.path),
-        );
-        await fs.mkdir(path.dirname(outputPath), { recursive: true });
-        await fs.writeFile(outputPath, file.content ?? "", "utf8");
-      }
-      return;
-    }
-    case "inline-files": {
-      for (const file of skillSource.files) {
-        const outputPath = resolveWorkspacePath(workspaceDirectory, file.path);
-        await fs.mkdir(path.dirname(outputPath), { recursive: true });
-        await fs.writeFile(outputPath, file.content ?? "", "utf8");
-      }
-      return;
-    }
-    case "none":
-    case "system-installed":
-      return;
-    default:
-      throw new Error(`Unsupported skill source type "${skillSource.type}".`);
+  const handleSkillSource = SKILL_SOURCE_HANDLERS[skillSource.type];
+
+  if (!handleSkillSource) {
+    throw new Error(`Unsupported skill source type "${skillSource.type}".`);
   }
+
+  await handleSkillSource({ skillSource, workspaceDirectory, sourceBaseDirectory });
 }
 
 async function materializeResolvedSkillDirectory({
@@ -306,13 +316,11 @@ async function mountConfiguredSkills({
     return [];
   }
 
-  for (const skillId of skillDirectories) {
-    await fs.cp(
-      path.join(workspaceSkillsDirectory, skillId),
-      path.join(runtimeIsolation.codexHome, "skills", skillId),
-      { recursive: true },
-    );
-  }
+  await copySkillDirectoriesToCodexHome(
+    skillDirectories,
+    workspaceSkillsDirectory,
+    runtimeIsolation.codexHome,
+  );
   runtimeIsolation.environment.SKILL_ARENA_ALLOWED_SKILLS = skillDirectories.join(",");
   return skillDirectories;
 }
