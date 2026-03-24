@@ -1,0 +1,72 @@
+{
+  "metadata": {
+    "source_file": "/tmp/recursive-log-analyzer-example.log",
+    "source_lines": 11,
+    "max_lines": 50,
+    "min_lines": 20,
+    "top_k": 5
+  },
+  "summary": {
+    "total_lines": 11,
+    "leaf_nodes": 1,
+    "total_anomaly_score": 38,
+    "pattern_totals": {
+      "error": 2,
+      "warning": 2,
+      "exception": 1,
+      "traceback": 1,
+      "failure": 3,
+      "timeout": 1
+    },
+    "dominant_signals": [
+      [
+        "failure",
+        3
+      ],
+      [
+        "error",
+        2
+      ],
+      [
+        "warning",
+        2
+      ]
+    ]
+  },
+  "root": {
+    "depth": 0,
+    "line_start": 1,
+    "line_end": 11,
+    "line_count": 11,
+    "anomaly_score": 38,
+    "pattern_counts": {
+      "error": 2,
+      "warning": 2,
+      "exception": 1,
+      "traceback": 1,
+      "failure": 3,
+      "timeout": 1
+    },
+    "preview": "2026-02-14T10:00:00Z INFO Boot sequence start 2026-02-14T10:00:01Z WARN cache warmup took 1300ms 2026-02-14T10:00:02Z ERROR database connection failure on shard-3 2026-02-14T10:00:",
+    "children": [],
+    "id": "root"
+  },
+  "hotspots": [
+    {
+      "id": "root",
+      "line_start": 1,
+      "line_end": 11,
+      "line_count": 11,
+      "anomaly_score": 38,
+      "pattern_counts": {
+        "error": 2,
+        "warning": 2,
+        "exception": 1,
+        "traceback": 1,
+        "failure": 3,
+        "timeout": 1
+      },
+      "preview": "2026-02-14T10:00:00Z INFO Boot sequence start 2026-02-14T10:00:01Z WARN cache warmup took 1300ms 2026-02-14T10:00:02Z ERROR database connection failure on shard-3 2026-02-14T10:00:"
+    }
+  ]
+}

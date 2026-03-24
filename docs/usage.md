@@ -2,13 +2,14 @@
 
 Read this after [README.md](../README.md). Use [Specs](./specs.md) for field-level rules, [Architecture](./architecture.md) for execution flow, and [Testing](./testing.md) for the validation loop.
 
-Use `manifest.yaml` when you want scenario-oriented runs. Use `compare.yaml` when you want one Promptfoo eval with:
+Use `manifest.yaml` when you want scenario-oriented runs. Use `compare.yaml` when you want one matrix evaluation with:
 
 - profile columns such as `baseline`, `skill`, or `skill-plus-agent`
 - rows by `prompt x agent/configuration`
 - per-cell pass ratios such as `40% (4/10)<br>tokens avg 120, sd 15.5`
+- optional per-cell code metric deltas from `rust-code-analysis`, shown only for metrics that changed in modified original files and aggregated as `avg` plus standard deviation
 
-In both formats, `evaluation.requests` is the execution count. For compare configs, it defaults to `10` when omitted. `evaluation.maxConcurrency` is optional; when omitted, the harness uses the local machine parallelism.
+In both formats, `evaluation.requests` is the execution count. For matrix evaluation configs, it defaults to `10` when omitted. `evaluation.maxConcurrency` is optional; when omitted, the harness uses the local machine parallelism.
 
 ## Fast path
 
@@ -23,9 +24,9 @@ pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 
 Useful references:
 
-- [Maintained compare benchmark](../benchmarks/skill-arena-compare/compare.yaml)
-- [Smoke compare benchmark](../benchmarks/smoke-skill-following/compare.yaml)
-- [Copilot compare benchmark](../benchmarks/copilot-cli-smoke-compare/compare.yaml)
+- [Maintained evaluation benchmark](../benchmarks/skill-arena-compare/compare.yaml)
+- [Smoke evaluation benchmark](../benchmarks/smoke-skill-following/compare.yaml)
+- [Copilot evaluation benchmark](../benchmarks/copilot-cli-smoke-compare/compare.yaml)
 
 ## Installation and execution options
 
@@ -72,7 +73,7 @@ skill-arena gen-conf --help
 skill-arena val-conf --help
 ```
 
-`gen-conf` is the compare authoring helper. It writes a commented `compare.yaml` starter with `TODO:` notes for the fields you still need to customize:
+`gen-conf` is the evaluation authoring helper. It writes a commented `compare.yaml` starter with `TODO:` notes for the fields you still need to customize:
 
 ```bash
 npx skill-arena gen-conf \
@@ -101,7 +102,7 @@ the command line:
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --requests 2 --max-concurrency 2
 ```
 
-Example for the requested exploratory compare run:
+Example for the requested exploratory evaluation run:
 
 ```bash
 npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --requests 1 --maxConcurrency 2
@@ -213,14 +214,14 @@ Run it:
 
 ```bash
 npm run validate:manifest -- ./benchmarks/skill-arena-compare/compare.yaml
-npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 If `requests` is greater than `1`, Promptfoo repeats each prompt that many times for the scenario.
-In compare mode, the resolved concurrency now applies to both workspace materialization and `promptfoo eval`. If `maxConcurrency` is omitted, the harness uses the local machine parallelism for both phases. Set it explicitly only when you need a stricter cap.
+In matrix evaluation mode, the resolved concurrency now applies to both workspace materialization and `promptfoo eval`. If `maxConcurrency` is omitted, the harness uses the local machine parallelism for both phases. Set it explicitly only when you need a stricter cap.
 
-## Compare config
+## Matrix Evaluation Config
 
 Create `benchmarks/<benchmark-id>/compare.yaml` when you want one Promptfoo eval with multiple isolated profile columns.
 
@@ -302,15 +303,15 @@ comparison:
 Run it:
 
 ```bash
-npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
 Use `--dry-run` to generate the Promptfoo config without live evaluation:
 
 ```bash
-npm run benchmark:compare -- ./benchmarks/skill-arena-compare/compare.yaml --dry-run
-npm run benchmark:compare:dry-run -- ./benchmarks/skill-arena-compare/compare.yaml
+npm run benchmark:evaluate -- ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+npm run benchmark:evaluate:dry-run -- ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 ```
 
@@ -339,26 +340,26 @@ provider:
     commandPath: copilot
 ```
 
-For compare configs, local paths follow a runtime contract:
+For matrix evaluation configs, local paths follow a runtime contract:
 
 - absolute paths are valid
 - relative paths are resolved from the current command working directory
 - package-relative fallback is not supported
-- if a relative local path is missing, compare can bootstrap the runtime-relative directory from a unique packaged fixture match
+- if a relative local path is missing, the evaluator can bootstrap the runtime-relative directory from a unique packaged fixture match
 - bootstrap excludes `AGENTS.md`
 
 If you plan to run `compare.yaml` outside the repository root, use either absolute paths or relative paths that the installed package can bootstrap into the current working directory.
 
-When a compare benchmark needs different checks per prompt row, keep shared assertions at top-level `evaluation.assertions` and add prompt-specific assertions under `task.prompts[*].evaluation.assertions`. Prompt-level assertions are appended to the shared set for that row.
+When a matrix evaluation benchmark needs different checks per prompt row, keep shared assertions at top-level `evaluation.assertions` and add prompt-specific assertions under `task.prompts[*].evaluation.assertions`. Prompt-level assertions are appended to the shared set for that row.
 
-A practical maintenance compare example is `benchmarks/skill-arena-compare/compare.yaml`.
+A practical maintenance evaluation example is `benchmarks/skill-arena-compare/compare.yaml`.
 
-What compare mode produces:
+What matrix evaluation mode produces:
 
 - Promptfoo columns by profile
 - Promptfoo rows by variant and prompt
 - `summary.json` with a `matrix` section
-- `merged/report.md` with cells like `40% (4/10)<br>tokens avg 120, sd 15.5`
+- `merged/report.md` with cells like `40% (4/10)<br>tokens avg 120, sd 15.5`, optionally followed by changed code-metric delta lines
 
 Legacy compatibility:
 
@@ -383,11 +384,11 @@ skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 ```
 
-For live compare execution and artifact review, continue in [Testing](./testing.md).
+For live evaluation execution and artifact review, continue in [Testing](./testing.md).
 
 ## Repository hygiene
 
-Scenario and compare outputs are generated in `results/` and are not intended to be committed. Do not push the following generated paths:
+Scenario and matrix evaluation outputs are generated in `results/` and are not intended to be committed. Do not push the following generated paths:
 
 - `.tmp/`
 - `tmp/`
@@ -407,7 +408,7 @@ Scenario runs write to:
 results/<benchmark-id>/<timestamp>-<scenario-id>/
 ```
 
-Compare runs write to:
+Matrix evaluation runs write to:
 
 ```text
 results/<benchmark-id>/<timestamp>-compare/
@@ -429,7 +430,7 @@ npx promptfoo@latest view
 
 ## Reusable config-author skill
 
-The repository includes a reusable skill overlay for authoring `compare.yaml` files:
+The repository includes a reusable skill overlay for authoring evaluation configs:
 
 ```text
 fixtures/skill-arena-compare/skill-overlay/
@@ -437,7 +438,7 @@ fixtures/skill-arena-compare/skill-overlay/
 
 Use it when you want a workspace skill that helps produce:
 
-- a concise compare config
+- a concise evaluation config
 - clear `variantDisplayName` labels
 - explicit `evaluation.requests`
 - `no-skill` and `skill` columns by default

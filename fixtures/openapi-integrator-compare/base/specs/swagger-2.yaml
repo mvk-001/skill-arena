@@ -1,0 +1,52 @@
+swagger: "2.0"
+info:
+  title: Order Tracker API
+  version: 1.3.0
+  description: Track purchase orders and inspect a generated Swagger 2 skill layout.
+host: orders.example.com
+basePath: /api
+schemes:
+  - https
+paths:
+  /orders/{orderId}:
+    get:
+      tags:
+        - orders
+      summary: Get an order by ID
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          type: string
+      responses:
+        200:
+          description: Order details
+  /orders:
+    post:
+      tags:
+        - orders
+      operationId: create_order
+      summary: Create a new order
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - itemId
+            properties:
+              itemId:
+                type: string
+              quantity:
+                type: integer
+      responses:
+        201:
+          description: Created
+securityDefinitions:
+  api_key:
+    type: apiKey
+    in: header
+    name: X-API-Key
+security:
+  - api_key: []

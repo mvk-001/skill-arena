@@ -1,0 +1,9 @@
+{
+  "name": "strict-policy",
+  "thresholds": {
+    "likely_synthetic": 0.55,
+    "uncertain": 0.30
+  },
+  "max_pixels": 2097152,
+  "notes": "Higher-recall profile for high-risk intake queues; expect more false positives."
+}

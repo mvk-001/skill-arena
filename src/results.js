@@ -118,6 +118,7 @@ export function normalizeOutput(output, index) {
     latencyMs: output.latencyMs ?? output.latency ?? null,
     cost: output.cost ?? null,
     tokenUsage: output.tokenUsage ?? output.gradingResult?.tokensUsed ?? null,
+    codeMetricsDelta: metadata.codeMetricsDelta ?? null,
     error: output.error ?? failureReason ?? null,
   };
 }

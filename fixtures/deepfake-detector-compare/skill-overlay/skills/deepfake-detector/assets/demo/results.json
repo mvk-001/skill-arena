@@ -1,0 +1,82 @@
+[
+  {
+    "image": "skills/deepfake-detector/assets/demo/inputs/camera_like_control.jpg",
+    "score": 0.0,
+    "classification": "likely_authentic",
+    "markers": {
+      "has_exif": true,
+      "channel_correlation_avg": -0.1536,
+      "edge_energy": 1.9927,
+      "grid_blockiness": 1.8056,
+      "periodic_residual_ratio": 0.9708,
+      "analysis_width": 640.0,
+      "analysis_height": 480.0,
+      "original_width": 640.0,
+      "original_height": 480.0
+    },
+    "notes": []
+  },
+  {
+    "image": "skills/deepfake-detector/assets/demo/inputs/synthetic_gradient.png",
+    "score": 0.4536,
+    "classification": "uncertain",
+    "markers": {
+      "has_exif": false,
+      "channel_correlation_avg": 0.9573,
+      "edge_energy": 21.9585,
+      "grid_blockiness": 1.0392,
+      "periodic_residual_ratio": 30.0602,
+      "analysis_width": 768.0,
+      "analysis_height": 768.0,
+      "original_width": 768.0,
+      "original_height": 768.0
+    },
+    "notes": [
+      "No EXIF metadata detected",
+      "RGB channels are unusually correlated",
+      "Edge energy is elevated",
+      "Periodic texture residual pattern detected"
+    ]
+  },
+  {
+    "image": "skills/deepfake-detector/assets/demo/inputs/synthetic_checker.png",
+    "score": 0.36,
+    "classification": "uncertain",
+    "markers": {
+      "has_exif": false,
+      "channel_correlation_avg": -0.333,
+      "edge_energy": 13.6727,
+      "grid_blockiness": 2.1403,
+      "periodic_residual_ratio": 0.9826,
+      "analysis_width": 768.0,
+      "analysis_height": 768.0,
+      "original_width": 768.0,
+      "original_height": 768.0
+    },
+    "notes": [
+      "No EXIF metadata detected",
+      "Block boundary artifacts detected"
+    ]
+  },
+  {
+    "image": "skills/deepfake-detector/assets/demo/inputs/synthetic_upscaled.png",
+    "score": 0.4127,
+    "classification": "uncertain",
+    "markers": {
+      "has_exif": false,
+      "channel_correlation_avg": 0.3256,
+      "edge_energy": 21.7633,
+      "grid_blockiness": 19.0757,
+      "periodic_residual_ratio": 0.621,
+      "analysis_width": 768.0,
+      "analysis_height": 768.0,
+      "original_width": 768.0,
+      "original_height": 768.0
+    },
+    "notes": [
+      "No EXIF metadata detected",
+      "Edge energy is elevated",
+      "Block boundary artifacts detected"
+    ]
+  }
+]

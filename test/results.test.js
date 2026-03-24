@@ -311,6 +311,36 @@ test("compare matrix report renders unsupported profile cells", () => {
   );
 });
 
+test("compare matrix report renders code metric deltas in the cell", () => {
+  const report = renderCompareMatrixReport({
+    benchmarkId: "benchmark-id",
+    benchmarkDescription: "Benchmark",
+    matrix: {
+      columns: [
+        { id: "skill", label: "skill" },
+      ],
+      rows: [
+        {
+          rowId: "codex-mini:prompt-1",
+          variantDisplayName: "codex mini",
+          promptId: "prompt-1",
+          promptDescription: "Prompt 1",
+          cells: {
+            skill: {
+              displayValue: "100% (1/1)<br>tokens avg 42.0, sd 0.0<br>code loc.sloc avg +1.0, sd 0.0<br>code lexical.digits avg -2.0, sd 0.0",
+            },
+          },
+        },
+      ],
+    },
+  });
+
+  assert.match(
+    report,
+    /\| Prompt 1 \| codex mini \| 100% \(1\/1\)<br>tokens avg 42\.0, sd 0\.0<br>code loc\.sloc avg \+1\.0, sd 0\.0<br>code lexical\.digits avg -2\.0, sd 0\.0 \|/,
+  );
+});
+
 test("writePromptfooArtifacts persists config, summary, and copies result files", async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-artifacts-"));
   const sourceResultsPath = path.join(tempDirectory, "source-results.json");

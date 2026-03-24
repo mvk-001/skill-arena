@@ -3,6 +3,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 import { buildPromptfooProvider, getAdapter } from "../adapters.js";
+import { summarizeSamples } from "../code-metrics.js";
 import { expandCompareConfigToManifest, loadCompareConfig } from "../compare.js";
 import {
   buildCompareMatrixSummary,
@@ -592,6 +593,7 @@ function buildMatrix({
           stddevTotalTokens: null,
           samples: [],
         },
+        codeMetrics: null,
         sampleOutputs: [],
         reason: skippedCell.reason,
       };
@@ -632,6 +634,7 @@ function buildMatrix({
         stddevTotalTokens: null,
         samples: [],
       },
+      codeMetrics: null,
       sampleOutputs: [],
     };
 
@@ -641,11 +644,13 @@ function buildMatrix({
     cellEntry.errors += output.error ? 1 : 0;
     cellEntry.passRate = evaluationRequests > 0 ? cellEntry.passedRuns / evaluationRequests : 0;
     cellEntry.tokenUsage = buildTokenUsageSummary(cellEntry.tokenUsage, output.tokenUsage);
+    cellEntry.codeMetrics = buildCodeMetricsSummary(cellEntry.codeMetrics, output.codeMetricsDelta);
     cellEntry.displayValue = formatCellDisplayValue({
       passRate: cellEntry.passRate,
       passedRuns: cellEntry.passedRuns,
       evaluationRequests,
       tokenUsage: cellEntry.tokenUsage,
+      codeMetrics: cellEntry.codeMetrics,
     });
 
     if (cellEntry.sampleOutputs.length < 3 && output.text !== null) {
@@ -712,15 +717,24 @@ function formatPercent(value) {
   return `${(value * 100).toFixed(0)}%`;
 }
 
-function formatCellDisplayValue({ passRate, passedRuns, evaluationRequests, tokenUsage }) {
+function formatCellDisplayValue({
+  passRate,
+  passedRuns,
+  evaluationRequests,
+  tokenUsage,
+  codeMetrics,
+}) {
   const passRatioText = `${formatPercent(passRate)} (${passedRuns}/${evaluationRequests})`;
   const tokensText = formatTokenUsageDisplay(tokenUsage);
+  const codeMetricsText = formatCodeMetricsDisplay(codeMetrics);
+  const lines = [passRatioText];
 
-  if (!tokensText) {
-    return passRatioText;
+  if (tokensText) {
+    lines.push(`tokens avg ${tokensText.average}, sd ${tokensText.stddev}`);
   }
 
-  return `${passRatioText}<br>tokens avg ${tokensText.average}, sd ${tokensText.stddev}`;
+  lines.push(...codeMetricsText);
+  return lines.join("<br>");
 }
 
 function formatTokenUsageDisplay(tokenUsage) {
@@ -753,6 +767,56 @@ function buildTokenUsageSummary(currentSummary, tokenUsage) {
   ];
 
   return summarizeTokenSamples(samples);
+}
+
+function buildCodeMetricsSummary(currentSummary, codeMetricsDelta) {
+  if (!currentSummary && (!codeMetricsDelta?.metrics || typeof codeMetricsDelta.metrics !== "object")) {
+    return null;
+  }
+
+  const previous = currentSummary ?? {
+    changedOriginalFiles: [],
+    metrics: {},
+  };
+
+  if (!codeMetricsDelta?.metrics || typeof codeMetricsDelta.metrics !== "object") {
+    return previous;
+  }
+
+  const changedOriginalFiles = new Set([
+    ...(Array.isArray(previous.changedOriginalFiles) ? previous.changedOriginalFiles : []),
+    ...(Array.isArray(codeMetricsDelta.changedOriginalFiles) ? codeMetricsDelta.changedOriginalFiles : []),
+  ]);
+  const metricNames = new Set([
+    ...Object.keys(previous.metrics ?? {}),
+    ...Object.keys(codeMetricsDelta.metrics ?? {}),
+  ]);
+  const metrics = {};
+
+  for (const metricName of metricNames) {
+    const previousSamples = Array.isArray(previous.metrics?.[metricName]?.samples)
+      ? previous.metrics[metricName].samples
+      : [];
+    const nextSamples = Array.isArray(codeMetricsDelta.metrics?.[metricName]?.samples)
+      ? codeMetricsDelta.metrics[metricName].samples
+      : [];
+    const samples = [...previousSamples, ...nextSamples];
+
+    if (samples.length === 0) {
+      continue;
+    }
+
+    metrics[metricName] = summarizeSamples(samples);
+  }
+
+  if (Object.keys(metrics).length === 0) {
+    return previous;
+  }
+
+  return {
+    changedOriginalFiles: [...changedOriginalFiles].sort(),
+    metrics,
+  };
 }
 
 function summarizeTokenSamples(samples) {
@@ -795,12 +859,39 @@ function extractTotalTokens(tokenUsage) {
   return null;
 }
 
+function formatCodeMetricsDisplay(codeMetrics) {
+  const metricEntries = Object.entries(codeMetrics?.metrics ?? {});
+
+  if (metricEntries.length === 0) {
+    return [];
+  }
+
+  return metricEntries
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([metricName, metricSummary]) =>
+      `code ${metricName} avg ${formatSignedNumericMetric(metricSummary.avg)}, sd ${formatNumericMetric(metricSummary.standardDeviation)}`,
+    );
+}
+
 function formatNumericMetric(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return "n/a";
   }
 
   return value.toFixed(value >= 100 ? 0 : 1);
+}
+
+function formatSignedNumericMetric(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "n/a";
+  }
+
+  const formatted = formatNumericMetric(Math.abs(value));
+  if (formatted === "n/a") {
+    return formatted;
+  }
+
+  return `${value >= 0 ? "+" : "-"}${formatted}`;
 }
 
 function stripCellComputationState(row) {
@@ -816,6 +907,21 @@ function stripCellComputationState(row) {
               count: cell.tokenUsage.count ?? 0,
               averageTotalTokens: cell.tokenUsage.averageTotalTokens ?? null,
               stddevTotalTokens: cell.tokenUsage.stddevTotalTokens ?? null,
+            }
+            : null,
+          codeMetrics: cell.codeMetrics
+            ? {
+              changedOriginalFiles: cell.codeMetrics.changedOriginalFiles ?? [],
+              metrics: Object.fromEntries(
+                Object.entries(cell.codeMetrics.metrics ?? {}).map(([metricName, summary]) => [
+                  metricName,
+                  {
+                    count: summary.count ?? 0,
+                    avg: summary.avg ?? null,
+                    standardDeviation: summary.standardDeviation ?? null,
+                  },
+                ]),
+              ),
             }
             : null,
         },

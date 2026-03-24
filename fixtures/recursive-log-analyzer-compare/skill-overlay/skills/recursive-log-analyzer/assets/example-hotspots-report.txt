@@ -1,0 +1,7 @@
+Analysis file: skills/recursive-log-analyzer/assets/example-analysis.json
+Source lines: 11
+Leaf nodes: 1
+Total anomaly score: 38
+Pattern totals: {'error': 2, 'warning': 2, 'exception': 1, 'traceback': 1, 'failure': 3, 'timeout': 1}
+Top hotspots:
+  1. root lines 1-11 score=38 patterns={'error': 2, 'warning': 2, 'exception': 1, 'traceback': 1, 'failure': 3, 'timeout': 1}

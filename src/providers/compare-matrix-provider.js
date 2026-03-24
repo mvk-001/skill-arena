@@ -1,5 +1,10 @@
 import { pathToFileURL } from "node:url";
 
+import {
+  analyzeWorkspaceMetricDelta,
+  captureWorkspaceSnapshot,
+} from "../code-metrics.js";
+
 export default class CompareMatrixProvider {
   constructor(options = {}) {
     this.options = options;
@@ -27,12 +32,19 @@ export default class CompareMatrixProvider {
     }
 
     const provider = await this.getProviderInstance(route);
+    const beforeSnapshot = await captureWorkspaceSnapshot(route.provider.config.working_dir);
     const result = await provider.callApi(prompt, context, callOptions);
+    const afterSnapshot = await captureWorkspaceSnapshot(route.provider.config.working_dir);
+    const codeMetricsDelta = await analyzeWorkspaceMetricDelta({
+      beforeSnapshot,
+      afterSnapshot,
+    });
 
     return {
       ...result,
       metadata: {
         ...(result.metadata ?? {}),
+        ...(codeMetricsDelta ? { codeMetricsDelta } : {}),
         scenarioId: route.scenarioId,
         scenarioDescription: route.provider?.config?.scenario_description ?? null,
         variantId,

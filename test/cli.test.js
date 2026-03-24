@@ -20,17 +20,17 @@ test("skill-arena CLI prints top-level help", async () => {
   const output = commandOutput(stdout, stderr);
 
   assert.match(output, /Usage: skill-arena <command>/);
-  assert.match(output, /evaluate <manifest-or-compare-path>/);
+  assert.match(output, /evaluate <benchmark-config-path>/);
   assert.match(output, /gen-conf \[--output <path>\] \[--prompt <text>\] \[options\]/);
-  assert.match(output, /val-conf <manifest-or-compare-path>/);
+  assert.match(output, /val-conf <benchmark-config-path>/);
 });
 
 test("skill-arena CLI prints command-specific help", async () => {
   const { stdout, stderr } = await execFileAsync(process.execPath, [binPath, "help", "evaluate"]);
   const output = commandOutput(stdout, stderr);
 
-  assert.match(output, /skill-arena evaluate <manifest-or-compare-path>/);
-  assert.match(output, /Run one benchmark manifest or compare config/);
+  assert.match(output, /skill-arena evaluate <benchmark-config-path>/);
+  assert.match(output, /Run one benchmark manifest or matrix evaluation config/);
 });
 
 test("skill-arena `help` prints top-level output when no subcommand is provided", async () => {
@@ -45,16 +45,16 @@ test("subcommand help flag is handled by the wrapper", async () => {
   const { stdout, stderr } = await execFileAsync(process.execPath, [binPath, "evaluate", "--help"]);
   const output = commandOutput(stdout, stderr);
 
-  assert.match(output, /skill-arena evaluate <manifest-or-compare-path>/);
-  assert.match(output, /Run one benchmark manifest or compare config/);
+  assert.match(output, /skill-arena evaluate <benchmark-config-path>/);
+  assert.match(output, /Run one benchmark manifest or matrix evaluation config/);
 });
 
 test("val-conf command shows inline help", async () => {
   const { stdout, stderr } = await execFileAsync(process.execPath, [binPath, "val-conf", "--help"]);
   const output = commandOutput(stdout, stderr);
 
-  assert.match(output, /skill-arena val-conf <manifest-or-compare-path>/);
-  assert.match(output, /Validate a manifest or compare config and print a normalized summary/);
+  assert.match(output, /skill-arena val-conf <benchmark-config-path>/);
+  assert.match(output, /Validate a manifest or matrix evaluation config and print a normalized summary/);
 });
 
 test("gen-conf command shows inline help", async () => {
@@ -62,7 +62,7 @@ test("gen-conf command shows inline help", async () => {
   const output = commandOutput(stdout, stderr);
 
   assert.match(output, /skill-arena gen-conf \[--output <path>\] \[--prompt <text>\] \[options\]/);
-  assert.match(output, /Generate a commented compare config template with TODO placeholders/);
+  assert.match(output, /Generate a commented evaluation config template with TODO placeholders/);
   assert.match(output, /--skill-type <type>/);
 });
 
@@ -146,8 +146,8 @@ test("evaluate command shows inline help", async () => {
   const { stdout, stderr } = await execFileAsync(process.execPath, [binPath, "evaluate", "--help"]);
   const output = commandOutput(stdout, stderr);
 
-  assert.match(output, /skill-arena evaluate <manifest-or-compare-path>/);
-  assert.match(output, /Run one benchmark manifest or compare config/);
+  assert.match(output, /skill-arena evaluate <benchmark-config-path>/);
+  assert.match(output, /Run one benchmark manifest or matrix evaluation config/);
   assert.match(output, /--requests <n>/);
   assert.match(output, /--max-concurrency <n>/);
 });

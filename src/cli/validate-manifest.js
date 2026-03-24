@@ -11,7 +11,7 @@ async function main() {
   const configPath = process.argv[2];
 
   if (!configPath) {
-    throw new Error("Usage: node ./src/cli/validate-manifest.js <manifest-or-compare-path>");
+    throw new Error("Usage: node ./src/cli/validate-manifest.js <benchmark-config-path>");
   }
 
   const absoluteConfigPath = path.resolve(process.cwd(), configPath);
