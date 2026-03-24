@@ -8,11 +8,11 @@ Read this after [Usage Guide](./usage.md). This page is the validation and verif
 - `npm install` or `pnpm install`
 - Local Codex CLI available on `PATH` as `codex`
 - Local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
-- Codex authenticated on the machine before running live benchmarks
+- Codex authenticated on the machine before running live evaluations
 
 ## Recommended Loop
 
-Use this by default after runtime or benchmark changes:
+Use this by default after runtime or config changes:
 
 ```bash
 npm test
@@ -36,7 +36,7 @@ These validate manifest parsing, Promptfoo config generation, workspace material
 npm test
 ```
 
-The repository test scripts intentionally target `test/*.test.js` only. This keeps generated benchmark artifacts under `results/` from being picked up as accidental test inputs by Node's default test discovery.
+The repository test scripts intentionally target `test/*.test.js` only. This keeps generated run artifacts under `results/` from being picked up as accidental test inputs by Node's default test discovery.
 
 With `pnpm`:
 
@@ -66,7 +66,7 @@ Coverage scope for this threshold includes `src/**/*.js` and excludes:
 - `src/providers/codex-system-provider.js`
 - `src/providers/pi-system-provider.js`
 
-These exclusions keep the quota focused on the unit-testable runtime surface while live benchmark flows continue to exercise the excluded command-oriented entrypoints.
+These exclusions keep the quota focused on the unit-testable runtime surface while live evaluation flows continue to exercise the excluded command-oriented entrypoints.
 
 ### 1b. Optional `rust-code-analysis` usage
 
@@ -114,34 +114,26 @@ Useful follow-up checks:
 - rank hotspots by cognitive complexity to identify refactor targets
 - rerun after a refactor and compare the changed metric deltas in the merged compare report
 
-### 2. Validate a benchmark config
+### 2. Validate a config
 
-Use this before running a live benchmark if the config changed:
+Use this before running a live evaluation if the config changed:
 
 ```bash
 skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
-### 3. Run a benchmark
+### 3. Run an evaluation
 
-Use the same command for either config shape:
+Use the main command:
 
 ```bash
-skill-arena evaluate ./benchmarks/<benchmark-id>/manifest.yaml
 skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
-```
-
-Run only one manifest scenario with:
-
-```bash
-skill-arena evaluate ./benchmarks/<benchmark-id>/manifest.yaml --scenario <scenario-id>
 ```
 
 Generate the Promptfoo config without executing the live eval:
 
 ```bash
 skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --dry-run
-skill-arena evaluate ./benchmarks/<benchmark-id>/manifest.yaml --dry-run
 ```
 
 Scaffold a compare config quickly:
@@ -168,15 +160,15 @@ Behavior to expect in matrix evaluation mode:
 - unsupported adapters are listed as skipped entries in the merged report
 - unsupported profile capability bundles are rendered as `unsupported` cells instead of aborting the evaluation run
 
-### 4. Run the maintained sample benchmark
+### 4. Run the maintained sample config
 
-Use the benchmark kept in this repository:
+Use the config kept in this repository:
 
 ```bash
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
-### 4a. Recommended benchmark test flow after runtime changes
+### 4a. Recommended validation flow after runtime changes
 
 Use this short sequence when you change the runner, Promptfoo integration, workspace materialization, or assertion translation:
 
@@ -189,18 +181,18 @@ skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 What this covers:
 
 - `npm test` catches unit-level regressions in config generation and result normalization
-- `val-conf` confirms the benchmark input still parses cleanly
+- `val-conf` confirms the config still parses cleanly
 - `evaluate --dry-run` confirms workspace materialization and Promptfoo config generation still work
 
-All benchmark commands:
+All evaluation commands:
 
 - materialize an isolated workspace under `results/`
 - materialize `workspace.sources` in declaration order
 - resolve the skill from local path, Git, inline files, or the system-installed environment when configured
-- generate a Promptfoo config for the selected scenario
+- generate a Promptfoo config for the selected evaluation
 - execute the configured adapter through the custom Promptfoo provider
 - write `promptfoo-results.json` and `summary.json`
-- write a benchmark-level merged summary and report when compare mode produces merged outputs
+- write a merged summary and report for compare runs
 
 If your config uses an `llm-rubric` assertion, Promptfoo also runs the judge model configured on that assertion.
 
@@ -210,14 +202,14 @@ If your config uses Git-backed workspace or skill sources, the harness downloads
 
 If your config uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `requests` to each one.
 
-If `maxConcurrency` is omitted in a manifest or matrix evaluation config, the harness uses the local machine parallelism by default. In matrix evaluation mode, that resolved value also governs the pre-eval workspace materialization phase.
+If `maxConcurrency` is omitted in a compare config, the harness uses the local machine parallelism by default. That resolved value also governs the pre-eval workspace materialization phase.
 
 ## Where To Inspect Results
 
 Each run writes artifacts under:
 
 ```text
-results/<benchmark-id>/<timestamp>-<scenario-id>/
+results/<benchmark-id>/<timestamp>-compare/
 ```
 
 The most useful files are:

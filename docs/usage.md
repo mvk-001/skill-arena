@@ -1,8 +1,6 @@
 # Usage Guide
 
-Read this after [README.md](../README.md). This page covers the common workflows. Use [Specs](./specs.md) for canonical fields, [Architecture](./architecture.md) for internals, and [Testing](./testing.md) for the validation loop.
-
-Use `manifest.yaml` for scenario-oriented runs. Use `compare.yaml` for one matrix evaluation with profile columns and variant/prompt rows.
+Read this after [README.md](../README.md). This page covers the common workflows around `evaluate` and `compare.yaml`. Use [Specs](./specs.md) for canonical fields, [Architecture](./architecture.md) for internals, and [Testing](./testing.md) for the validation loop.
 
 ## Fast Path
 
@@ -17,9 +15,9 @@ pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 
 Useful examples:
 
-- [Maintained evaluation benchmark](../benchmarks/skill-arena-compare/compare.yaml)
-- [Smoke evaluation benchmark](../benchmarks/smoke-skill-following/compare.yaml)
-- [Copilot evaluation benchmark](../benchmarks/copilot-cli-smoke-compare/compare.yaml)
+- [Maintained evaluation config](../benchmarks/skill-arena-compare/compare.yaml)
+- [Smoke evaluation config](../benchmarks/smoke-skill-following/compare.yaml)
+- [Copilot evaluation config](../benchmarks/copilot-cli-smoke-compare/compare.yaml)
 
 Every command also accepts `--help`:
 
@@ -81,113 +79,11 @@ Command reference:
 - `--max-concurrency <n>`: override `evaluation.maxConcurrency` for that run
 - `--maxConcurrency <n>`: alias accepted by the evaluator CLI
 
-## Choose A Config Shape
+## Compare Config
 
-Use [Specs](./specs.md) for the canonical schema. The examples below are intentionally minimal and focus on authoring shape rather than every supported field.
+Use [Specs](./specs.md) for the canonical schema. The example below is intentionally minimal and focuses on the supported `compare.yaml` authoring shape.
 
-## Benchmark Manifest
-
-Preferred shape: declare the workspace with `workspace.sources` and declare the skill explicitly per scenario. Legacy `fixture` and `skillOverlay` fields still work, but they are compatibility inputs now.
-
-Minimal shape:
-
-```yaml
-schemaVersion: 1
-benchmark:
-  id: repo-summary
-  description: Compare baseline and skill-assisted summaries.
-  tags:
-    - codex
-    - summary
-task:
-  prompts:
-    - id: architecture
-      description: Architecture summary
-      prompt: Read the repository and summarize the architecture.
-      evaluation:
-        assertions:
-          - type: contains
-            value: architecture
-workspace:
-  sources:
-    - id: base
-      type: local-path
-      path: fixtures/repo-summary/base
-      target: /
-  setup:
-    initializeGit: true
-scenarios:
-  - id: codex-mini-no-skill
-    description: Baseline
-    skillMode: disabled
-    agent:
-      adapter: codex
-      model: gpt-5.1-codex-mini
-      executionMethod: command
-      commandPath: codex
-      sandboxMode: read-only
-      approvalPolicy: never
-      webSearchEnabled: false
-      networkAccessEnabled: false
-      reasoningEffort: low
-      additionalDirectories: []
-      cliEnv: {}
-      config: {}
-    evaluation:
-      assertions:
-        - type: llm-rubric
-          provider: skill-arena:judge:codex
-          value: Score 1.0 only if the answer covers the main architecture.
-      requests: 3
-      timeoutMs: 180000
-      tracing: false
-      noCache: true
-  - id: codex-mini-with-skill
-    description: Skill enabled
-    skillMode: enabled
-    skill:
-      source:
-        type: local-path
-        path: fixtures/repo-summary/skill-overlay/skills/repo-summary
-      install:
-        strategy: workspace-overlay
-    agent:
-      adapter: codex
-      model: gpt-5.1-codex-mini
-      executionMethod: command
-      commandPath: codex
-      sandboxMode: read-only
-      approvalPolicy: never
-      webSearchEnabled: false
-      networkAccessEnabled: false
-      reasoningEffort: low
-      additionalDirectories: []
-      cliEnv: {}
-      config: {}
-    evaluation:
-      assertions:
-        - type: llm-rubric
-          provider: skill-arena:judge:codex
-          value: Score 1.0 only if the answer covers the main architecture.
-      requests: 3
-      timeoutMs: 180000
-      tracing: false
-      noCache: true
-```
-
-Run it:
-
-```bash
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
-```
-
-If `requests` is greater than `1`, Promptfoo repeats each prompt that many times for the scenario.
-In matrix evaluation mode, the resolved concurrency also applies to workspace materialization. If `maxConcurrency` is omitted, the harness uses the local machine parallelism for both phases.
-
-## Matrix Evaluation Config
-
-Create `benchmarks/<benchmark-id>/compare.yaml` when you want one Promptfoo eval with multiple isolated profile columns.
+Create `benchmarks/<eval-id>/compare.yaml` when you want one Promptfoo eval with multiple isolated profile columns.
 
 Minimal shape:
 
@@ -302,7 +198,7 @@ For matrix evaluation configs, local paths follow a runtime contract:
 - if a relative local path is missing, the evaluator can bootstrap the runtime-relative directory from a unique packaged fixture match
 - bootstrap excludes `AGENTS.md`
 
-When a matrix evaluation benchmark needs different checks per prompt row, keep shared assertions at top-level `evaluation.assertions` and add prompt-specific assertions under `task.prompts[*].evaluation.assertions`.
+When an evaluation needs different checks per prompt row, keep shared assertions at top-level `evaluation.assertions` and add prompt-specific assertions under `task.prompts[*].evaluation.assertions`.
 
 Legacy compatibility:
 
@@ -319,13 +215,7 @@ Preferred explicit skill source options:
 
 ## Artifacts
 
-Scenario runs write to:
-
-```text
-results/<benchmark-id>/<timestamp>-<scenario-id>/
-```
-
-Matrix evaluation runs write to:
+Evaluation runs write to:
 
 ```text
 results/<benchmark-id>/<timestamp>-compare/
