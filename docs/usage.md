@@ -186,7 +186,7 @@ You can also use the object form when you need overrides such as `model` or `com
 provider:
   id: skill-arena:judge:copilot-cli
   config:
-    model: gpt-5
+    model: gpt-5.4-mini
     commandPath: copilot
 ```
 
@@ -212,6 +212,66 @@ Preferred explicit skill source options:
 - `local-path`: point to one local skill folder containing `SKILL.md`
 - `inline`: define one `SKILL.md` directly in YAML
 - `git`: clone a repo and select one skill folder with optional `skillPath`
+
+## Additional Capability Profiles
+
+Beyond `skills`, compare profiles can declare additional capability families. Current V1 support is intentionally narrow:
+
+- `codex`: `instructions`, `skills`
+- `copilot-cli`: `instructions`, `skills`, `agents`, `hooks`
+- `pi`: `skills`
+
+Minimal `copilot-cli` example with repository instructions, one custom agent, and one hook:
+
+```yaml
+comparison:
+  profiles:
+    - id: baseline
+      description: Fully isolated control
+      isolation:
+        inheritSystem: false
+      capabilities: {}
+    - id: reviewer-agent
+      description: Copilot profile with explicit instructions, agent, and hook
+      isolation:
+        inheritSystem: false
+      capabilities:
+        instructions:
+          - source:
+              type: inline-files
+              target: /
+              files:
+                - path: AGENTS.md
+                  content: |
+                    # Project instructions
+                    Keep the answer short and repository-grounded.
+        agents:
+          - agentId: reviewer-agent
+            source:
+              type: inline-files
+              target: /
+              files:
+                - path: .github/agents/reviewer-agent.agent.md
+                  content: |
+                    ---
+                    description: Focus on risk and regressions.
+                    ---
+
+                    # Reviewer agent
+                    Focus on risk and regressions.
+        hooks:
+          - source:
+              type: inline-files
+              target: /
+              files:
+                - path: .github/hooks/pre-command.json
+                  content: |
+                    {
+                      "hooks": []
+                    }
+```
+
+For a repository example, see [copilot capability compare config](../benchmarks/copilot-cli-capabilities-compare/compare.yaml).
 
 ## Artifacts
 

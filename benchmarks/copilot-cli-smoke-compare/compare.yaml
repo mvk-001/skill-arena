@@ -7,7 +7,7 @@ benchmark:
     - compare
     - smoke
 task:
-  prompt: Return a concise next-step summary.
+  prompt: Return ALPHA.
 workspace:
   fixture: fixtures/smoke-skill-following/base
   initializeGit: true
@@ -42,7 +42,7 @@ comparison:
       description: Copilot CLI command variant.
       agent:
         adapter: copilot-cli
-        model: gpt-5
+        model: gpt-5.4-mini
         executionMethod: command
         sandboxMode: workspace-write
         approvalPolicy: never

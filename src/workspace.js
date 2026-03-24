@@ -94,6 +94,12 @@ const SKILL_SOURCE_HANDLERS = {
   "system-installed": async () => {},
 };
 
+const MATERIALIZABLE_PROFILE_CAPABILITY_FAMILIES = [
+  "instructions",
+  "agents",
+  "hooks",
+];
+
 export async function materializeWorkspace({
   manifest,
   scenario,
@@ -120,6 +126,12 @@ export async function materializeWorkspace({
   }
 
   await sanitizeWorkspaceRoot(executionWorkspaceDirectory);
+
+  await materializeProfileCapabilities({
+    scenario,
+    workspaceDirectory: executionWorkspaceDirectory,
+    sourceBaseDirectory,
+  });
 
   for (const skill of scenarioSkills) {
     if (skill.install.strategy === "system-installed") {
@@ -201,6 +213,33 @@ async function materializeSkillSource({ skillSource, workspaceDirectory, sourceB
   }
 
   await handleSkillSource({ skillSource, workspaceDirectory, sourceBaseDirectory });
+}
+
+async function materializeProfileCapabilities({
+  scenario,
+  workspaceDirectory,
+  sourceBaseDirectory,
+}) {
+  for (const family of MATERIALIZABLE_PROFILE_CAPABILITY_FAMILIES) {
+    const entries = Array.isArray(scenario?.profile?.capabilities?.[family])
+      ? scenario.profile.capabilities[family]
+      : [];
+
+    for (const [index, entry] of entries.entries()) {
+      if (!entry?.source) {
+        throw new Error(
+          `profile.capabilities.${family}[${index}] must declare a materializable source.`,
+        );
+      }
+
+      await materializeWorkspaceSource({
+        source: entry.source,
+        workspaceDirectory,
+        labelPrefix: `profile.capabilities.${family}`,
+        sourceBaseDirectory,
+      });
+    }
+  }
 }
 
 async function materializeResolvedSkillDirectory({

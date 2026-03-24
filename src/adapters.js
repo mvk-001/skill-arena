@@ -77,7 +77,10 @@ const adapterRegistry = {
             scenario.agent.cliEnv,
             isolatedEnvironment,
           ),
-          copilot_config: scenario.agent.config,
+          copilot_config: buildCopilotConfig({
+            scenario,
+            baseConfig: scenario.agent.config,
+          }),
         },
       };
     },
@@ -157,6 +160,37 @@ function getAllowedSkillIds(isolatedEnvironment) {
     .split(",")
     .map((id) => id.trim())
     .filter(Boolean);
+}
+
+function getProfileCapabilities(scenario, family) {
+  return Array.isArray(scenario?.profile?.capabilities?.[family])
+    ? scenario.profile.capabilities[family]
+    : [];
+}
+
+function buildCopilotConfig({ scenario, baseConfig }) {
+  const profileAgents = getProfileCapabilities(scenario, "agents");
+  if (profileAgents.length === 0) {
+    return baseConfig;
+  }
+
+  if (profileAgents.length > 1) {
+    throw new Error(
+      `Adapter "copilot-cli" supports at most one compare profile agent, received ${profileAgents.length}.`,
+    );
+  }
+
+  const agentId = profileAgents[0]?.agentId;
+  if (typeof agentId !== "string" || agentId.trim() === "") {
+    throw new Error(
+      "Adapter \"copilot-cli\" requires profile.capabilities.agents[*].agentId to be a non-empty string.",
+    );
+  }
+
+  return {
+    ...(baseConfig ?? {}),
+    agent: agentId,
+  };
 }
 
 function mergeCodexSkillConfig({

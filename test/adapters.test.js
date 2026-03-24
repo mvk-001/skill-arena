@@ -125,3 +125,131 @@ test("buildPromptfooProvider rejects additional directories outside the workspac
     },
   }), /Additional directory escapes the workspace root/);
 });
+
+test("buildPromptfooProvider maps compare profile agents into copilot config", () => {
+  const provider = buildPromptfooProvider({
+    workspaceDirectory: "C:/temp/workspace",
+    workspaceEnvironment: {},
+    isolatedEnvironment: {},
+    gitReady: true,
+    scenario: {
+      profile: {
+        capabilities: {
+          agents: [
+            {
+              agentId: "reviewer-agent",
+              source: {
+                type: "inline-files",
+                target: "/",
+                files: [
+                  {
+                    path: ".github/agents/reviewer-agent.agent.md",
+                    content: "---\ndescription: Reviewer agent\n---\n\n# Reviewer agent",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      agent: {
+        adapter: "copilot-cli",
+        commandPath: "copilot",
+        model: "gpt-5",
+        sandboxMode: "workspace-write",
+        approvalPolicy: "never",
+        webSearchEnabled: false,
+        networkAccessEnabled: false,
+        reasoningEffort: "low",
+        additionalDirectories: [],
+        cliEnv: {},
+        config: {},
+      },
+      evaluation: {
+        tracing: false,
+      },
+    },
+  });
+
+  assert.equal(provider.config.copilot_config.agent, "reviewer-agent");
+});
+
+test("buildPromptfooProvider rejects copilot compare profiles with multiple agents", () => {
+  assert.throws(() => buildPromptfooProvider({
+    workspaceDirectory: "C:/temp/workspace",
+    workspaceEnvironment: {},
+    isolatedEnvironment: {},
+    gitReady: true,
+    scenario: {
+      profile: {
+        capabilities: {
+          agents: [
+            { agentId: "reviewer-a", source: { type: "empty" } },
+            { agentId: "reviewer-b", source: { type: "empty" } },
+          ],
+        },
+      },
+      agent: {
+        adapter: "copilot-cli",
+        commandPath: "copilot",
+        model: "gpt-5",
+        sandboxMode: "workspace-write",
+        approvalPolicy: "never",
+        webSearchEnabled: false,
+        networkAccessEnabled: false,
+        reasoningEffort: "low",
+        additionalDirectories: [],
+        cliEnv: {},
+        config: {},
+      },
+      evaluation: {
+        tracing: false,
+      },
+    },
+  }), /supports at most one compare profile agent/);
+});
+
+test("buildPromptfooProvider rejects copilot compare agents without agentId", () => {
+  assert.throws(() => buildPromptfooProvider({
+    workspaceDirectory: "C:/temp/workspace",
+    workspaceEnvironment: {},
+    isolatedEnvironment: {},
+    gitReady: true,
+    scenario: {
+      profile: {
+        capabilities: {
+          agents: [
+            {
+              source: {
+                type: "inline-files",
+                target: "/",
+                files: [
+                  {
+                    path: ".github/agents/reviewer.agent.md",
+                    content: "---\ndescription: Reviewer agent\n---\n\n# Reviewer agent",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      agent: {
+        adapter: "copilot-cli",
+        commandPath: "copilot",
+        model: "gpt-5",
+        sandboxMode: "workspace-write",
+        approvalPolicy: "never",
+        webSearchEnabled: false,
+        networkAccessEnabled: false,
+        reasoningEffort: "low",
+        additionalDirectories: [],
+        cliEnv: {},
+        config: {},
+      },
+      evaluation: {
+        tracing: false,
+      },
+    },
+  }), /requires profile\.capabilities\.agents\[\*\]\.agentId/);
+});

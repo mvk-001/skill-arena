@@ -198,6 +198,186 @@ test("workspace sanitization strips base AGENTS.md and base skills from isolated
   assert.deepEqual(enabledWorkspace.isolation.mountedSkillIds, ["allowed-skill"]);
 });
 
+test("profile capabilities can reintroduce instructions, custom agents, and hooks after sanitization", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-profile-capabilities-"));
+  const baseDirectory = path.join(tempDirectory, "base");
+
+  await fs.mkdir(baseDirectory, { recursive: true });
+  await fs.writeFile(path.join(baseDirectory, "AGENTS.md"), "# Base instructions\n", "utf8");
+
+  const manifest = {
+    schemaVersion: 1,
+    benchmark: {
+      id: "profile-capabilities-materialization",
+      description: "Profile capabilities materialization",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: baseDirectory,
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "copilot-profile-capabilities",
+        description: "Profile capability materialization",
+        skillMode: "disabled",
+        profile: {
+          id: "agent-and-hook",
+          capabilities: {
+            instructions: [
+              {
+                source: {
+                  type: "inline-files",
+                  target: "/",
+                  files: [
+                    {
+                      path: "AGENTS.md",
+                      content: "# Profile instructions\n",
+                    },
+                  ],
+                },
+              },
+            ],
+            agents: [
+              {
+                agentId: "reviewer-agent",
+                source: {
+                  type: "inline-files",
+                  target: "/",
+                  files: [
+                    {
+                      path: ".github/agents/reviewer-agent.agent.md",
+                      content: "---\ndescription: Reviewer agent\n---\n\n# Reviewer agent\n",
+                    },
+                  ],
+                },
+              },
+            ],
+            hooks: [
+              {
+                source: {
+                  type: "inline-files",
+                  target: "/",
+                  files: [
+                    {
+                      path: ".github/hooks/pre-command.json",
+                      content: "{\n  \"hooks\": []\n}\n",
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        agent: {
+          adapter: "copilot-cli",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  };
+
+  const workspace = await materializeWorkspace({
+    manifest,
+    scenario: manifest.scenarios[0],
+    outputRootDirectory: tempDirectory,
+    sourceBaseDirectory: tempDirectory,
+  });
+
+  assert.equal(
+    await fs.readFile(path.join(workspace.workspaceDirectory, "AGENTS.md"), "utf8"),
+    "# Profile instructions\n",
+  );
+  assert.equal(
+    await fs.readFile(
+      path.join(workspace.workspaceDirectory, ".github", "agents", "reviewer-agent.agent.md"),
+      "utf8",
+    ),
+    "---\ndescription: Reviewer agent\n---\n\n# Reviewer agent\n",
+  );
+  assert.equal(
+    await fs.readFile(
+      path.join(workspace.workspaceDirectory, ".github", "hooks", "pre-command.json"),
+      "utf8",
+    ),
+    "{\n  \"hooks\": []\n}\n",
+  );
+});
+
+test("profile capability materialization rejects entries without a source", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-profile-capabilities-missing-source-"));
+  const baseDirectory = path.join(tempDirectory, "base");
+
+  await fs.mkdir(baseDirectory, { recursive: true });
+
+  const manifest = {
+    schemaVersion: 1,
+    benchmark: {
+      id: "profile-capabilities-missing-source",
+      description: "Profile capabilities validation",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: baseDirectory,
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "codex-profile-capabilities-missing-source",
+        description: "Profile capability materialization",
+        skillMode: "disabled",
+        profile: {
+          id: "missing-source",
+          capabilities: {
+            instructions: [{}],
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  };
+
+  await assert.rejects(() => materializeWorkspace({
+    manifest,
+    scenario: manifest.scenarios[0],
+    outputRootDirectory: tempDirectory,
+    sourceBaseDirectory: tempDirectory,
+  }), /profile\.capabilities\.instructions\[0\] must declare a materializable source/);
+});
+
 test("strict isolation rejects system-installed skills and mounts multiple declared skills", async () => {
   const singleBaseManifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,

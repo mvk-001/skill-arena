@@ -1156,12 +1156,23 @@ function getScenarioProfileLabel(scenario) {
 
 function resolveScenarioSupport(scenario) {
   const capabilities = scenario.profile?.capabilities ?? {};
-  const unsupportedFamilies = listUnsupportedCapabilityFamilies(capabilities);
+  const unsupportedFamilies = listUnsupportedCapabilityFamilies(
+    scenario.agent.adapter,
+    capabilities,
+  );
 
   if (unsupportedFamilies.length > 0) {
     return {
       supported: false,
       reason: `Adapter "${scenario.agent.adapter}" does not yet support compare profile capabilities: ${unsupportedFamilies.join(", ")}.`,
+    };
+  }
+
+  const capabilityValidationError = validateScenarioCapabilities(scenario);
+  if (capabilityValidationError) {
+    return {
+      supported: false,
+      reason: capabilityValidationError,
     };
   }
 
@@ -1179,16 +1190,97 @@ function resolveScenarioSupport(scenario) {
   return { supported: true };
 }
 
-function listUnsupportedCapabilityFamilies(capabilities) {
+function listUnsupportedCapabilityFamilies(adapterId, capabilities) {
   const unsupportedFamilies = [];
+  const supportedFamilies = getSupportedCapabilityFamilies(adapterId);
 
   for (const family of ["instructions", "agents", "hooks", "mcp", "extensions", "plugins"]) {
-    if (Array.isArray(capabilities[family]) && capabilities[family].length > 0) {
+    if (
+      Array.isArray(capabilities[family])
+      && capabilities[family].length > 0
+      && !supportedFamilies.has(family)
+    ) {
       unsupportedFamilies.push(family);
     }
   }
 
   return unsupportedFamilies;
+}
+
+function getSupportedCapabilityFamilies(adapterId) {
+  switch (adapterId) {
+    case "codex":
+      return new Set(["instructions", "skills"]);
+    case "copilot-cli":
+      return new Set(["instructions", "skills", "agents", "hooks"]);
+    case "pi":
+      return new Set(["skills"]);
+    default:
+      return new Set(["skills"]);
+  }
+}
+
+function validateScenarioCapabilities(scenario) {
+  if (scenario.agent.adapter === "copilot-cli") {
+    return validateCopilotCapabilities(scenario.profile?.capabilities ?? {});
+  }
+
+  return validateMaterializedCapabilities(scenario.profile?.capabilities ?? {}, ["instructions"]);
+}
+
+function validateCopilotCapabilities(capabilities) {
+  const agentError = validateSingleAgentCapability(capabilities.agents ?? []);
+  if (agentError) {
+    return agentError;
+  }
+
+  return validateMaterializedCapabilities(capabilities, ["instructions", "agents", "hooks"]);
+}
+
+function validateSingleAgentCapability(agents) {
+  if (!Array.isArray(agents) || agents.length === 0) {
+    return null;
+  }
+
+  if (agents.length > 1) {
+    return "Adapter \"copilot-cli\" supports at most one compare profile agent.";
+  }
+
+  const agentId = agents[0]?.agentId;
+  if (typeof agentId !== "string" || agentId.trim() === "") {
+    return "Adapter \"copilot-cli\" requires profile.capabilities.agents[*].agentId.";
+  }
+
+  return null;
+}
+
+function validateMaterializedCapabilities(capabilities, supportedFamilies) {
+  const supportedSourceTypes = new Set(["local-path", "git", "inline-files", "empty"]);
+
+  for (const family of supportedFamilies) {
+    const entries = Array.isArray(capabilities?.[family]) ? capabilities[family] : [];
+
+    for (const [index, entry] of entries.entries()) {
+      const source = entry?.source;
+      if (!source || typeof source !== "object") {
+        return `profile.capabilities.${family}[${index}] must declare a materializable source.`;
+      }
+
+      if (typeof source.type !== "string" || source.type.length === 0) {
+        return `profile.capabilities.${family}[${index}].source.type must be a non-empty string.`;
+      }
+
+      if (!supportedSourceTypes.has(source.type)) {
+        return `profile.capabilities.${family}[${index}].source.type must be one of: local-path, git, inline-files, empty.`;
+      }
+
+      if (source.type !== "empty" && typeof source.target !== "string") {
+        return `profile.capabilities.${family}[${index}].source.target must be defined.`;
+      }
+    }
+  }
+
+  return null;
 }
 
 function printExecutionTotals(mergedSummary, compareSummary) {

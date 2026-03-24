@@ -1397,6 +1397,246 @@ test("compare dry-run keeps unsupported capability profiles as unsupported cells
   assert.equal(runDirectories.some((entry) => entry.endsWith("-codex-mini-agent-profile")), false);
 });
 
+test("compare dry-run supports copilot agent and hook capability profiles", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-copilot-capabilities-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: copilot-capability-profile-compare",
+    "  description: Compare copilot capability profiles.",
+    "  tags: [compare, copilot]",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: fixtures/smoke-skill-following/base",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: contains",
+    "      value: HELLO",
+    "  requests: 1",
+    "comparison:",
+    "  profiles:",
+    "    - id: baseline",
+    "      description: Baseline",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities: {}",
+    "    - id: reviewer-agent",
+    "      description: Copilot agent and hook profile",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities:",
+    "        instructions:",
+    "          - source:",
+    "              type: inline-files",
+    "              target: /",
+    "              files:",
+    "                - path: AGENTS.md",
+    "                  content: |",
+    "                    # Compare instructions",
+    "                    Return HELLO.",
+    "        agents:",
+    "          - agentId: reviewer-agent",
+    "            source:",
+    "              type: inline-files",
+    "              target: /",
+    "              files:",
+    "                - path: .github/agents/reviewer-agent.agent.md",
+    "                  content: |",
+    "                    ---",
+    "                    description: Review the workspace and keep the answer concise.",
+    "                    ---",
+    "",
+    "                    # Reviewer agent",
+    "                    Review the workspace and keep the answer concise.",
+    "        hooks:",
+    "          - source:",
+    "              type: inline-files",
+    "              target: /",
+    "              files:",
+    "                - path: .github/hooks/pre-command.json",
+    "                  content: |",
+    "                    {",
+    "                      \"hooks\": []",
+    "                    }",
+    "  variants:",
+    "    - id: copilot-gpt5",
+    "      description: Copilot CLI",
+    "      agent:",
+    "        adapter: copilot-cli",
+    "        model: gpt-5",
+    "        commandPath: copilot",
+    "        executionMethod: command",
+    "        sandboxMode: workspace-write",
+    "        approvalPolicy: never",
+    "        webSearchEnabled: false",
+    "        networkAccessEnabled: false",
+    "        reasoningEffort: low",
+    "        additionalDirectories: []",
+    "        cliEnv: {}",
+    "        config: {}",
+  ].join("\n"), "utf8");
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"],
+    {
+      cwd: tempDirectory,
+      windowsHide: true,
+    },
+  );
+
+  assert.match(stdout, /\| Profiles \| 2 \|/);
+  assert.match(stdout, /\| Unsupported cells \| 0 \|/);
+
+  const resultsRoot = path.join(tempDirectory, "results", "copilot-capability-profile-compare");
+  const runDirectories = await fs.readdir(resultsRoot);
+  assert.equal(runDirectories.some((entry) => entry.endsWith("-copilot-gpt5-baseline")), true);
+  assert.equal(runDirectories.some((entry) => entry.endsWith("-copilot-gpt5-reviewer-agent")), true);
+});
+
+test("compare dry-run reports invalid copilot capability profiles as unsupported cells", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-copilot-invalid-capability-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: invalid-copilot-capability-profile-compare",
+    "  description: Compare invalid copilot capability profiles.",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: fixtures/smoke-skill-following/base",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: contains",
+    "      value: HELLO",
+    "  requests: 1",
+    "comparison:",
+    "  profiles:",
+    "    - id: baseline",
+    "      description: Baseline",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities: {}",
+    "    - id: broken-agent-profile",
+    "      description: Missing agent id",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities:",
+    "        agents:",
+    "          - source:",
+    "              type: inline-files",
+    "              target: /",
+    "              files:",
+    "                - path: .github/agents/reviewer-agent.agent.md",
+    "                  content: |",
+    "                    ---",
+    "                    description: Review the workspace and keep the answer concise.",
+    "                    ---",
+    "",
+    "                    # Reviewer agent",
+    "                    Review the workspace and keep the answer concise.",
+    "  variants:",
+    "    - id: copilot-gpt5",
+    "      description: Copilot CLI",
+    "      agent:",
+    "        adapter: copilot-cli",
+    "        model: gpt-5",
+    "        commandPath: copilot",
+    "        executionMethod: command",
+    "        sandboxMode: workspace-write",
+    "        approvalPolicy: never",
+    "        webSearchEnabled: false",
+    "        networkAccessEnabled: false",
+    "        reasoningEffort: low",
+    "        additionalDirectories: []",
+    "        cliEnv: {}",
+    "        config: {}",
+  ].join("\n"), "utf8");
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"],
+    {
+      cwd: tempDirectory,
+      windowsHide: true,
+    },
+  );
+
+  assert.match(stdout, /\| Unsupported cells \| 1 \|/);
+});
+
+test("compare dry-run reports invalid capability source types as unsupported cells", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-invalid-capability-source-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: invalid-capability-source-profile-compare",
+    "  description: Compare invalid capability source types.",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: fixtures/smoke-skill-following/base",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: contains",
+    "      value: HELLO",
+    "  requests: 1",
+    "comparison:",
+    "  profiles:",
+    "    - id: baseline",
+    "      description: Baseline",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities: {}",
+    "    - id: invalid-instructions",
+    "      description: Unsupported source type",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities:",
+    "        instructions:",
+    "          - source:",
+    "              type: inline",
+    "              target: /",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex",
+    "      agent:",
+    "        adapter: codex",
+    "        model: gpt-5.1-codex-mini",
+    "        executionMethod: command",
+    "        commandPath: codex",
+    "        sandboxMode: read-only",
+    "        approvalPolicy: never",
+    "        webSearchEnabled: false",
+    "        networkAccessEnabled: false",
+    "        reasoningEffort: low",
+    "        additionalDirectories: []",
+    "        cliEnv: {}",
+    "        config: {}",
+  ].join("\n"), "utf8");
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"],
+    {
+      cwd: tempDirectory,
+      windowsHide: true,
+    },
+  );
+
+  assert.match(stdout, /\| Unsupported cells \| 1 \|/);
+});
+
 test("skill-arena-compare benchmark uses the remote skill and prompt-specific evaluations", async () => {
   const compareConfigPath = fromProjectRoot(
     "benchmarks",

@@ -50,6 +50,8 @@ This preserves source inputs and gives each eval an isolated workspace.
 
 Workspace-injected skills can contain any files needed by the benchmarked agent, including root-level instruction files such as `AGENTS.md` and bundled skill assets such as `skills/<skill-id>/SKILL.md`.
 
+Compare profiles may also materialize non-skill capability bundles such as repository instructions, custom agents, and hooks when the selected adapter supports them. These capability bundles are applied after base workspace sanitization so the profile can intentionally reintroduce files such as `AGENTS.md` or `.github/agents/*`.
+
 For explicit skill declarations, the preferred contract is to identify one benchmarked skill through one of three source modes:
 
 - a local skill folder

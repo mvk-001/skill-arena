@@ -403,7 +403,38 @@ V1 compare profiles accept these capability families:
 - `extensions`
 - `plugins`
 
-These capability families are benchmark-facing abstractions. Adapters may translate them natively, approximately, or mark them unsupported per cell.
+These capability families are compare-facing abstractions. Adapters may translate them natively or mark them unsupported per cell.
+
+Current compare support in V1:
+
+- `codex`
+  - supported: `instructions`, `skills`
+  - unsupported: `agents`, `hooks`, `mcp`, `extensions`, `plugins`
+- `copilot-cli`
+  - supported: `instructions`, `skills`, `agents`, `hooks`
+  - unsupported: `mcp`, `extensions`, `plugins`
+- `pi`
+  - supported: `skills`
+  - unsupported: `instructions`, `agents`, `hooks`, `mcp`, `extensions`, `plugins`
+
+Materialized capability rules in V1:
+
+- `instructions`, `agents`, and `hooks` must declare a materializable `source`.
+- Capability `source` entries use the same source shapes as workspace materialization:
+  - `local-path`
+  - `git`
+  - `inline-files`
+  - `empty`
+- For materialized capability sources, `source.target` is required unless `source.type` is `empty`.
+- Compare-mode strict isolation does not support system-installed capability bundles.
+
+Adapter-specific V1 rules:
+
+- `copilot-cli` custom agents require exactly one `capabilities.agents[*]` entry per profile.
+- `copilot-cli` custom agents require `agentId`.
+- Repository-level `copilot-cli` agents should usually materialize files under `.github/agents/`.
+- Repository-level `copilot-cli` hooks should usually materialize files under `.github/hooks/`.
+- `instructions` for `codex` or `copilot-cli` should usually materialize `AGENTS.md` at the workspace root when you want project instructions in that profile.
 
 Preferred explicit compare skill definitions use the same three source modes:
 
