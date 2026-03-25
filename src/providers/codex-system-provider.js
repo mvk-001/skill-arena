@@ -1,15 +1,18 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
 
 import { Codex } from "@openai/codex-sdk";
+import { parseJsonLines, writeExecutionEventHook } from "./execution-event-hook.js";
+import { spawnProviderCommand } from "./command-process.js";
+import { assertRequiredConfig } from "./provider-validation.js";
+import { withRetry } from "./retry.js";
 
 export default class CodexSystemProvider {
   constructor(options = {}) {
     this.options = options;
     this.config = options.config ?? {};
-    this.spawnProcess = options.spawnProcess ?? spawnProcess;
+    this.spawnProcess = options.spawnProcess ?? spawnCodexCommand;
   }
 
   id() {
@@ -17,6 +20,8 @@ export default class CodexSystemProvider {
   }
 
   async callApi(prompt, context, callOptions) {
+    assertRequiredConfig(this.config, "codex", ["working_dir"]);
+
     if (this.config.execution_method === "sdk") {
       return this.runWithSdk(prompt, callOptions);
     }
@@ -52,6 +57,20 @@ export default class CodexSystemProvider {
     const turn = await thread.run(prompt, {
       signal: callOptions?.abortSignal,
     });
+    const executionEventHook = await writeExecutionEventHook({
+      workingDirectory: this.config.working_dir,
+      adapter: "codex",
+      providerId: this.id(),
+      backend: "sdk",
+      command: resolveCommandPath(this.config.command_path),
+      args: [],
+      exitCode: 0,
+      rawEvents: turn.items ?? [],
+      extra: {
+        threadId: thread.id,
+        model: this.config.model ?? null,
+      },
+    });
 
     return {
       output: turn.finalResponse ?? "",
@@ -60,6 +79,7 @@ export default class CodexSystemProvider {
         backend: "sdk",
         itemCount: turn.items.length,
         threadId: thread.id,
+        executionEventHook,
       },
     };
   }
@@ -72,47 +92,74 @@ export default class CodexSystemProvider {
     );
     const outputFile = path.join(outputDirectory, "final-response.txt");
 
-    const args = this.buildCommandArguments(outputFile);
-    const { stdout, stderr, exitCode } = await this.spawnProcess({
-      command: this.config.command_path,
-      args,
-      cwd: this.config.working_dir,
-      env: this.buildEnvironment(),
-      stdinText: prompt,
-      abortSignal: callOptions?.abortSignal,
-    });
+    try {
+      const args = this.buildCommandArguments(outputFile);
+      const { stdout, stderr, exitCode } = await withRetry(
+        () => this.spawnProcess({
+          command: this.config.command_path,
+          args,
+          cwd: this.config.working_dir,
+          env: this.buildEnvironment(),
+          stdinText: prompt,
+          abortSignal: callOptions?.abortSignal,
+        }),
+        {
+          retries: this.config.retries ?? 0,
+          retryDelayMs: this.config.retry_delay_ms ?? 5_000,
+        },
+      );
 
-    let finalResponse = await fs
-      .readFile(outputFile, "utf8")
-      .catch(() => "");
-    const events = parseJsonLines(stdout);
-    const eventResponse = extractFinalAgentMessage(events);
-
-    if (!finalResponse.trim()) {
-      finalResponse = eventResponse;
-    }
-
-    if (exitCode !== 0) {
-      return {
-        error:
-          stderr.trim() ||
-          stdout.trim() ||
-          `codex exec exited with code ${exitCode}.`,
-      };
-    }
-
-    const usage = extractCommandUsage(events);
-    const output = finalResponse.trim() || eventResponse || "";
-
-    return {
-      output,
-      tokenUsage: usage,
-      metadata: {
+      let finalResponse = await fs
+        .readFile(outputFile, "utf8")
+        .catch(() => "");
+      const events = parseJsonLines(stdout);
+      const executionEventHook = await writeExecutionEventHook({
+        workingDirectory: this.config.working_dir,
+        adapter: "codex",
+        providerId: this.id(),
         backend: "command",
-        eventCount: events.length,
-        stderr: stderr.trim() || null,
-      },
-    };
+        command: this.config.command_path,
+        args,
+        exitCode,
+        stdout,
+        stderr,
+        rawEvents: events,
+      });
+      const eventResponse = extractFinalAgentMessage(events);
+
+      if (!finalResponse.trim()) {
+        finalResponse = eventResponse;
+      }
+
+      if (exitCode !== 0) {
+        return {
+          error:
+            stderr.trim() ||
+            stdout.trim() ||
+            `codex exec exited with code ${exitCode}.`,
+          metadata: {
+            backend: "command",
+            executionEventHook,
+          },
+        };
+      }
+
+      const usage = extractCommandUsage(events);
+      const output = finalResponse.trim() || eventResponse || "";
+
+      return {
+        output,
+        tokenUsage: usage,
+        metadata: {
+          backend: "command",
+          eventCount: events.length,
+          executionEventHook,
+          stderr: stderr.trim() || null,
+        },
+      };
+    } finally {
+      await fs.rm(outputDirectory, { recursive: true, force: true }).catch(() => {});
+    }
   }
 
   buildCommandArguments(outputFile) {
@@ -259,23 +306,8 @@ function normalizeSdkUsage(usage) {
   };
 }
 
-function parseJsonLines(stdout) {
-  return stdout
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .flatMap((line) => {
-      try {
-        return [JSON.parse(line)];
-      } catch {
-        return [];
-      }
-    });
-}
-
 function extractCommandUsage(events) {
-  const completedTurn = events.findLast?.((event) => event.type === "turn.completed")
-    ?? [...events].reverse().find((event) => event.type === "turn.completed");
+  const completedTurn = events.findLast((event) => event.type === "turn.completed");
 
   const usage = completedTurn?.usage;
 
@@ -296,19 +328,16 @@ function extractCommandUsage(events) {
 }
 
 function extractFinalAgentMessage(events) {
-  const finalMessageEvent = events.findLast?.(
+  const finalMessageEvent = events.findLast(
     (event) => event.type === "item.completed" && event.item?.type === "agent_message",
-  ) ?? [...events]
-    .reverse()
-    .find((event) => event.type === "item.completed" && event.item?.type === "agent_message");
+  );
 
-  const agentMessageEvent = events.findLast?.((event) => event.type === "agent_message")
-    ?? [...events].reverse().find((event) => event.type === "agent_message");
+  const agentMessageEvent = events.findLast((event) => event.type === "agent_message");
 
   return finalMessageEvent?.item?.text ?? agentMessageEvent?.message ?? "";
 }
 
-async function spawnProcess({
+async function spawnCodexCommand({
   command,
   args,
   cwd,
@@ -316,71 +345,14 @@ async function spawnProcess({
   stdinText,
   abortSignal,
 }) {
-  return await new Promise((resolve, reject) => {
-    const { executable, executableArgs } = buildSpawnCommand(command, args);
-    const childProcess = spawn(executable, executableArgs, {
-      cwd,
-      env,
-      stdio: "pipe",
-      windowsHide: true,
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    childProcess.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-
-    childProcess.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    childProcess.on("error", (error) => {
-      cleanupAbortListener();
-      reject(error);
-    });
-
-    childProcess.on("exit", (exitCode) => {
-      cleanupAbortListener();
-      resolve({
-        stdout,
-        stderr,
-        exitCode: exitCode ?? 1,
-      });
-    });
-
-    if (stdinText) {
-      childProcess.stdin.write(stdinText);
-    }
-    childProcess.stdin.end();
-
-    const abortHandler = () => {
-      childProcess.kill("SIGTERM");
-    };
-
-    const cleanupAbortListener = () => {
-      abortSignal?.removeEventListener("abort", abortHandler);
-    };
-
-    abortSignal?.addEventListener("abort", abortHandler, { once: true });
+  return await spawnProviderCommand({
+    command,
+    args: args.map((value) => ({ value, promptPlaceholder: false })),
+    cwd,
+    env,
+    stdinText,
+    abortSignal,
   });
-}
-
-function buildSpawnCommand(command, args) {
-  if (process.platform !== "win32") {
-    return {
-      executable: command,
-      executableArgs: args,
-    };
-  }
-
-  const resolvedCommand = path.extname(command) ? command : `${command}.cmd`;
-
-  return {
-    executable: "cmd.exe",
-    executableArgs: ["/d", "/s", "/c", resolvedCommand, ...args],
-  };
 }
 
 function resolveCommandPath(command) {

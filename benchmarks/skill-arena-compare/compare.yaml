@@ -1,6 +1,6 @@
 schemaVersion: 1
 benchmark:
-  id: brainstorming-compare-generated
+  id: skill-arena-compare
   description: Evaluate generation of a compare config for the remote brainstorming skill.
   tags:
     - compare

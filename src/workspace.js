@@ -8,7 +8,23 @@ import { resolveManifestPath } from "./manifest.js";
 import { createRuntimeIsolation } from "./runtime-isolation.js";
 
 const execFileAsync = promisify(execFile);
+/**
+ * In-memory cache for Git source clones.
+ *
+ * IMPORTANT: This is module-level mutable state shared across calls within
+ * the same process.  It is safe for single-run CLI invocations (the normal
+ * usage) but must be cleared between runs when the process is reused.
+ * Call `clearGitSourceCache()` after each evaluation run.
+ */
 const gitSourceCache = new Map();
+
+/**
+ * Clear the in-memory Git source clone cache.
+ * Call after a full evaluation run to release temp directory references.
+ */
+export function clearGitSourceCache() {
+  gitSourceCache.clear();
+}
 
 async function writeInlineFiles(workspaceDirectory, files, target = "") {
   for (const file of files) {
@@ -288,6 +304,7 @@ async function cloneGitSourceOnce(gitSource) {
       windowsHide: true,
     });
   } catch (error) {
+    await fs.rm(cloneDirectory, { recursive: true, force: true }).catch(() => {});
     throw new Error(
       `Failed to clone git repo "${gitSource.repo}". ${error.message}`,
     );
@@ -297,7 +314,13 @@ async function cloneGitSourceOnce(gitSource) {
     ? path.join(cloneDirectory, gitSource.subpath)
     : cloneDirectory;
 
-  await assertDirectoryExists(sourceDirectory, "git.subpath");
+  try {
+    await assertDirectoryExists(sourceDirectory, "git.subpath");
+  } catch (error) {
+    await fs.rm(cloneDirectory, { recursive: true, force: true }).catch(() => {});
+    throw error;
+  }
+
   return sourceDirectory;
 }
 

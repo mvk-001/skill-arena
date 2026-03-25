@@ -3,6 +3,9 @@ import {
   spawnProviderCommand,
   withPromptPlaceholder,
 } from "./command-process.js";
+import { parseJsonLines, writeExecutionEventHook } from "./execution-event-hook.js";
+import { assertRequiredConfig } from "./provider-validation.js";
+import { withRetry } from "./retry.js";
 
 const WINDOWS_PROMPT_PLACEHOLDER = "__SKILL_ARENA_PROMPT__";
 
@@ -18,18 +21,42 @@ export default class CopilotSystemProvider {
   }
 
   async callApi(prompt, _context, callOptions) {
+    assertRequiredConfig(this.config, "copilot-cli", ["working_dir"]);
+
     const useWindowsPromptWrapper = process.platform === "win32";
     const args = this.buildCommandArguments(
       useWindowsPromptWrapper ? WINDOWS_PROMPT_PLACEHOLDER : prompt,
     );
     const appliedSettings = this.describeAppliedSettings();
-    const { stdout, stderr, exitCode } = await this.spawnProcess({
+    const { stdout, stderr, exitCode } = await withRetry(
+      () => this.spawnProcess({
+        command: this.config.command_path ?? "copilot",
+        args,
+        cwd: this.config.working_dir,
+        env: this.buildEnvironment(),
+        promptText: useWindowsPromptWrapper ? prompt : undefined,
+        abortSignal: callOptions?.abortSignal,
+      }),
+      {
+        retries: this.config.retries ?? 0,
+        retryDelayMs: this.config.retry_delay_ms ?? 5_000,
+      },
+    );
+    const observedEvents = parseJsonLines(stdout);
+    const executionEventHook = await writeExecutionEventHook({
+      workingDirectory: this.config.working_dir,
+      adapter: "copilot-cli",
+      providerId: this.id(),
+      backend: "command",
       command: this.config.command_path ?? "copilot",
       args,
-      cwd: this.config.working_dir,
-      env: this.buildEnvironment(),
-      promptText: useWindowsPromptWrapper ? prompt : undefined,
-      abortSignal: callOptions?.abortSignal,
+      exitCode,
+      stdout,
+      stderr,
+      rawEvents: observedEvents,
+      extra: {
+        appliedSettings,
+      },
     });
 
     if (exitCode !== 0) {
@@ -42,6 +69,7 @@ export default class CopilotSystemProvider {
           backend: "command",
           commandPath: this.config.command_path ?? "copilot",
           appliedSettings,
+          executionEventHook,
           unsupportedSettings: describeUnsupportedSettings(this.config),
         },
       };
@@ -54,6 +82,7 @@ export default class CopilotSystemProvider {
         commandPath: this.config.command_path ?? "copilot",
         stderr: stderr.trim() || null,
         appliedSettings,
+        executionEventHook,
         unsupportedSettings: describeUnsupportedSettings(this.config),
       },
     };
@@ -122,16 +151,8 @@ function extractFinalOutput(stdout) {
   }
 
   const jsonLines = trimmedOutput
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .flatMap((line) => {
-      try {
-        return [JSON.parse(line)];
-      } catch {
-        return [];
-      }
-    });
+    ? parseJsonLines(trimmedOutput)
+    : [];
 
   const jsonMessage = extractMessageFromJsonLines(jsonLines);
   return jsonMessage || trimmedOutput;

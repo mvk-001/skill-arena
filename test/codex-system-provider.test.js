@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -75,4 +76,34 @@ test("codex provider builds command arguments with the isolated working director
     "approval_policy=\"never\"",
     "-",
   ]);
+});
+
+test("codex provider writes an execution-event hook artifact", async () => {
+  const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-codex-hook-"));
+  const provider = new CodexSystemProvider({
+    config: {
+      command_path: "codex",
+      working_dir: workingDirectory,
+      sandbox_mode: "read-only",
+      approval_policy: "never",
+      network_access_enabled: false,
+    },
+    spawnProcess: async () => ({
+      stdout: [
+        "{\"type\":\"exec.command.started\",\"command\":\"npm test\"}",
+        "{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":1,\"output_tokens\":2}}",
+      ].join("\n"),
+      stderr: "",
+      exitCode: 0,
+    }),
+  });
+
+  const response = await provider.callApi("Return HELLO.");
+  const hook = response.metadata.executionEventHook;
+  const payload = JSON.parse(await fs.readFile(hook.path, "utf8"));
+
+  assert.equal(hook.eventCount, 2);
+  assert.equal(hook.toolEventCount, 1);
+  assert.equal(payload.adapter, "codex");
+  assert.equal(payload.toolEvents[0].data.command, "npm test");
 });

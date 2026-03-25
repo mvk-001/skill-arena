@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -31,4 +32,31 @@ test("pi provider forwards isolated home variables into the CLI environment", as
 
   const response = await provider.callApi("Return the marker.");
   assert.equal(response.output, "ALPHA-42");
+});
+
+test("pi provider writes an execution-event hook artifact", async () => {
+  const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-pi-hook-"));
+  const provider = new PiSystemProvider({
+    config: {
+      command_path: "pi",
+      working_dir: workingDirectory,
+    },
+    spawnProcess: async () => ({
+      stdout: [
+        "{\"type\":\"tool.call\",\"toolName\":\"search\"}",
+        "{\"type\":\"assistant.message\",\"content\":\"DONE\"}",
+      ].join("\n"),
+      stderr: "",
+      exitCode: 0,
+    }),
+  });
+
+  const response = await provider.callApi("Return the marker.");
+  const hook = response.metadata.executionEventHook;
+  const payload = JSON.parse(await fs.readFile(hook.path, "utf8"));
+
+  assert.equal(hook.eventCount, 2);
+  assert.equal(hook.toolEventCount, 1);
+  assert.equal(payload.adapter, "pi");
+  assert.equal(payload.toolEvents[0].data.toolName, "search");
 });

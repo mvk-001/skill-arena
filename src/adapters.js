@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { fromPackageRoot } from "./project-paths.js";
+import { resolveModelAlias } from "./model-alias.js";
 
 export const ADAPTER_IDS = ["codex", "copilot-cli", "pi"];
 
@@ -264,5 +265,16 @@ export function buildPromptfooProvider(context) {
     );
   }
 
-  return adapter.buildProvider(context);
+  const resolvedContext = {
+    ...context,
+    scenario: {
+      ...context.scenario,
+      agent: {
+        ...context.scenario.agent,
+        model: resolveModelAlias(context.scenario.agent.model),
+      },
+    },
+  };
+
+  return adapter.buildProvider(resolvedContext);
 }

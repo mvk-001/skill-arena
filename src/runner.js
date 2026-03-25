@@ -6,7 +6,7 @@ import { buildPromptfooConfig, stringifyPromptfooConfig } from "./promptfoo-conf
 import { resolveEvaluationConcurrency } from "./concurrency.js";
 import { normalizePromptfooResults, writePromptfooArtifacts } from "./results.js";
 import { fromPackageRoot } from "./project-paths.js";
-import { materializeWorkspace, syncExecutionWorkspaceToArtifacts } from "./workspace.js";
+import { materializeWorkspace, syncExecutionWorkspaceToArtifacts, clearGitSourceCache } from "./workspace.js";
 
 export async function runScenario({
   manifest,
@@ -21,54 +21,60 @@ export async function runScenario({
     outputRootDirectory,
     sourceBaseDirectory,
   });
-  const promptfooConfig = buildPromptfooConfig({ manifest, scenario, workspace });
-  const promptfooConfigYaml = stringifyPromptfooConfig(promptfooConfig);
-  const promptfooConfigPath = path.join(workspace.runDirectory, "promptfooconfig.yaml");
-  const promptfooResultsPath = path.join(workspace.runDirectory, "promptfoo-results.json");
 
-  await fs.writeFile(promptfooConfigPath, promptfooConfigYaml, "utf8");
+  try {
+    const promptfooConfig = buildPromptfooConfig({ manifest, scenario, workspace });
+    const promptfooConfigYaml = stringifyPromptfooConfig(promptfooConfig);
+    const promptfooConfigPath = path.join(workspace.runDirectory, "promptfooconfig.yaml");
+    const promptfooResultsPath = path.join(workspace.runDirectory, "promptfoo-results.json");
 
-  if (dryRun) {
+    await fs.writeFile(promptfooConfigPath, promptfooConfigYaml, "utf8");
+
+    if (dryRun) {
+      return {
+        runDirectory: workspace.runDirectory,
+        workspaceDirectory: workspace.workspaceDirectory,
+        promptfooConfigPath,
+        promptfooResultsPath,
+        skipped: true,
+      };
+    }
+
+    await executePromptfoo({
+      promptfooConfigPath,
+      promptfooResultsPath,
+      scenario,
+    });
+    await syncExecutionWorkspaceToArtifacts(workspace);
+
+    const summary = await normalizePromptfooResults({
+      manifest,
+      scenario,
+      workspace,
+      promptfooResultsPath,
+    });
+
+    await writePromptfooArtifacts({
+      runDirectory: workspace.runDirectory,
+      promptfooConfigYaml,
+      promptfooResultsPath,
+      promptfooJsonPath: promptfooResultsPath,
+      summary,
+    });
+
     return {
       runDirectory: workspace.runDirectory,
       workspaceDirectory: workspace.workspaceDirectory,
       promptfooConfigPath,
       promptfooResultsPath,
-      skipped: true,
+      summaryPath: path.join(workspace.runDirectory, "summary.json"),
+      summary,
+      skipped: false,
     };
+  } finally {
+    await fs.rm(workspace.executionRootDirectory, { recursive: true, force: true }).catch(() => {});
+    clearGitSourceCache();
   }
-
-  await executePromptfoo({
-    promptfooConfigPath,
-    promptfooResultsPath,
-    scenario,
-  });
-  await syncExecutionWorkspaceToArtifacts(workspace);
-
-  const summary = await normalizePromptfooResults({
-    manifest,
-    scenario,
-    workspace,
-    promptfooResultsPath,
-  });
-
-  await writePromptfooArtifacts({
-    runDirectory: workspace.runDirectory,
-    promptfooConfigYaml,
-    promptfooResultsPath,
-    promptfooJsonPath: promptfooResultsPath,
-    summary,
-  });
-
-  return {
-    runDirectory: workspace.runDirectory,
-    workspaceDirectory: workspace.workspaceDirectory,
-    promptfooConfigPath,
-    promptfooResultsPath,
-    summaryPath: path.join(workspace.runDirectory, "summary.json"),
-    summary,
-    skipped: false,
-  };
 }
 
 async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, scenario }) {
@@ -107,7 +113,7 @@ async function executePromptfoo({ promptfooConfigPath, promptfooResultsPath, sce
 
     const killTimer = setTimeout(() => {
       childProcess.kill("SIGTERM");
-    }, scenario.evaluation.timeoutMs);
+    }, computeEffectiveTimeout(scenario.evaluation));
 
     childProcess.on("error", (error) => {
       clearTimeout(killTimer);
@@ -163,4 +169,20 @@ async function buildPromptfooCommand(args) {
       executableArgs: ["/d", "/s", "/c", "npx.cmd", ...args],
     };
   }
+}
+
+/**
+ * Compute an effective process-level timeout that accounts for the number
+ * of requested repetitions. `timeoutMs` in the config is per-prompt, but
+ * the promptfoo process runs all requests sequentially or with bounded
+ * concurrency.  The effective timeout is:
+ *   timeoutMs × ceil(requests / concurrency) + 30 s buffer
+ */
+function computeEffectiveTimeout(evaluation) {
+  const baseTimeout = evaluation.timeoutMs ?? 120_000;
+  const requests = evaluation.requests ?? 1;
+  const concurrency = evaluation.maxConcurrency ?? 1;
+  const rounds = Math.ceil(requests / Math.max(1, concurrency));
+  const bufferMs = 30_000;
+  return baseTimeout * rounds + bufferMs;
 }

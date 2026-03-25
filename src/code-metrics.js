@@ -187,15 +187,20 @@ function flattenMetricObject(value, prefix, flattenedMetrics) {
   for (const [key, childValue] of Object.entries(value)) {
     const nextPrefix = prefix ? `${prefix}.${key}` : key;
 
-    if (typeof childValue === "number" && Number.isFinite(childValue)) {
+    if (isFiniteNumber(childValue)) {
       flattenedMetrics.set(nextPrefix, childValue);
-      continue;
-    }
-
-    if (childValue && typeof childValue === "object" && !Array.isArray(childValue)) {
+    } else if (isPlainObject(childValue)) {
       flattenMetricObject(childValue, nextPrefix, flattenedMetrics);
     }
   }
+}
+
+function isFiniteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function buildRustCodeAnalysisCommand(command, filePath) {

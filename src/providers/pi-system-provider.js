@@ -3,6 +3,9 @@ import {
   spawnProviderCommand,
   withPromptPlaceholder,
 } from "./command-process.js";
+import { parseJsonLines, writeExecutionEventHook } from "./execution-event-hook.js";
+import { assertRequiredConfig } from "./provider-validation.js";
+import { withRetry } from "./retry.js";
 
 const WINDOWS_PROMPT_PLACEHOLDER = "__SKILL_ARENA_PROMPT__";
 
@@ -18,22 +21,48 @@ export default class PiSystemProvider {
   }
 
   async callApi(prompt, _context, callOptions) {
+    assertRequiredConfig(this.config, "pi", ["working_dir"]);
+
     const useWindowsPromptWrapper = process.platform === "win32";
     const args = this.buildCommandArguments(
       useWindowsPromptWrapper ? WINDOWS_PROMPT_PLACEHOLDER : prompt,
     );
-    const { stdout, stderr, exitCode } = await this.spawnProcess({
+    const { stdout, stderr, exitCode } = await withRetry(
+      () => this.spawnProcess({
+        command: this.config.command_path ?? "pi",
+        args,
+        cwd: this.config.working_dir,
+        env: this.buildEnvironment(),
+        promptText: useWindowsPromptWrapper ? prompt : undefined,
+        abortSignal: callOptions?.abortSignal,
+      }),
+      {
+        retries: this.config.retries ?? 0,
+        retryDelayMs: this.config.retry_delay_ms ?? 5_000,
+      },
+    );
+    const observedEvents = parseJsonLines(stdout);
+    const executionEventHook = await writeExecutionEventHook({
+      workingDirectory: this.config.working_dir,
+      adapter: "pi",
+      providerId: this.id(),
+      backend: "command",
       command: this.config.command_path ?? "pi",
       args,
-      cwd: this.config.working_dir,
-      env: this.buildEnvironment(),
-      promptText: useWindowsPromptWrapper ? prompt : undefined,
-      abortSignal: callOptions?.abortSignal,
+      exitCode,
+      stdout,
+      stderr,
+      rawEvents: observedEvents,
     });
 
     if (exitCode !== 0) {
       return {
         error: stderr.trim() || stdout.trim() || `pi exited with code ${exitCode}.`,
+        metadata: {
+          backend: "command",
+          stderr: stderr.trim() || null,
+          executionEventHook,
+        },
       };
     }
 
@@ -42,6 +71,7 @@ export default class PiSystemProvider {
       metadata: {
         backend: "command",
         stderr: stderr.trim() || null,
+        executionEventHook,
       },
     };
   }

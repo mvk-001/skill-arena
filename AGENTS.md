@@ -46,3 +46,11 @@ All repository artifacts must be written in English. This includes code, comment
 - Keep Codex execution on the local system path through the custom Promptfoo provider; do not switch benchmark scenarios back to direct hosted Promptfoo Codex providers.
 - When a benchmark uses a system-installed skill, record that in the manifest with `skillSource: "system-installed"` instead of pretending the skill came from a workspace overlay.
 - Preserve the minimal-context goal: benchmark prompts should contain the task, not extra harness instructions, unless the benchmark explicitly measures those instructions.
+
+## Codex Loop Closeout
+
+Codex does not have a native stable hook surface in this repository, so use the project closeout script as the required equivalent hook for autonomous loops.
+
+- Before closing an autonomous improvement loop or declaring an agent iteration complete, run `node skills/skill-arena-compare/scripts/run-rust-analyzer-hook.js`.
+- Treat a non-zero exit from that script as a failed closeout check.
+- If `rust-code-analysis` is not installed locally, install or point `SKILL_ARENA_RUST_CODE_ANALYSIS_BIN` at the binary when the loop depends on this guardrail.

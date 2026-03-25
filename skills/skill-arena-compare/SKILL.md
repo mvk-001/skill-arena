@@ -82,6 +82,9 @@ Produce a concise compare config that gives:
   command-log note, or next-step note and leave only the YAML body.
 - If you ran validation or wrote files successfully, do not mention that in the
   final answer unless the user explicitly asked for commentary.
+- When working in an autonomous loop for this repository, run
+  `node skills/skill-arena-compare/scripts/run-rust-analyzer-hook.js` before
+  declaring the iteration complete.
 
 ## Do Not Do This
 

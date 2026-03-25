@@ -434,6 +434,9 @@ test("normalizeOutput handles failure fallbacks and testCase metadata", () => {
         scenarioDescription: "Scenario description",
         label_variantId: "variant-id",
         label_variantDisplayName: "Variant display",
+        executionEventHook: {
+          relativePath: ".skill-arena/hooks/execution-events/example.json",
+        },
       },
     },
   }, 2);
@@ -451,6 +454,10 @@ test("normalizeOutput handles failure fallbacks and testCase metadata", () => {
   assert.equal(output.variantDisplayName, "Variant display");
   assert.equal(output.latencyMs, 25);
   assert.equal(output.tokenUsage.total, 10);
+  assert.equal(
+    output.executionEventHook.relativePath,
+    ".skill-arena/hooks/execution-events/example.json",
+  );
   assert.equal(nullFailureOutput.error, null);
 });
 

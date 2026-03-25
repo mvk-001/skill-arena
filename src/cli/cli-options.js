@@ -31,25 +31,30 @@ export function parsePositiveIntegerOption(argv, optionNames) {
  */
 export function ensureKnownLongOptions(argv, optionSchema, positionalStartIndex = 3) {
   for (let index = positionalStartIndex; index < argv.length; index += 1) {
-    const value = argv[index];
+    const token = argv[index];
 
-    if (typeof value !== "string" || !value.startsWith("--")) {
+    if (typeof token !== "string" || !token.startsWith("--")) {
       continue;
     }
 
-    if (!Object.prototype.hasOwnProperty.call(optionSchema, value)) {
-      throw new Error(`Unknown option "${value}".`);
-    }
+    assertKnownOption(token, optionSchema);
 
-    if (!optionSchema[value]) {
-      continue;
+    if (optionSchema[token]) {
+      assertOptionHasValue(argv, index, token);
+      index += 1;
     }
+  }
+}
 
-    const rawValue = argv[index + 1];
-    if (rawValue === undefined || rawValue.startsWith("--")) {
-      throw new Error(`Missing value for option "${value}".`);
-    }
+function assertKnownOption(token, schema) {
+  if (!Object.prototype.hasOwnProperty.call(schema, token)) {
+    throw new Error(`Unknown option "${token}".`);
+  }
+}
 
-    index += 1;
+function assertOptionHasValue(argv, index, token) {
+  const rawValue = argv[index + 1];
+  if (rawValue === undefined || rawValue.startsWith("--")) {
+    throw new Error(`Missing value for option "${token}".`);
   }
 }

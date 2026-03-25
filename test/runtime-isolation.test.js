@@ -102,3 +102,56 @@ test("runtime isolation reports declared profile skills as the only allowed visi
 
   assert.equal(isolation.environment.SKILL_ARENA_ALLOWED_SKILLS, "alpha,beta");
 });
+
+test("runtime isolation seeds pi home with local auth and settings", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-runtime-pi-"));
+  const sourceHome = path.join(tempDirectory, "source-home");
+  const executionRootDirectory = path.join(tempDirectory, "execution-root");
+  const sourcePiAgentDirectory = path.join(sourceHome, ".pi", "agent");
+
+  await fs.mkdir(path.join(sourcePiAgentDirectory, "bin"), { recursive: true });
+  await fs.writeFile(path.join(sourcePiAgentDirectory, "auth.json"), "{\"token\":\"x\"}", "utf8");
+  await fs.writeFile(path.join(sourcePiAgentDirectory, "settings.json"), "{\"defaultProvider\":\"github-copilot\"}", "utf8");
+  await fs.writeFile(path.join(sourcePiAgentDirectory, "bin", "rg.exe"), "binary", "utf8");
+
+  const previousHome = process.env.HOME;
+  const previousUserProfile = process.env.USERPROFILE;
+  process.env.HOME = sourceHome;
+  process.env.USERPROFILE = sourceHome;
+
+  try {
+    const isolation = await createRuntimeIsolation(executionRootDirectory, {
+      id: "pi-baseline",
+      skillMode: "disabled",
+      agent: {
+        adapter: "pi",
+      },
+    });
+
+    const isolatedPiAgentDirectory = path.join(isolation.environment.USERPROFILE, ".pi", "agent");
+    assert.match(
+      await fs.readFile(path.join(isolatedPiAgentDirectory, "auth.json"), "utf8"),
+      /token/,
+    );
+    assert.match(
+      await fs.readFile(path.join(isolatedPiAgentDirectory, "settings.json"), "utf8"),
+      /github-copilot/,
+    );
+    assert.match(
+      await fs.readFile(path.join(isolatedPiAgentDirectory, "bin", "rg.exe"), "utf8"),
+      /binary/,
+    );
+  } finally {
+    if (previousHome == null) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = previousHome;
+    }
+
+    if (previousUserProfile == null) {
+      delete process.env.USERPROFILE;
+    } else {
+      process.env.USERPROFILE = previousUserProfile;
+    }
+  }
+});

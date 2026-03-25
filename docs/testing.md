@@ -54,9 +54,9 @@ npm run test:coverage
 
 Current enforced minimum thresholds:
 
-- statements: `93%`
-- lines: `93%`
-- branches: `80%`
+- statements: `95%`
+- lines: `95%`
+- branches: `85%`
 - functions: `95%`
 
 Coverage scope for this threshold includes `src/**/*.js` and excludes:
@@ -113,6 +113,14 @@ Useful follow-up checks:
 - inspect the generated JSON for file-level `cognitive`, `cyclomatic`, `halstead`, and `loc` metrics
 - rank hotspots by cognitive complexity to identify refactor targets
 - rerun after a refactor and compare the changed metric deltas in the merged compare report
+
+Repository loop closeout helper:
+
+```bash
+node skills/skill-arena-compare/scripts/run-rust-analyzer-hook.js
+```
+
+Use this as the Codex loop closeout guardrail for autonomous repo-improvement loops. It runs `rust-code-analysis` against the repository runtime paths and writes JSON artifacts under `.tmp/rust-code-analysis-loop/`. Pass `--strict` when the loop must fail if the binary is unavailable.
 
 ### 2. Validate a config
 
@@ -223,6 +231,7 @@ For matrix evaluation runs, inspect:
 - `results/<benchmark-id>/<timestamp>-compare/promptfoo-results.json`
 - `results/<benchmark-id>/<timestamp>-compare/summary.json`
 - `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
+- `results/<benchmark-id>/<timestamp>-compare/workspace/.skill-arena/hooks/execution-events/*.json`
 
 At the end of `skill-arena evaluate` in matrix evaluation mode, the CLI prints the artifact paths for the summary and merged report.
 

@@ -90,6 +90,7 @@ test("copilot provider returns trimmed output on success", async () => {
   assert.equal(response.output, "ALPHA-42");
   assert.equal(response.metadata.backend, "command");
   assert.equal(response.metadata.commandPath, "copilot");
+  assert.equal(response.metadata.executionEventHook.eventCount, 0);
 });
 
 test("copilot provider falls back to message extracted from JSON lines", async () => {
@@ -265,4 +266,31 @@ test("copilot provider executes an absolute Windows command path and falls back 
   } finally {
     await fs.rm(tempDirectory, { recursive: true, force: true });
   }
+});
+
+test("copilot provider writes an execution-event hook artifact", async () => {
+  const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-copilot-hook-"));
+  const provider = new CopilotSystemProvider({
+    config: {
+      command_path: "copilot",
+      working_dir: workingDirectory,
+    },
+    spawnProcess: async () => ({
+      stdout: [
+        "{\"type\":\"assistant.message\",\"data\":{\"content\":\"FINAL\"}}",
+        "{\"type\":\"tool.call\",\"data\":{\"toolName\":\"editor\"}}",
+      ].join("\n"),
+      stderr: "",
+      exitCode: 0,
+    }),
+  });
+
+  const response = await provider.callApi("Return the marker.");
+  const hook = response.metadata.executionEventHook;
+  const payload = JSON.parse(await fs.readFile(hook.path, "utf8"));
+
+  assert.equal(hook.eventCount, 2);
+  assert.equal(hook.toolEventCount, 1);
+  assert.equal(payload.adapter, "copilot-cli");
+  assert.equal(payload.toolEvents[0].type, "tool.call");
 });

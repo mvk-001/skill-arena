@@ -14,6 +14,8 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
   const codexHome = path.join(executionRootDirectory, "codex-home");
   const codexSkillsDirectory = path.join(codexHome, "skills");
   const codexSystemSkillsDirectory = path.join(codexSkillsDirectory, ".system");
+  const piHome = path.join(userProfileDirectory, ".pi");
+  const piAgentDirectory = path.join(piHome, "agent");
   const gitConfigPath = path.join(executionRootDirectory, "gitconfig");
   const allowedSkills = inferVisibleSkillsForScenario(scenario);
   const skipHomeAgents = scenario?.agent?.adapter === "pi" || scenario?.agent?.adapter === "codex";
@@ -28,6 +30,8 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
     xdgCacheHome,
     xdgDataHome,
     xdgStateHome,
+    piHome,
+    piAgentDirectory,
     codexSkillsDirectory,
     codexSystemSkillsDirectory,
     gitConfigPath,
@@ -38,6 +42,10 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
     destinationSkillsDirectory: codexSkillsDirectory,
     destinationSystemSkillsDirectory: codexSystemSkillsDirectory,
     copyGlobalAgents: !skipHomeAgents,
+  });
+  await seedPiHome({
+    destinationPiHome: piHome,
+    destinationPiAgentDirectory: piAgentDirectory,
   });
 
   return {
@@ -97,6 +105,32 @@ async function seedCodexHome({
   await fs.mkdir(destinationSkillsDirectory, { recursive: true });
 }
 
+async function seedPiHome({
+  destinationPiHome,
+  destinationPiAgentDirectory,
+}) {
+  const sourcePiHome = resolveSourcePiHome();
+  if (!sourcePiHome) {
+    return;
+  }
+
+  const sourcePiAgentDirectory = path.join(sourcePiHome, "agent");
+  await fs.mkdir(destinationPiHome, { recursive: true });
+  await fs.mkdir(destinationPiAgentDirectory, { recursive: true });
+  await copyIfPresent(
+    path.join(sourcePiAgentDirectory, "auth.json"),
+    path.join(destinationPiAgentDirectory, "auth.json"),
+  );
+  await copyIfPresent(
+    path.join(sourcePiAgentDirectory, "settings.json"),
+    path.join(destinationPiAgentDirectory, "settings.json"),
+  );
+  await copyDirectoryIfPresent(
+    path.join(sourcePiAgentDirectory, "bin"),
+    path.join(destinationPiAgentDirectory, "bin"),
+  );
+}
+
 function resolveSourceCodexHome() {
   const configuredCodexHome = process.env.CODEX_HOME;
   if (configuredCodexHome) {
@@ -104,6 +138,10 @@ function resolveSourceCodexHome() {
   }
 
   return path.join(os.homedir(), ".codex");
+}
+
+function resolveSourcePiHome() {
+  return path.join(os.homedir(), ".pi");
 }
 
 async function copyIfPresent(sourcePath, destinationPath) {
@@ -148,12 +186,13 @@ function inferVisibleSkills(skillSource) {
 }
 
 async function prepareIsolationFilesystem(paths) {
-  await Promise.all([
-    ...Object.values(paths)
+  await Promise.all(
+    Object.values(paths)
       .filter((targetPath) => targetPath !== paths.gitConfigPath)
       .map((targetPath) => fs.mkdir(targetPath, { recursive: true })),
-    fs.writeFile(paths.gitConfigPath, "", "utf8"),
-  ]);
+  );
+  await fs.mkdir(path.dirname(paths.gitConfigPath), { recursive: true });
+  await fs.writeFile(paths.gitConfigPath, "", "utf8");
 }
 
 async function copyOptionalCodexFiles(sourceCodexHome, destinationCodexHome) {

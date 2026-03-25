@@ -153,6 +153,12 @@ const child = spawn(process.execPath, [scriptPath, ...passthroughArgs], {
   windowsHide: true,
 });
 
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.on(signal, () => {
+    child.kill(signal);
+  });
+}
+
 child.on("exit", (code, signal) => {
   if (signal) {
     process.kill(process.pid, signal);

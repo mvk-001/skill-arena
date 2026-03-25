@@ -1,30 +1,31 @@
-Necesito 6 agentes buscando las mejores estrategias para mejorar esta (skills\skill-arena-compare) skill
+I need 6 agents to search for the best strategies to improve this skill: `skills/skill-arena-compare`.
 
-cada uno lo que hará es:
-1. ejecutar su version del archivo de configuracion `node ./src/cli/run-compare.js ./benchmarks/skill-arena-compare/compare.yaml`
-2. Luego revises los resultados que fallan y en base de eso, si es un falso negativo, es decir, lo hizo bien, pero el sistema no lo valido correctamente, mejores el compare.yaml, si es un falso positivo, es decir, el sistema dice que fue correcto, pero en realidad falló la validación y tomo como correcto algo que deberia haber fallado arregles el compare.yaml. y usando los true negativos, aprendas y propongas mejoras a la skill.
-3. cuando propongas una idea que pienses pueda mejorar el resultado de la version que si usa la skill intenta que sea en uno de estos ambitos: 1. Mejorar el documento, puedes mejorar el documento haciendolo más simple (borrando lo innecesario), haciendolo más descriptibo, generando nuevas referencias que puedan ayudar a entender lo que se busca, generando scripts (dentro de la carpeta scripts) que hagan varias tareas automaticas, y dejes la documentacion como el agente puede usarlas para mejorar sus resultados o puedes mejorar haciendo assets que pueda usar de referencia
-4. evalues nuevamente ejecutando el script, si funciona mejor, se queda, si funciona peor, revierte los cambios
-5. guarda los intentos tanto fallidos o exitosos on learning.log, asi puedes evitar repetir los mismo, asegurate de no sobreescribir el progreso de otros, siempre append al final.
-6. regresa a paso 2
+Each agent should:
+1. Run its version of the configuration file with `node ./src/cli/run-compare.js ./benchmarks/skill-arena-compare/compare.yaml`.
+2. Review failing results. If a failure is a false negative, improve `compare.yaml` so correct behavior is validated correctly. If it is a false positive, improve `compare.yaml` so incorrect behavior is no longer accepted. Use true negatives to learn and propose improvements to the skill.
+3. When proposing an idea that may improve the skill-enabled version, keep it within one of these areas: improve the skill document by simplifying it, making it more descriptive, adding references that help explain the intended outcome, creating scripts under `scripts` that automate repeated tasks and documenting how the agent should use them, or adding assets the agent can use as references.
+4. Evaluate again by running the script.
+5. Before closing the iteration, run `node skills/skill-arena-compare/scripts/run-rust-analyzer-hook.js`.
+6. Keep the change if results improve; revert it if results get worse.
+7. Record both failed and successful attempts in `learning.log` so future runs avoid repeating them. Never overwrite other progress; always append.
+8. Return to step 2.
 
-Que está permitido:
-- Crear scripts en la skills bajo `scripts`
-- Crear references en la skills, bajo `references`
-- Crear templates y esqueletos en assets bajo `assets`
-- modificar SKILL.md 
-- Modificar la evaluations solo en el caso que se haya encontrado falso positivos y falso negativos para arreglarlos
+Allowed changes:
+- Create scripts under `scripts`
+- Create references under `references`
+- Create templates and skeletons under `assets`
+- Modify `SKILL.md`
+- Modify evaluations only when fixing confirmed false positives or false negatives
 
-No esta permitido:
-- Modificar algo de la evalaución que no sea dentro de la evaluacion
-- Agregar archivos fuera de la skill folder (skills\skill-arena-compare)
-
+Not allowed:
+- Modify anything outside evaluation logic when changing evaluation
+- Add files outside the skill folder: `skills/skill-arena-compare`
 
 Hints:
-- un SKILL.md más simple es más fácil de entender.
-- un script bien ejecutado no falla, ya que siempre hará lo que se espera
-- el output de los scripts pueden retornar siguientes pasos, que puede ser contextual basado en que está sucediendo.
+- A simpler `SKILL.md` is easier to follow.
+- A well-designed script is more reliable because it always performs the expected steps.
+- Script output can return contextual next steps based on the current situation.
 
-Asume que el que hará la acción tiene deficit atencional y le cuesta recordar instrucciones largas
+Assume the executor has attention constraints and struggles to retain long instructions.
 
-luego, toma los que lograron algo y mezcla las soluciones en solo una
+Afterward, take the agents that achieved something useful and merge their winning ideas into a single solution.

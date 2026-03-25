@@ -10,6 +10,7 @@ export async function spawnProviderCommand({
   env,
   promptText,
   promptDirectoryPrefix,
+  stdinText,
   abortSignal,
 }) {
   const { executable, executableArgs, cleanup } = await buildSpawnCommand({
@@ -55,6 +56,9 @@ export async function spawnProviderCommand({
       });
     });
 
+    if (typeof stdinText === "string") {
+      childProcess.stdin.write(stdinText);
+    }
     childProcess.stdin.end();
 
     const abortHandler = () => {

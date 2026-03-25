@@ -3,7 +3,6 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 import { buildPromptfooProvider, getAdapter } from "../adapters.js";
-import { summarizeSamples } from "../code-metrics.js";
 import { expandCompareConfigToManifest, loadCompareConfig } from "../compare.js";
 import {
   buildCompareMatrixSummary,
@@ -24,6 +23,19 @@ import { ensureCompareScenarioLocalPaths } from "../compare-bootstrap.js";
 import { fromPackageRoot } from "../project-paths.js";
 import { materializeWorkspace, syncExecutionWorkspaceToArtifacts } from "../workspace.js";
 import { ensureKnownLongOptions, parsePositiveIntegerOption } from "./cli-options.js";
+import { resolveScenarioSupport } from "../capability-validation.js";
+import {
+  buildMatrix,
+  buildRouteKey,
+  buildRowId,
+  buildScenarioStats,
+  createEmptyTokenUsageSummary,
+  formatPercent,
+  getScenarioProfileId,
+  getScenarioProfileLabel,
+  getScenarioVariantDisplayName,
+  getScenarioVariantId,
+} from "../compare-matrix.js";
 
 let latestCompareArtifacts = null;
 
@@ -169,6 +181,7 @@ async function main() {
     effectiveConcurrency,
     async ({ workspace }) => {
       await syncExecutionWorkspaceToArtifacts(workspace);
+      await fs.rm(workspace.executionRootDirectory, { recursive: true, force: true }).catch(() => {});
     },
   );
 
@@ -249,6 +262,8 @@ async function main() {
   }
 }
 
+// ── CLI option parsing ─────────────────────────────────────────────
+
 function parseCompareRuntimeOptions(argv) {
   const knownOptionSchema = {
     "--requests": true,
@@ -271,6 +286,8 @@ function parseCompareRuntimeOptions(argv) {
     outputRootDirectory: process.cwd(),
   };
 }
+
+// ── Scenario classification ────────────────────────────────────────
 
 function classifyCompareScenarios(scenarios) {
   const supportedScenarios = [];
@@ -299,20 +316,16 @@ function classifyCompareScenarios(scenarios) {
     supportedScenarios.push(scenario);
   }
 
-  return {
-    supportedScenarios,
-    skippedVariants,
-    skippedCells,
-  };
+  return { supportedScenarios, skippedVariants, skippedCells };
 }
 
 function buildSkippedVariantEntry(scenario, variantId) {
   return {
     variantId,
     variantDisplayName:
-      scenario.output.labels.variantDisplayName
-      ?? scenario.output.labels.adapterDisplayName
-      ?? variantId,
+      scenario.output.labels.variantDisplayName ??
+      scenario.output.labels.adapterDisplayName ??
+      variantId,
     adapter: scenario.agent.adapter,
     model: scenario.agent.model ?? null,
     reason: `Adapter "${scenario.agent.adapter}" is reserved but not implemented in V1.`,
@@ -330,6 +343,8 @@ function buildSkippedCellEntry(scenario, variantId, reason) {
     reason,
   };
 }
+
+// ── Artifacts ──────────────────────────────────────────────────────
 
 async function initializeCompareRunArtifacts({
   outputRootDirectory,
@@ -349,10 +364,7 @@ async function initializeCompareRunArtifacts({
   await logExecution(executionLogPath, "compare run initialized");
   await logExecution(executionLogPath, `effective concurrency: ${effectiveConcurrency}`);
 
-  return {
-    benchmarkRunDirectory,
-    executionLogPath,
-  };
+  return { benchmarkRunDirectory, executionLogPath };
 }
 
 async function writeInitialCompareArtifacts({
@@ -375,8 +387,39 @@ async function writeInitialCompareArtifacts({
   };
 }
 
+// ── Promptfoo config builder ───────────────────────────────────────
+
 function buildComparePromptfooConfig({ manifest, runs }) {
   const routerProviderPath = fromPackageRoot("src", "providers", "compare-matrix-provider.js");
+  const profileMap = buildProfileMap(runs, manifest, routerProviderPath);
+
+  const taskPrompts = getTaskPrompts(manifest);
+  const evaluation = runs[0]?.scenario.evaluation ?? {
+    assertions: [],
+    tracing: false,
+  };
+  const variants = buildVariantEntries(runs);
+
+  const config = {
+    description: `${manifest.benchmark.id}:compare`,
+    prompts: ["{{taskPrompt}}"],
+    providers: [...profileMap.values()],
+    tests: variants.flatMap((variant) =>
+      taskPrompts.map((taskPrompt) => buildTestEntry(variant, taskPrompt, manifest, evaluation, runs)),
+    ),
+  };
+
+  if (evaluation.tracing) {
+    config.tracing = {
+      enabled: true,
+      otlp: { http: { enabled: true } },
+    };
+  }
+
+  return config;
+}
+
+function buildProfileMap(runs, manifest, routerProviderPath) {
   const profileMap = new Map();
 
   for (const { scenario, workspace } of runs) {
@@ -401,69 +444,43 @@ function buildComparePromptfooConfig({ manifest, runs }) {
       },
     };
 
-    entry.config.routes[variantId] = {
-      scenarioId: scenario.id,
-      provider,
-    };
+    entry.config.routes[variantId] = { scenarioId: scenario.id, provider };
     profileMap.set(profileId, entry);
   }
 
-  const taskPrompts = getTaskPrompts(manifest);
-  const evaluation = runs[0]?.scenario.evaluation ?? {
-    assertions: [],
-    tracing: false,
-  };
-  const variants = buildVariantEntries(runs);
+  return profileMap;
+}
 
-  const config = {
-    description: `${manifest.benchmark.id}:compare`,
-    prompts: ["{{taskPrompt}}"],
-    providers: [...profileMap.values()],
-    tests: variants.flatMap((variant) =>
-      taskPrompts.map((taskPrompt) => ({
-        description: buildRowDescription(variant, taskPrompt, manifest),
-        vars: {
-          taskPrompt: taskPrompt.prompt,
-          variantId: variant.variantId,
-          variantDisplayName: variant.variantDisplayName,
-        },
-        metadata: {
-          benchmarkId: manifest.benchmark.id,
-          promptId: taskPrompt.id,
-          promptDescription: taskPrompt.description ?? null,
-          variantId: variant.variantId,
-          variantDisplayName: variant.variantDisplayName,
-          rowId: buildRowId(variant.variantId, taskPrompt.id),
-          ...flattenLabels({
-            variantId: variant.variantId,
-            variantDisplayName: variant.variantDisplayName,
-          }),
-        },
-        assert: resolvePromptAssertions({
-          defaultAssertions: evaluation.assertions,
-          taskPrompt,
-        }).map((assertion) =>
-          toPromptfooAssertion(
-            assertion,
-            runs[0].workspace.executionWorkspaceDirectory ?? runs[0].workspace.workspaceDirectory,
-          ),
-        ),
-      })),
+function buildTestEntry(variant, taskPrompt, manifest, evaluation, runs) {
+  return {
+    description: buildRowDescription(variant, taskPrompt, manifest),
+    vars: {
+      taskPrompt: taskPrompt.prompt,
+      variantId: variant.variantId,
+      variantDisplayName: variant.variantDisplayName,
+    },
+    metadata: {
+      benchmarkId: manifest.benchmark.id,
+      promptId: taskPrompt.id,
+      promptDescription: taskPrompt.description ?? null,
+      variantId: variant.variantId,
+      variantDisplayName: variant.variantDisplayName,
+      rowId: buildRowId(variant.variantId, taskPrompt.id),
+      ...flattenLabels({
+        variantId: variant.variantId,
+        variantDisplayName: variant.variantDisplayName,
+      }),
+    },
+    assert: resolvePromptAssertions({
+      defaultAssertions: evaluation.assertions,
+      taskPrompt,
+    }).map((assertion) =>
+      toPromptfooAssertion(
+        assertion,
+        runs[0].workspace.executionWorkspaceDirectory ?? runs[0].workspace.workspaceDirectory,
+      ),
     ),
   };
-
-  if (evaluation.tracing) {
-    config.tracing = {
-      enabled: true,
-      otlp: {
-        http: {
-          enabled: true,
-        },
-      },
-    };
-  }
-
-  return config;
 }
 
 function buildVariantEntries(runs) {
@@ -490,9 +507,7 @@ function buildRowDescription(variant, taskPrompt, manifest) {
   return `${variant.variantDisplayName} | ${promptLabel}`;
 }
 
-function buildRowId(variantId, promptId) {
-  return `${variantId}:${promptId ?? "default"}`;
-}
+// ── Result normalization ───────────────────────────────────────────
 
 async function normalizeComparePromptfooResults({
   manifest,
@@ -504,31 +519,12 @@ async function normalizeComparePromptfooResults({
 }) {
   const routeMap = new Map(
     supportedRuns.map(({ scenario, workspace }) => [
-      buildRouteKey(
-        getScenarioVariantId(scenario),
-        getScenarioProfileId(scenario),
-      ),
+      buildRouteKey(getScenarioVariantId(scenario), getScenarioProfileId(scenario)),
       { scenario, workspace },
     ]),
   );
   const { rawResults, stats, outputs } = await normalizeRawPromptfooResults(promptfooResultsPath);
-  const scenarioOutputsMap = new Map();
-
-  for (const output of outputs) {
-    const routeEntry = routeMap.get(buildRouteKey(output.variantId, output.provider));
-
-    if (!routeEntry) {
-      continue;
-    }
-
-    const scenarioOutputs = scenarioOutputsMap.get(routeEntry.scenario.id) ?? [];
-    scenarioOutputs.push({
-      ...output,
-      scenarioId: routeEntry.scenario.id,
-      scenarioDescription: routeEntry.scenario.description,
-    });
-    scenarioOutputsMap.set(routeEntry.scenario.id, scenarioOutputs);
-  }
+  const scenarioOutputsMap = groupOutputsByScenario(outputs, routeMap);
 
   const scenarioSummaries = supportedRuns.map(({ scenario, workspace }) => {
     const scenarioOutputs = scenarioOutputsMap.get(scenario.id) ?? [];
@@ -588,476 +584,185 @@ async function normalizeComparePromptfooResults({
   };
 }
 
-function buildMatrix({
-  manifest,
-  supportedRuns,
-  outputs,
-  routeMap,
-  evaluationRequests,
-  compareRunDirectory,
-  skippedCells,
-}) {
-  const columns = buildMatrixColumns(supportedRuns, skippedCells);
-  const rows = buildMatrixRows(manifest.task.prompts, supportedRuns, skippedCells);
-  applyUnsupportedCells(rows, manifest.task.prompts, skippedCells);
+function groupOutputsByScenario(outputs, routeMap) {
+  const map = new Map();
 
   for (const output of outputs) {
-    const rowId = output.rowId ?? buildOutputRowId(output);
-    const rowEntry = rows.get(rowId) ?? createOutputRowEntry(output, rowId);
     const routeEntry = routeMap.get(buildRouteKey(output.variantId, output.provider));
-    const cellEntry = updateCellEntry({
-      cellEntry: rowEntry.cells[output.provider] ?? createMatrixCellEntry(routeEntry, evaluationRequests),
-      output,
-      evaluationRequests,
-    });
-
-    rowEntry.cells[output.provider] = cellEntry;
-    rows.set(rowId, rowEntry);
-  }
-
-  return {
-    benchmarkId: manifest.benchmark.id,
-    benchmarkDescription: manifest.benchmark.description ?? null,
-    compareRunDirectory,
-    columns: [...columns.values()],
-    rows: [...rows.values()].sort((left, right) => {
-      const variantOrder = left.variantDisplayName.localeCompare(right.variantDisplayName);
-      if (variantOrder !== 0) {
-        return variantOrder;
-      }
-      return (left.promptDescription ?? left.promptId).localeCompare(
-        right.promptDescription ?? right.promptId,
-      );
-    }).map(stripCellComputationState),
-  };
-}
-
-function buildMatrixColumns(supportedRuns, skippedCells) {
-  const columns = new Map();
-
-  for (const { scenario } of supportedRuns) {
-    columns.set(getScenarioProfileId(scenario), {
-      id: getScenarioProfileId(scenario),
-      label: getScenarioProfileLabel(scenario),
-    });
-  }
-
-  for (const skippedCell of skippedCells) {
-    columns.set(skippedCell.profileId, {
-      id: skippedCell.profileId,
-      label: skippedCell.profileDisplayName ?? skippedCell.profileId,
-    });
-  }
-
-  return columns;
-}
-
-function buildMatrixVariantEntries(supportedRuns, skippedCells) {
-  const variantEntries = new Map();
-
-  for (const { scenario } of supportedRuns) {
-    variantEntries.set(getScenarioVariantId(scenario), {
-      variantId: getScenarioVariantId(scenario),
-      variantDisplayName: getScenarioVariantDisplayName(scenario),
-    });
-  }
-
-  for (const skippedCell of skippedCells) {
-    variantEntries.set(skippedCell.variantId, {
-      variantId: skippedCell.variantId,
-      variantDisplayName: skippedCell.variantDisplayName ?? skippedCell.variantId,
-    });
-  }
-
-  return variantEntries;
-}
-
-function buildMatrixRows(taskPrompts, supportedRuns, skippedCells) {
-  const rows = new Map();
-
-  for (const variant of buildMatrixVariantEntries(supportedRuns, skippedCells).values()) {
-    for (const taskPrompt of taskPrompts) {
-      const rowId = buildRowId(variant.variantId, taskPrompt.id);
-      rows.set(rowId, {
-        rowId,
-        variantId: variant.variantId,
-        variantDisplayName: variant.variantDisplayName,
-        promptId: taskPrompt.id,
-        promptDescription: taskPrompt.description ?? null,
-        prompt: taskPrompt.prompt,
-        cells: {},
-      });
-    }
-  }
-
-  return rows;
-}
-
-function applyUnsupportedCells(rows, taskPrompts, skippedCells) {
-  for (const skippedCell of skippedCells) {
-    for (const taskPrompt of taskPrompts) {
-      const rowId = buildRowId(skippedCell.variantId, taskPrompt.id);
-      const rowEntry = rows.get(rowId);
-
-      if (!rowEntry) {
-        continue;
-      }
-
-      rowEntry.cells[skippedCell.profileId] = createUnsupportedCellEntry(skippedCell);
-    }
-  }
-}
-
-function createUnsupportedCellEntry(skippedCell) {
-  return {
-    status: "unsupported",
-    profileId: skippedCell.profileId,
-    adapter: skippedCell.adapter,
-    model: skippedCell.model,
-    requestedRuns: 0,
-    completedRuns: 0,
-    passedRuns: 0,
-    failedRuns: 0,
-    errors: 0,
-    passRate: 0,
-    displayValue: "unsupported",
-    tokenUsage: createEmptyTokenUsageSummary(),
-    codeMetrics: null,
-    sampleOutputs: [],
-    reason: skippedCell.reason,
-  };
-}
-
-function buildOutputRowId(output) {
-  return buildRowId(output.variantId ?? "unknown", output.promptId ?? "default");
-}
-
-function createOutputRowEntry(output, rowId) {
-  return {
-    rowId,
-    variantId: output.variantId ?? "unknown",
-    variantDisplayName: output.variantDisplayName ?? output.variantId ?? "unknown",
-    promptId: output.promptId ?? "default",
-    promptDescription: output.promptDescription ?? null,
-    prompt: output.prompt,
-    cells: {},
-  };
-}
-
-function createMatrixCellEntry(routeEntry, evaluationRequests) {
-  return {
-    scenarioId: routeEntry?.scenario.id ?? null,
-    scenarioDescription: routeEntry?.scenario.description ?? null,
-    adapter: routeEntry?.scenario.agent.adapter ?? null,
-    model: routeEntry?.scenario.agent.model ?? null,
-    profileId: routeEntry ? getScenarioProfileId(routeEntry.scenario) : null,
-    skillMode: routeEntry?.scenario.skillMode ?? null,
-    skillSource: routeEntry?.scenario.skillSource ?? null,
-    labels: routeEntry?.scenario.output.labels ?? {},
-    requestedRuns: evaluationRequests,
-    completedRuns: 0,
-    passedRuns: 0,
-    failedRuns: 0,
-    errors: 0,
-    passRate: 0,
-    displayValue: "-",
-    tokenUsage: createEmptyTokenUsageSummary(),
-    codeMetrics: null,
-    sampleOutputs: [],
-  };
-}
-
-function updateCellEntry({ cellEntry, output, evaluationRequests }) {
-  cellEntry.completedRuns += 1;
-  cellEntry.passedRuns += output.success ? 1 : 0;
-  cellEntry.failedRuns += output.success === false ? 1 : 0;
-  cellEntry.errors += output.error ? 1 : 0;
-  cellEntry.passRate = evaluationRequests > 0 ? cellEntry.passedRuns / evaluationRequests : 0;
-  cellEntry.tokenUsage = buildTokenUsageSummary(cellEntry.tokenUsage, output.tokenUsage);
-  cellEntry.codeMetrics = buildCodeMetricsSummary(cellEntry.codeMetrics, output.codeMetricsDelta);
-  cellEntry.displayValue = formatCellDisplayValue({
-    passRate: cellEntry.passRate,
-    passedRuns: cellEntry.passedRuns,
-    evaluationRequests,
-    tokenUsage: cellEntry.tokenUsage,
-    codeMetrics: cellEntry.codeMetrics,
-  });
-
-  maybeAddSampleOutput(cellEntry.sampleOutputs, output.text);
-  return cellEntry;
-}
-
-function maybeAddSampleOutput(sampleOutputs, text) {
-  if (sampleOutputs.length < 3 && text !== null) {
-    sampleOutputs.push(text);
-  }
-}
-
-function buildRouteKey(variantId, skillModeId) {
-  return `${variantId ?? "unknown"}:${skillModeId ?? "unknown"}`;
-}
-
-function buildScenarioStats(outputs) {
-  const stats = outputs.reduce((summary, output) => {
-    summary.successes += output.success ? 1 : 0;
-    summary.failures += output.success === false ? 1 : 0;
-    summary.errors += output.error ? 1 : 0;
-    summary.durationMs += typeof output.latencyMs === "number" ? output.latencyMs : 0;
-    return summary;
-  }, createEmptyScenarioStats());
-
-  return {
-    ...stats,
-    evaluationDurationMs: stats.durationMs,
-  };
-}
-
-function createEmptyScenarioStats() {
-  return {
-    successes: 0,
-    failures: 0,
-    errors: 0,
-    durationMs: 0,
-  };
-}
-
-function formatPercent(value) {
-  return `${(value * 100).toFixed(0)}%`;
-}
-
-function formatCellDisplayValue({
-  passRate,
-  passedRuns,
-  evaluationRequests,
-  tokenUsage,
-  codeMetrics,
-}) {
-  const passRatioText = `${formatPercent(passRate)} (${passedRuns}/${evaluationRequests})`;
-  const tokensText = formatTokenUsageDisplay(tokenUsage);
-  const codeMetricsText = formatCodeMetricsDisplay(codeMetrics);
-  const lines = [passRatioText];
-
-  if (tokensText) {
-    lines.push(`tokens avg ${tokensText.average}, sd ${tokensText.stddev}`);
-  }
-
-  lines.push(...codeMetricsText);
-  return lines.join("<br>");
-}
-
-function formatTokenUsageDisplay(tokenUsage) {
-  if (!tokenUsage || tokenUsage.count === 0) {
-    return null;
-  }
-
-  return {
-    average: formatNumericMetric(tokenUsage.averageTotalTokens),
-    stddev: formatNumericMetric(tokenUsage.stddevTotalTokens),
-  };
-}
-
-function buildTokenUsageSummary(currentSummary, tokenUsage) {
-  const previous = currentSummary ?? createEmptyTokenUsageSummary();
-  const totalTokens = extractTotalTokens(tokenUsage);
-
-  if (typeof totalTokens !== "number") {
-    return previous;
-  }
-
-  const samples = [
-    ...(Array.isArray(previous.samples) ? previous.samples : []),
-    totalTokens,
-  ];
-
-  return summarizeTokenSamples(samples);
-}
-
-function createEmptyTokenUsageSummary() {
-  return {
-    count: 0,
-    averageTotalTokens: null,
-    stddevTotalTokens: null,
-    samples: [],
-  };
-}
-
-function buildCodeMetricsSummary(currentSummary, codeMetricsDelta) {
-  if (!currentSummary && !hasMetricSummaryMap(codeMetricsDelta?.metrics)) {
-    return null;
-  }
-
-  const previous = currentSummary ?? createEmptyCodeMetricsSummary();
-
-  if (!hasMetricSummaryMap(codeMetricsDelta?.metrics)) {
-    return previous;
-  }
-
-  const changedOriginalFiles = new Set([
-    ...(Array.isArray(previous.changedOriginalFiles) ? previous.changedOriginalFiles : []),
-    ...(Array.isArray(codeMetricsDelta.changedOriginalFiles) ? codeMetricsDelta.changedOriginalFiles : []),
-  ]);
-  const metrics = mergeCodeMetricSummaries(previous.metrics, codeMetricsDelta.metrics);
-
-  if (Object.keys(metrics).length === 0) {
-    return previous;
-  }
-
-  return {
-    changedOriginalFiles: [...changedOriginalFiles].sort(),
-    metrics,
-  };
-}
-
-function hasMetricSummaryMap(metrics) {
-  return metrics && typeof metrics === "object";
-}
-
-function createEmptyCodeMetricsSummary() {
-  return {
-    changedOriginalFiles: [],
-    metrics: {},
-  };
-}
-
-function mergeCodeMetricSummaries(previousMetrics, nextMetrics) {
-  const metrics = {};
-  const metricNames = new Set([
-    ...Object.keys(previousMetrics ?? {}),
-    ...Object.keys(nextMetrics ?? {}),
-  ]);
-
-  for (const metricName of metricNames) {
-    const samples = [
-      ...readMetricSamples(previousMetrics, metricName),
-      ...readMetricSamples(nextMetrics, metricName),
-    ];
-
-    if (samples.length === 0) {
+    if (!routeEntry) {
       continue;
     }
 
-    metrics[metricName] = summarizeSamples(samples);
+    const scenarioId = routeEntry.scenario.id;
+    const list = map.get(scenarioId) ?? [];
+    list.push({
+      ...output,
+      scenarioId,
+      scenarioDescription: routeEntry.scenario.description,
+    });
+    map.set(scenarioId, list);
   }
 
-  return metrics;
+  return map;
 }
 
-function readMetricSamples(metrics, metricName) {
-  return Array.isArray(metrics?.[metricName]?.samples)
-    ? metrics[metricName].samples
-    : [];
+// ── Promptfoo execution ────────────────────────────────────────────
+
+async function executePromptfoo({
+  promptfooConfigPath,
+  promptfooResultsPath,
+  timeoutMs,
+  maxConcurrency,
+  noCache,
+  requests,
+  verbose,
+  executionLogPath,
+}) {
+  const promptfooArgs = buildPromptfooEvalArgs({
+    promptfooConfigPath,
+    promptfooResultsPath,
+    requests,
+    maxConcurrency,
+    noCache,
+  });
+
+  const { executable, executableArgs } = await buildPromptfooCommand(promptfooArgs);
+
+  await new Promise((resolve, reject) => {
+    let timedOut = false;
+    const childProcess = spawn(executable, executableArgs, {
+      cwd: path.dirname(promptfooConfigPath),
+      env: {
+        ...process.env,
+        PROMPTFOO_DISABLE_TELEMETRY: "1",
+        PROMPTFOO_DISABLE_UPDATE: "1",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+
+    const killTimer = setTimeout(() => {
+      timedOut = true;
+      childProcess.kill("SIGTERM");
+    }, timeoutMs);
+
+    childProcess.on("error", (error) => {
+      clearTimeout(killTimer);
+      reject(error);
+    });
+
+    attachExecutionStream({ stream: childProcess.stdout, executionLogPath, verbose, outputWriter: process.stdout });
+    attachExecutionStream({ stream: childProcess.stderr, executionLogPath, verbose, outputWriter: process.stderr });
+
+    childProcess.on("exit", (code, signal) => {
+      clearTimeout(killTimer);
+
+      if (code === 0 || code === 100) {
+        resolve();
+        return;
+      }
+
+      reject(buildPromptfooExitError({ code, signal, timedOut, timeoutMs }));
+    });
+  });
 }
 
-function summarizeTokenSamples(samples) {
-  if (!Array.isArray(samples) || samples.length === 0) {
-    return {
-      count: 0,
-      averageTotalTokens: null,
-      stddevTotalTokens: null,
-    };
+function buildPromptfooEvalArgs({
+  promptfooConfigPath,
+  promptfooResultsPath,
+  requests,
+  maxConcurrency,
+  noCache,
+}) {
+  const args = [
+    "promptfoo", "eval",
+    "-c", promptfooConfigPath,
+    "--output", promptfooResultsPath,
+    "--repeat", String(requests),
+    "-j", String(maxConcurrency),
+    "--no-progress-bar",
+  ];
+
+  if (noCache) {
+    args.push("--no-cache");
   }
 
-  const count = samples.length;
-  const averageTotalTokens = samples.reduce((sum, value) => sum + value, 0) / count;
-  const variance = samples.reduce(
-    (sum, value) => sum + ((value - averageTotalTokens) ** 2),
-    0,
-  ) / count;
-
-  return {
-    count,
-    averageTotalTokens,
-    stddevTotalTokens: Math.sqrt(variance),
-    samples,
-  };
+  return args;
 }
 
-function extractTotalTokens(tokenUsage) {
-  if (typeof tokenUsage === "number" && Number.isFinite(tokenUsage)) {
-    return tokenUsage;
-  }
-
-  if (
-    tokenUsage
-    && typeof tokenUsage.total === "number"
-    && Number.isFinite(tokenUsage.total)
-  ) {
-    return tokenUsage.total;
-  }
-
-  return null;
+function attachExecutionStream({ stream, executionLogPath, verbose, outputWriter }) {
+  stream.on("data", (chunk) => {
+    void fs.appendFile(executionLogPath, chunk);
+    if (verbose) {
+      outputWriter.write(chunk);
+    }
+  });
 }
 
-function formatCodeMetricsDisplay(codeMetrics) {
-  const metricEntries = Object.entries(codeMetrics?.metrics ?? {});
-
-  if (metricEntries.length === 0) {
-    return [];
-  }
-
-  return metricEntries
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([metricName, metricSummary]) =>
-      `code ${metricName} avg ${formatSignedNumericMetric(metricSummary.avg)}, sd ${formatNumericMetric(metricSummary.standardDeviation)}`,
+function buildPromptfooExitError({ code, signal, timedOut, timeoutMs }) {
+  if (timedOut) {
+    return new Error(
+      `promptfoo eval timed out after ${timeoutMs} ms and was terminated with signal ${signal ?? "unknown"}.`,
     );
-}
-
-function formatNumericMetric(value) {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return "n/a";
   }
 
-  return value.toFixed(value >= 100 ? 0 : 1);
-}
-
-function formatSignedNumericMetric(value) {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return "n/a";
+  if (signal) {
+    return new Error(`promptfoo eval was terminated with signal ${signal}.`);
   }
 
-  const formatted = formatNumericMetric(Math.abs(value));
-  if (formatted === "n/a") {
-    return formatted;
-  }
-
-  return `${value >= 0 ? "+" : "-"}${formatted}`;
+  return new Error(`promptfoo eval exited with code ${code}.`);
 }
 
-function stripCellComputationState(row) {
+async function buildPromptfooCommand(args) {
+  const promptfooEntrypoint = fromPackageRoot(
+    "node_modules", "promptfoo", "dist", "src", "entrypoint.js",
+  );
+
+  try {
+    await fs.access(promptfooEntrypoint);
+    return {
+      executable: process.execPath,
+      executableArgs: [promptfooEntrypoint, ...args.slice(1)],
+    };
+  } catch {
+    if (process.platform !== "win32") {
+      return { executable: "npx", executableArgs: args };
+    }
+
+    return { executable: "cmd.exe", executableArgs: ["/d", "/s", "/c", "npx.cmd", ...args] };
+  }
+}
+
+// ── Config overrides ───────────────────────────────────────────────
+
+function applyRuntimeOverrides({ compareConfig, requestsOverride, maxConcurrencyOverride }) {
+  if (requestsOverride == null && maxConcurrencyOverride == null) {
+    return compareConfig;
+  }
+
   return {
-    ...row,
-    cells: Object.fromEntries(
-      Object.entries(row.cells ?? {}).map(([cellId, cell]) => [
-        cellId,
-        {
-          ...cell,
-          tokenUsage: cell.tokenUsage
-            ? {
-              count: cell.tokenUsage.count ?? 0,
-              averageTotalTokens: cell.tokenUsage.averageTotalTokens ?? null,
-              stddevTotalTokens: cell.tokenUsage.stddevTotalTokens ?? null,
-            }
-            : null,
-          codeMetrics: cell.codeMetrics
-            ? {
-              changedOriginalFiles: cell.codeMetrics.changedOriginalFiles ?? [],
-              metrics: Object.fromEntries(
-                Object.entries(cell.codeMetrics.metrics ?? {}).map(([metricName, summary]) => [
-                  metricName,
-                  {
-                    count: summary.count ?? 0,
-                    avg: summary.avg ?? null,
-                    standardDeviation: summary.standardDeviation ?? null,
-                  },
-                ]),
-              ),
-            }
-            : null,
-        },
-      ]),
-    ),
+    ...compareConfig,
+    evaluation: {
+      ...compareConfig.evaluation,
+      ...(requestsOverride != null && { requests: requestsOverride }),
+      ...(maxConcurrencyOverride != null && { maxConcurrency: maxConcurrencyOverride }),
+    },
   };
 }
+
+// ── Timeout calculation ────────────────────────────────────────────
+
+function resolveCompareEvalTimeoutMs(compareConfig, effectiveConcurrency) {
+  const taskPrompts = getTaskPrompts(compareConfig);
+  const requestsPerCell = compareConfig.evaluation.requests;
+  const profiles = compareConfig.comparison.profiles.length;
+  const variants = compareConfig.comparison.variants.length;
+  const totalRequests = taskPrompts.length * profiles * variants * requestsPerCell;
+  const batches = Math.max(1, Math.ceil(totalRequests / Math.max(1, effectiveConcurrency)));
+  return compareConfig.evaluation.timeoutMs * batches;
+}
+
+// ── Console output helpers ─────────────────────────────────────────
 
 function printExecutionPlan({
   compareConfig,
@@ -1084,22 +789,28 @@ function printExecutionPlan({
   const supportedCells = Math.max(0, compareCells - unsupportedCells);
   const totalRequests = supportedCells * requestsPerCell;
 
+  const planRows = [
+    ["Benchmark", manifest.benchmark.id],
+    ["Configuration", compareConfigPath ?? "compare.yaml"],
+    ["Output root", outputRootDirectory],
+    ["Prompts", taskPrompts.length],
+    ["Profiles", profiles.length],
+    ["Variants", supportedVariants.length],
+    ["Unsupported cells", unsupportedCells],
+    ["Requests per cell", requestsPerCell],
+    ["Total cells", compareCells],
+    ["Total requests", totalRequests],
+    ["Parallel requests", effectiveConcurrency],
+    ["Effective timeout", `${effectiveEvalTimeoutMs} ms`],
+  ];
+
   console.log("# skill-arena evaluate");
   console.log("");
   console.log("| Key | Value |");
   console.log("| --- | --- |");
-  console.log(`| Benchmark | ${manifest.benchmark.id} |`);
-  console.log(`| Configuration | ${compareConfigPath ?? "compare.yaml"} |`);
-  console.log(`| Output root | ${outputRootDirectory} |`);
-  console.log(`| Prompts | ${taskPrompts.length} |`);
-  console.log(`| Profiles | ${profiles.length} |`);
-  console.log(`| Variants | ${supportedVariants.length} |`);
-  console.log(`| Unsupported cells | ${unsupportedCells} |`);
-  console.log(`| Requests per cell | ${requestsPerCell} |`);
-  console.log(`| Total cells | ${compareCells} |`);
-  console.log(`| Total requests | ${totalRequests} |`);
-  console.log(`| Parallel requests | ${effectiveConcurrency} |`);
-  console.log(`| Effective timeout | ${effectiveEvalTimeoutMs} ms |`);
+  for (const [key, value] of planRows) {
+    console.log(`| ${key} | ${value} |`);
+  }
   console.log("");
   if (skippedVariants.length > 0) {
     console.log(`- Skipped variants: ${skippedVariants.length}`);
@@ -1107,16 +818,6 @@ function printExecutionPlan({
 
   console.log("Running evaluation with Promptfoo...");
   console.log("");
-}
-
-function resolveCompareEvalTimeoutMs(compareConfig, effectiveConcurrency) {
-  const taskPrompts = getTaskPrompts(compareConfig);
-  const requestsPerCell = compareConfig.evaluation.requests;
-  const profiles = compareConfig.comparison.profiles.length;
-  const variants = compareConfig.comparison.variants.length;
-  const totalRequests = taskPrompts.length * profiles * variants * requestsPerCell;
-  const batches = Math.max(1, Math.ceil(totalRequests / Math.max(1, effectiveConcurrency)));
-  return compareConfig.evaluation.timeoutMs * batches;
 }
 
 function printSkipped(skippedVariants) {
@@ -1131,185 +832,35 @@ function printSkipped(skippedVariants) {
   }
 }
 
-function getScenarioVariantId(scenario) {
-  return scenario.output.labels.variant ?? scenario.id;
-}
-
-function getScenarioVariantDisplayName(scenario) {
-  return scenario.output.labels.variantDisplayName
-    ?? scenario.output.labels.adapterDisplayName
-    ?? getScenarioVariantId(scenario);
-}
-
-function getScenarioProfileId(scenario) {
-  return scenario.output.labels.profileId
-    ?? scenario.output.labels.skillModeId
-    ?? scenario.output.labels.displayName
-    ?? scenario.id;
-}
-
-function getScenarioProfileLabel(scenario) {
-  return scenario.output.labels.profileDisplayName
-    ?? scenario.output.labels.skillDisplayName
-    ?? getScenarioProfileId(scenario);
-}
-
-function resolveScenarioSupport(scenario) {
-  const capabilities = scenario.profile?.capabilities ?? {};
-  const unsupportedFamilies = listUnsupportedCapabilityFamilies(
-    scenario.agent.adapter,
-    capabilities,
-  );
-
-  if (unsupportedFamilies.length > 0) {
-    return {
-      supported: false,
-      reason: `Adapter "${scenario.agent.adapter}" does not yet support compare profile capabilities: ${unsupportedFamilies.join(", ")}.`,
-    };
-  }
-
-  const capabilityValidationError = validateScenarioCapabilities(scenario);
-  if (capabilityValidationError) {
-    return {
-      supported: false,
-      reason: capabilityValidationError,
-    };
-  }
-
-  const systemInstalledSkills = (capabilities.skills ?? []).filter((skill) =>
-    skill.install?.strategy === "system-installed"
-      || skill.source?.type === "system-installed"
-  );
-  if (systemInstalledSkills.length > 0) {
-    return {
-      supported: false,
-      reason: "Strict compare isolation does not yet support system-installed skills in comparison profiles.",
-    };
-  }
-
-  return { supported: true };
-}
-
-function listUnsupportedCapabilityFamilies(adapterId, capabilities) {
-  const unsupportedFamilies = [];
-  const supportedFamilies = getSupportedCapabilityFamilies(adapterId);
-
-  for (const family of ["instructions", "agents", "hooks", "mcp", "extensions", "plugins"]) {
-    if (
-      Array.isArray(capabilities[family])
-      && capabilities[family].length > 0
-      && !supportedFamilies.has(family)
-    ) {
-      unsupportedFamilies.push(family);
-    }
-  }
-
-  return unsupportedFamilies;
-}
-
-function getSupportedCapabilityFamilies(adapterId) {
-  switch (adapterId) {
-    case "codex":
-      return new Set(["instructions", "skills"]);
-    case "copilot-cli":
-      return new Set(["instructions", "skills", "agents", "hooks"]);
-    case "pi":
-      return new Set(["skills"]);
-    default:
-      return new Set(["skills"]);
-  }
-}
-
-function validateScenarioCapabilities(scenario) {
-  if (scenario.agent.adapter === "copilot-cli") {
-    return validateCopilotCapabilities(scenario.profile?.capabilities ?? {});
-  }
-
-  return validateMaterializedCapabilities(scenario.profile?.capabilities ?? {}, ["instructions"]);
-}
-
-function validateCopilotCapabilities(capabilities) {
-  const agentError = validateSingleAgentCapability(capabilities.agents ?? []);
-  if (agentError) {
-    return agentError;
-  }
-
-  return validateMaterializedCapabilities(capabilities, ["instructions", "agents", "hooks"]);
-}
-
-function validateSingleAgentCapability(agents) {
-  if (!Array.isArray(agents) || agents.length === 0) {
-    return null;
-  }
-
-  if (agents.length > 1) {
-    return "Adapter \"copilot-cli\" supports at most one compare profile agent.";
-  }
-
-  const agentId = agents[0]?.agentId;
-  if (typeof agentId !== "string" || agentId.trim() === "") {
-    return "Adapter \"copilot-cli\" requires profile.capabilities.agents[*].agentId.";
-  }
-
-  return null;
-}
-
-function validateMaterializedCapabilities(capabilities, supportedFamilies) {
-  const supportedSourceTypes = new Set(["local-path", "git", "inline-files", "empty"]);
-
-  for (const family of supportedFamilies) {
-    const entries = Array.isArray(capabilities?.[family]) ? capabilities[family] : [];
-
-    for (const [index, entry] of entries.entries()) {
-      const source = entry?.source;
-      if (!source || typeof source !== "object") {
-        return `profile.capabilities.${family}[${index}] must declare a materializable source.`;
-      }
-
-      if (typeof source.type !== "string" || source.type.length === 0) {
-        return `profile.capabilities.${family}[${index}].source.type must be a non-empty string.`;
-      }
-
-      if (!supportedSourceTypes.has(source.type)) {
-        return `profile.capabilities.${family}[${index}].source.type must be one of: local-path, git, inline-files, empty.`;
-      }
-
-      if (source.type !== "empty" && typeof source.target !== "string") {
-        return `profile.capabilities.${family}[${index}].source.target must be defined.`;
-      }
-    }
-  }
-
-  return null;
-}
-
 function printExecutionTotals(mergedSummary, compareSummary) {
   const cells = collectMatrixCells(mergedSummary.matrix);
-  const {
-    requested,
-    completed,
-    passed,
-    failed,
-    errors,
-  } = summarizeExecutionCells(cells);
-  const passRate = requested > 0 ? `${((passed / requested) * 100).toFixed(0)}%` : "0%";
+  const totals = summarizeExecutionCells(cells);
+  const passRate =
+    totals.requested > 0
+      ? `${((totals.passed / totals.requested) * 100).toFixed(0)}%`
+      : "0%";
+
+  const summaryRows = [
+    ["Status", buildExecutionStatus(totals)],
+    ["Eval ID", compareSummary.evalId ?? "N/A"],
+    ["Requested evaluations", totals.requested],
+    ["Completed evaluations", totals.completed],
+    ["Passed", totals.passed],
+    ["Failed", totals.failed],
+    ["Errors", totals.errors],
+    ["Overall rate", `${totals.passed}/${totals.requested} (${passRate})`],
+  ];
 
   console.log("### Overall summary");
   console.log("| Metric | Value |");
   console.log("| --- | --- |");
-  console.log(`| Status | ${buildExecutionStatus({ failed, errors })} |`);
-  console.log(`| Eval ID | ${compareSummary.evalId ?? "N/A"} |`);
-  console.log(`| Requested evaluations | ${requested} |`);
-  console.log(`| Completed evaluations | ${completed} |`);
-  console.log(`| Passed | ${passed} |`);
-  console.log(`| Failed | ${failed} |`);
-  console.log(`| Errors | ${errors} |`);
-  console.log(`| Overall rate | ${passed}/${requested} (${passRate}) |`);
+  for (const [key, value] of summaryRows) {
+    console.log(`| ${key} | ${value} |`);
+  }
 }
 
 function collectMatrixCells(matrix) {
   const cells = [];
-
   for (const row of matrix?.rows ?? []) {
     for (const column of matrix?.columns ?? []) {
       const cell = row.cells?.[column.id];
@@ -1318,32 +869,25 @@ function collectMatrixCells(matrix) {
       }
     }
   }
-
   return cells;
 }
 
 function summarizeExecutionCells(cells) {
-  return cells.reduce((summary, cell) => {
-    summary.requested += cell.requestedRuns ?? 0;
-    summary.completed += cell.completedRuns ?? 0;
-    summary.passed += cell.passedRuns ?? 0;
-    summary.failed += cell.failedRuns ?? 0;
-    summary.errors += cell.errors ?? 0;
-    return summary;
-  }, {
-    requested: 0,
-    completed: 0,
-    passed: 0,
-    failed: 0,
-    errors: 0,
-  });
+  return cells.reduce(
+    (s, cell) => {
+      s.requested += cell.requestedRuns ?? 0;
+      s.completed += cell.completedRuns ?? 0;
+      s.passed += cell.passedRuns ?? 0;
+      s.failed += cell.failedRuns ?? 0;
+      s.errors += cell.errors ?? 0;
+      return s;
+    },
+    { requested: 0, completed: 0, passed: 0, failed: 0, errors: 0 },
+  );
 }
 
 function buildExecutionStatus({ failed, errors }) {
-  if (errors > 0) {
-    return "FAILED (errors)";
-  }
-
+  if (errors > 0) return "FAILED (errors)";
   return failed > 0 ? "FAILED" : "PASS";
 }
 
@@ -1375,143 +919,7 @@ function printCompareArtifactPaths({
   console.log("");
 }
 
-async function executePromptfoo({
-  promptfooConfigPath,
-  promptfooResultsPath,
-  timeoutMs,
-  maxConcurrency,
-  noCache,
-  requests,
-  verbose,
-  executionLogPath,
-}) {
-  const promptfooArgs = buildPromptfooEvalArgs({
-    promptfooConfigPath,
-    promptfooResultsPath,
-    requests,
-    maxConcurrency,
-    noCache,
-  });
-
-  const { executable, executableArgs } = await buildPromptfooCommand(promptfooArgs);
-
-  await new Promise((resolve, reject) => {
-    let timedOut = false;
-    const childProcess = spawn(executable, executableArgs, {
-      cwd: path.dirname(promptfooConfigPath),
-      env: createPromptfooProcessEnvironment(),
-      stdio: ["ignore", "pipe", "pipe"],
-      windowsHide: true,
-    });
-
-    const killTimer = setTimeout(() => {
-      timedOut = true;
-      childProcess.kill("SIGTERM");
-    }, timeoutMs);
-
-    childProcess.on("error", (error) => {
-      clearTimeout(killTimer);
-      reject(error);
-    });
-
-    attachExecutionStream({
-      stream: childProcess.stdout,
-      executionLogPath,
-      verbose,
-      outputWriter: process.stdout,
-    });
-    attachExecutionStream({
-      stream: childProcess.stderr,
-      executionLogPath,
-      verbose,
-      outputWriter: process.stderr,
-    });
-
-    childProcess.on("exit", (code, signal) => {
-      clearTimeout(killTimer);
-
-      if (isSuccessfulPromptfooExitCode(code)) {
-        resolve();
-        return;
-      }
-
-      reject(buildPromptfooExitError({ code, signal, timedOut, timeoutMs }));
-    });
-  });
-}
-
-function buildPromptfooEvalArgs({
-  promptfooConfigPath,
-  promptfooResultsPath,
-  requests,
-  maxConcurrency,
-  noCache,
-}) {
-  const promptfooArgs = [
-    "promptfoo",
-    "eval",
-    "-c",
-    promptfooConfigPath,
-    "--output",
-    promptfooResultsPath,
-    "--repeat",
-    String(requests),
-    "-j",
-    String(maxConcurrency),
-    "--no-progress-bar",
-  ];
-
-  if (noCache) {
-    promptfooArgs.push("--no-cache");
-  }
-
-  return promptfooArgs;
-}
-
-function createPromptfooProcessEnvironment() {
-  return {
-    ...process.env,
-    PROMPTFOO_DISABLE_TELEMETRY: "1",
-    PROMPTFOO_DISABLE_UPDATE: "1",
-  };
-}
-
-function attachExecutionStream({
-  stream,
-  executionLogPath,
-  verbose,
-  outputWriter,
-}) {
-  stream.on("data", (chunk) => {
-    void fs.appendFile(executionLogPath, chunk);
-    if (verbose) {
-      outputWriter.write(chunk);
-    }
-  });
-}
-
-function isSuccessfulPromptfooExitCode(code) {
-  return code === 0 || code === 100;
-}
-
-function buildPromptfooExitError({
-  code,
-  signal,
-  timedOut,
-  timeoutMs,
-}) {
-  if (timedOut) {
-    return new Error(
-      `promptfoo eval timed out after ${timeoutMs} ms and was terminated with signal ${signal ?? "unknown"}.`,
-    );
-  }
-
-  if (signal) {
-    return new Error(`promptfoo eval was terminated with signal ${signal}.`);
-  }
-
-  return new Error(`promptfoo eval exited with code ${code}.`);
-}
+// ── Utilities ──────────────────────────────────────────────────────
 
 async function logExecution(logPath, message) {
   await fs.appendFile(logPath, `[${new Date().toISOString()}] ${message}\n`, "utf8");
@@ -1519,55 +927,6 @@ async function logExecution(logPath, message) {
 
 function formatDurationMs(durationMs) {
   return `${durationMs} ms`;
-}
-
-async function buildPromptfooCommand(args) {
-  const promptfooEntrypoint = fromPackageRoot(
-    "node_modules",
-    "promptfoo",
-    "dist",
-    "src",
-    "entrypoint.js",
-  );
-
-  try {
-    await fs.access(promptfooEntrypoint);
-    return {
-      executable: process.execPath,
-      executableArgs: [promptfooEntrypoint, ...args.slice(1)],
-    };
-  } catch {
-    if (process.platform !== "win32") {
-      return {
-        executable: "npx",
-        executableArgs: args,
-      };
-    }
-
-    return {
-      executable: "cmd.exe",
-      executableArgs: ["/d", "/s", "/c", "npx.cmd", ...args],
-    };
-  }
-}
-
-function applyRuntimeOverrides({
-  compareConfig,
-  requestsOverride,
-  maxConcurrencyOverride,
-}) {
-  if (requestsOverride == null && maxConcurrencyOverride == null) {
-    return compareConfig;
-  }
-
-  return {
-    ...compareConfig,
-    evaluation: {
-      ...compareConfig.evaluation,
-      ...(requestsOverride == null ? {} : { requests: requestsOverride }),
-      ...(maxConcurrencyOverride == null ? {} : { maxConcurrency: maxConcurrencyOverride }),
-    },
-  };
 }
 
 main().catch((error) => {

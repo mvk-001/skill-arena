@@ -162,6 +162,7 @@ export function normalizeOutput(output, index) {
     cost: output.cost ?? null,
     tokenUsage: output.tokenUsage ?? output.gradingResult?.tokensUsed ?? null,
     codeMetricsDelta: metadata.codeMetricsDelta ?? null,
+    executionEventHook: metadata.executionEventHook ?? null,
     error: output.error ?? failureReason ?? null,
   };
 }
@@ -188,41 +189,11 @@ export function buildMergedBenchmarkSummary({
         scenarios: {},
       }));
 
-      const scenarioEntry = promptGroup.scenarios[summary.scenarioId] ?? {
-        scenarioId: summary.scenarioId,
-        scenarioDescription: summary.scenarioDescription,
-        skillMode: summary.skillMode,
-        model: summary.model,
-        outputLabels: summary.outputLabels,
-        outputTags: summary.outputTags,
-        displayName:
-          summary.outputLabels?.reportDisplayName
-          ?? summary.outputLabels?.displayName
-          ?? summary.scenarioId,
-        status: "completed",
-        runs: 0,
-        successes: 0,
-        failures: 0,
-        avgScore: null,
-        avgLatencyMs: null,
-        sampleOutputs: [],
-      };
-
-      scenarioEntry.runs += 1;
-      scenarioEntry.successes += output.success ? 1 : 0;
-      scenarioEntry.failures += output.success === false ? 1 : 0;
-      scenarioEntry.avgScore = averageNumbers(scenarioEntry.avgScore, scenarioEntry.runs, output.score);
-      scenarioEntry.avgLatencyMs = averageNumbers(
-        scenarioEntry.avgLatencyMs,
-        scenarioEntry.runs,
-        output.latencyMs,
+      promptGroup.scenarios[summary.scenarioId] = accumulateScenarioEntry(
+        promptGroup.scenarios[summary.scenarioId],
+        summary,
+        output,
       );
-
-      if (scenarioEntry.sampleOutputs.length < 3 && output.text !== null) {
-        scenarioEntry.sampleOutputs.push(output.text);
-      }
-
-      promptGroup.scenarios[summary.scenarioId] = scenarioEntry;
     }
   }
 
@@ -233,6 +204,44 @@ export function buildMergedBenchmarkSummary({
     scenarioCount: scenarioSummaries.length,
     skippedScenarios,
     prompts: [...promptGroups.values()],
+  };
+}
+
+function accumulateScenarioEntry(existing, summary, output) {
+  const entry = existing ?? createInitialScenarioEntry(summary);
+
+  entry.runs += 1;
+  entry.successes += output.success ? 1 : 0;
+  entry.failures += output.success === false ? 1 : 0;
+  entry.avgScore = averageNumbers(entry.avgScore, entry.runs, output.score);
+  entry.avgLatencyMs = averageNumbers(entry.avgLatencyMs, entry.runs, output.latencyMs);
+
+  if (entry.sampleOutputs.length < 3 && output.text !== null) {
+    entry.sampleOutputs.push(output.text);
+  }
+
+  return entry;
+}
+
+function createInitialScenarioEntry(summary) {
+  return {
+    scenarioId: summary.scenarioId,
+    scenarioDescription: summary.scenarioDescription,
+    skillMode: summary.skillMode,
+    model: summary.model,
+    outputLabels: summary.outputLabels,
+    outputTags: summary.outputTags,
+    displayName:
+      summary.outputLabels?.reportDisplayName ??
+      summary.outputLabels?.displayName ??
+      summary.scenarioId,
+    status: "completed",
+    runs: 0,
+    successes: 0,
+    failures: 0,
+    avgScore: null,
+    avgLatencyMs: null,
+    sampleOutputs: [],
   };
 }
 
@@ -330,12 +339,21 @@ export function renderCompareMatrixReport(mergedSummary) {
 }
 
 function buildScenarioColumns(mergedSummary) {
-  const completedScenarios = new Map();
+  const columns = new Map();
 
-  for (const prompt of mergedSummary.prompts) {
+  collectCompletedScenarioColumns(columns, mergedSummary.prompts);
+  collectSkippedScenarioColumns(columns, mergedSummary.skippedScenarios ?? []);
+
+  return [...columns.values()].sort((left, right) =>
+    left.displayName.localeCompare(right.displayName),
+  );
+}
+
+function collectCompletedScenarioColumns(columns, prompts) {
+  for (const prompt of prompts) {
     for (const scenario of Object.values(prompt.scenarios)) {
-      if (!completedScenarios.has(scenario.scenarioId)) {
-        completedScenarios.set(scenario.scenarioId, {
+      if (!columns.has(scenario.scenarioId)) {
+        columns.set(scenario.scenarioId, {
           scenarioId: scenario.scenarioId,
           displayName: scenario.displayName ?? scenario.scenarioId,
           status: scenario.status ?? "completed",
@@ -343,20 +361,18 @@ function buildScenarioColumns(mergedSummary) {
       }
     }
   }
+}
 
-  for (const scenario of mergedSummary.skippedScenarios ?? []) {
-    if (!completedScenarios.has(scenario.scenarioId)) {
-      completedScenarios.set(scenario.scenarioId, {
+function collectSkippedScenarioColumns(columns, skippedScenarios) {
+  for (const scenario of skippedScenarios) {
+    if (!columns.has(scenario.scenarioId)) {
+      columns.set(scenario.scenarioId, {
         scenarioId: scenario.scenarioId,
         displayName: scenario.displayName ?? scenario.scenarioId,
         status: "skipped",
       });
     }
   }
-
-  return [...completedScenarios.values()].sort((left, right) =>
-    left.displayName.localeCompare(right.displayName),
-  );
 }
 
 function formatScenarioRatio(scenario, status) {
@@ -380,6 +396,10 @@ function getOrCreateMapEntry(map, key, createValue) {
   return map.get(key);
 }
 
+/**
+ * Numerically stable incremental mean using Welford's method.
+ * `count` is the total count *including* the new value.
+ */
 function averageNumbers(currentAverage, count, nextValue) {
   if (typeof nextValue !== "number") {
     return currentAverage;
@@ -389,7 +409,8 @@ function averageNumbers(currentAverage, count, nextValue) {
     return nextValue;
   }
 
-  return ((currentAverage * (count - 1)) + nextValue) / count;
+  // Welford's incremental mean:  mean_n = mean_{n-1} + (x_n - mean_{n-1}) / n
+  return currentAverage + (nextValue - currentAverage) / count;
 }
 
 function formatPercent(value) {
