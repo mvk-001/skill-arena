@@ -68,9 +68,15 @@ Produce a concise compare config that gives:
   otherwise.
 - Set `evaluation.maxConcurrency` explicitly only when the benchmark wants a
   machine-specific value.
-- Prefer two profiles by default: one isolated baseline and one explicit skill profile.
+- Prefer two profiles by default: one isolated `no-skill` profile and one explicit `skill` profile.
 - For every capability profile, define the capability under
   `comparison.profiles[*].capabilities` explicitly.
+- Inside `capabilities.skills`, each entry must use the exact shape
+  `- source: ...` plus `install: ...`. Do not wrap it inside an extra
+  `skill:` object.
+- Always include at least one explicit `workspace.sources` entry when the task
+  provides a base fixture or workspace path. Do not replace it with
+  `sources: []` when the prompt gives a concrete fixture.
 - Keep shared checks in top-level `evaluation.assertions`.
 - Keep row-specific checks under `task.prompts[*].evaluation.assertions`.
 - Write the file to the user-requested path before returning YAML when the task
@@ -90,6 +96,10 @@ Produce a concise compare config that gives:
 
 - Do not invent aliases such as top-level `skillModes`, top-level `variants`,
   `execution`, `sandbox`, `approval`, `webSearch`, or `network`.
+- Do not rename the isolated baseline profile to `baseline` when the task asks
+  for `no-skill`.
+- Do not rename the enabled profile to a custom skill-specific id when the task
+  asks for `skill`.
 - Do not rewrite `task.prompts` into a mapping.
 - Do not move `task`, `workspace`, `evaluation`, or `comparison` under
   `benchmark`.
@@ -329,7 +339,7 @@ evaluation:
   noCache: true
 comparison:
   profiles:
-    - id: baseline
+    - id: no-skill
       description: ...
       isolation:
         inheritSystem: false
@@ -384,6 +394,55 @@ returning:
 - `webSearch:` instead of `webSearchEnabled`
 - `networkAccess:` or `network:` instead of `networkAccessEnabled`
 
+## Environment Variable Support
+
+`workspace.setup.env` and `agent.cliEnv` support arbitrary key-value pairs passed
+to the provider at runtime. Values may contain the `$WORKSPACE` or
+`${WORKSPACE}` placeholder, which is replaced with the absolute path of the
+materialized execution workspace.
+
+### workspace.setup.env
+
+Use `workspace.setup.env` for environment variables shared by every scenario or
+compare cell. Example:
+
+```yaml
+workspace:
+  setup:
+    initializeGit: true
+    env:
+      MY_CONFIG: "$WORKSPACE/config/settings.json"
+      DATA_DIR: "${WORKSPACE}/data"
+      STATIC_FLAG: "1"
+```
+
+### agent.cliEnv (variant-level)
+
+Use `agent.cliEnv` inside a variant or scenario for per-agent environment
+overrides. Example:
+
+```yaml
+variants:
+  - id: codex-mini
+    agent:
+      adapter: codex
+      model: gpt-5.1-codex-mini
+      cliEnv:
+        TOOL_PATH: "$WORKSPACE/bin/tool"
+        DEBUG: "true"
+```
+
+### Precedence
+
+Environment variables are merged in this order (later wins):
+
+1. `workspace.setup.env`
+2. `agent.cliEnv`
+3. Isolation environment (internal, set by the harness)
+
+`$WORKSPACE` interpolation applies after the merge, so it works in values from
+any of these sources.
+
 ## Common Failure Patterns
 
 - Returning commentary such as `Used the skill...` before the YAML.
@@ -415,6 +474,28 @@ skill:
     skillId: my-skill
   install:
     strategy: workspace-overlay
+```
+
+Compare profile form:
+
+```yaml
+comparison:
+  profiles:
+    - id: no-skill
+      isolation:
+        inheritSystem: false
+      capabilities: {}
+    - id: skill
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: fixtures/example/skills/my-skill
+              skillId: my-skill
+            install:
+              strategy: workspace-overlay
 ```
 
 ### `git`

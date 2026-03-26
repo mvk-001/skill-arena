@@ -83,7 +83,7 @@ async function buildSpawnCommand({
   if (process.platform !== "win32") {
     return {
       executable: command,
-      executableArgs: args,
+      executableArgs: args.map((arg) => typeof arg === "object" ? arg.value : arg),
       cleanup: async () => {},
     };
   }
@@ -100,7 +100,7 @@ async function buildSpawnCommand({
 
   return {
     executable: "cmd.exe",
-    executableArgs: ["/d", "/s", "/c", resolveWindowsCommand(command), ...args],
+    executableArgs: ["/d", "/s", "/c", resolveWindowsCommand(command), ...args.map((arg) => typeof arg === "object" ? arg.value : arg)],
     cleanup: async () => {},
   };
 }

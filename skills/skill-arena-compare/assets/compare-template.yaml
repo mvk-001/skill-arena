@@ -18,6 +18,9 @@ workspace:
       target: /
   setup:
     initializeGit: true
+    # env:
+    #   MY_CONFIG: "$WORKSPACE/config/settings.json"
+    #   STATIC_FLAG: "1"
 evaluation:
   assertions:
     - type: llm-rubric
@@ -31,8 +34,8 @@ evaluation:
   noCache: true
 comparison:
   profiles:
-    - id: baseline
-      description: Fully isolated control.
+    - id: no-skill
+      description: Fully isolated control without skills.
       isolation:
         inheritSystem: false
       capabilities: {}

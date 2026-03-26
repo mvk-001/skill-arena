@@ -1211,9 +1211,9 @@ test("skill-arena-compare plan scales eval timeout by batched compare workload",
   );
 
   assert.match(stdout, /\| Unsupported cells \| 0 \|/);
-  assert.match(stdout, /\| Total requests \| 48 \|/);
+  assert.match(stdout, /\| Total requests \| 96 \|/);
   assert.match(stdout, /\| Parallel requests \| 8 \|/);
-  assert.match(stdout, /\| Effective timeout \| 7200000 ms \|/);
+  assert.match(stdout, /\| Effective timeout \| 14400000 ms \|/);
 });
 
 test("compare dry-run rewrites local judge shorthand into a packaged Promptfoo provider", async () => {
@@ -1654,23 +1654,26 @@ test("skill-arena-compare benchmark uses the remote skill and prompt-specific ev
     compareConfig.comparison.profiles.map((profile) => profile.id),
     ["no-skill", "skill"],
   );
-  assert.equal(compareConfig.task.prompts.length, 3);
+  assert.equal(compareConfig.task.prompts.length, 6);
   assert.equal(compareConfig.task.prompts[0].evaluation.assertions.length > 0, true);
   assert.equal(compareConfig.task.prompts[1].id, "sunday-brainstorming-compare-jurisdiction");
   assert.equal(compareConfig.task.prompts[2].id, "sunday-brainstorming-compare-multi-prompt");
+  assert.equal(compareConfig.task.prompts[3].id, "local-skill-with-env");
+  assert.equal(compareConfig.task.prompts[4].id, "inline-skill-copilot-judge");
+  assert.equal(compareConfig.task.prompts[5].id, "multi-profile-file-contains");
   assert.equal(compareConfig.evaluation.requests, 8);
   assert.equal(
     compareConfig.evaluation.assertions.some((assertion) =>
       assertion.type === "javascript"
-      && assertion.value.includes('JSON.stringify(profileIds) === JSON.stringify(["no-skill", "skill"])')
-      && assertion.value.includes("(agents|extensions|hooks|mcp|plugins)")),
+      && assertion.value.includes("hasRuntimeRelativeWorkspace")
+      && assertion.value.includes("forbiddenPatterns")),
     true,
   );
   assert.equal(
-    compareConfig.evaluation.assertions.some((assertion) =>
+    compareConfig.task.prompts[0].evaluation.assertions.some((assertion) =>
       assertion.type === "javascript"
-      && assertion.value.includes('path.resolve(process.cwd(), "deliverables", "compare.yaml")')
-      && assertion.value.includes("fileText.trim() === normalized.trim()")),
+      && assertion.value.includes("skills\\/brainstorming")
+      && assertion.value.includes('normalized.trim().startsWith("schemaVersion:")')),
     true,
   );
 });

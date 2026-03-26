@@ -48,12 +48,15 @@ Keep that exact order when the benchmark expects exact top-level keys.
 - `task.prompts` is a list, not a mapping.
 - Shared assertions stay under top-level `evaluation.assertions`.
 - Prompt-specific assertions stay under `task.prompts[*].evaluation.assertions`.
-- Baseline profiles keep `capabilities: {}`.
+- `no-skill` profiles keep `capabilities: {}` unless the task explicitly asks for a different baseline id.
 - Capability profiles declare explicit entries under `comparison.profiles[*].capabilities`.
 - Workspace overlays include `install.strategy: workspace-overlay`.
 - Local paths are absolute or runtime-relative.
 - The answer starts with `schemaVersion: 1`.
 - The answer contains no backticks.
+- `workspace.setup.env` values using `$WORKSPACE` or `${WORKSPACE}` reference the
+  materialized workspace directory at runtime.
+- `agent.cliEnv` values using `$WORKSPACE` or `${WORKSPACE}` also resolve at runtime.
 
 ## Reject these mistakes
 

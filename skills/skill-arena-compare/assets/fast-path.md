@@ -25,6 +25,8 @@ to lose track of long instructions.
 - Keep shared checks in top-level `evaluation.assertions`.
 - Keep prompt-specific checks under each prompt object.
 - Keep profile capability settings under `comparison.profiles[*].capabilities`.
+- Prefer profile ids `no-skill` and `skill` unless the task explicitly asks for different ids.
+- Inside `capabilities.skills`, use `- source:` and `install:` directly. Do not add an extra `skill:` wrapper.
 - Keep agent settings under `comparison.variants[*].agent`.
 
 ## 3. Avoid the common failures
