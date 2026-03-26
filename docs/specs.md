@@ -180,6 +180,15 @@ Required workspace behavior:
 - `target` is resolved relative to the materialized workspace root.
 - `workspace.setup.initializeGit: true` initializes a Git repository in the run workspace so agent providers can operate with their default safety checks.
 - `workspace.setup.env` defines environment variables for provider execution in that run workspace.
+- Environment variable values in `workspace.setup.env` and `scenario.agent.cliEnv` support the `$WORKSPACE` placeholder. At runtime, every occurrence of `$WORKSPACE` or `${WORKSPACE}` in a value string is replaced with the absolute path of the materialized execution workspace. This lets benchmark authors declare paths relative to the workspace without knowing the actual runtime directory:
+
+```yaml
+workspace:
+  setup:
+    env:
+      MY_CONFIG: "$WORKSPACE/config/settings.json"
+      DATA_DIR: "${WORKSPACE}/data"
+```
 
 ### Skill model
 

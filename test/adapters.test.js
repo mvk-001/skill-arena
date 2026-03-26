@@ -253,3 +253,101 @@ test("buildPromptfooProvider rejects copilot compare agents without agentId", ()
     },
   }), /requires profile\.capabilities\.agents\[\*\]\.agentId/);
 });
+
+test("buildPromptfooProvider interpolates $WORKSPACE in workspace env, cliEnv, and isolated env values", () => {
+  const provider = buildPromptfooProvider({
+    workspaceDirectory: "C:/runs/workspace-42",
+    workspaceEnvironment: {
+      MY_CONFIG: "$WORKSPACE/config/settings.json",
+      PLAIN_VAR: "no-placeholder",
+    },
+    isolatedEnvironment: {
+      ISOLATED_PATH: "${WORKSPACE}/isolated/path",
+    },
+    gitReady: true,
+    scenario: {
+      agent: {
+        adapter: "codex",
+        executionMethod: "command",
+        commandPath: "codex",
+        model: "gpt-5.1-codex-mini",
+        sandboxMode: "read-only",
+        approvalPolicy: "never",
+        webSearchEnabled: false,
+        networkAccessEnabled: false,
+        reasoningEffort: "low",
+        additionalDirectories: [],
+        cliEnv: {
+          CLI_PATH: "$WORKSPACE/bin/tool",
+          MULTI: "$WORKSPACE/a:$WORKSPACE/b",
+        },
+        config: {},
+      },
+      evaluation: {
+        tracing: false,
+      },
+    },
+  });
+
+  const env = provider.config.cli_env;
+
+  // workspace.setup.env values
+  assert.equal(env.MY_CONFIG, "C:/runs/workspace-42/config/settings.json");
+  assert.equal(env.PLAIN_VAR, "no-placeholder");
+
+  // scenario.agent.cliEnv values
+  assert.equal(env.CLI_PATH, "C:/runs/workspace-42/bin/tool");
+  assert.equal(env.MULTI, "C:/runs/workspace-42/a:C:/runs/workspace-42/b");
+
+  // isolated env with ${WORKSPACE} brace form
+  assert.equal(env.ISOLATED_PATH, "C:/runs/workspace-42/isolated/path");
+});
+
+test("buildPromptfooProvider interpolates $WORKSPACE for copilot-cli and pi adapters", () => {
+  const baseContext = {
+    workspaceDirectory: "/tmp/ws",
+    workspaceEnvironment: {
+      DATA_DIR: "$WORKSPACE/data",
+    },
+    isolatedEnvironment: {},
+    gitReady: true,
+  };
+
+  const copilotProvider = buildPromptfooProvider({
+    ...baseContext,
+    scenario: {
+      agent: {
+        adapter: "copilot-cli",
+        commandPath: "copilot",
+        model: "gpt-5",
+        sandboxMode: "read-only",
+        approvalPolicy: "never",
+        webSearchEnabled: false,
+        networkAccessEnabled: false,
+        reasoningEffort: "low",
+        additionalDirectories: [],
+        cliEnv: { TOOL_PATH: "${WORKSPACE}/tools/lint" },
+        config: {},
+      },
+      evaluation: { tracing: false },
+    },
+  });
+
+  const piProvider = buildPromptfooProvider({
+    ...baseContext,
+    scenario: {
+      agent: {
+        adapter: "pi",
+        commandPath: "pi",
+        model: "github-copilot/gpt-5-mini",
+        cliEnv: { SCRIPT: "$WORKSPACE/run.sh" },
+      },
+      evaluation: { tracing: false },
+    },
+  });
+
+  assert.equal(copilotProvider.config.cli_env.DATA_DIR, "/tmp/ws/data");
+  assert.equal(copilotProvider.config.cli_env.TOOL_PATH, "/tmp/ws/tools/lint");
+  assert.equal(piProvider.config.cli_env.DATA_DIR, "/tmp/ws/data");
+  assert.equal(piProvider.config.cli_env.SCRIPT, "/tmp/ws/run.sh");
+});

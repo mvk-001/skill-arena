@@ -35,6 +35,7 @@ const adapterRegistry = {
             workspaceEnvironment,
             scenario.agent.cliEnv,
             isolatedEnvironment,
+            workspaceDirectory,
           ),
           enable_streaming: scenario.evaluation.tracing,
           deep_tracing: scenario.evaluation.tracing,
@@ -77,6 +78,7 @@ const adapterRegistry = {
             workspaceEnvironment,
             scenario.agent.cliEnv,
             isolatedEnvironment,
+            workspaceDirectory,
           ),
           copilot_config: buildCopilotConfig({
             scenario,
@@ -105,6 +107,7 @@ const adapterRegistry = {
             workspaceEnvironment,
             scenario.agent.cliEnv,
             isolatedEnvironment,
+            workspaceDirectory,
           ),
           allowed_skills: getAllowedSkillIds(isolatedEnvironment),
           disable_other_skills: resolveSkillStrategy(scenario) !== "system-installed",
@@ -238,12 +241,49 @@ function buildProviderId(adapterId, ...parts) {
   return [adapterId, ...parts.map((part) => part ?? "default")].join(":");
 }
 
-function buildCliEnvironment(workspaceEnvironment, cliEnvironment, isolatedEnvironment) {
-  return {
+function buildCliEnvironment(workspaceEnvironment, cliEnvironment, isolatedEnvironment, workspaceDirectory) {
+  const merged = {
     ...workspaceEnvironment,
     ...cliEnvironment,
     ...(isolatedEnvironment ?? {}),
   };
+
+  if (workspaceDirectory) {
+    return interpolateWorkspacePlaceholders(merged, workspaceDirectory);
+  }
+
+  return merged;
+}
+
+/**
+ * Replace `$WORKSPACE` placeholders in environment variable values with the
+ * actual workspace directory path.  This allows benchmark authors to declare
+ * paths relative to the materialized workspace, for example:
+ *
+ * ```yaml
+ * workspace:
+ *   setup:
+ *     env:
+ *       MY_CONFIG: "$WORKSPACE/config/settings.json"
+ * ```
+ *
+ * The placeholder `$WORKSPACE` (case-sensitive, no braces required) is
+ * replaced everywhere it appears in a value string.  The literal form
+ * `${WORKSPACE}` is also supported for consistency with common shell
+ * conventions.
+ */
+function interpolateWorkspacePlaceholders(envMap, workspaceDirectory) {
+  const result = {};
+
+  for (const [key, value] of Object.entries(envMap)) {
+    result[key] = typeof value === "string"
+      ? value
+          .replaceAll("${WORKSPACE}", workspaceDirectory)
+          .replaceAll("$WORKSPACE", workspaceDirectory)
+      : value;
+  }
+
+  return result;
 }
 
 export function getAdapter(adapterId) {

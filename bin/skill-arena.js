@@ -13,7 +13,6 @@ const commandMap = {
   evaluate: fromPackageRoot("src", "cli", "run-evaluate.js"),
   "gen-conf": fromPackageRoot("src", "cli", "generate-compare-template.js"),
   "val-conf": fromPackageRoot("src", "cli", "validate-manifest.js"),
-  "val-gen": fromPackageRoot("src", "cli", "validate-manifest.js"),
 };
 
 const commandDetails = {
@@ -90,16 +89,6 @@ const commandDetails = {
       "--output ./benchmarks/my-benchmark/evaluate.yaml --prompt \"create an evaluation config\" --skill-type local-path",
     ],
   },
-  "val-gen": {
-    usage: "val-gen <benchmark-config-path>",
-    description: "Alias for val-conf.",
-    options: [
-      "--help: show val-conf usage",
-    ],
-    examples: [
-      "./benchmarks/skill-arena-compare/compare.yaml",
-    ],
-  },
   "val-conf": {
     usage: "val-conf <benchmark-config-path>",
     description: "Validate a manifest or matrix evaluation config and print a normalized summary.",
@@ -112,7 +101,7 @@ const commandDetails = {
   },
 };
 
-const commandOrder = ["evaluate", "gen-conf", "val-conf", "val-gen"];
+const commandOrder = ["evaluate", "gen-conf", "val-conf"];
 
 if (!command || command === "--help" || command === "-h") {
   printUsage();

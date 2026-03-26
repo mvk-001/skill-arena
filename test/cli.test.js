@@ -57,6 +57,13 @@ test("val-conf command shows inline help", async () => {
   assert.match(output, /Validate a manifest or matrix evaluation config and print a normalized summary/);
 });
 
+test("val-gen is no longer a supported command", async () => {
+  await assert.rejects(
+    () => execFileAsync(process.execPath, [binPath, "val-gen"]),
+    /Unknown command "val-gen"/,
+  );
+});
+
 test("gen-conf command shows inline help", async () => {
   const { stdout, stderr } = await execFileAsync(process.execPath, [binPath, "gen-conf", "--help"]);
   const output = commandOutput(stdout, stderr);
