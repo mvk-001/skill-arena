@@ -38,6 +38,9 @@ test("runtime isolation seeds Codex home with only shared system state for codex
     });
 
     assert.equal(isolation.environment.SKILL_ARENA_ALLOWED_SKILLS, "");
+    assert.equal(isolation.environment.TEMP, path.join(executionRootDirectory, "tmp"));
+    assert.equal(isolation.environment.TMP, path.join(executionRootDirectory, "tmp"));
+    assert.equal(isolation.environment.TMPDIR, path.join(executionRootDirectory, "tmp"));
     assert.match(await fs.readFile(path.join(isolation.codexHome, "auth.json"), "utf8"), /token/);
     assert.equal(await fs.stat(path.join(isolation.codexHome, "AGENTS.md")).catch(() => null), null);
     assert.equal(await fs.stat(path.join(isolation.codexHome, "skills", "user-skill")).catch(() => null), null);
@@ -101,6 +104,7 @@ test("runtime isolation reports declared profile skills as the only allowed visi
   });
 
   assert.equal(isolation.environment.SKILL_ARENA_ALLOWED_SKILLS, "alpha,beta");
+  assert.equal(isolation.environment.TEMP, path.join(executionRootDirectory, "tmp"));
 });
 
 test("runtime isolation seeds pi home with local auth and settings", async () => {

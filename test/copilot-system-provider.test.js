@@ -294,3 +294,38 @@ test("copilot provider writes an execution-event hook artifact", async () => {
   assert.equal(payload.adapter, "copilot-cli");
   assert.equal(payload.toolEvents[0].type, "tool.call");
 });
+
+test("copilot provider does not inherit arbitrary host environment variables", () => {
+  const previousHostLeak = process.env.SKILL_ARENA_HOST_LEAK;
+  const previousPath = process.env.PATH;
+  process.env.SKILL_ARENA_HOST_LEAK = "should-not-leak";
+  process.env.PATH = "C:/tooling";
+
+  try {
+    const provider = new CopilotSystemProvider({
+      config: {
+        working_dir: "C:/temp/workspace",
+        cli_env: {
+          HOME: "C:/isolated/home",
+        },
+      },
+    });
+
+    const environment = provider.buildEnvironment();
+    assert.equal(environment.SKILL_ARENA_HOST_LEAK, undefined);
+    assert.equal(environment.PATH, "C:/tooling");
+    assert.equal(environment.HOME, "C:/isolated/home");
+  } finally {
+    if (previousHostLeak == null) {
+      delete process.env.SKILL_ARENA_HOST_LEAK;
+    } else {
+      process.env.SKILL_ARENA_HOST_LEAK = previousHostLeak;
+    }
+
+    if (previousPath == null) {
+      delete process.env.PATH;
+    } else {
+      process.env.PATH = previousPath;
+    }
+  }
+});

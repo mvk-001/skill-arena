@@ -76,6 +76,7 @@ test("workspace materialization starts each isolated execution workspace clean",
     firstWorkspace.executionWorkspaceDirectory,
     secondWorkspace.executionWorkspaceDirectory,
   );
+  assert.notEqual(firstWorkspace.runDirectory, secondWorkspace.runDirectory);
 });
 
 test("skill overlays are applied only when skill mode is enabled", async () => {

@@ -4,6 +4,7 @@ import {
   withPromptPlaceholder,
 } from "./command-process.js";
 import { parseJsonLines, writeExecutionEventHook } from "./execution-event-hook.js";
+import { buildIsolatedProviderEnvironment } from "./provider-environment.js";
 import { assertRequiredConfig } from "./provider-validation.js";
 import { withRetry } from "./retry.js";
 
@@ -106,10 +107,7 @@ export default class PiSystemProvider {
   }
 
   buildEnvironment() {
-    return {
-      ...process.env,
-      ...this.config.cli_env,
-    };
+    return buildIsolatedProviderEnvironment(this.config.cli_env);
   }
 }
 

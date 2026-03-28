@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import crypto from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
@@ -459,5 +460,5 @@ async function initializeGitRepository(workspaceDirectory) {
 
 function createRunId(scenarioId) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  return `${timestamp}-${scenarioId}`;
+  return `${timestamp}-${crypto.randomUUID()}-${scenarioId}`;
 }

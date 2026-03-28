@@ -1,10 +1,13 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 
 import { Codex } from "@openai/codex-sdk";
 import { parseJsonLines, writeExecutionEventHook } from "./execution-event-hook.js";
 import { spawnProviderCommand } from "./command-process.js";
+import {
+  buildIsolatedProviderEnvironment,
+  resolveProcessTempDirectory,
+} from "./provider-environment.js";
 import { assertRequiredConfig } from "./provider-validation.js";
 import { withRetry } from "./retry.js";
 
@@ -88,7 +91,7 @@ export default class CodexSystemProvider {
     this.assertCommandConfiguration();
 
     const outputDirectory = await fs.mkdtemp(
-      path.join(os.tmpdir(), "skill-arena-codex-command-"),
+      path.join(resolveProcessTempDirectory(this.config.cli_env), "skill-arena-codex-command-"),
     );
     const outputFile = path.join(outputDirectory, "final-response.txt");
 
@@ -202,10 +205,7 @@ export default class CodexSystemProvider {
   }
 
   buildEnvironment() {
-    return {
-      ...process.env,
-      ...this.config.cli_env,
-    };
+    return buildIsolatedProviderEnvironment(this.config.cli_env);
   }
 
   assertCommandConfiguration() {

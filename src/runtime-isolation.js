@@ -4,6 +4,7 @@ import path from "node:path";
 
 export async function createRuntimeIsolation(executionRootDirectory, scenario = null) {
   const homeDirectory = path.join(executionRootDirectory, "home");
+  const tempDirectory = path.join(executionRootDirectory, "tmp");
   const userProfileDirectory = path.join(executionRootDirectory, "user-profile");
   const appDataDirectory = path.join(userProfileDirectory, "AppData", "Roaming");
   const localAppDataDirectory = path.join(userProfileDirectory, "AppData", "Local");
@@ -23,6 +24,7 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
   await prepareIsolationFilesystem({
     executionRootDirectory,
     homeDirectory,
+    tempDirectory,
     userProfileDirectory,
     appDataDirectory,
     localAppDataDirectory,
@@ -52,6 +54,7 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
     executionRootDirectory,
     homeDirectory,
     codexHome,
+    tempDirectory,
     environment: {
       APPDATA: appDataDirectory,
       CODEX_HOME: codexHome,
@@ -68,6 +71,9 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
       SKILL_ARENA_ISOLATION: "strict",
       SKILL_ARENA_ISOLATED_HOME: homeDirectory,
       SKILL_ARENA_ALLOWED_SKILLS: allowedSkills.join(","),
+      TEMP: tempDirectory,
+      TMP: tempDirectory,
+      TMPDIR: tempDirectory,
     },
   };
 }

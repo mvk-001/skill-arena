@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { resolveProcessTempDirectory } from "./provider-environment.js";
 
 export async function spawnProviderCommand({
   command,
@@ -117,7 +117,7 @@ async function buildWindowsPowerShellCommand({
   promptDirectoryPrefix,
 }) {
   const promptDirectory = await fs.mkdtemp(
-    path.join(os.tmpdir(), promptDirectoryPrefix),
+    path.join(resolveProcessTempDirectory(env), promptDirectoryPrefix),
   );
   const promptPath = path.join(promptDirectory, "prompt.txt");
   await fs.writeFile(promptPath, promptText, "utf8");
