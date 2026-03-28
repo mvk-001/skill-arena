@@ -225,6 +225,25 @@ test("updateCellEntry increments success and pass rate", () => {
   assert.equal(cell.sampleOutputs.length, 2);
 });
 
+test("updateCellEntry does not count assertion failures as execution errors", () => {
+  const cell = createMatrixCellEntry(null, 1);
+
+  updateCellEntry({
+    cellEntry: cell,
+    output: {
+      success: false,
+      error: "Custom function returned false\nreturn false;",
+      text: "nope",
+      tokenUsage: null,
+      codeMetricsDelta: null,
+    },
+    evaluationRequests: 1,
+  });
+
+  assert.equal(cell.failedRuns, 1);
+  assert.equal(cell.errors, 0);
+});
+
 test("updateCellEntry limits sample outputs to 3", () => {
   const cell = createMatrixCellEntry(null, 5);
 
@@ -362,6 +381,23 @@ test("buildScenarioStats summarizes outputs", () => {
   assert.equal(stats.errors, 1);
   assert.equal(stats.durationMs, 350);
   assert.equal(stats.evaluationDurationMs, 350);
+});
+
+test("buildScenarioStats ignores assertion-false bookkeeping errors", () => {
+  const outputs = [
+    {
+      success: false,
+      error: "Custom function returned false\nreturn false;",
+      latencyMs: 200,
+    },
+  ];
+
+  const stats = buildScenarioStats(outputs);
+
+  assert.equal(stats.successes, 0);
+  assert.equal(stats.failures, 1);
+  assert.equal(stats.errors, 0);
+  assert.equal(stats.durationMs, 200);
 });
 
 test("buildScenarioStats handles empty outputs", () => {

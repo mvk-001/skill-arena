@@ -241,7 +241,7 @@ export function updateCellEntry({ cellEntry, output, evaluationRequests }) {
   cellEntry.completedRuns += 1;
   cellEntry.passedRuns += output.success ? 1 : 0;
   cellEntry.failedRuns += output.success === false ? 1 : 0;
-  cellEntry.errors += output.error ? 1 : 0;
+  cellEntry.errors += isExecutionError(output) ? 1 : 0;
   cellEntry.passRate =
     evaluationRequests > 0 ? cellEntry.passedRuns / evaluationRequests : 0;
   cellEntry.tokenUsage = buildTokenUsageSummary(
@@ -492,7 +492,7 @@ export function buildScenarioStats(outputs) {
     (summary, output) => {
       summary.successes += output.success ? 1 : 0;
       summary.failures += output.success === false ? 1 : 0;
-      summary.errors += output.error ? 1 : 0;
+      summary.errors += isExecutionError(output) ? 1 : 0;
       summary.durationMs +=
         typeof output.latencyMs === "number" ? output.latencyMs : 0;
       return summary;
@@ -501,4 +501,20 @@ export function buildScenarioStats(outputs) {
   );
 
   return { ...stats, evaluationDurationMs: stats.durationMs };
+}
+
+function isExecutionError(output) {
+  if (!output?.error) {
+    return false;
+  }
+
+  if (
+    output.success === false &&
+    typeof output.error === "string" &&
+    output.error.startsWith("Custom function returned false")
+  ) {
+    return false;
+  }
+
+  return true;
 }
