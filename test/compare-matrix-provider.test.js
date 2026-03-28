@@ -118,6 +118,8 @@ test("compare matrix provider loads and caches routed provider instances", async
     assert.equal(firstResult.output, "PROMPT:variant-a");
     assert.equal(firstResult.metadata.scenarioId, "scenario-a");
     assert.equal(firstResult.metadata.scenarioDescription, "Scenario A");
+    assert.equal(firstResult.metadata.workspaceDirectory, workspaceDirectory);
+    assert.equal(firstResult.metadata.workingDirectory, workspaceDirectory);
     assert.equal(firstResult.metadata.variantDisplayName, "Variant A");
     assert.equal(firstResult.metadata.instanceCount, 1);
     assert.equal(firstResult.metadata.providerValue, "provider-config");

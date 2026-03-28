@@ -50,6 +50,34 @@ test("workspace materialization copies the fixture tree", async () => {
   assert.match(workspace.executionEnvironment.CODEX_HOME, /skill-arena-execution-|skill-arena-run-/);
 });
 
+test("workspace materialization starts each isolated execution workspace clean", async () => {
+  const manifestPath = fromProjectRoot(
+    "benchmarks",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = findScenario(manifest, "codex-mini-no-skill");
+
+  const firstWorkspace = await materializeWorkspace({ manifest, scenario });
+  await fs.writeFile(
+    path.join(firstWorkspace.executionWorkspaceDirectory, "notes", "ephemeral.txt"),
+    "leftover\n",
+    "utf8",
+  );
+
+  const secondWorkspace = await materializeWorkspace({ manifest, scenario });
+  const leftoverStats = await fs.stat(
+    path.join(secondWorkspace.executionWorkspaceDirectory, "notes", "ephemeral.txt"),
+  ).catch(() => null);
+
+  assert.equal(leftoverStats, null);
+  assert.notEqual(
+    firstWorkspace.executionWorkspaceDirectory,
+    secondWorkspace.executionWorkspaceDirectory,
+  );
+});
+
 test("skill overlays are applied only when skill mode is enabled", async () => {
   const manifestPath = fromProjectRoot(
     "benchmarks",

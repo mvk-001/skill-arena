@@ -114,6 +114,26 @@ test("file-contains assertions become Promptfoo javascript assertions", async ()
   assert.match(config.tests[0].assert[0].value, /process\.getBuiltinModule\('node:fs'\)/);
   assert.match(config.tests[0].assert[0].value, /^const fs =/);
   assert.match(config.tests[0].assert[0].value, /return fileContents\.includes/);
+  assert.match(config.tests[0].assert[0].value, /error\?\.code === 'ENOENT'/);
+});
+
+test("file-contains assertions can resolve from the active compare provider workspace", () => {
+  const assertion = toPromptfooAssertion(
+    {
+      type: "file-contains",
+      path: "notes/target.txt",
+      value: "ALPHA-42",
+    },
+    "C:/temp/workspace",
+    { resolveFromProviderWorkspace: true },
+  );
+
+  assert.equal(assertion.type, "javascript");
+  assert.match(assertion.value, /context\?\.providerResponse\?\.metadata\?\.workspaceDirectory/);
+  assert.match(assertion.value, /process\.getBuiltinModule\('node:path'\)/);
+  assert.match(assertion.value, /path\.resolve\(workspaceDirectory, "notes\/target\.txt"\)/);
+  assert.match(assertion.value, /error\?\.code === 'ENOENT'/);
+  assert.doesNotMatch(assertion.value, /C:\\\/temp\\\/workspace|C:\/temp\/workspace/);
 });
 
 test("llm-rubric assertions pass through to Promptfoo", async () => {

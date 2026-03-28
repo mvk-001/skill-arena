@@ -47,6 +47,8 @@ export default class CompareMatrixProvider {
         ...(codeMetricsDelta ? { codeMetricsDelta } : {}),
         scenarioId: route.scenarioId,
         scenarioDescription: route.provider?.config?.scenario_description ?? null,
+        workspaceDirectory: route.provider?.config?.working_dir ?? null,
+        workingDirectory: route.provider?.config?.working_dir ?? null,
         variantId,
         variantDisplayName: context?.vars?.variantDisplayName
           ?? context?.test?.metadata?.variantDisplayName

@@ -21,7 +21,11 @@ import {
 import { mapWithConcurrency, resolveEvaluationConcurrency } from "../concurrency.js";
 import { ensureCompareScenarioLocalPaths } from "../compare-bootstrap.js";
 import { fromPackageRoot } from "../project-paths.js";
-import { materializeWorkspace, syncExecutionWorkspaceToArtifacts } from "../workspace.js";
+import {
+  clearGitSourceCache,
+  materializeWorkspace,
+  syncExecutionWorkspaceToArtifacts,
+} from "../workspace.js";
 import { ensureKnownLongOptions, parsePositiveIntegerOption } from "./cli-options.js";
 import { resolveScenarioSupport } from "../capability-validation.js";
 import {
@@ -161,104 +165,115 @@ async function main() {
     return;
   }
 
-  const promptfooStartMs = Date.now();
-  await executePromptfoo({
-    promptfooConfigPath,
-    promptfooResultsPath,
-    timeoutMs: effectiveEvalTimeoutMs,
-    maxConcurrency: effectiveConcurrency,
-    noCache: compareConfig.evaluation.noCache,
-    requests: compareConfig.evaluation.requests,
-    verbose: verboseOutput,
-    executionLogPath,
-  });
-  await logExecution(
-    executionLogPath,
-    `promptfoo eval completed in ${formatDurationMs(Date.now() - promptfooStartMs)}`,
-  );
-  await mapWithConcurrency(
-    supportedRuns,
-    effectiveConcurrency,
-    async ({ workspace }) => {
-      await syncExecutionWorkspaceToArtifacts(workspace);
-      await fs.rm(workspace.executionRootDirectory, { recursive: true, force: true }).catch(() => {});
-    },
-  );
-
-  const normalizeStartMs = Date.now();
-  const compareSummary = await normalizeComparePromptfooResults({
-    manifest,
-    supportedRuns,
-    promptfooResultsPath,
-    compareRunDirectory: benchmarkRunDirectory,
-    evaluationRequests: compareConfig.evaluation.requests,
-    skippedCells,
-  });
-  await logExecution(
-    executionLogPath,
-    `result normalization completed in ${formatDurationMs(Date.now() - normalizeStartMs)}`,
-  );
-
-  await writePromptfooArtifacts({
-    runDirectory: benchmarkRunDirectory,
-    promptfooConfigYaml,
-    promptfooResultsPath,
-    promptfooJsonPath: promptfooResultsPath,
-    summary: compareSummary,
-  });
-
-  const mergedSummary = buildCompareMatrixSummary({
-    manifest,
-    matrix: compareSummary.matrix,
-    skippedVariants,
-    unsupportedCells: compareSummary.unsupportedCells,
-    generatedAt: new Date().toISOString(),
-  });
-  const cliReport = renderCompareMatrixReport(mergedSummary);
-  const mergedArtifacts = await writeMergedBenchmarkArtifacts({
-    benchmarkId: manifest.benchmark.id,
-    benchmarkRunDirectory: path.join(benchmarkRunDirectory, "merged"),
-    mergedSummary,
-    cliReport,
-  });
-  await logExecution(executionLogPath, `merged artifacts written to ${mergedArtifacts.reportPath}`);
-
-  console.log("## Evaluation Result");
-  console.log("");
-  console.log(cliReport);
-  console.log("");
-  printExecutionTotals(mergedSummary, compareSummary);
-  printSkipped(skippedVariants);
-  if (verboseOutput) {
-    printCompareArtifactPaths({
-      compareRunDirectory: benchmarkRunDirectory,
+  try {
+    const promptfooStartMs = Date.now();
+    await executePromptfoo({
       promptfooConfigPath,
       promptfooResultsPath,
-      summaryPath,
+      timeoutMs: effectiveEvalTimeoutMs,
+      maxConcurrency: effectiveConcurrency,
+      noCache: compareConfig.evaluation.noCache,
+      requests: compareConfig.evaluation.requests,
+      verbose: verboseOutput,
       executionLogPath,
-      mergedArtifacts,
     });
-    console.log("");
-    console.log("## Raw Output");
-    console.log(JSON.stringify({
-      compareRunDirectory: benchmarkRunDirectory,
-      promptfooConfigPath,
+    await logExecution(
+      executionLogPath,
+      `promptfoo eval completed in ${formatDurationMs(Date.now() - promptfooStartMs)}`,
+    );
+    await mapWithConcurrency(
+      supportedRuns,
+      effectiveConcurrency,
+      async ({ workspace }) => {
+        await syncExecutionWorkspaceToArtifacts(workspace);
+        await fs.rm(workspace.executionRootDirectory, { recursive: true, force: true }).catch(() => {});
+      },
+    );
+
+    const normalizeStartMs = Date.now();
+    const compareSummary = await normalizeComparePromptfooResults({
+      manifest,
+      supportedRuns,
       promptfooResultsPath,
-      summaryPath,
-      mergedArtifacts,
-      results: [
-        ...compareSummary.matrix.rows.map((row) => ({
-          rowId: row.rowId,
-          summaryPath: path.join(benchmarkRunDirectory, "summary.json"),
-          skipped: false,
-        })),
-        ...skippedVariants.map((result) => ({
-          variantId: result.variantId,
-          skipped: true,
-          reason: result.reason,
-        })),
-      ],
-    }, null, 2));
+      compareRunDirectory: benchmarkRunDirectory,
+      evaluationRequests: compareConfig.evaluation.requests,
+      skippedCells,
+    });
+    await logExecution(
+      executionLogPath,
+      `result normalization completed in ${formatDurationMs(Date.now() - normalizeStartMs)}`,
+    );
+
+    await writePromptfooArtifacts({
+      runDirectory: benchmarkRunDirectory,
+      promptfooConfigYaml,
+      promptfooResultsPath,
+      promptfooJsonPath: promptfooResultsPath,
+      summary: compareSummary,
+    });
+
+    const mergedSummary = buildCompareMatrixSummary({
+      manifest,
+      matrix: compareSummary.matrix,
+      skippedVariants,
+      unsupportedCells: compareSummary.unsupportedCells,
+      generatedAt: new Date().toISOString(),
+    });
+    const cliReport = renderCompareMatrixReport(mergedSummary);
+    const mergedArtifacts = await writeMergedBenchmarkArtifacts({
+      benchmarkId: manifest.benchmark.id,
+      benchmarkRunDirectory: path.join(benchmarkRunDirectory, "merged"),
+      mergedSummary,
+      cliReport,
+    });
+    await logExecution(executionLogPath, `merged artifacts written to ${mergedArtifacts.reportPath}`);
+
+    console.log("## Evaluation Result");
+    console.log("");
+    console.log(cliReport);
+    console.log("");
+    printExecutionTotals(mergedSummary, compareSummary);
+    printSkipped(skippedVariants);
+    if (verboseOutput) {
+      printCompareArtifactPaths({
+        compareRunDirectory: benchmarkRunDirectory,
+        promptfooConfigPath,
+        promptfooResultsPath,
+        summaryPath,
+        executionLogPath,
+        mergedArtifacts,
+      });
+      console.log("");
+      console.log("## Raw Output");
+      console.log(JSON.stringify({
+        compareRunDirectory: benchmarkRunDirectory,
+        promptfooConfigPath,
+        promptfooResultsPath,
+        summaryPath,
+        mergedArtifacts,
+        results: [
+          ...compareSummary.matrix.rows.map((row) => ({
+            rowId: row.rowId,
+            summaryPath: path.join(benchmarkRunDirectory, "summary.json"),
+            skipped: false,
+          })),
+          ...skippedVariants.map((result) => ({
+            variantId: result.variantId,
+            skipped: true,
+            reason: result.reason,
+          })),
+        ],
+      }, null, 2));
+    }
+  } finally {
+    await mapWithConcurrency(
+      supportedRuns,
+      effectiveConcurrency,
+      async ({ workspace }) => {
+        await fs.rm(workspace.executionRootDirectory, { recursive: true, force: true }).catch(() => {});
+      },
+    );
+    clearGitSourceCache();
   }
 }
 
@@ -478,6 +493,7 @@ function buildTestEntry(variant, taskPrompt, manifest, evaluation, runs) {
       toPromptfooAssertion(
         assertion,
         runs[0].workspace.executionWorkspaceDirectory ?? runs[0].workspace.workspaceDirectory,
+        { resolveFromProviderWorkspace: true },
       ),
     ),
   };

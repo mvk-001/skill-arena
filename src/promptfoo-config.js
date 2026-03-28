@@ -84,7 +84,7 @@ export function resolvePromptAssertions({ defaultAssertions, taskPrompt }) {
   return [...defaultAssertions, ...taskPrompt.evaluation.assertions];
 }
 
-export function toPromptfooAssertion(assertion, workspaceDirectory) {
+export function toPromptfooAssertion(assertion, workspaceDirectory, options = {}) {
   switch (assertion.type) {
     case "equals":
     case "contains":
@@ -100,17 +100,48 @@ export function toPromptfooAssertion(assertion, workspaceDirectory) {
           : {}),
       };
     case "file-contains": {
-      const filePath = path.resolve(workspaceDirectory, assertion.path);
-      const escapedFilePath = JSON.stringify(filePath);
+      const escapedRelativePath = JSON.stringify(assertion.path);
       const escapedExpectedValue = JSON.stringify(assertion.value);
+      const assertionLines = [
+        "const fs = process.getBuiltinModule('node:fs');",
+      ];
+
+      if (options.resolveFromProviderWorkspace) {
+        assertionLines.push("const path = process.getBuiltinModule('node:path');");
+        assertionLines.push(
+          "const workspaceDirectory = context?.providerResponse?.metadata?.workspaceDirectory ?? context?.providerResponse?.metadata?.workingDirectory;",
+        );
+        assertionLines.push("if (!workspaceDirectory) {");
+        assertionLines.push("  throw new Error('Missing provider workspaceDirectory in assertion context.');");
+        assertionLines.push("}");
+        assertionLines.push("try {");
+        assertionLines.push(
+          `  const fileContents = fs.readFileSync(path.resolve(workspaceDirectory, ${escapedRelativePath}), 'utf8');`,
+        );
+        assertionLines.push(`  return fileContents.includes(${escapedExpectedValue});`);
+        assertionLines.push("} catch (error) {");
+        assertionLines.push("  if (error?.code === 'ENOENT') {");
+        assertionLines.push("    return false;");
+        assertionLines.push("  }");
+        assertionLines.push("  throw error;");
+        assertionLines.push("}");
+      } else {
+        const filePath = path.resolve(workspaceDirectory, assertion.path);
+        const escapedFilePath = JSON.stringify(filePath);
+        assertionLines.push("try {");
+        assertionLines.push(`  const fileContents = fs.readFileSync(${escapedFilePath}, 'utf8');`);
+        assertionLines.push(`  return fileContents.includes(${escapedExpectedValue});`);
+        assertionLines.push("} catch (error) {");
+        assertionLines.push("  if (error?.code === 'ENOENT') {");
+        assertionLines.push("    return false;");
+        assertionLines.push("  }");
+        assertionLines.push("  throw error;");
+        assertionLines.push("}");
+      }
 
       return {
         type: "javascript",
-        value: [
-          "const fs = process.getBuiltinModule('node:fs');",
-          `const fileContents = fs.readFileSync(${escapedFilePath}, 'utf8');`,
-          `return fileContents.includes(${escapedExpectedValue});`,
-        ].join("\n"),
+        value: assertionLines.join("\n"),
       };
     }
     default:

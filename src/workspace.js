@@ -130,7 +130,7 @@ export async function materializeWorkspace({
   const runtimeIsolation = await createRuntimeIsolation(executionRootDirectory, scenario);
   const scenarioSkills = getScenarioSkills(scenario);
 
-  await fs.mkdir(executionWorkspaceDirectory, { recursive: true });
+  await ensureEmptyDirectory(executionWorkspaceDirectory);
 
   for (const source of manifest.workspace.sources) {
     await materializeWorkspaceSource({
@@ -355,6 +355,11 @@ async function copyDirectoryIntoTarget({ sourceDirectory, workspaceDirectory, ta
 async function sanitizeWorkspaceRoot(workspaceDirectory) {
   await fs.rm(path.join(workspaceDirectory, "AGENTS.md"), { force: true });
   await fs.rm(path.join(workspaceDirectory, "skills"), { recursive: true, force: true });
+}
+
+async function ensureEmptyDirectory(directoryPath) {
+  await fs.rm(directoryPath, { recursive: true, force: true });
+  await fs.mkdir(directoryPath, { recursive: true });
 }
 
 async function mountConfiguredSkills({
