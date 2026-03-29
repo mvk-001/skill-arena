@@ -107,10 +107,12 @@ scenarios:
   - `codex`
   - `copilot-cli`
   - `pi`
+  - `opencode`
 - For `codex`, `agent.executionMethod` controls how the custom Promptfoo script invokes the local runtime:
   - `command`: execute the local `codex exec` command
   - `sdk`: invoke `@openai/codex-sdk`, which wraps the local CLI
 - `copilot-cli` supports only `executionMethod: "command"` in V1.
+- `opencode` supports only `executionMethod: "command"` in V1.
 - `skillMode` must be one of:
   - `disabled`
   - `enabled`
@@ -431,6 +433,9 @@ Current compare support in V1:
 - `pi`
   - supported: `skills`
   - unsupported: `instructions`, `agents`, `hooks`, `mcp`, `extensions`, `plugins`
+- `opencode`
+  - supported: `instructions`, `skills`, `agents`
+  - unsupported: `hooks`, `mcp`, `extensions`, `plugins`
 
 Materialized capability rules in V1:
 
@@ -449,7 +454,10 @@ Adapter-specific V1 rules:
 - `copilot-cli` custom agents require `agentId`.
 - Repository-level `copilot-cli` agents should usually materialize files under `.github/agents/`.
 - Repository-level `copilot-cli` hooks should usually materialize files under `.github/hooks/`.
-- `instructions` for `codex` or `copilot-cli` should usually materialize `AGENTS.md` at the workspace root when you want project instructions in that profile.
+- `opencode` custom agents require at most one `capabilities.agents[*]` entry per profile.
+- `opencode` custom agents require `agentId`.
+- Repository-level `opencode` agents should usually materialize files under `.opencode/agents/`.
+- `instructions` for `codex`, `copilot-cli`, or `opencode` should usually materialize `AGENTS.md` at the workspace root when you want project instructions in that profile.
 
 Preferred explicit compare skill definitions use these source modes:
 
@@ -498,6 +506,7 @@ Local judge shorthand is also supported in V1 through packaged Promptfoo custom 
 - `skill-arena:judge:codex`
 - `skill-arena:judge:copilot-cli`
 - `skill-arena:judge:pi`
+- `skill-arena:judge:opencode`
 
 These judge providers are separate from the benchmarked agent adapters. They let Promptfoo run `llm-rubric` grading through the local CLI instead of a hosted API provider.
 

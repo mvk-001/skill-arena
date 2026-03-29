@@ -12,6 +12,8 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
   const xdgCacheHome = path.join(homeDirectory, ".cache");
   const xdgDataHome = path.join(homeDirectory, ".local", "share");
   const xdgStateHome = path.join(homeDirectory, ".local", "state");
+  const opencodeConfigDirectory = path.join(xdgConfigHome, "opencode");
+  const opencodeDataDirectory = path.join(xdgDataHome, "opencode");
   const codexHome = path.join(executionRootDirectory, "codex-home");
   const codexSkillsDirectory = path.join(codexHome, "skills");
   const codexSystemSkillsDirectory = path.join(codexSkillsDirectory, ".system");
@@ -32,6 +34,8 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
     xdgCacheHome,
     xdgDataHome,
     xdgStateHome,
+    opencodeConfigDirectory,
+    opencodeDataDirectory,
     piHome,
     piAgentDirectory,
     codexSkillsDirectory,
@@ -48,6 +52,10 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
   await seedPiHome({
     destinationPiHome: piHome,
     destinationPiAgentDirectory: piAgentDirectory,
+  });
+  await seedOpenCodeHome({
+    destinationConfigDirectory: opencodeConfigDirectory,
+    destinationDataDirectory: opencodeDataDirectory,
   });
 
   return {
@@ -137,6 +145,36 @@ async function seedPiHome({
   );
 }
 
+async function seedOpenCodeHome({
+  destinationConfigDirectory,
+  destinationDataDirectory,
+}) {
+  const sourceConfigDirectory = resolveSourceOpenCodeConfigDirectory();
+  const sourceDataDirectory = resolveSourceOpenCodeDataDirectory();
+
+  await fs.mkdir(destinationConfigDirectory, { recursive: true });
+  await fs.mkdir(destinationDataDirectory, { recursive: true });
+
+  await Promise.all([
+    copyIfPresent(
+      path.join(sourceConfigDirectory, "opencode.json"),
+      path.join(destinationConfigDirectory, "opencode.json"),
+    ),
+    copyIfPresent(
+      path.join(sourceConfigDirectory, "opencode.jsonc"),
+      path.join(destinationConfigDirectory, "opencode.jsonc"),
+    ),
+    copyIfPresent(
+      path.join(sourceConfigDirectory, "tui.json"),
+      path.join(destinationConfigDirectory, "tui.json"),
+    ),
+    copyIfPresent(
+      path.join(sourceDataDirectory, "auth.json"),
+      path.join(destinationDataDirectory, "auth.json"),
+    ),
+  ]);
+}
+
 function resolveSourceCodexHome() {
   const configuredCodexHome = process.env.CODEX_HOME;
   if (configuredCodexHome) {
@@ -148,6 +186,18 @@ function resolveSourceCodexHome() {
 
 function resolveSourcePiHome() {
   return path.join(os.homedir(), ".pi");
+}
+
+function resolveSourceOpenCodeConfigDirectory() {
+  return process.env.XDG_CONFIG_HOME
+    ? path.join(process.env.XDG_CONFIG_HOME, "opencode")
+    : path.join(os.homedir(), ".config", "opencode");
+}
+
+function resolveSourceOpenCodeDataDirectory() {
+  return process.env.XDG_DATA_HOME
+    ? path.join(process.env.XDG_DATA_HOME, "opencode")
+    : path.join(os.homedir(), ".local", "share", "opencode");
 }
 
 async function copyIfPresent(sourcePath, destinationPath) {

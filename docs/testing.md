@@ -30,6 +30,7 @@ skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 - `npm install` or `pnpm install`
 - local Codex CLI available on `PATH` as `codex`
 - local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
+- local OpenCode CLI available on `PATH` as `opencode` when testing `opencode` scenarios
 - Codex authenticated on the machine before running live evaluations
 
 ## 1. Run Unit Tests

@@ -6,7 +6,7 @@ Its main job is to answer questions like:
 
 - Does this agent do better with a skill than without one?
 - Which of several skill bundles performs best on the same task?
-- How does the same benchmark behave across adapters such as `codex`, `copilot-cli`, or `pi`?
+- How does the same benchmark behave across adapters such as `codex`, `copilot-cli`, `pi`, or `opencode`?
 
 Skill Arena uses Promptfoo as the execution engine, but benchmark authors work in Skill Arena configs instead of raw Promptfoo YAML.
 
@@ -36,6 +36,7 @@ This makes it easy to compare a control profile against several competing skill 
 - `git` on `PATH`
 - local `codex` CLI installed and authenticated
 - optional: local `copilot` CLI on `PATH` for `copilot-cli` variants
+- optional: local `opencode` CLI on `PATH` for `opencode` variants
 
 ### Install
 
@@ -173,3 +174,4 @@ V1 supports these benchmarked agent adapters:
 - `codex`
 - `copilot-cli`
 - `pi`
+- `opencode`

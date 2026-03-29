@@ -7,10 +7,11 @@ test("getAdapter returns registered adapters and rejects unknown ids", () => {
   assert.equal(getAdapter("codex").id, "codex");
   assert.equal(getAdapter("copilot-cli").id, "copilot-cli");
   assert.equal(getAdapter("pi").id, "pi");
+  assert.equal(getAdapter("opencode").id, "opencode");
   assert.throws(() => getAdapter("unknown"), /Unsupported adapter id "unknown"\./);
 });
 
-test("buildPromptfooProvider builds provider configs for codex, copilot-cli, and pi", () => {
+test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi, and opencode", () => {
   const context = {
     workspaceDirectory: "C:/temp/workspace",
     workspaceEnvironment: {
@@ -82,6 +83,40 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, and
       },
     },
   });
+  const opencodeProvider = buildPromptfooProvider({
+    ...context,
+    scenario: {
+      profile: {
+        capabilities: {
+          agents: [
+            {
+              agentId: "reviewer",
+              source: {
+                type: "inline-files",
+                target: "/",
+                files: [
+                  {
+                    path: ".opencode/agents/reviewer.md",
+                    content: "# Reviewer",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      agent: {
+        adapter: "opencode",
+        commandPath: "opencode",
+        model: "openai/gpt-5",
+        cliEnv: { OPENCODE_FLAG: "1", HOME: "C:/should-not-win" },
+        config: { provider: { openai: {} } },
+      },
+      evaluation: {
+        tracing: false,
+      },
+    },
+  });
 
   assert.match(codexProvider.id, /codex-system-provider\.js$/);
   assert.equal(codexProvider.config.skip_git_repo_check, true);
@@ -97,6 +132,11 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, and
   assert.equal(piProvider.config.command_path, "pi");
   assert.equal(piProvider.config.cli_env.PI_FLAG, "1");
   assert.equal(piProvider.config.cli_env.HOME, "C:/temp/home");
+  assert.match(opencodeProvider.id, /opencode-system-provider\.js$/);
+  assert.equal(opencodeProvider.config.command_path, "opencode");
+  assert.equal(opencodeProvider.config.cli_env.OPENCODE_FLAG, "1");
+  assert.equal(opencodeProvider.config.cli_env.HOME, "C:/temp/home");
+  assert.equal(opencodeProvider.config.agent, "reviewer");
   assert.equal(codexProvider.config.cli_env.CODEX_HOME, "C:/temp/codex-home");
 });
 
@@ -350,4 +390,106 @@ test("buildPromptfooProvider interpolates $WORKSPACE for copilot-cli and pi adap
   assert.equal(copilotProvider.config.cli_env.TOOL_PATH, "/tmp/ws/tools/lint");
   assert.equal(piProvider.config.cli_env.DATA_DIR, "/tmp/ws/data");
   assert.equal(piProvider.config.cli_env.SCRIPT, "/tmp/ws/run.sh");
+});
+
+test("buildPromptfooProvider interpolates $WORKSPACE for opencode adapter", () => {
+  const provider = buildPromptfooProvider({
+    workspaceDirectory: "/tmp/ws",
+    workspaceEnvironment: {
+      DATA_DIR: "$WORKSPACE/data",
+    },
+    isolatedEnvironment: {},
+    gitReady: true,
+    scenario: {
+      agent: {
+        adapter: "opencode",
+        commandPath: "opencode",
+        model: "openai/gpt-5",
+        cliEnv: { SCRIPT: "${WORKSPACE}/run.sh" },
+        config: {},
+      },
+      evaluation: { tracing: false },
+    },
+  });
+
+  assert.equal(provider.config.cli_env.DATA_DIR, "/tmp/ws/data");
+  assert.equal(provider.config.cli_env.SCRIPT, "/tmp/ws/run.sh");
+});
+
+test("buildPromptfooProvider omits opencode agent when no compare profile agent is declared", () => {
+  const provider = buildPromptfooProvider({
+    workspaceDirectory: "/tmp/ws",
+    workspaceEnvironment: {},
+    isolatedEnvironment: {},
+    gitReady: true,
+    scenario: {
+      agent: {
+        adapter: "opencode",
+        commandPath: "opencode",
+        model: "openai/gpt-5",
+        cliEnv: {},
+        config: {},
+      },
+      evaluation: { tracing: false },
+    },
+  });
+
+  assert.equal(provider.config.agent, undefined);
+});
+
+test("buildPromptfooProvider rejects invalid opencode compare profile agents", () => {
+  assert.throws(() => buildPromptfooProvider({
+    workspaceDirectory: "C:/temp/workspace",
+    workspaceEnvironment: {},
+    isolatedEnvironment: {},
+    gitReady: true,
+    scenario: {
+      profile: {
+        capabilities: {
+          agents: [
+            { agentId: "one", source: { type: "empty" } },
+            { agentId: "two", source: { type: "empty" } },
+          ],
+        },
+      },
+      agent: {
+        adapter: "opencode",
+        commandPath: "opencode",
+        model: "openai/gpt-5",
+        cliEnv: {},
+        config: {},
+      },
+      evaluation: { tracing: false },
+    },
+  }), /supports at most one compare profile agent/);
+
+  assert.throws(() => buildPromptfooProvider({
+    workspaceDirectory: "C:/temp/workspace",
+    workspaceEnvironment: {},
+    isolatedEnvironment: {},
+    gitReady: true,
+    scenario: {
+      profile: {
+        capabilities: {
+          agents: [
+            {
+              source: {
+                type: "inline-files",
+                target: "/",
+                files: [{ path: ".opencode/agents/reviewer.md", content: "# Reviewer" }],
+              },
+            },
+          ],
+        },
+      },
+      agent: {
+        adapter: "opencode",
+        commandPath: "opencode",
+        model: "openai/gpt-5",
+        cliEnv: {},
+        config: {},
+      },
+      evaluation: { tracing: false },
+    },
+  }), /requires profile\.capabilities\.agents\[\*\]\.agentId/);
 });

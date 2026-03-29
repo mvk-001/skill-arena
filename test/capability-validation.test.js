@@ -32,6 +32,15 @@ test("listUnsupportedCapabilityFamilies returns all unsupported families for pi"
   assert.deepEqual(result, ["instructions", "agents", "hooks"]);
 });
 
+test("listUnsupportedCapabilityFamilies returns unsupported hooks for opencode", () => {
+  const result = listUnsupportedCapabilityFamilies("opencode", {
+    instructions: [{ source: { type: "local-path" } }],
+    agents: [{ agentId: "agent-1" }],
+    hooks: [{ source: { type: "local-path" } }],
+  });
+  assert.deepEqual(result, ["hooks"]);
+});
+
 test("listUnsupportedCapabilityFamilies ignores empty arrays", () => {
   const result = listUnsupportedCapabilityFamilies("codex", {
     hooks: [],
@@ -136,6 +145,31 @@ test("validateScenarioCapabilities validates copilot agents", () => {
     },
   });
   assert.ok(missingAgentId.includes("agentId"));
+});
+
+test("validateScenarioCapabilities validates opencode agents", () => {
+  const validAgent = validateScenarioCapabilities({
+    agent: { adapter: "opencode" },
+    profile: {
+      capabilities: {
+        agents: [{ agentId: "reviewer", source: { type: "local-path", path: "ag", target: "/" } }],
+      },
+    },
+  });
+  assert.equal(validAgent, null);
+
+  const tooManyAgents = validateScenarioCapabilities({
+    agent: { adapter: "opencode" },
+    profile: {
+      capabilities: {
+        agents: [
+          { agentId: "a1", source: { type: "local-path", path: "a", target: "/" } },
+          { agentId: "a2", source: { type: "local-path", path: "b", target: "/" } },
+        ],
+      },
+    },
+  });
+  assert.ok(tooManyAgents.includes("at most one"));
 });
 
 test("validateMaterializedCapabilities validates source requirements", () => {

@@ -109,7 +109,7 @@ Compare runs write under `results/<benchmark-id>/<timestamp>-compare/` and inclu
 - `merged/report.md`
 - `merged/merged-summary.json`
 
-Provider executions may also write hook artifacts under the materialized workspace at `.skill-arena/hooks/execution-events/`. These JSON files capture the observable command invocation plus any parsed event or tool-call stream emitted by `codex`, `copilot-cli`, or `pi`.
+Provider executions may also write hook artifacts under the materialized workspace at `.skill-arena/hooks/execution-events/`. These JSON files capture the observable command invocation plus any parsed event or tool-call stream emitted by `codex`, `copilot-cli`, `pi`, or `opencode`.
 
 ## Execution flow
 

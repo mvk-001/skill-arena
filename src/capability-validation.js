@@ -11,6 +11,7 @@ const ADAPTER_CAPABILITY_FAMILIES = {
   "codex": new Set(["instructions", "skills"]),
   "copilot-cli": new Set(["instructions", "skills", "agents", "hooks"]),
   "pi": new Set(["skills"]),
+  "opencode": new Set(["instructions", "skills", "agents"]),
 };
 
 const DEFAULT_CAPABILITY_FAMILIES = new Set(["skills"]);
@@ -75,6 +76,10 @@ export function validateScenarioCapabilities(scenario) {
     return validateCopilotCapabilities(scenario.profile?.capabilities ?? {});
   }
 
+  if (scenario.agent.adapter === "opencode") {
+    return validateOpenCodeCapabilities(scenario.profile?.capabilities ?? {});
+  }
+
   return validateMaterializedCapabilities(
     scenario.profile?.capabilities ?? {},
     ["instructions"],
@@ -91,6 +96,18 @@ function validateCopilotCapabilities(capabilities) {
     "instructions",
     "agents",
     "hooks",
+  ]);
+}
+
+function validateOpenCodeCapabilities(capabilities) {
+  const agentError = validateSingleAgentCapability(capabilities.agents ?? []);
+  if (agentError) {
+    return agentError.replace('"copilot-cli"', '"opencode"');
+  }
+
+  return validateMaterializedCapabilities(capabilities, [
+    "instructions",
+    "agents",
   ]);
 }
 

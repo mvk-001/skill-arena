@@ -3,7 +3,7 @@ import path from "node:path";
 import { fromPackageRoot } from "./project-paths.js";
 import { resolveModelAlias } from "./model-alias.js";
 
-export const ADAPTER_IDS = ["codex", "copilot-cli", "pi"];
+export const ADAPTER_IDS = ["codex", "copilot-cli", "pi", "opencode"];
 
 const adapterRegistry = {
   codex: {
@@ -115,6 +115,35 @@ const adapterRegistry = {
       };
     },
   },
+  opencode: {
+    id: "opencode",
+    supported: true,
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
+      const providerPath = fromPackageRoot("src", "providers", "opencode-system-provider.js");
+      const providerId = buildProviderId("opencode", scenario.agent.model);
+
+      return {
+        id: providerPath,
+        label: providerId,
+        config: {
+          provider_id: providerId,
+          command_path: scenario.agent.commandPath,
+          model: scenario.agent.model,
+          working_dir: workspaceDirectory,
+          cli_env: buildCliEnvironment(
+            workspaceEnvironment,
+            scenario.agent.cliEnv,
+            isolatedEnvironment,
+            workspaceDirectory,
+          ),
+          allowed_skills: getAllowedSkillIds(isolatedEnvironment),
+          disable_other_skills: resolveSkillStrategy(scenario) !== "system-installed",
+          agent: getOpenCodeAgentId(scenario),
+          opencode_config: scenario.agent.config ?? {},
+        },
+      };
+    },
+  },
 };
 
 function resolveAdditionalDirectory(workspaceDirectory, directory) {
@@ -195,6 +224,28 @@ function buildCopilotConfig({ scenario, baseConfig }) {
     ...(baseConfig ?? {}),
     agent: agentId,
   };
+}
+
+function getOpenCodeAgentId(scenario) {
+  const profileAgents = getProfileCapabilities(scenario, "agents");
+  if (profileAgents.length === 0) {
+    return undefined;
+  }
+
+  if (profileAgents.length > 1) {
+    throw new Error(
+      `Adapter "opencode" supports at most one compare profile agent, received ${profileAgents.length}.`,
+    );
+  }
+
+  const agentId = profileAgents[0]?.agentId;
+  if (typeof agentId !== "string" || agentId.trim() === "") {
+    throw new Error(
+      "Adapter \"opencode\" requires profile.capabilities.agents[*].agentId to be a non-empty string.",
+    );
+  }
+
+  return agentId;
 }
 
 function mergeCodexSkillConfig({

@@ -508,6 +508,43 @@ test("copilot-cli rejects sdk execution", () => {
   }));
 });
 
+test("opencode rejects sdk execution", () => {
+  assert.throws(() => benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "opencode-sdk-check",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/smoke-skill-following/base",
+      initializeGit: true,
+    },
+    scenarios: [
+      {
+        id: "opencode-sdk",
+        description: "Invalid opencode execution method",
+        skillMode: "disabled",
+        agent: {
+          adapter: "opencode",
+          executionMethod: "sdk",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "HELLO",
+            },
+          ],
+        },
+      },
+    ],
+  }));
+});
+
 test("manifest validation rejects duplicate scenario ids and invalid normalized skill states", () => {
   assert.throws(() => benchmarkManifestSchema.parse({
     schemaVersion: 1,

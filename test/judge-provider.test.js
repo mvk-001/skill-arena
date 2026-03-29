@@ -12,8 +12,10 @@ test("local judge helpers detect supported shorthand ids", () => {
   assert.equal(isLocalJudgeProviderId("skill-arena:judge:codex"), true);
   assert.equal(isLocalJudgeProviderId("skill-arena:judge:copilot-cli"), true);
   assert.equal(isLocalJudgeProviderId("skill-arena:judge:pi"), true);
+  assert.equal(isLocalJudgeProviderId("skill-arena:judge:opencode"), true);
   assert.equal(isLocalJudgeProviderId("openai:gpt-5-mini"), false);
   assert.equal(getLocalJudgeAdapter("skill-arena:judge:copilot-cli"), "copilot-cli");
+  assert.equal(getLocalJudgeAdapter("skill-arena:judge:opencode"), "opencode");
 });
 
 test("local judge helpers reject unsupported ids and ignore invalid provider shapes", () => {
@@ -69,7 +71,7 @@ test("local judge provider delegates to codex-compatible config defaults", async
   assert.equal(delegate.config.approval_policy, "never");
 });
 
-test("local judge provider delegates to copilot and pi configs", () => {
+test("local judge provider delegates to copilot, pi, and opencode configs", () => {
   const copilotProvider = new LocalJudgeProvider({
     config: {
       adapter: "copilot-cli",
@@ -84,11 +86,20 @@ test("local judge provider delegates to copilot and pi configs", () => {
       model: "github-copilot/gpt-5-mini",
     },
   });
+  const opencodeProvider = new LocalJudgeProvider({
+    config: {
+      adapter: "opencode",
+      provider_id: "skill-arena:judge:opencode",
+      model: "openai/gpt-5",
+    },
+  });
 
   assert.equal(copilotProvider.buildDelegate().config.command_path, "copilot");
   assert.equal(copilotProvider.buildDelegate().config.model, "gpt-5");
   assert.equal(piProvider.buildDelegate().config.command_path, "pi");
   assert.equal(piProvider.buildDelegate().config.model, "github-copilot/gpt-5-mini");
+  assert.equal(opencodeProvider.buildDelegate().config.command_path, "opencode");
+  assert.equal(opencodeProvider.buildDelegate().config.model, "openai/gpt-5");
 });
 
 test("local judge provider exposes ids and forwards callApi to the delegate", async () => {

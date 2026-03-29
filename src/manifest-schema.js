@@ -65,7 +65,7 @@ export const promptEvaluationSchema = z.object({
 });
 
 const baseAgentSchema = z.object({
-  adapter: z.enum(["codex", "copilot-cli", "pi"]),
+  adapter: z.enum(["codex", "copilot-cli", "pi", "opencode"]),
   model: z.string().min(1).optional(),
   executionMethod: z.enum(["command", "sdk"]).default("command"),
   commandPath: z.string().min(1).optional(),
@@ -94,6 +94,14 @@ export const agentSchema = baseAgentSchema
         path: ["executionMethod"],
       });
     }
+
+    if (agent.adapter === "opencode" && agent.executionMethod !== "command") {
+      context.addIssue({
+        code: "custom",
+        message: "The opencode adapter only supports executionMethod \"command\" in V1.",
+        path: ["executionMethod"],
+      });
+    }
   })
   .transform((agent) => ({
     ...agent,
@@ -106,6 +114,8 @@ function getDefaultCommandPath(adapter) {
       return "copilot";
     case "pi":
       return "pi";
+    case "opencode":
+      return "opencode";
     case "codex":
     default:
       return "codex";

@@ -1,5 +1,6 @@
 import CodexSystemProvider from "./codex-system-provider.js";
 import CopilotSystemProvider from "./copilot-system-provider.js";
+import OpenCodeSystemProvider from "./opencode-system-provider.js";
 import PiSystemProvider from "./pi-system-provider.js";
 
 const DEFAULTS = {
@@ -30,6 +31,11 @@ const DEFAULTS = {
   pi: {
     command_path: "pi",
     cli_env: {},
+  },
+  opencode: {
+    command_path: "opencode",
+    cli_env: {},
+    opencode_config: {},
   },
 };
 
@@ -134,6 +140,29 @@ export default class LocalJudgeProvider {
             working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
             model: this.config.model,
             cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS.pi.cli_env,
+          },
+        });
+      case "opencode":
+        return new OpenCodeSystemProvider({
+          config: {
+            ...DEFAULTS.opencode,
+            ...normalizeBaseConfig(this.config),
+            command_path:
+              this.config.commandPath
+              ?? this.config.command_path
+              ?? DEFAULTS.opencode.command_path,
+            working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
+            model: this.config.model,
+            cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS.opencode.cli_env,
+            agent: this.config.agent,
+            allowed_skills: this.config.allowedSkills ?? this.config.allowed_skills,
+            disable_other_skills:
+              this.config.disableOtherSkills
+              ?? this.config.disable_other_skills,
+            opencode_config:
+              this.config.opencodeConfig
+              ?? this.config.opencode_config
+              ?? DEFAULTS.opencode.opencode_config,
           },
         });
       default:
