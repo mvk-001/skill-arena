@@ -380,6 +380,7 @@ comparison:
 - When token usage is available, compare cells must also report total-token aggregates for the observed runs, including average and standard deviation.
 - When `rust-code-analysis` is available, compare cells may also report per-metric deltas between original and proposed code for modified original files only, including cell-level average and standard deviation for each changed metric.
 - Shared compare execution settings such as `requests`, `timeoutMs`, `tracing`, `maxConcurrency`, and `noCache` still come from top-level `evaluation`.
+- The compare CLI may reuse prior scenario outputs when `--reuse-unchanged-profiles` is enabled and the latest compare `summary.json` contains the same scenario fingerprint plus the expected output count for the current request and prompt shape.
 
 ### Compare normalization rules
 

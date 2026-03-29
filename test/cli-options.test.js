@@ -27,9 +27,10 @@ test("parsePositiveIntegerOption parses a positive integer and rejects invalid v
 
 test("ensureKnownLongOptions accepts declared flags and value options", () => {
   assert.doesNotThrow(() => ensureKnownLongOptions(
-    ["node", "cli", "evaluate", "--dry-run", "--max-concurrency", "8"],
+    ["node", "cli", "evaluate", "--dry-run", "--reuse-unchanged-profiles", "--max-concurrency", "8"],
     {
       "--dry-run": false,
+      "--reuse-unchanged-profiles": false,
       "--max-concurrency": true,
     },
   ));

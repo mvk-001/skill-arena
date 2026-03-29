@@ -40,6 +40,10 @@ import {
   getScenarioVariantDisplayName,
   getScenarioVariantId,
 } from "../compare-matrix.js";
+import {
+  createEmptyPromptfooResultsEnvelope,
+  planScenarioReuse,
+} from "../compare-reuse.js";
 
 let latestCompareArtifacts = null;
 
@@ -50,13 +54,14 @@ async function main() {
     dryRun,
     requestsOverride,
     maxConcurrencyOverride,
+    reuseUnchangedProfiles,
     verboseOutput,
     outputRootDirectory,
   } = runtimeOptions;
 
   if (!compareConfigPath) {
     throw new Error(
-      "Usage: node ./src/cli/run-compare.js <compare-config-path> [--requests <n>] [--max-concurrency <n>] [--dry-run] [--verbose]",
+      "Usage: node ./src/cli/run-compare.js <compare-config-path> [--requests <n>] [--max-concurrency <n>] [--reuse-unchanged-profiles] [--dry-run] [--verbose]",
     );
   }
 
@@ -76,18 +81,40 @@ async function main() {
     skippedVariants,
     skippedCells,
   } = classifyCompareScenarios(manifest.scenarios);
+  const reusePlan = reuseUnchangedProfiles
+    ? await planScenarioReuse({
+        manifest,
+        scenarios: supportedScenarios,
+        outputRootDirectory,
+        sourceBaseDirectory: outputRootDirectory,
+        evaluationRequests: compareConfig.evaluation.requests,
+      })
+    : {
+        previousRun: null,
+        scenarioFingerprints: new Map(),
+        reusableScenarioIds: new Set(),
+        reusedScenarioSummaries: new Map(),
+        freshScenarios: supportedScenarios,
+      };
   const supportedRuns = [];
+  const freshRuns = [];
+  const reusedRuns = buildReusedRuns({
+    supportedScenarios,
+    reusedScenarioSummaries: reusePlan.reusedScenarioSummaries,
+  });
 
   printExecutionPlan({
     compareConfig,
     compareConfigPath,
     manifest,
     supportedScenarios,
+    freshScenarios: reusePlan.freshScenarios,
     skippedVariants,
     skippedCells,
     outputRootDirectory,
     effectiveConcurrency,
     effectiveEvalTimeoutMs,
+    reusePlan,
   });
   console.log("");
 
@@ -102,7 +129,7 @@ async function main() {
   const materializationStartMs = Date.now();
 
   const materializedRuns = await mapWithConcurrency(
-    supportedScenarios,
+    reusePlan.freshScenarios,
     effectiveConcurrency,
     async (scenario) => {
       await ensureCompareScenarioLocalPaths({
@@ -122,15 +149,22 @@ async function main() {
       };
     },
   );
-  supportedRuns.push(...materializedRuns);
+  freshRuns.push(...materializedRuns);
+  supportedRuns.push(...materializedRuns, ...reusedRuns);
   await logExecution(
     executionLogPath,
     `workspace materialization completed in ${formatDurationMs(Date.now() - materializationStartMs)}`,
   );
+  if (reusePlan.reusableScenarioIds.size > 0) {
+    await logExecution(
+      executionLogPath,
+      `reused ${reusePlan.reusableScenarioIds.size} scenario summaries from ${reusePlan.previousRun?.compareRunDirectory ?? "previous compare run"}`,
+    );
+  }
 
   const promptfooConfig = buildComparePromptfooConfig({
     manifest,
-    runs: supportedRuns,
+    runs: freshRuns,
   });
   const promptfooConfigYaml = stringifyPromptfooConfig(promptfooConfig);
   const promptfooConfigPath = path.join(benchmarkRunDirectory, "promptfooconfig.yaml");
@@ -166,23 +200,33 @@ async function main() {
   }
 
   try {
-    const promptfooStartMs = Date.now();
-    await executePromptfoo({
-      promptfooConfigPath,
-      promptfooResultsPath,
-      timeoutMs: effectiveEvalTimeoutMs,
-      maxConcurrency: effectiveConcurrency,
-      noCache: compareConfig.evaluation.noCache,
-      requests: compareConfig.evaluation.requests,
-      verbose: verboseOutput,
-      executionLogPath,
-    });
-    await logExecution(
-      executionLogPath,
-      `promptfoo eval completed in ${formatDurationMs(Date.now() - promptfooStartMs)}`,
-    );
+    const hasFreshRuns = freshRuns.length > 0;
+    if (hasFreshRuns) {
+      const promptfooStartMs = Date.now();
+      await executePromptfoo({
+        promptfooConfigPath,
+        promptfooResultsPath,
+        timeoutMs: effectiveEvalTimeoutMs,
+        maxConcurrency: effectiveConcurrency,
+        noCache: compareConfig.evaluation.noCache,
+        requests: compareConfig.evaluation.requests,
+        verbose: verboseOutput,
+        executionLogPath,
+      });
+      await logExecution(
+        executionLogPath,
+        `promptfoo eval completed in ${formatDurationMs(Date.now() - promptfooStartMs)}`,
+      );
+    } else {
+      await fs.writeFile(
+        promptfooResultsPath,
+        JSON.stringify(createEmptyPromptfooResultsEnvelope(), null, 2),
+        "utf8",
+      );
+      await logExecution(executionLogPath, "promptfoo eval skipped because every supported scenario was reused");
+    }
     await mapWithConcurrency(
-      supportedRuns,
+      freshRuns,
       effectiveConcurrency,
       async ({ workspace }) => {
         await syncExecutionWorkspaceToArtifacts(workspace);
@@ -198,6 +242,9 @@ async function main() {
       compareRunDirectory: benchmarkRunDirectory,
       evaluationRequests: compareConfig.evaluation.requests,
       skippedCells,
+      reusedScenarioSummaries: reusePlan.reusedScenarioSummaries,
+      scenarioFingerprints: reusePlan.scenarioFingerprints,
+      reuseSourceCompareRunDirectory: reusePlan.previousRun?.compareRunDirectory ?? null,
     });
     await logExecution(
       executionLogPath,
@@ -267,7 +314,7 @@ async function main() {
     }
   } finally {
     await mapWithConcurrency(
-      supportedRuns,
+      freshRuns,
       effectiveConcurrency,
       async ({ workspace }) => {
         await fs.rm(workspace.executionRootDirectory, { recursive: true, force: true }).catch(() => {});
@@ -284,6 +331,7 @@ function parseCompareRuntimeOptions(argv) {
     "--requests": true,
     "--max-concurrency": true,
     "--maxConcurrency": true,
+    "--reuse-unchanged-profiles": false,
     "--dry-run": false,
     "--verbose": false,
   };
@@ -297,6 +345,7 @@ function parseCompareRuntimeOptions(argv) {
       argv,
       ["--max-concurrency", "--maxConcurrency"],
     ),
+    reuseUnchangedProfiles: argv.includes("--reuse-unchanged-profiles"),
     verboseOutput: argv.includes("--verbose"),
     outputRootDirectory: process.cwd(),
   };
@@ -532,6 +581,9 @@ async function normalizeComparePromptfooResults({
   compareRunDirectory,
   evaluationRequests,
   skippedCells,
+  reusedScenarioSummaries,
+  scenarioFingerprints,
+  reuseSourceCompareRunDirectory,
 }) {
   const routeMap = new Map(
     supportedRuns.map(({ scenario, workspace }) => [
@@ -540,9 +592,21 @@ async function normalizeComparePromptfooResults({
     ]),
   );
   const { rawResults, stats, outputs } = await normalizeRawPromptfooResults(promptfooResultsPath);
-  const scenarioOutputsMap = groupOutputsByScenario(outputs, routeMap);
+  const reusedOutputs = [...reusedScenarioSummaries.values()].flatMap((summary) => summary.outputs ?? []);
+  const scenarioOutputsMap = groupOutputsByScenario([...outputs, ...reusedOutputs], routeMap);
 
   const scenarioSummaries = supportedRuns.map(({ scenario, workspace }) => {
+    const reusedSummary = reusedScenarioSummaries.get(scenario.id);
+    if (reusedSummary) {
+      return buildReusedScenarioSummary({
+        reusedSummary,
+        reuseSourceCompareRunDirectory,
+        scenario,
+        workspace,
+        reuseFingerprint: scenarioFingerprints.get(scenario.id) ?? null,
+      });
+    }
+
     const scenarioOutputs = scenarioOutputsMap.get(scenario.id) ?? [];
 
     return {
@@ -563,6 +627,7 @@ async function normalizeComparePromptfooResults({
       promptfooResultsPath,
       stats: buildScenarioStats(scenarioOutputs),
       outputs: scenarioOutputs,
+      reuseFingerprint: scenarioFingerprints.get(scenario.id) ?? null,
       generatedAt: new Date().toISOString(),
     };
   });
@@ -589,13 +654,61 @@ async function normalizeComparePromptfooResults({
     matrix: buildMatrix({
       manifest,
       supportedRuns,
-      outputs,
+      outputs: [...outputs, ...reusedOutputs],
       routeMap,
       evaluationRequests,
       compareRunDirectory,
       skippedCells,
     }),
     scenarioSummaries,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function buildReusedRuns({ supportedScenarios, reusedScenarioSummaries }) {
+  return supportedScenarios
+    .filter((scenario) => reusedScenarioSummaries.has(scenario.id))
+    .map((scenario) => {
+      const reusedSummary = reusedScenarioSummaries.get(scenario.id);
+      return {
+        scenario,
+        workspace: {
+          workspaceDirectory: reusedSummary.workspaceDirectory ?? null,
+          executionWorkspaceDirectory: reusedSummary.workspaceDirectory ?? null,
+          environment: {},
+          executionEnvironment: {},
+          gitReady: false,
+          reusedFromCompareRunDirectory: reusedSummary.reusedFromCompareRunDirectory ?? null,
+        },
+      };
+    });
+}
+
+function buildReusedScenarioSummary({
+  reusedSummary,
+  reuseSourceCompareRunDirectory,
+  scenario,
+  workspace,
+  reuseFingerprint,
+}) {
+  return {
+    ...reusedSummary,
+    benchmarkId: reusedSummary.benchmarkId ?? null,
+    scenarioId: scenario.id,
+    scenarioDescription: scenario.description ?? reusedSummary.scenarioDescription ?? null,
+    profileId: getScenarioProfileId(scenario),
+    skillMode: scenario.skillMode,
+    adapter: scenario.agent.adapter,
+    model: scenario.agent.model ?? null,
+    outputTags: scenario.output.tags,
+    outputLabels: scenario.output.labels,
+    workspaceDirectory: workspace.workspaceDirectory ?? reusedSummary.workspaceDirectory ?? null,
+    promptfooResultsPath: reusedSummary.promptfooResultsPath ?? null,
+    stats: reusedSummary.stats ?? buildScenarioStats(reusedSummary.outputs ?? []),
+    outputs: reusedSummary.outputs ?? [],
+    reused: true,
+    reusedFromCompareRunDirectory: reusedSummary.reusedFromCompareRunDirectory ?? reuseSourceCompareRunDirectory,
+    reuseFingerprint,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -785,25 +898,35 @@ function printExecutionPlan({
   compareConfigPath,
   manifest,
   supportedScenarios,
+  freshScenarios,
   skippedVariants,
   skippedCells,
   outputRootDirectory,
   effectiveConcurrency,
   effectiveEvalTimeoutMs,
+  reusePlan,
 }) {
   const taskPrompts = getTaskPrompts(manifest);
   const requestsPerCell = compareConfig.evaluation.requests;
   const supportedVariantIds = new Set(
     supportedScenarios.map((scenario) => scenario.output.labels.variant ?? scenario.id),
   );
+  const freshVariantIds = new Set(
+    (freshScenarios ?? []).map((scenario) => scenario.output.labels.variant ?? scenario.id),
+  );
   const supportedVariants = compareConfig.comparison.variants.filter((variant) =>
     supportedVariantIds.has(variant.id),
   );
+  const freshVariants = compareConfig.comparison.variants.filter((variant) =>
+    freshVariantIds.has(variant.id),
+  );
   const profiles = compareConfig.comparison.profiles;
   const compareCells = taskPrompts.length * supportedVariants.length * profiles.length;
+  const freshCompareCells = taskPrompts.length * freshVariants.length * profiles.length;
   const unsupportedCells = taskPrompts.length * skippedCells.length;
   const supportedCells = Math.max(0, compareCells - unsupportedCells);
-  const totalRequests = supportedCells * requestsPerCell;
+  const freshSupportedCells = Math.max(0, freshCompareCells - unsupportedCells);
+  const totalRequests = freshSupportedCells * requestsPerCell;
 
   const planRows = [
     ["Benchmark", manifest.benchmark.id],
@@ -816,6 +939,7 @@ function printExecutionPlan({
     ["Requests per cell", requestsPerCell],
     ["Total cells", compareCells],
     ["Total requests", totalRequests],
+    ["Reused scenarios", reusePlan?.reusableScenarioIds?.size ?? 0],
     ["Parallel requests", effectiveConcurrency],
     ["Effective timeout", `${effectiveEvalTimeoutMs} ms`],
   ];
@@ -830,6 +954,9 @@ function printExecutionPlan({
   console.log("");
   if (skippedVariants.length > 0) {
     console.log(`- Skipped variants: ${skippedVariants.length}`);
+  }
+  if ((reusePlan?.reusableScenarioIds?.size ?? 0) > 0) {
+    console.log(`- Reusing unchanged scenarios from: ${reusePlan.previousRun?.compareRunDirectory ?? "previous compare run"}`);
   }
 
   console.log("Running evaluation with Promptfoo...");

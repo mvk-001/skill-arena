@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 
 import { expandCompareConfigToManifest, loadCompareConfig } from "../src/compare.js";
 import { compareConfigSchema } from "../src/compare-schema.js";
+import { computeScenarioReuseFingerprints } from "../src/compare-reuse.js";
 import { fromProjectRoot } from "../src/project-paths.js";
 
 const execFileAsync = promisify(execFile);
@@ -1724,4 +1725,230 @@ test("compare dry-run uses SKILL_ARENA_MAX_PARALLELISM when maxConcurrency is om
   );
 
   assert.match(stdout, /\| Parallel requests \| 7 \|/);
+});
+
+test("compare evaluate can reuse every unchanged profile from the latest compare run", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-reuse-all-"));
+  const workspaceDirectory = path.join(tempDirectory, "workspace-base");
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.mkdir(workspaceDirectory, { recursive: true });
+  await fs.writeFile(path.join(workspaceDirectory, "README.md"), "base\n", "utf8");
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: compare-reuse-all",
+    "  description: Reuse unchanged compare profiles.",
+    "  tags: [compare]",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  sources:",
+    "    - id: base",
+    "      type: local-path",
+    "      path: workspace-base",
+    "      target: /",
+    "  setup:",
+    "    initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: equals",
+    "      value: HELLO",
+    "  requests: 1",
+    "  timeoutMs: 120000",
+    "  tracing: false",
+    "  noCache: true",
+    "comparison:",
+    "  profiles:",
+    "    - id: baseline",
+    "      description: Baseline",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities: {}",
+    "    - id: skill",
+    "      description: Skill",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities:",
+    "        skills:",
+    "          - source:",
+    "              type: inline",
+    "              skillId: sample-skill",
+    "              content: |",
+    "                # Sample skill",
+    "                Return HELLO.",
+    "            install:",
+    "              strategy: workspace-overlay",
+    "  variants:",
+    "    - id: codex-mini",
+    "      description: Codex mini",
+    "      agent:",
+    "        adapter: codex",
+  ].join("\n"), "utf8");
+
+  const compareConfig = compareConfigSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "compare-reuse-all",
+      description: "Reuse unchanged compare profiles.",
+      tags: ["compare"],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "local-path",
+          path: "workspace-base",
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: true,
+        env: {},
+      },
+    },
+    evaluation: {
+      assertions: [{ type: "equals", value: "HELLO" }],
+      requests: 1,
+      timeoutMs: 120000,
+      tracing: false,
+      noCache: true,
+    },
+    comparison: {
+      profiles: [
+        {
+          id: "baseline",
+          description: "Baseline",
+          isolation: {
+            inheritSystem: false,
+          },
+          capabilities: {},
+        },
+        {
+          id: "skill",
+          description: "Skill",
+          isolation: {
+            inheritSystem: false,
+          },
+          capabilities: {
+            skills: [
+              {
+                source: {
+                  type: "inline",
+                  skillId: "sample-skill",
+                  content: "# Sample skill\nReturn HELLO.\n",
+                },
+                install: {
+                  strategy: "workspace-overlay",
+                },
+              },
+            ],
+          },
+        },
+      ],
+      variants: [
+        {
+          id: "codex-mini",
+          description: "Codex mini",
+          agent: {
+            adapter: "codex",
+          },
+        },
+      ],
+    },
+  });
+  const manifest = expandCompareConfigToManifest(compareConfig);
+  const promptId = manifest.task.prompts[0].id;
+  const fingerprints = await computeScenarioReuseFingerprints({
+    manifest,
+    scenarios: manifest.scenarios,
+    sourceBaseDirectory: tempDirectory,
+  });
+  const previousRunDirectory = path.join(
+    tempDirectory,
+    "results",
+    "compare-reuse-all",
+    "2026-03-29T00-00-00-000Z-compare",
+  );
+
+  await fs.mkdir(previousRunDirectory, { recursive: true });
+  await fs.writeFile(
+    path.join(previousRunDirectory, "summary.json"),
+    JSON.stringify({
+      scenarioSummaries: manifest.scenarios.map((scenario) => ({
+        scenarioId: scenario.id,
+        scenarioDescription: scenario.description,
+        skillMode: scenario.skillMode,
+        adapter: scenario.agent.adapter,
+        model: scenario.agent.model ?? null,
+        outputTags: scenario.output.tags,
+        outputLabels: scenario.output.labels,
+        workspaceDirectory: path.join(previousRunDirectory, "workspace", scenario.id),
+        promptfooResultsPath: path.join(previousRunDirectory, "promptfoo-results.json"),
+        stats: {
+          successes: 1,
+          failures: 0,
+          errors: 0,
+          durationMs: 0,
+          evaluationDurationMs: 0,
+        },
+        outputs: [
+          {
+            provider: scenario.output.labels.profileId,
+            promptId,
+            promptDescription: null,
+            variantId: scenario.output.labels.variant,
+            variantDisplayName: scenario.output.labels.variantDisplayName,
+            rowId: `${scenario.output.labels.variant}:${promptId}`,
+            text: "HELLO",
+            success: true,
+            score: 1,
+            latencyMs: 1,
+            tokenUsage: { total: 10 },
+          },
+        ],
+        reuseFingerprint: fingerprints.get(scenario.id),
+      })),
+    }, null, 2),
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [
+      fromProjectRoot("src", "cli", "run-compare.js"),
+      "compare.yaml",
+      "--reuse-unchanged-profiles",
+    ],
+    {
+      cwd: tempDirectory,
+      windowsHide: true,
+    },
+  );
+
+  assert.match(stdout, /\| Reused scenarios \| 2 \|/);
+
+  const resultsRoot = path.join(tempDirectory, "results", "compare-reuse-all");
+  const runDirectories = await fs.readdir(resultsRoot);
+  const latestCompareRun = runDirectories
+    .filter((entry) => entry.endsWith("-compare") && entry !== "2026-03-29T00-00-00-000Z-compare")
+    .sort()
+    .at(-1);
+  const executionLog = await fs.readFile(
+    path.join(resultsRoot, latestCompareRun, "execution.log"),
+    "utf8",
+  );
+  const summary = JSON.parse(await fs.readFile(
+    path.join(resultsRoot, latestCompareRun, "summary.json"),
+    "utf8",
+  ));
+
+  assert.match(executionLog, /promptfoo eval skipped because every supported scenario was reused/);
+  assert.equal(summary.scenarioSummaries.length, 2);
+  assert.equal(summary.scenarioSummaries.every((entry) => entry.reused === true), true);
+  assert.equal(summary.matrix.rows[0].cells.baseline.displayValue, "100% (1/1)<br>tokens avg 10.0, sd 0.0");
+  assert.equal(summary.matrix.rows[0].cells.skill.displayValue, "100% (1/1)<br>tokens avg 10.0, sd 0.0");
 });

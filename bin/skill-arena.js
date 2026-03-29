@@ -17,7 +17,7 @@ const commandMap = {
 
 const commandDetails = {
   evaluate: {
-    usage: "evaluate <benchmark-config-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--dry-run] [--verbose]",
+    usage: "evaluate <benchmark-config-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--reuse-unchanged-profiles] [--dry-run] [--verbose]",
     description:
       "Run one benchmark manifest or matrix evaluation config.",
     options: [
@@ -25,6 +25,7 @@ const commandDetails = {
       "--requests <n>: override effective evaluation requests for this run",
       "--max-concurrency <n>: override effective maxConcurrency for this run",
       "--maxConcurrency <n>: alias for --max-concurrency",
+      "--reuse-unchanged-profiles: in compare mode, reuse the latest matching profile outputs when their scenario inputs are unchanged",
       "--dry-run: generate promptfoo config and skip execution",
       "--verbose: print full internal artifact paths and raw output",
       "--help: show evaluate usage",

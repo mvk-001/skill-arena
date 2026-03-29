@@ -78,6 +78,23 @@ Command reference:
 - `--requests <n>`: override how many times each prompt is repeated for that run
 - `--max-concurrency <n>`: override `evaluation.maxConcurrency` for that run
 - `--maxConcurrency <n>`: alias accepted by the evaluator CLI
+- `--reuse-unchanged-profiles`: in compare mode, reuse the latest matching profile outputs when the prompt, workspace inputs, agent config, and profile capabilities are unchanged
+
+### Reuse unchanged compare profiles
+
+When you are iterating on only one compare profile, for example editing the `skill` column while leaving `baseline` untouched, you can ask the evaluator to reuse the latest unchanged profile outputs instead of rerunning them:
+
+```bash
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --reuse-unchanged-profiles
+```
+
+This compares the current scenario inputs against the latest `results/<benchmark-id>/*-compare/summary.json` fingerprints and only reuses a profile when:
+
+- the previous run recorded a reuse fingerprint for that scenario
+- the current prompt, workspace inputs, agent config, and profile capabilities still hash to the same value
+- the previous run completed the same number of prompt/request outputs expected by the current config
+
+This is best-effort for mutable Git sources. Reuse decisions are exact for local-path and inline content, and declaration-based for Git sources.
 
 ## Compare Config
 

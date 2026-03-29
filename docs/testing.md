@@ -157,6 +157,7 @@ Matrix evaluation local path contract:
 - matrix evaluation configs must not depend on package-relative path resolution
 - when a relative local path is missing, the evaluator may bootstrap that source tree from packaged fixtures and then materialize a per-scenario workspace
 - matrix evaluation bootstrap excludes `AGENTS.md`
+- `--reuse-unchanged-profiles` reuses the latest matching compare profile outputs when the scenario fingerprint still matches and the prior run completed the expected number of outputs
 
 Behavior to expect in matrix evaluation mode:
 
