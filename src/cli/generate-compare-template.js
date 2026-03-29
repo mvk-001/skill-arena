@@ -551,8 +551,8 @@ function renderCompareTemplate(options) {
 
   lines.push("comparison:");
   lines.push("  profiles:");
-  lines.push("    # TODO: keep at least one isolated baseline profile and one explicit capability profile so the report shows a direct control vs capability comparison.");
-  lines.push("    - id: baseline");
+  lines.push("    # TODO: keep at least one isolated control profile and add as many explicit alternatives as the benchmark needs.");
+  lines.push("    - id: no-skill");
   lines.push("      # TODO: id should be slug-like. Use short ids because they become compare column labels.");
   lines.push("      description: Fully isolated control with no declared capabilities.");
   lines.push("      # TODO: description is free text. Explain what this control profile represents.");
@@ -561,7 +561,7 @@ function renderCompareTemplate(options) {
   lines.push("        # TODO: keep inheritSystem false so compare profiles remain deny-all and explicit.");
   lines.push("      capabilities: {}");
   lines.push("      # TODO: capabilities is an explicit object. Leave it empty for the control profile.");
-  lines.push("    - id: skill");
+  lines.push("    - id: skill-alternative-1");
   lines.push("      # TODO: add more profiles only when each one encodes a clear benchmark hypothesis.");
   lines.push("      description: Declared capability profile with one explicit skill.");
   lines.push("      # TODO: description should identify the capability bundle, for example remote git skill, local skill group, or skill plus agent.");
@@ -571,6 +571,7 @@ function renderCompareTemplate(options) {
   lines.push("        skills:");
   lines.push("          -");
   lines.push(...indentLines(renderSkillSource(options), 12));
+  lines.push("      # TODO: duplicate this profile block when you want more compare columns such as no-skill, skill-alternative-1, skill-alternative-2, or tool-specific capability bundles.");
   lines.push("  variants:");
   lines.push("    # TODO: add one variant per adapter/model/runtime configuration you want as separate rows for each prompt.");
   lines.push(`    - id: ${yamlString(variant.id)}`);
@@ -741,7 +742,7 @@ function renderSkillSource(options) {
       `          subpath: ${yamlString(options.skillSubpath ?? ".")}`,
       "          # TODO: subpath narrows the fetched repository root before selecting the skill. Use . for the repo root, or a deeper folder when the repo contains multiple projects.",
       `          skillPath: ${yamlString(options.skillPathInRepo ?? "skills/TODO-skill")}`,
-      "          # TODO: skillPath is the path to the selected skill folder inside the repo or selected subpath. Point it at the folder that contains SKILL.md.",
+      "          # TODO: skillPath is the path to the selected skill directory inside the repo or selected subpath. Omit it when subpath already points at a whole bundle root.",
       `          skillId: ${yamlString(options.skillId ?? "todo-skill")}`,
       "          # TODO: skillId is the installed folder name and user-facing identifier for the skill. Keep it stable and aligned with the skill's actual purpose.",
       "        install:",
@@ -750,7 +751,7 @@ function renderSkillSource(options) {
       "        # TODO: alternative skill source shapes:",
       "        # TODO: local-path -> source.type: local-path, path: ./skills/my-skill, skillId: my-skill",
       "        # TODO: system-installed -> source.type: system-installed, install.strategy: system-installed",
-      "        # TODO: inline-files -> source.type: inline-files with files that create skills/<skill-id>/SKILL.md",
+      "        # TODO: inline-files -> source.type: inline-files with files that create AGENTS.md, skills/<skill-id>/SKILL.md, references, scripts, or any other bundle assets",
     ];
   }
 
@@ -773,7 +774,7 @@ function renderSkillSource(options) {
       "          type: inline-files",
       "          # TODO: source.type choices are usually local-path, git, system-installed, or inline-files for compare authoring. Use inline-files when the whole skill can be expressed as a small file set directly in compare.yaml.",
       "          files:",
-      "          # TODO: files is an open list of overlay files. Include at minimum skills/<skill-id>/SKILL.md and any extra referenced assets the skill needs.",
+      "          # TODO: files is an open list of overlay files. Include at minimum skills/<skill-id>/SKILL.md and any extra referenced assets the bundle needs, such as AGENTS.md, references, or scripts.",
       `            - path: ${yamlString(`skills/${options.skillId ?? "todo-skill"}/SKILL.md`)}`,
       "              # TODO: path is the file path inside the workspace overlay. Keep the conventional skills/<skill-id>/SKILL.md shape unless the benchmark intentionally needs extra root files such as AGENTS.md.",
       "              content: |",
@@ -797,7 +798,7 @@ function renderSkillSource(options) {
     "          type: local-path",
     "          # TODO: source.type choices are usually local-path, git, system-installed, or inline-files for compare authoring. Use local-path when the skill already exists on the local filesystem.",
     `          path: ${yamlString(options.skillPath ?? "./skills/TODO-skill")}`,
-    "          # TODO: path should point to one skill folder containing SKILL.md. Choose a runtime-relative path for portability or an absolute path only when portability is not needed.",
+    "          # TODO: path should point to one skill directory or to a workspace-overlay bundle root. Choose a runtime-relative path for portability or an absolute path only when portability is not needed.",
     `          skillId: ${yamlString(options.skillId ?? "todo-skill")}`,
     "          # TODO: skillId is the installed folder name and user-facing identifier for the skill. Keep it aligned with the folder name agents will use.",
     "        install:",

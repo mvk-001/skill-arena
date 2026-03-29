@@ -302,6 +302,97 @@ test("normalizeManifestShape and normalizeCompareConfigShape normalize prompts a
   assert.deepEqual(compareConfig.comparison.variants[0].output, { tags: [], labels: {} });
 });
 
+test("normalizeCompareConfigShape preserves multiple alternative profiles", () => {
+  const compareConfig = normalizeCompareConfigShape({
+    schemaVersion: 1,
+    benchmark: {
+      id: "compare-alternatives",
+      description: "Compare alternatives",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "fixtures/base",
+      initializeGit: true,
+    },
+    evaluation: {
+      assertions: [],
+      requests: 2,
+      timeoutMs: 1000,
+      tracing: false,
+      noCache: true,
+    },
+    comparison: {
+      profiles: [
+        {
+          id: "no-skill",
+          description: "Control",
+          isolation: { inheritSystem: false },
+          capabilities: {},
+        },
+        {
+          id: "skill-alternative-1",
+          description: "First bundle",
+          isolation: { inheritSystem: false },
+          capabilities: {
+            skills: [
+              {
+                source: {
+                  type: "local-path",
+                  path: "fixtures/skills/alt-1",
+                  skillId: "alt-1",
+                },
+              },
+            ],
+          },
+        },
+        {
+          id: "skill-alternative-2",
+          description: "Second bundle",
+          isolation: { inheritSystem: false },
+          capabilities: {
+            skills: [
+              {
+                source: {
+                  type: "inline-files",
+                  files: [
+                    {
+                      path: "skills/alt-2/SKILL.md",
+                      content: "---\nname: alt-2\n---\n",
+                    },
+                    {
+                      path: "skills/alt-2/references/checklist.md",
+                      content: "Use the checklist.",
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+      variants: [
+        {
+          id: "variant-one",
+          description: "Variant one",
+          agent: { adapter: "codex" },
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(
+    compareConfig.comparison.profiles.map((profile) => profile.id),
+    ["no-skill", "skill-alternative-1", "skill-alternative-2"],
+  );
+  assert.equal(compareConfig.comparison.profiles[0].skillMode, "disabled");
+  assert.equal(compareConfig.comparison.profiles[1].skillMode, "enabled");
+  assert.equal(compareConfig.comparison.profiles[2].skillMode, "enabled");
+  assert.equal(compareConfig.comparison.profiles[2].capabilities.skills[0].source.type, "inline-files");
+});
+
 test("hasLegacyWorkspaceSkillOverlay detects only explicit skillOverlay entries", () => {
   assert.equal(hasLegacyWorkspaceSkillOverlay({ skillOverlay: "skills/overlay" }), true);
   assert.equal(hasLegacyWorkspaceSkillOverlay({}), false);

@@ -82,7 +82,7 @@ Command reference:
 
 ### Reuse unchanged compare profiles
 
-When you are iterating on only one compare profile, for example editing the `skill` column while leaving `baseline` untouched, you can ask the evaluator to reuse the latest unchanged profile outputs instead of rerunning them:
+When you are iterating on only one compare profile, for example editing `skill-alternative-2` while leaving `no-skill` and `skill-alternative-1` untouched, you can ask the evaluator to reuse the latest unchanged profile outputs instead of rerunning them:
 
 ```bash
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --reuse-unchanged-profiles
@@ -110,7 +110,7 @@ Minimal shape:
 schemaVersion: 1
 benchmark:
   id: repo-summary-compare
-  description: Compare baseline and skill-enabled runs.
+  description: Compare one control profile against two skill alternatives.
   tags:
     - compare
 task:
@@ -137,25 +137,45 @@ evaluation:
   noCache: true
 comparison:
   profiles:
-    - id: baseline
+    - id: no-skill
       description: Fully isolated control
       isolation:
         inheritSystem: false
       capabilities: {}
-    - id: skill
-      description: Only the declared repo-summary skill
+    - id: skill-alternative-1
+      description: Inline bundle with the repo-summary skill
       isolation:
         inheritSystem: false
       capabilities:
         skills:
           - source:
-              type: inline
+              type: inline-files
+              files:
+                - path: AGENTS.md
+                  content: |
+                    # Repo Summary Bundle
+                    Use only the materialized workspace.
+                - path: skills/repo-summary/SKILL.md
+                  content: |
+                    ---
+                    name: repo-summary
+                    ---
+                    Summarize the repository using the provided workspace files only.
+                - path: skills/repo-summary/references/checklist.md
+                  content: |
+                    Cover architecture, major directories, and execution flow.
+            install:
+              strategy: workspace-overlay
+    - id: skill-alternative-2
+      description: Local bundle from disk
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: fixtures/repo-summary/skill-bundle
               skillId: repo-summary
-              content: |
-                ---
-                name: repo-summary
-                ---
-                Summarize the repository using the provided workspace files only.
             install:
               strategy: workspace-overlay
   variants:
@@ -228,9 +248,10 @@ Legacy compatibility:
 
 Preferred explicit skill source options:
 
-- `local-path`: point to one local skill folder containing `SKILL.md`
-- `inline`: define one `SKILL.md` directly in YAML
-- `git`: clone a repo and select one skill folder with optional `skillPath`
+- `local-path`: point to one local skill directory or a workspace-overlay bundle root on disk
+- `inline`: define one `SKILL.md` directly in YAML when the bundle is still centered on one skill folder
+- `inline-files`: define a whole bundle inline, including `AGENTS.md`, `skills/<skill-id>/SKILL.md`, references, and scripts
+- `git`: clone a repo and select one bundle root or skill directory with optional `skillPath`
 
 ## Additional Capability Profiles
 

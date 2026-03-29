@@ -160,7 +160,11 @@ export function normalizeOutput(output, index) {
     score: output.score ?? null,
     latencyMs: output.latencyMs ?? output.latency ?? null,
     cost: output.cost ?? null,
-    tokenUsage: output.tokenUsage ?? output.gradingResult?.tokensUsed ?? null,
+    tokenUsage:
+      output.tokenUsage
+      ?? output.response?.tokenUsage
+      ?? output.gradingResult?.tokensUsed
+      ?? null,
     codeMetricsDelta: metadata.codeMetricsDelta ?? null,
     executionEventHook: metadata.executionEventHook ?? null,
     error: output.error ?? failureReason ?? null,

@@ -1,6 +1,6 @@
 ---
 name: skill-arena-compare
-description: Author or refine a Skill Arena compare.yaml file. Use when Codex needs to create, repair, or review compare configs with correct task prompts, evaluation rules, variants, and explicit skill/no-skill setup, including workspace-overlay skill sources such as local-path, git, or inline-files.
+description: Author or refine a Skill Arena compare.yaml file. Use when Codex needs to create, repair, or review compare configs with correct task prompts, evaluation rules, variants, explicit no-skill versus one-or-many skill alternatives, and workspace-overlay skill bundles sourced from local-path, git, inline, or inline-files.
 ---
 
 # Skill Arena Compare
@@ -44,7 +44,7 @@ instructions:
 
 Produce a concise compare config that gives:
 
-- profile columns such as `baseline`, `no-skill`, or `skill`
+- profile columns such as `no-skill`, `skill`, `skill-alternative-1`, or other explicit alternatives
 - rows by prompt and agent/configuration
 - explicit repeated executions through `evaluation.requests`
 - labels that read well in Promptfoo and in `merged/report.md`
@@ -68,12 +68,15 @@ Produce a concise compare config that gives:
   otherwise.
 - Set `evaluation.maxConcurrency` explicitly only when the benchmark wants a
   machine-specific value.
-- Prefer two profiles by default: one isolated `no-skill` profile and one explicit `skill` profile.
+- Prefer two profiles by default: one isolated `no-skill` profile and one explicit skill profile.
+- When the user wants to compare multiple alternatives at once, add as many explicit profiles as needed, for example `skill-alternative-1`, `skill-alternative-2`, and `skill-alternative-3`.
 - For every capability profile, define the capability under
   `comparison.profiles[*].capabilities` explicitly.
 - Inside `capabilities.skills`, each entry must use the exact shape
   `- source: ...` plus `install: ...`. Do not wrap it inside an extra
   `skill:` object.
+- Use `inline-files` when the skill is really a bundle, not just a bare `SKILL.md`.
+- In skill bundles, include every required support file explicitly, for example `AGENTS.md`, `skills/<skill-id>/SKILL.md`, `skills/<skill-id>/references/*`, and `skills/<skill-id>/scripts/*`.
 - Always include at least one explicit `workspace.sources` entry when the task
   provides a base fixture or workspace path. Do not replace it with
   `sources: []` when the prompt gives a concrete fixture.
@@ -100,6 +103,7 @@ Produce a concise compare config that gives:
   for `no-skill`.
 - Do not rename the enabled profile to a custom skill-specific id when the task
   asks for `skill`.
+- Do not collapse multiple requested alternatives back into only `no-skill` plus one `skill` profile.
 - Do not rewrite `task.prompts` into a mapping.
 - Do not move `task`, `workspace`, `evaluation`, or `comparison` under
   `benchmark`.
@@ -125,29 +129,30 @@ Produce a concise compare config that gives:
 6. If shell access is blocked or flaky, switch to offline authoring immediately.
 7. If the benchmark uses a Git workspace-overlay skill source, copy the block
    shape from `assets/git-workspace-overlay-reference.md`.
-8. If the task needs multiple prompt rows, vary only the prompt text and nested
+8. If the task needs multiple skill alternatives, add one profile per alternative instead of trying to encode alternatives inside one profile.
+9. If the task needs multiple prompt rows, vary only the prompt text and nested
    prompt assertions. Use `assets/prompt-assertions-reference.md`.
-9. Replace placeholders with benchmark-specific metadata, prompts, workspace,
+10. Replace placeholders with benchmark-specific metadata, prompts, workspace,
    evaluation, profiles, and variants.
-10. If the task asks for an output path such as `deliverables/compare.yaml`,
+11. If the task asks for an output path such as `deliverables/compare.yaml`,
    write the file there before the final answer.
-11. Run the smallest useful validation:
+12. Run the smallest useful validation:
    - repository benchmark:
      `node skills/skill-arena-compare/scripts/validate-compare-output.js <path> --benchmark skill-arena-compare`
    - generic task:
      `node skills/skill-arena-compare/scripts/validate-compare-output.js <path>`
-12. Before returning, compare the draft against the checklist in this file and
+13. Before returning, compare the draft against the checklist in this file and
     `assets/fallback-checklist.md`.
-13. When the user asked for file contents only, return raw YAML only even if a
+14. When the user asked for file contents only, return raw YAML only even if a
     live compare run could not complete.
-14. If the task asks for a file and final YAML, the final answer must be only
+15. If the task asks for a file and final YAML, the final answer must be only
     the file contents. Do not append validator results, dry-run status, or
     next steps after the YAML.
-15. Final answer checkpoint:
+16. Final answer checkpoint:
     - starts with `schemaVersion: 1`
     - contains no backticks
     - contains no prose before or after the YAML
-16. Before the final answer, remove any headings, bullets, status summaries,
+17. Before the final answer, remove any headings, bullets, status summaries,
     shell failure notes, and code fences so the reply starts with
     `schemaVersion: 1`.
 
@@ -344,7 +349,7 @@ comparison:
       isolation:
         inheritSystem: false
       capabilities: {}
-    - id: skill
+    - id: skill-alternative-1
       description: ...
       isolation:
         inheritSystem: false
@@ -520,18 +525,28 @@ skill:
   source:
     type: inline-files
     files:
+      - path: AGENTS.md
+        content: |
+          # Example bundle instructions
       - path: skills/my-skill/SKILL.md
         content: |
           ---
           name: my-skill
           description: Example skill.
           ---
+      - path: skills/my-skill/references/checklist.md
+        content: |
+          Use this checklist before answering.
+      - path: skills/my-skill/scripts/helper.sh
+        content: |
+          echo helper
   install:
     strategy: workspace-overlay
 ```
 
 Prefer `inline-files` over `inline` when the benchmark explicitly asks for a
-workspace-overlay file set.
+workspace-overlay file set or when the skill depends on support files beyond
+`SKILL.md`.
 
 ## Judge Provider Guidance
 

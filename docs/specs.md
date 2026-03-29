@@ -7,7 +7,7 @@ Read this after [README.md](../README.md). Use [Usage Guide](./usage.md) for exa
 The benchmark configuration must be declarative and skill-agnostic. A manifest or compare config should describe enough information for the harness to:
 
 - materialize a fresh workspace for each run
-- resolve the `skill` and `no-skill` environments without hidden repository coupling
+- resolve the `no-skill` control and any number of explicit skill alternatives without hidden repository coupling
 - execute multiple prompts across multiple agent configurations
 - compare outputs under consistent, reproducible conditions
 
@@ -211,20 +211,21 @@ Supported skill source types in V1:
 - `none`
 - `system-installed`
 - `local-path`
-  - points to one local skill folder that contains `SKILL.md`
+  - points either to one local skill directory that contains `SKILL.md` or to a workspace-overlay bundle root
   - optional `skillId` overrides the installed folder name; otherwise the basename of `path` is used
 - `inline`
   - defines one skill directly in YAML
   - requires `skillId`
   - writes `SKILL.md` from `content`
   - optional `files` add extra files under that skill folder
-- `git`
-  - clones a Git repository and selects one skill folder from it
-  - `subpath` may narrow the checkout root before selection
-  - optional `skillPath` selects the skill folder relative to the cloned root or selected `subpath`
-  - optional `skillId` overrides the installed folder name
 - `inline-files`
-  - legacy compatibility form for full workspace overlays
+  - defines a whole workspace-overlay bundle directly in YAML
+  - supports root files such as `AGENTS.md` plus nested files such as `skills/<skill-id>/references/*` or `skills/<skill-id>/scripts/*`
+- `git`
+  - clones a Git repository and selects one skill directory or bundle root from it
+  - `subpath` may narrow the checkout root before selection
+  - optional `skillPath` selects the skill directory relative to the cloned root or selected `subpath`
+  - optional `skillId` overrides the installed folder name
 
 Supported install strategies in V1:
 
@@ -240,9 +241,11 @@ Required skill behavior:
 - For `system-installed`, the harness does not inject skill files into the workspace and relies on the local agent runtime environment.
 - Skill materialization for `enabled` runs must not leak into `disabled` runs.
 - Skill definitions may include root instructions and bundled skill folders, for example `AGENTS.md` plus `skills/<skill-id>/SKILL.md`.
-- Preferred explicit skill definitions should use exactly one of these three source modes:
+- Skill bundles may also include sibling support files such as `skills/<skill-id>/references/*` and `skills/<skill-id>/scripts/*`.
+- Preferred explicit skill definitions should use one of these source modes:
   - `local-path`
   - `inline`
+  - `inline-files`
   - `git`
 
 Normalization rules for backward-compatible manifests:
@@ -358,6 +361,7 @@ comparison:
 
 - `schemaVersion` must be `1`.
 - `comparison.profiles[*].id` and `comparison.variants[*].id` must be slug-like identifiers.
+- Compare configs may define any number of profiles, for example `no-skill`, `skill-alternative-1`, `skill-alternative-2`, and `skill-alternative-3`.
 - `evaluation.requests` is the execution count per compare cell.
 - When `evaluation.requests` is omitted in a compare config, it defaults to `10`.
 - `evaluation.maxConcurrency` is optional. When omitted, the harness uses the local machine parallelism.
@@ -374,7 +378,7 @@ comparison:
   - Promptfoo test rows keyed by variant and prompt
 - Unsupported adapters must be reported as skipped comparison entries instead of aborting the whole compare run.
 - Unsupported capability bundles must be reported as per-cell `unsupported` entries instead of aborting the whole compare run.
-- Provider labels in compare mode should prefer concise profile ids such as `baseline` or `skill`.
+- Provider labels in compare mode should prefer concise profile ids such as `no-skill`, `skill-alternative-1`, or `style-guide-bundle`.
 - Compare reports should show rows as `prompt x variant` and columns as profiles.
 - Compare cells should report pass ratios against the requested execution count, for example `40% (4/10)`.
 - When token usage is available, compare cells must also report total-token aggregates for the observed runs, including average and standard deviation.
@@ -447,10 +451,11 @@ Adapter-specific V1 rules:
 - Repository-level `copilot-cli` hooks should usually materialize files under `.github/hooks/`.
 - `instructions` for `codex` or `copilot-cli` should usually materialize `AGENTS.md` at the workspace root when you want project instructions in that profile.
 
-Preferred explicit compare skill definitions use the same three source modes:
+Preferred explicit compare skill definitions use these source modes:
 
 - `local-path`
 - `inline`
+- `inline-files`
 - `git`
 
 ### Compare local path resolution

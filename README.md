@@ -5,8 +5,9 @@ Skill Arena is a CLI-first evaluation harness for comparing coding agents under 
 Use it to measure whether an agent performs better:
 
 - with or without a skill
+- across multiple skill alternatives in the same compare run
 - across different adapters or models
-- under isolated capability profiles such as `baseline` and `skill`
+- under isolated capability profiles such as `no-skill`, `skill-alternative-1`, and `skill-alternative-2`
 - with reproducible workspaces and stable result artifacts
 
 Execution runs through Promptfoo, but authoring stays in Skill Arena configs.
@@ -14,7 +15,9 @@ Execution runs through Promptfoo, but authoring stays in Skill Arena configs.
 ## What You Can Do
 
 - Run side-by-side evaluations from `compare.yaml` files.
+- Compare one control profile against several competing skill bundles in the same matrix.
 - Materialize clean per-run workspaces from local, inline, or Git sources.
+- Materialize full skill bundles, not just standalone `SKILL.md` files.
 - Compare adapters such as `codex`, `copilot-cli`, and `pi`.
 - Generate deterministic artifacts under `results/` for review and reporting.
 

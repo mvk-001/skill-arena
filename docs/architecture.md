@@ -26,7 +26,7 @@ The compare config is the matrix-oriented authoring surface. It defines:
 - the declarative workspace sources to materialize
 - shared evaluation settings plus optional prompt-specific row assertions
 - compare variants for adapter and model
-- compare profiles such as `baseline`, `skill`, or explicit capability bundles
+- compare profiles such as `no-skill`, `skill-alternative-1`, `skill-alternative-2`, or other explicit capability bundles
 
 The compare runner expands the matrix internally, materializes a separate workspace for each supported variant and profile, and then executes one Promptfoo eval with:
 
@@ -52,11 +52,11 @@ Workspace-injected skills can contain any files needed by the benchmarked agent,
 
 Compare profiles may also materialize non-skill capability bundles such as repository instructions, custom agents, and hooks when the selected adapter supports them. These capability bundles are applied after base workspace sanitization so the profile can intentionally reintroduce files such as `AGENTS.md` or `.github/agents/*`.
 
-For explicit skill declarations, the preferred contract is to identify one benchmarked skill through one of three source modes:
+For explicit skill declarations, the preferred contract is to declare one benchmarked skill bundle through one of these source modes:
 
-- a local skill folder
-- an inline `SKILL.md`
-- a Git repository plus an optional selected skill subfolder
+- a local path that points either to one skill directory or to a workspace-overlay bundle root
+- inline files that create the entire bundle directly in YAML
+- a Git repository plus an optional selected bundle root or selected skill subfolder
 
 Some benchmarks use system-installed skills instead of workspace overlays. In those cases the harness does not inject skill files into the workspace; the benchmark relies on skills already installed in the local agent environment.
 

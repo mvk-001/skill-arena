@@ -461,6 +461,33 @@ test("normalizeOutput handles failure fallbacks and testCase metadata", () => {
   assert.equal(nullFailureOutput.error, null);
 });
 
+test("normalizeOutput prefers response token usage when top-level token usage is absent", () => {
+  const output = normalizeOutput({
+    provider: "provider-id",
+    prompt: {
+      raw: "Prompt text",
+    },
+    response: {
+      output: "DONE",
+      tokenUsage: {
+        total: 42,
+        prompt: 30,
+        completion: 12,
+      },
+    },
+    gradingResult: {
+      tokensUsed: {
+        total: 0,
+      },
+    },
+  }, 0);
+
+  assert.equal(output.text, "DONE");
+  assert.equal(output.tokenUsage.total, 42);
+  assert.equal(output.tokenUsage.prompt, 30);
+  assert.equal(output.tokenUsage.completion, 12);
+});
+
 test("merged benchmark summary and reports handle defaults, skips, and empty cells", () => {
   const mergedSummary = buildMergedBenchmarkSummary({
     manifest: {

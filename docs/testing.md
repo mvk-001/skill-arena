@@ -158,7 +158,7 @@ Matrix evaluation local path contract:
 - when a relative local path is missing, the evaluator may bootstrap that source tree from packaged fixtures and then materialize a per-scenario workspace
 - matrix evaluation bootstrap excludes `AGENTS.md`
 - `--reuse-unchanged-profiles` reuses the latest matching compare profile outputs when the scenario fingerprint still matches and the prior run completed the expected number of outputs
-- changing inline skill content in `compare.yaml` invalidates reuse for that profile the same way changing a local-path skill file does
+- changing inline skill bundle content in `compare.yaml` invalidates reuse for that profile the same way changing a local-path skill file or bundled reference/script file does
 
 Behavior to expect in matrix evaluation mode:
 
@@ -198,7 +198,7 @@ All evaluation commands:
 
 - materialize an isolated workspace under `results/`
 - materialize `workspace.sources` in declaration order
-- resolve the skill from local path, Git, inline files, or the system-installed environment when configured
+- resolve the skill or skill bundle from local path, Git, inline files, or the system-installed environment when configured
 - generate a Promptfoo config for the selected evaluation
 - execute the configured adapter through the custom Promptfoo provider
 - write `promptfoo-results.json` and `summary.json`
@@ -240,6 +240,6 @@ At the end of `skill-arena evaluate` in matrix evaluation mode, the CLI prints t
 For profile-isolation validation after runtime changes, add at least one matrix-evaluation dry-run that:
 
 - uses `comparison.profiles`
-- includes one empty baseline profile with `inheritSystem: false`
+- includes one empty `no-skill` control profile with `inheritSystem: false`
 - includes one explicit capability profile
 - includes one intentionally unsupported capability family and verifies the cell is reported as `unsupported`

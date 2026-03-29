@@ -697,6 +697,106 @@ test("inline skill sources are written into the workspace only for enabled runs"
   assert.equal(workspace.isolation.mountedSkillIds[0], "inline-helper");
 });
 
+test("inline-files skill bundles can include support files beyond SKILL.md", async () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "inline-skill-bundle-check",
+      description: "Inline skill bundle test",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [
+        {
+          id: "base",
+          type: "empty",
+          target: "/",
+        },
+      ],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      {
+        id: "inline-bundle-enabled",
+        description: "Inline bundle enabled",
+        skillMode: "enabled",
+        skill: {
+          source: {
+            type: "inline-files",
+            files: [
+              {
+                path: "AGENTS.md",
+                content: "# Bundle instructions\n",
+              },
+              {
+                path: "skills/inline-bundle/SKILL.md",
+                content: "---\nname: inline-bundle\n---\nUse bundled references.\n",
+              },
+              {
+                path: "skills/inline-bundle/references/checklist.md",
+                content: "1. Read the repo.\n2. Apply the checklist.\n",
+              },
+              {
+                path: "skills/inline-bundle/scripts/helper.sh",
+                content: "echo helper\n",
+              },
+            ],
+          },
+          install: {
+            strategy: "workspace-overlay",
+          },
+        },
+        agent: {
+          adapter: "codex",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "HELLO",
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  const workspace = await materializeWorkspace({
+    manifest,
+    scenario: manifest.scenarios[0],
+  });
+
+  assert.equal(
+    await fs.readFile(path.join(workspace.workspaceDirectory, "AGENTS.md"), "utf8"),
+    "# Bundle instructions\n",
+  );
+  assert.match(
+    await fs.readFile(path.join(workspace.workspaceDirectory, "skills", "inline-bundle", "SKILL.md"), "utf8"),
+    /name: inline-bundle/,
+  );
+  assert.equal(
+    await fs.readFile(
+      path.join(workspace.workspaceDirectory, "skills", "inline-bundle", "references", "checklist.md"),
+      "utf8",
+    ),
+    "1. Read the repo.\n2. Apply the checklist.\n",
+  );
+  assert.equal(
+    await fs.readFile(
+      path.join(workspace.workspaceDirectory, "skills", "inline-bundle", "scripts", "helper.sh"),
+      "utf8",
+    ),
+    "echo helper\n",
+  );
+  assert.deepEqual(workspace.isolation.mountedSkillIds, ["inline-bundle"]);
+});
+
 test("workspace base sources strip AGENTS.md and skills while overlays remain visible", async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-sanitize-"));
   const baseDirectory = path.join(tempDirectory, "base");
