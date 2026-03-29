@@ -180,6 +180,13 @@ The harness defaults to:
 - no extra system prompt content added by the harness
 - execution through the local system Codex runtime instead of a direct hosted Promptfoo provider shortcut
 
+Benchmark integrity depends on strict context boundaries. The runtime should expose only:
+
+- the exact benchmark prompt
+- the files materialized into folders explicitly shared with the agent
+
+It should not append hidden harness instructions or rely on knowledge sources outside those declared run inputs.
+
 ### Known limitation
 
 Agent providers may still add hidden system instructions, internal orchestration, or tool wrappers. Skill Arena measures the effective agent system, not an impossible "pure model with zero runtime behavior" abstraction.

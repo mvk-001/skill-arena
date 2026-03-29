@@ -46,6 +46,7 @@ All repository artifacts must be written in English. This includes code, comment
 - Keep Codex execution on the local system path through the custom Promptfoo provider; do not switch benchmark scenarios back to direct hosted Promptfoo Codex providers.
 - When a benchmark uses a system-installed skill, record that in the manifest with `skillSource: "system-installed"` instead of pretending the skill came from a workspace overlay.
 - Preserve the minimal-context goal: benchmark prompts should contain the task, not extra harness instructions, unless the benchmark explicitly measures those instructions.
+- Preserve strict benchmark scope: do not append hidden instructions to prompts and do not rely on knowledge or files outside the exact prompt plus the folders explicitly shared with the agent for that run.
 
 ## Codex Loop Closeout
 

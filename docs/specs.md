@@ -540,6 +540,7 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 - Workspace-injected skills are copied or written only for `skillMode: "enabled"` runs that resolve to `workspace-overlay`.
 - Compare profiles must default to deny-all isolation and expose only explicitly declared capabilities.
 - The harness must not require a benchmark to live under `benchmarks/` in order to run it.
+- The harness and benchmark definitions must not inject hidden prompt instructions or extra knowledge outside the exact benchmark prompt and the files materialized in folders explicitly shared with the agent for that run.
 
 ## Result directories
 
@@ -584,6 +585,6 @@ Unless a manifest explicitly overrides them, scenarios should use:
 - local machine parallelism for `evaluation.maxConcurrency`
 - `noCache: true`
 
-The harness must not add task instructions beyond the benchmark prompt and the files available in the workspace.
+The harness must not add task instructions beyond the benchmark prompt and the files available in the workspace. It must not supply hidden context or knowledge from outside the prompt and the folders explicitly shared with the agent.
 
 Exception: benchmarks that exercise external system CLIs may require broader sandbox access than the default. When that is necessary, the manifest must declare the exception explicitly in the scenario.
