@@ -1,8 +1,10 @@
 node_modules/
 .tools/
+# Generated benchmark run artifacts and manual reuse validation runs.
 results/
 coverage/
 reports/
+# Temporary local experiments and scratch compare configs.
 .tmp/
 tmp/
 deliverables/

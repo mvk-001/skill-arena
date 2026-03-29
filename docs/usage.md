@@ -94,6 +94,8 @@ This compares the current scenario inputs against the latest `results/<benchmark
 - the current prompt, workspace inputs, agent config, and profile capabilities still hash to the same value
 - the previous run completed the same number of prompt/request outputs expected by the current config
 
+This applies to both local-path and inline skill definitions. Changing the inline `content` or inline extra files invalidates reuse for that profile.
+
 This is best-effort for mutable Git sources. Reuse decisions are exact for local-path and inline content, and declaration-based for Git sources.
 
 ## Compare Config

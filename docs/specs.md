@@ -381,6 +381,7 @@ comparison:
 - When `rust-code-analysis` is available, compare cells may also report per-metric deltas between original and proposed code for modified original files only, including cell-level average and standard deviation for each changed metric.
 - Shared compare execution settings such as `requests`, `timeoutMs`, `tracing`, `maxConcurrency`, and `noCache` still come from top-level `evaluation`.
 - The compare CLI may reuse prior scenario outputs when `--reuse-unchanged-profiles` is enabled and the latest compare `summary.json` contains the same scenario fingerprint plus the expected output count for the current request and prompt shape.
+- Scenario fingerprints should change when local-path or inline skill content changes. Git-backed sources remain declaration-based unless the runtime records a resolved immutable revision.
 
 ### Compare normalization rules
 

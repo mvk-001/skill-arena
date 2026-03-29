@@ -158,6 +158,7 @@ Matrix evaluation local path contract:
 - when a relative local path is missing, the evaluator may bootstrap that source tree from packaged fixtures and then materialize a per-scenario workspace
 - matrix evaluation bootstrap excludes `AGENTS.md`
 - `--reuse-unchanged-profiles` reuses the latest matching compare profile outputs when the scenario fingerprint still matches and the prior run completed the expected number of outputs
+- changing inline skill content in `compare.yaml` invalidates reuse for that profile the same way changing a local-path skill file does
 
 Behavior to expect in matrix evaluation mode:
 
