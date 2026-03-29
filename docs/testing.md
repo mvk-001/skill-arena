@@ -1,18 +1,16 @@
 # Testing
 
-Read this after [Usage Guide](./usage.md). This page is the validation and verification playbook. Use [Specs](./specs.md) for canonical fields and [Architecture](./architecture.md) when a failure looks like a runner or adapter problem.
+Read this after [Usage Guide](./usage.md). This page is the validation playbook for Skill Arena itself: runtime code, compare config generation, workspace materialization, and live evaluation checks. Use [Specs](./specs.md) for canonical fields and [Architecture](./architecture.md) when a failure looks like a runner or adapter problem.
 
-## Prerequisites
+## What To Verify
 
-- Node.js 24 or newer
-- `npm install` or `pnpm install`
-- Local Codex CLI available on `PATH` as `codex`
-- Local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
-- Codex authenticated on the machine before running live evaluations
+When you change Skill Arena, the goal is usually to verify three layers in order:
 
-## Recommended Loop
+1. Unit-tested runtime behavior under `src/`
+2. Config validation and Promptfoo generation
+3. Optional live agent execution against a maintained compare benchmark
 
-Use this by default after runtime or config changes:
+The default loop is:
 
 ```bash
 npm test
@@ -20,23 +18,27 @@ skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 ```
 
-Run the live evaluation only when the dry-run and unit tests look clean:
+Run the live evaluation only when that loop is clean:
 
 ```bash
 skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
 ```
 
-## What To Run
+## Prerequisites
 
-### 1. Run unit tests
+- Node.js 24 or newer
+- `npm install` or `pnpm install`
+- local Codex CLI available on `PATH` as `codex`
+- local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
+- Codex authenticated on the machine before running live evaluations
 
-These validate manifest parsing, Promptfoo config generation, workspace materialization, and result normalization.
+## 1. Run Unit Tests
+
+These tests cover manifest parsing, compare config generation, workspace materialization, adapter preparation, and result normalization.
 
 ```bash
 npm test
 ```
-
-The repository test scripts intentionally target `test/*.test.js` only. This keeps generated run artifacts under `results/` from being picked up as accidental test inputs by Node's default test discovery.
 
 With `pnpm`:
 
@@ -44,39 +46,150 @@ With `pnpm`:
 pnpm test
 ```
 
-### 1a. Run coverage with enforced minimum thresholds
+The repository test script intentionally targets `test/*.test.js` only so generated artifacts under `results/` are not picked up by Node's default test discovery.
 
-Use this command for repository changes that touch the runtime or test surface. It fails if coverage drops below the enforced minimum:
+### Coverage
+
+When a change touches runtime behavior or the unit-testable surface, also run:
 
 ```bash
 npm run test:coverage
 ```
 
-Current enforced minimum thresholds:
+This command enforces minimum thresholds:
 
 - statements: `95%`
 - lines: `95%`
 - branches: `85%`
 - functions: `95%`
 
-Coverage scope for this threshold includes `src/**/*.js` and excludes:
+Coverage scope includes `src/**/*.js` and excludes:
 
 - `src/cli/**`
 - `src/runner.js`
 - `src/providers/codex-system-provider.js`
 - `src/providers/pi-system-provider.js`
 
-These exclusions keep the quota focused on the unit-testable runtime surface while live evaluation flows continue to exercise the excluded command-oriented entrypoints.
+Those exclusions keep the threshold focused on the stable unit-testable runtime surface while live evaluations exercise command-oriented entrypoints separately.
 
-### 1b. Optional `rust-code-analysis` usage
+## 2. Validate The Config
 
-Use `rust-code-analysis` only when you want standalone complexity and maintainability metrics in addition to test coverage. Skill Arena also uses this tool opportunistically during matrix evaluation runs to report changed code metrics for modified original files.
+Before running a maintained benchmark, validate its config:
 
-This tool is optional. Do not install it unless you specifically want those extra metrics.
+```bash
+skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
+```
 
-Recommended approach:
+This catches malformed YAML, invalid schema combinations, and unfinished `TODO:` fields from `gen-conf`.
 
-- Prebuilt release binary:
+## 3. Run A Dry-Run Evaluation
+
+Use `--dry-run` to verify materialization and config generation without launching live agent executions:
+
+```bash
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+```
+
+This is the fastest high-signal check after config or runtime changes because it confirms that Skill Arena can:
+
+- load the compare config
+- expand profiles and variants
+- materialize isolated workspaces under `results/`
+- resolve workspace and capability sources
+- generate a Promptfoo config for the benchmark
+
+## 4. Run A Live Evaluation
+
+When the dry-run is clean, run the maintained compare benchmark:
+
+```bash
+skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+```
+
+Generic form:
+
+```bash
+skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
+```
+
+Useful variants:
+
+```bash
+skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --requests 2
+skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --max-concurrency 2
+skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --reuse-unchanged-profiles
+```
+
+Scaffold a config when you need a new benchmark:
+
+```bash
+skill-arena gen-conf --output ./benchmarks/<benchmark-id>/compare.yaml --prompt "Describe the task." --skill-type local-path
+```
+
+## What A Compare Run Does
+
+In compare mode, Skill Arena:
+
+- materializes a separate isolated workspace for each supported scenario unit
+- generates one Promptfoo config with profile columns and `prompt x variant` rows
+- executes each matrix cell `evaluation.requests` times
+- records unsupported adapters as skipped entries instead of aborting the whole run
+- records unsupported capability bundles as `unsupported` cells instead of aborting the whole run
+
+Behavior to expect:
+
+- profiles appear as side-by-side columns
+- rows are variant and prompt pairs
+- matrix cells report pass ratio against the requested execution count
+- when token usage is available, cells also report average and standard deviation aggregates
+- when `rust-code-analysis` is installed, cells may also report changed-code metrics for modified original files only
+
+## Local Path And Reuse Rules
+
+For matrix evaluation configs:
+
+- absolute paths always work
+- relative paths resolve from the current command working directory
+- matrix configs must not depend on package-relative path resolution
+- when a relative local path is missing, the evaluator may bootstrap that source tree from packaged fixtures
+- compare-mode bootstrap excludes `AGENTS.md`
+
+Reuse behavior:
+
+- `--reuse-unchanged-profiles` reuses the latest matching outputs when the scenario fingerprint still matches
+- changing inline skill content invalidates reuse
+- changing local-path skill files, bundled references, or bundled scripts also invalidates reuse
+- Git-backed reuse is best-effort because mutable refs are not always content-addressed at authoring time
+
+## Inspect The Results
+
+Each compare run writes artifacts under:
+
+```text
+results/<benchmark-id>/<timestamp>-compare/
+```
+
+The most useful outputs are:
+
+- `promptfooconfig.yaml`
+- `promptfoo-results.json`
+- `summary.json`
+- `merged/report.md`
+- `merged/merged-summary.json`
+
+For hook and execution-event inspection, also check:
+
+- `results/<benchmark-id>/<timestamp>-compare/workspace/.skill-arena/hooks/execution-events/*.json`
+
+At the end of `skill-arena evaluate` in compare mode, the CLI prints the important artifact paths for the summary and merged report.
+
+## Optional `rust-code-analysis`
+
+Use `rust-code-analysis` only when you want standalone complexity and maintainability metrics in addition to test coverage. Skill Arena also uses it opportunistically during compare runs to report changed-code metrics.
+
+This tool is optional.
+
+Recommended Windows install flow:
 
 ```powershell
 $toolDir = Join-Path $env:LOCALAPPDATA "skill-arena\\tools\\rust-code-analysis"
@@ -100,9 +213,7 @@ Run it directly against this repository:
   -o .tmp\rca-js
 ```
 
-This writes one JSON metrics file per analyzed source file under `.tmp/rca-js/`.
-
-If the binary is on `PATH`, compare evaluations automatically pick it up. If it is not installed, evaluations continue without these code metrics. To force a specific binary path, set:
+To force a specific binary path:
 
 ```powershell
 $env:SKILL_ARENA_RUST_CODE_ANALYSIS_BIN = "C:\tools\rust-code-analysis-cli.exe"
@@ -110,75 +221,23 @@ $env:SKILL_ARENA_RUST_CODE_ANALYSIS_BIN = "C:\tools\rust-code-analysis-cli.exe"
 
 Useful follow-up checks:
 
-- inspect the generated JSON for file-level `cognitive`, `cyclomatic`, `halstead`, and `loc` metrics
-- rank hotspots by cognitive complexity to identify refactor targets
-- rerun after a refactor and compare the changed metric deltas in the merged compare report
+- inspect generated JSON for `cognitive`, `cyclomatic`, `halstead`, and `loc` metrics
+- rank hotspots by cognitive complexity
+- rerun after a refactor and compare the changed metric deltas
 
-Repository loop closeout helper:
+## Closeout Guardrail
+
+Before closing an autonomous improvement loop in this repository, run:
 
 ```bash
 node skills/skill-arena-compare/scripts/run-rust-analyzer-hook.js
 ```
 
-Use this as the Codex loop closeout guardrail for autonomous repo-improvement loops. It runs `rust-code-analysis` against the repository runtime paths and writes JSON artifacts under `.tmp/rust-code-analysis-loop/`. Pass `--strict` when the loop must fail if the binary is unavailable.
+This is the required repository closeout guardrail for autonomous loops. It writes JSON artifacts under `.tmp/rust-code-analysis-loop/`.
 
-### 2. Validate a config
+Pass `--strict` when the loop must fail if the binary is unavailable.
 
-Use this before running a live evaluation if the config changed:
-
-```bash
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
-```
-
-### 3. Run an evaluation
-
-Use the main command:
-
-```bash
-skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
-```
-
-Generate the Promptfoo config without executing the live eval:
-
-```bash
-skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --dry-run
-```
-
-Scaffold a compare config quickly:
-
-```bash
-skill-arena gen-conf --output ./benchmarks/<benchmark-id>/compare.yaml --prompt "Describe the task." --skill-type local-path
-```
-
-Matrix evaluation local path contract:
-
-- absolute paths always work
-- relative paths are resolved from the current command working directory
-- matrix evaluation configs must not depend on package-relative path resolution
-- when a relative local path is missing, the evaluator may bootstrap that source tree from packaged fixtures and then materialize a per-scenario workspace
-- matrix evaluation bootstrap excludes `AGENTS.md`
-- `--reuse-unchanged-profiles` reuses the latest matching compare profile outputs when the scenario fingerprint still matches and the prior run completed the expected number of outputs
-- changing inline skill bundle content in `compare.yaml` invalidates reuse for that profile the same way changing a local-path skill file or bundled reference/script file does
-
-Behavior to expect in matrix evaluation mode:
-
-- profiles appear as side-by-side columns in the same Promptfoo eval
-- rows are variant and prompt pairs
-- `evaluation.requests` controls the pass ratio denominator for each matrix cell
-- matrix cells report pass ratio plus total-token aggregates as average and standard deviation when token usage is available
-- when `rust-code-analysis` is installed, matrix cells also report changed code metrics for modified original files only, aggregated as average and standard deviation per changed metric
-- unsupported adapters are listed as skipped entries in the merged report
-- unsupported profile capability bundles are rendered as `unsupported` cells instead of aborting the evaluation run
-
-### 4. Run the maintained sample config
-
-Use the config kept in this repository:
-
-```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
-```
-
-### 4a. Recommended validation flow after runtime changes
+## Recommended Validation Sequence After Runtime Changes
 
 Use this short sequence when you change the runner, Promptfoo integration, workspace materialization, or assertion translation:
 
@@ -190,56 +249,13 @@ skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
 
 What this covers:
 
-- `npm test` catches unit-level regressions in config generation and result normalization
-- `val-conf` confirms the config still parses cleanly
+- `npm test` catches unit-level regressions
+- `val-conf` confirms the maintained config still parses cleanly
 - `evaluate --dry-run` confirms workspace materialization and Promptfoo config generation still work
 
-All evaluation commands:
-
-- materialize an isolated workspace under `results/`
-- materialize `workspace.sources` in declaration order
-- resolve the skill or skill bundle from local path, Git, inline files, or the system-installed environment when configured
-- generate a Promptfoo config for the selected evaluation
-- execute the configured adapter through the custom Promptfoo provider
-- write `promptfoo-results.json` and `summary.json`
-- write a merged summary and report for compare runs
-
-If your config uses an `llm-rubric` assertion, Promptfoo also runs the judge model configured on that assertion.
-
-If the assertion uses `skill-arena:judge:codex`, `skill-arena:judge:copilot-cli`, or `skill-arena:judge:pi`, Promptfoo runs the packaged local custom provider instead of a hosted model API.
-
-If your config uses Git-backed workspace or skill sources, the harness downloads them before the agent run. The agent itself still follows the declared sandbox and network settings.
-
-If your config uses `task.prompts`, Promptfoo evaluates every prompt variant and applies `requests` to each one.
-
-If `maxConcurrency` is omitted in a compare config, the harness uses the local machine parallelism by default. That resolved value also governs the pre-eval workspace materialization phase.
-
-## Where To Inspect Results
-
-Each run writes artifacts under:
-
-```text
-results/<benchmark-id>/<timestamp>-compare/
-```
-
-The most useful files are:
-
-- `promptfooconfig.yaml`
-- `promptfoo-results.json`
-- `summary.json`
-
-For matrix evaluation runs, inspect:
-
-- `results/<benchmark-id>/<timestamp>-compare/promptfoo-results.json`
-- `results/<benchmark-id>/<timestamp>-compare/summary.json`
-- `results/<benchmark-id>/<timestamp>-compare/merged/report.md`
-- `results/<benchmark-id>/<timestamp>-compare/workspace/.skill-arena/hooks/execution-events/*.json`
-
-At the end of `skill-arena evaluate` in matrix evaluation mode, the CLI prints the artifact paths for the summary and merged report.
-
-For profile-isolation validation after runtime changes, add at least one matrix-evaluation dry-run that:
+For profile-isolation validation after runtime changes, add at least one compare dry-run that:
 
 - uses `comparison.profiles`
 - includes one empty `no-skill` control profile with `inheritSystem: false`
 - includes one explicit capability profile
-- includes one intentionally unsupported capability family and verifies the cell is reported as `unsupported`
+- includes one intentionally unsupported capability family and confirms the cell is reported as `unsupported`
