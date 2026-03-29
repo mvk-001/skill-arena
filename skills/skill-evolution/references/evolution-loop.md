@@ -9,6 +9,7 @@ Use this loop when the target is another skill and the evaluation setup is stabl
 - Children per generation: `8`
 - Ranking order: highest fitness first, then lowest candidate id
 - Reevaluation: required for every generation
+- Parallel Execution: max/2
 
 ## Survivor policy
 
