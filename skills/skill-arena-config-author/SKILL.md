@@ -164,8 +164,23 @@ support, still model it explicitly. The compare run should surface that cell as
   especially `instructions`, `agents`, and `hooks`.
 - Keep shared checks in top-level `evaluation.assertions`.
 - Keep row-specific checks under `task.prompts[*].evaluation.assertions`.
+- Keep shared assertions schema-level and row-agnostic. Do not make top-level
+  checks depend on one prompt's required workspace source type, profile set, or
+  capability family when other prompt rows intentionally exercise different
+  shapes.
 - Make output format requirements explicit in the prompt and enforce them with
   prompt-level assertions when different rows expect different formats.
+- When a prompt names a specific remote skill or bundle, assert the exact
+  identifying fields that make it that artifact, such as `repo`, `ref`,
+  `skillPath`, `skillId`, and install strategy, instead of checking only a
+  generic source type.
+- When a prompt asks for an explicit control profile or a fixed set of profiles,
+  assert that those profile ids are present and the count matches the request.
+- When a prompt asks for a specific variant or a fixed set of variants, assert
+  the expected variant ids are present and the count matches the request.
+- Prefer assertions that reject partial compare configs. If the prompt asks for
+  two profiles, one variant, or one workspace base source, do not accept an
+  output that only includes a subset and happens to satisfy a few field checks.
 - When the benchmark asks for file output, prefer file-aware assertions such as
   `file-contains`, `javascript`, or `llm-rubric` over checking only the final
   chat response.
@@ -300,6 +315,13 @@ Assertion design:
 - Use `llm-rubric` when exact matching would be brittle.
 - Mix shared and prompt-level assertions deliberately instead of duplicating
   the same checks everywhere.
+- Shared assertions should protect invariant schema structure only.
+- Prompt-level assertions should carry the prompt-specific source shapes,
+  profile ids, adapters, and capability-family expectations.
+- Prompt-level assertions should also carry exact profile-count and variant-count
+  expectations whenever the prompt names a closed set.
+- If one row asks for `workspace.sources` with `git` or `empty`, do not keep a
+  shared assertion that forces every row to use `local-path`.
 
 ## No-Shell Rule
 

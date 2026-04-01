@@ -65,6 +65,11 @@ Use `scripts/create-population.js` to materialize the first generation and write
 - Record raw outputs and the normalized fitness value for each one.
 - Reject candidates that break required gates even if they look promising qualitatively.
 - Keep scoring artifacts outside the skill files when possible so the skill content stays reviewable.
+- At the end of each iteration, produce a short findings summary that captures:
+  - the strongest positive signal
+  - the main regression or weakness
+  - what stayed inconclusive
+  - the next mutation hypothesis
 
 Use `scripts/rank-results.js` after writing per-candidate result files.
 
@@ -96,6 +101,8 @@ Read [references/mutation-operators.md](references/mutation-operators.md) when y
 - Keep what improved.
 - Discard what regressed.
 - If nothing improved, keep the incumbent and log that the generation failed.
+- Before starting another generation or stopping, report the iteration summary
+  so the user can see what the loop learned from that round.
 
 Use `scripts/write-generation-log.js` to append a generation summary with scores, survivors, parents, mutations, and accepted winner.
 
@@ -124,6 +131,8 @@ The final output should identify:
 - Use crossover only when the parent strengths are complementary and observable.
 - Do not merge speculative changes into the winner without reevaluation.
 - Do not let hidden context or external knowledge drift into the benchmark loop.
+- Every iteration must include a concise summary of findings before the next
+  mutation or final closeout.
 
 ## References And Helpers
 

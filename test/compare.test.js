@@ -1669,7 +1669,8 @@ test("skill-arena-compare benchmark uses the remote skill and prompt-specific ev
   assert.equal(
     compareConfig.evaluation.assertions.some((assertion) =>
       assertion.type === "javascript"
-      && assertion.value.includes("hasRuntimeRelativeWorkspace")
+      && assertion.value.includes("hasWorkspaceSources")
+      && assertion.value.includes("hasOnlyRuntimeRelativeLocalPaths")
       && assertion.value.includes("forbiddenPatterns")),
     true,
   );
