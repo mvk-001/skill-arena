@@ -754,6 +754,12 @@ When the user wants the compare config to use local machine capacity, calculate
 `evaluation.maxConcurrency` from Node.js and write the computed integer into the
 YAML.
 
+Default to `60%` of the local capacity reported by Node.js. This is the
+starting point for machine-aware local runs because it usually leaves enough
+headroom for the desktop, filesystem, and agent CLI startup overhead while
+still using the machine meaningfully. Only move higher when the user asks for
+it explicitly or when repeated runs show the benchmark remains stable.
+
 Preferred Node.js snippet:
 
 ```js
@@ -763,14 +769,14 @@ const capacity = typeof os.availableParallelism === "function"
   ? os.availableParallelism()
   : os.cpus().length;
 
-const maxConcurrency = Math.max(1, Math.floor(capacity * 0.8));
+const maxConcurrency = Math.max(1, Math.floor(capacity * 0.6));
 console.log(maxConcurrency);
 ```
 
 PowerShell one-liner:
 
 ```powershell
-node -e "const os=require('node:os'); const capacity=typeof os.availableParallelism==='function' ? os.availableParallelism() : os.cpus().length; console.log(Math.max(1, Math.floor(capacity * 0.8)));"
+node -e "const os=require('node:os'); const capacity=typeof os.availableParallelism==='function' ? os.availableParallelism() : os.cpus().length; console.log(Math.max(1, Math.floor(capacity * 0.6)));"
 ```
 
 If the benchmark should stay portable across machines and the user does not want

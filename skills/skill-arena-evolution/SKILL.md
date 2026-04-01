@@ -34,8 +34,9 @@ Use these defaults unless the user gives a stronger constraint:
   small distribution instead of a single-run anecdote
 - parallel requests:
   - choose a level that keeps the machine responsive and avoids turning rate limits or local contention into benchmark noise
-  - start conservative when the benchmark is expensive or flaky
-  - increase parallelism only after one stable low-concurrency run
+  - for local machine-aware runs, start from `60%` of the capacity reported by Node.js (`os.availableParallelism()` when available, otherwise `os.cpus().length`)
+  - lower that starting point when the benchmark is expensive, flaky, stateful, or prone to local contention
+  - increase parallelism only after one stable run at the chosen starting point
 - cache policy:
   - disable cache while validating whether a new mutation actually changed behavior
   - enable reuse or cache only for unchanged profiles or unchanged candidates when the benchmark and inputs are identical
@@ -54,9 +55,23 @@ If the user does not provide one, derive the minimal rubric from the task, fixtu
 - Identify any hard gates such as tests, linters, schema validation, or required output shape.
 - Estimate an appropriate parallel request count before the loop starts:
   - `1` when the benchmark is flaky, stateful, or likely to hit shared-resource conflicts
-  - `2-4` for most local evolution loops where you want some speedup without adding much noise
-  - higher only after confirming the benchmark remains stable and machine capacity is not the bottleneck
+  - otherwise compute `Math.max(1, Math.floor(capacity * 0.6))` from Node.js capacity and use that as the default first trial
+  - lower the computed value when the benchmark is mostly CLI startup, heavy filesystem work, or remote-rate-limit sensitive
+  - raise it only after confirming the benchmark remains stable and machine capacity is not the bottleneck
 - Prefer lowering parallelism before lowering requests when results look noisy.
+
+Use this Node.js snippet when you need the concrete value:
+
+```js
+import os from "node:os";
+
+const capacity = typeof os.availableParallelism === "function"
+  ? os.availableParallelism()
+  : os.cpus().length;
+
+const maxConcurrency = Math.max(1, Math.floor(capacity * 0.6));
+console.log(maxConcurrency);
+```
 
 Read [references/fitness-design.md](references/fitness-design.md) when the scoring rule is vague or mixes tests with rubric scoring.
 
