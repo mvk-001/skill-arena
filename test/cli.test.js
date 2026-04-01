@@ -157,6 +157,7 @@ test("evaluate command shows inline help", async () => {
   assert.match(output, /Run one benchmark manifest or matrix evaluation config/);
   assert.match(output, /--requests <n>/);
   assert.match(output, /--max-concurrency <n>/);
+  assert.match(output, /--markdown-output <path>/);
 });
 
 test("skill-arena CLI returns version", async () => {

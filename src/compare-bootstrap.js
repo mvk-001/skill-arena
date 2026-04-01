@@ -86,16 +86,21 @@ async function bootstrapMissingComparePath({
 }
 
 async function findBootstrapSourceDirectory(inputPath) {
-  const packageFixturesDirectory = fromPackageRoot("fixtures");
   const requestedSuffix = normalizeRelativeSuffix(inputPath);
   const candidateDirectories = [];
+  const packageSearchRoots = [
+    fromPackageRoot("fixtures"),
+    fromPackageRoot("evaluations"),
+  ];
 
-  await walkDirectories(packageFixturesDirectory, async (directoryPath) => {
-    const packageRelativeDirectory = path.relative(fromPackageRoot(), directoryPath);
-    if (normalizeRelativeSuffix(packageRelativeDirectory).endsWith(requestedSuffix)) {
-      candidateDirectories.push(directoryPath);
-    }
-  });
+  for (const searchRoot of packageSearchRoots) {
+    await walkDirectories(searchRoot, async (directoryPath) => {
+      const packageRelativeDirectory = path.relative(fromPackageRoot(), directoryPath);
+      if (normalizeRelativeSuffix(packageRelativeDirectory).endsWith(requestedSuffix)) {
+        candidateDirectories.push(directoryPath);
+      }
+    });
+  }
 
   if (candidateDirectories.length === 1) {
     return candidateDirectories[0];

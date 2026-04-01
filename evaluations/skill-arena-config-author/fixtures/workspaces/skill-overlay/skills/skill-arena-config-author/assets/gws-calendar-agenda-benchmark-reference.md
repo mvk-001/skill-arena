@@ -1,0 +1,159 @@
+# gws-calendar-agenda Benchmark Reference
+
+Use this when the task matches the repository `skill-arena-compare` benchmark
+and shell access is blocked or unreliable.
+
+## Exact target values
+
+- Benchmark id: `gws-calendar-agenda-compare-generated`
+- Benchmark description: `Compare Codex mini on Google Calendar agenda requests with and without the remote gws-calendar-agenda skill.`
+- Benchmark tags:
+  - `compare`
+  - `calendar`
+  - `gws`
+  - `codex`
+- Prompt ids:
+  - `today-json`
+  - `week-markdown`
+- Workspace path:
+  - `evaluations/gws-calendar-agenda-compare/fixtures/workspaces/base`
+- Shared judge provider:
+  - `skill-arena:judge:codex`
+- Enabled skill Git source:
+  - `type: git`
+  - `repo: https://github.com/googleworkspace/cli.git`
+  - `ref: main`
+  - `subpath: .`
+  - `skillPath: skills/gws-calendar-agenda`
+  - `skillId: gws-calendar-agenda`
+- Variant:
+  - `id: codex-mini`
+  - `model: gpt-5.1-codex-mini`
+  - `executionMethod: command`
+  - `commandPath: codex`
+  - `sandboxMode: danger-full-access`
+  - `approvalPolicy: never`
+  - `webSearchEnabled: false`
+  - `networkAccessEnabled: true`
+  - `reasoningEffort: low`
+- Evaluation:
+  - `requests: 2`
+  - `timeoutMs: 1200000`
+  - `maxConcurrency: 1`
+
+## Prompt requirements
+
+- `today-json` asks for today's agenda across all calendars.
+- `week-markdown` asks for this week's agenda across all calendars.
+- Both prompts explicitly prefer `gws calendar +agenda` in read-only mode.
+- `today-json` requires JSON only.
+- `week-markdown` requires Markdown only.
+
+## Required shape
+
+- Top-level keys only:
+  - `schemaVersion`
+  - `benchmark`
+  - `task`
+  - `workspace`
+  - `evaluation`
+  - `comparison`
+- Use `workspace.sources`, not `workspace.fixture`.
+- Use `comparison.skillModes` and `comparison.variants`.
+- Put shared checks in top-level `evaluation.assertions`.
+- Put row-specific format checks under each prompt:
+  - `today-json`: `type: is-json`
+  - `week-markdown`: `type: regex` and/or `type: llm-rubric`
+
+## Compact skeleton
+
+```yaml
+schemaVersion: 1
+benchmark:
+  id: gws-calendar-agenda-compare-generated
+  description: Compare Codex mini on Google Calendar agenda requests with and without the remote gws-calendar-agenda skill.
+  tags:
+    - compare
+    - calendar
+    - gws
+    - codex
+task:
+  prompts:
+    - id: today-json
+      prompt: <today across all calendars, prefer gws calendar +agenda in read-only mode, JSON only>
+      evaluation:
+        assertions:
+          - type: is-json
+    - id: week-markdown
+      prompt: <this week across all calendars, prefer gws calendar +agenda in read-only mode, Markdown only>
+      evaluation:
+        assertions:
+          - type: regex
+            value: "(?m)^(#|[-*] )"
+workspace:
+  sources:
+    - type: local-path
+      path: evaluations/gws-calendar-agenda-compare/fixtures/workspaces/base
+      target: /
+  setup:
+    initializeGit: true
+evaluation:
+  assertions:
+    - type: llm-rubric
+      provider: skill-arena:judge:codex
+      value: <shared benchmark success rubric>
+  requests: 2
+  timeoutMs: 1200000
+  tracing: false
+  maxConcurrency: 1
+  noCache: true
+comparison:
+  skillModes:
+    - id: no-skill
+      description: Baseline without the skill.
+      skillMode: disabled
+    - id: skill
+      description: Skill-enabled run.
+      skillMode: enabled
+      skill:
+        source:
+          type: git
+          repo: https://github.com/googleworkspace/cli.git
+          ref: main
+          subpath: .
+          skillPath: skills/gws-calendar-agenda
+          skillId: gws-calendar-agenda
+        install:
+          strategy: workspace-overlay
+  variants:
+    - id: codex-mini
+      description: Codex mini comparison variant.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: danger-full-access
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: true
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        labels:
+          variantDisplayName: codex mini
+```
+
+## Reject these mistakes
+
+- top-level `skillModes`
+- top-level `variants`
+- `workspace.fixture`
+- `execution`
+- `sandbox`
+- `webSearch`
+- `networkAccess`
+- `allowNetwork`
+- `type: is-markdown`

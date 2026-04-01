@@ -1,0 +1,102 @@
+schemaVersion: 1
+benchmark:
+  id: smoke-skill-following-compare
+  description: Compare Codex and PI on the smoke marker task with and without the workspace skill overlay.
+  tags:
+    - smoke
+    - compare
+    - skill
+task:
+  prompts:
+    - id: direct-marker-read
+      description: Direct marker lookup prompt.
+      prompt: Open notes/target.txt and return only the raw value assigned to MARKER, with no label, explanation, or formatting.
+    - id: canonical-marker-read
+      description: Alternate wording for the same marker lookup task.
+      prompt: Inspect the repository and reply with only the raw MARKER value found in notes/target.txt, with no label, explanation, or formatting.
+workspace:
+  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base
+  skillOverlay: evaluations/smoke-skill-following/fixtures/workspaces/skill-overlay
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: equals
+      value: ALPHA-42
+  requests: 10
+  timeoutMs: 600000
+  tracing: false
+  maxConcurrency: 4
+  noCache: true
+comparison:
+  profiles:
+    - id: no-skill
+      description: Fully isolated baseline without the workspace skill overlay.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
+      output:
+        tags:
+          - baseline
+        labels:
+          skill_state: off
+    - id: skill
+      description: Profile with only the declared workspace skill overlay enabled.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: evaluations/smoke-skill-following/fixtures/workspaces/skill-overlay
+            install:
+              strategy: workspace-overlay
+      output:
+        tags:
+          - skill
+        labels:
+          skill_state: on
+  variants:
+    - id: codex-mini
+      description: Codex command backend with the mini coding model.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - codex
+          - mini
+        labels:
+          adapterDisplayName: codex
+          adapter_family: codex
+    - id: pi-gpt5mini
+      description: PI command backend with GitHub Copilot GPT-5 Mini.
+      agent:
+        adapter: pi
+        model: github-copilot/gpt-5-mini
+        executionMethod: command
+        commandPath: pi
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - pi
+          - gpt-5-mini
+        labels:
+          adapterDisplayName: pi
+          adapter_family: pi

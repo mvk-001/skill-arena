@@ -14,7 +14,7 @@ import { fromProjectRoot } from "../src/project-paths.js";
 
 test("codex scenarios generate Promptfoo custom script providers", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -46,7 +46,7 @@ test("codex scenarios generate Promptfoo custom script providers", async () => {
 
 test("promptfoo config prefers the isolated execution workspace and merged execution environment", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -84,7 +84,7 @@ test("promptfoo config prefers the isolated execution workspace and merged execu
 
 test("file-contains assertions become Promptfoo javascript assertions", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -138,7 +138,7 @@ test("file-contains assertions can resolve from the active compare provider work
 
 test("llm-rubric assertions pass through to Promptfoo", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -171,7 +171,7 @@ test("llm-rubric assertions pass through to Promptfoo", async () => {
 
 test("llm-rubric local judge shorthand rewrites to packaged custom provider", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -203,7 +203,7 @@ test("llm-rubric local judge shorthand rewrites to packaged custom provider", as
 
 test("llm-rubric local judge object form preserves custom config", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -241,7 +241,7 @@ test("llm-rubric local judge object form preserves custom config", async () => {
 
 test("llm-rubric opencode local judge shorthand rewrites to packaged custom provider", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -272,7 +272,7 @@ test("llm-rubric opencode local judge shorthand rewrites to packaged custom prov
 
 test("opencode scenarios generate Promptfoo custom script providers", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -310,7 +310,7 @@ test("opencode scenarios generate Promptfoo custom script providers", async () =
 
 test("codex scenarios can switch to sdk execution", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -335,7 +335,7 @@ test("codex scenarios can switch to sdk execution", async () => {
 
 test("multiple task prompts become multiple Promptfoo tests", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -375,7 +375,7 @@ test("multiple task prompts become multiple Promptfoo tests", async () => {
 
 test("prompt-level assertions are appended to scenario assertions", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -433,7 +433,7 @@ test("prompt-level assertions are appended to scenario assertions", async () => 
 
 test("system skill benchmarks generate valid custom providers", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "gws-gmail-triage",
     "manifest.json",
   );
@@ -458,7 +458,7 @@ test("system skill benchmarks generate valid custom providers", async () => {
 
 test("pi scenarios generate Promptfoo custom script providers", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -488,7 +488,7 @@ test("pi scenarios generate Promptfoo custom script providers", async () => {
 
 test("copilot-cli scenarios generate Promptfoo custom script providers", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -527,7 +527,7 @@ test("copilot-cli scenarios generate Promptfoo custom script providers", async (
 
 test("promptfoo config enables tracing and flattens labels", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );

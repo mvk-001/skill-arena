@@ -1,0 +1,69 @@
+schemaVersion: 1
+benchmark:
+  id: gws-gmail-triage-compare
+  description: Compare Gmail triage behavior with an isolated baseline and one explicit Gmail skill profile.
+  tags:
+    - gmail
+    - triage
+    - compare
+task:
+  prompt: Summarize the best next Gmail triage action.
+workspace:
+  fixture: evaluations/gws-gmail-triage/fixtures/workspaces/base
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: contains
+      value: Gmail
+  requests: 10
+  timeoutMs: 120000
+  tracing: false
+  maxConcurrency: 4
+  noCache: true
+comparison:
+  profiles:
+    - id: no-skill
+      description: Fully isolated baseline without the Gmail triage skill.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
+    - id: skill
+      description: Run with only the declared Gmail triage skill from the Google Workspace CLI repository.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: git
+              repo: https://github.com/googleworkspace/cli.git
+              ref: main
+              subpath: .
+              skillPath: skills/gws-gmail-triage
+              skillId: gws-gmail-triage
+            install:
+              strategy: workspace-overlay
+  variants:
+    - id: codex-worst
+      description: Codex worst-case scenario comparison variant.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: danger-full-access
+        approvalPolicy: never
+        webSearchEnabled: true
+        networkAccessEnabled: true
+        reasoningEffort: low
+    - id: pi-worst
+      description: PI worst-case scenario comparison variant.
+      agent:
+        adapter: pi
+        model: github-copilot/gpt-5-mini
+        executionMethod: command
+        commandPath: pi
+        sandboxMode: danger-full-access
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: true
+        reasoningEffort: low

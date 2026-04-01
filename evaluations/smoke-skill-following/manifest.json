@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "benchmark": {
+    "id": "smoke-skill-following",
+    "description": "Smoke benchmark for Codex workspace setup and skill overlay handling.",
+    "tags": [
+      "smoke",
+      "codex",
+      "skill"
+    ]
+  },
+  "task": {
+    "prompt": "Read the repository and return only the exact value assigned to MARKER in notes/target.txt."
+  },
+  "workspace": {
+    "fixture": "evaluations/smoke-skill-following/fixtures/workspaces/base",
+    "skillOverlay": "evaluations/smoke-skill-following/fixtures/workspaces/skill-overlay",
+    "initializeGit": true
+  },
+  "scenarios": [
+    {
+      "id": "codex-mini-no-skill",
+      "description": "Codex mini baseline in a clean workspace.",
+      "skillMode": "disabled",
+      "skillSource": "none",
+      "agent": {
+        "adapter": "codex",
+        "model": "gpt-5.1-codex-mini",
+        "executionMethod": "command",
+        "commandPath": "codex",
+        "sandboxMode": "read-only",
+        "approvalPolicy": "never",
+        "webSearchEnabled": false,
+        "networkAccessEnabled": false,
+        "reasoningEffort": "low",
+        "additionalDirectories": [],
+        "cliEnv": {},
+        "config": {}
+      },
+      "evaluation": {
+        "assertions": [
+          {
+            "type": "equals",
+            "value": "ALPHA-42"
+          }
+        ],
+        "requests": 1,
+        "timeoutMs": 120000,
+        "tracing": false,
+        "maxConcurrency": 1,
+        "noCache": true
+      },
+      "output": {
+        "tags": [
+          "codex",
+          "mini",
+          "skill-off"
+        ],
+        "labels": {
+          "skill": "off"
+        }
+      }
+    },
+    {
+      "id": "codex-mini-with-skill",
+      "description": "Codex mini with the benchmark skill overlay applied.",
+      "skillMode": "enabled",
+      "skillSource": "workspace-overlay",
+      "agent": {
+        "adapter": "codex",
+        "model": "gpt-5.1-codex-mini",
+        "executionMethod": "command",
+        "commandPath": "codex",
+        "sandboxMode": "read-only",
+        "approvalPolicy": "never",
+        "webSearchEnabled": false,
+        "networkAccessEnabled": false,
+        "reasoningEffort": "low",
+        "additionalDirectories": [],
+        "cliEnv": {},
+        "config": {}
+      },
+      "evaluation": {
+        "assertions": [
+          {
+            "type": "equals",
+            "value": "ALPHA-42"
+          }
+        ],
+        "requests": 1,
+        "timeoutMs": 120000,
+        "tracing": false,
+        "maxConcurrency": 1,
+        "noCache": true
+      },
+      "output": {
+        "tags": [
+          "codex",
+          "mini",
+          "skill-on"
+        ],
+        "labels": {
+          "skill": "on"
+        }
+      }
+    }
+  ]
+}

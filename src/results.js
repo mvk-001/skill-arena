@@ -101,6 +101,15 @@ export async function writeMergedBenchmarkArtifacts({
   };
 }
 
+export async function writeMarkdownReportOutput({
+  outputPath,
+  markdown,
+}) {
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
+  await fs.writeFile(outputPath, markdown, "utf8");
+  return { outputPath };
+}
+
 export async function normalizePromptfooResults({
   manifest,
   scenario,

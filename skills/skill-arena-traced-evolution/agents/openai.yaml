@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Arena Traced Evolution"
+  short_description: "Evolve a skill from trace-driven patches"
+  default_prompt: "Use $skill-arena-traced-evolution to improve a skill from success and failure traces under a fixed evaluation loop."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Skill Traced Evolution"
-  short_description: "Evolve a skill from trace-driven patches"
-  default_prompt: "Use $skill-traced-evolution to improve a skill from success and failure traces under a fixed evaluation loop."

@@ -1,0 +1,88 @@
+schemaVersion: 1
+benchmark:
+  id: copilot-cli-capabilities-compare
+  description: Compare isolated Copilot CLI baseline versus explicit instructions, custom agent, and hook files.
+  tags:
+    - compare
+    - copilot
+    - capabilities
+task:
+  prompt: Return HELLO and keep the answer concise.
+workspace:
+  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base
+  initializeGit: true
+evaluation:
+  assertions:
+    - type: contains
+      value: HELLO
+  requests: 1
+  timeoutMs: 120000
+  tracing: false
+  noCache: true
+comparison:
+  profiles:
+    - id: baseline
+      description: Fully isolated control without extra capabilities.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
+    - id: reviewer-agent
+      description: Copilot profile with repository instructions, one custom agent, and one hook file.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        instructions:
+          - source:
+              type: inline-files
+              target: /
+              files:
+                - path: AGENTS.md
+                  content: |
+                    # Project instructions
+                    Always return HELLO and keep the response concise.
+        agents:
+          - agentId: reviewer-agent
+            source:
+              type: inline-files
+              target: /
+              files:
+                - path: .github/agents/reviewer-agent.agent.md
+                  content: |
+                    ---
+                    description: Focus on short, repository-grounded answers.
+                    ---
+
+                    # Reviewer agent
+                    Focus on short, repository-grounded answers.
+        hooks:
+          - source:
+              type: inline-files
+              target: /
+              files:
+                - path: .github/hooks/pre-command.json
+                  content: |
+                    {
+                      "hooks": []
+                    }
+  variants:
+    - id: copilot-gpt54mini
+      description: Copilot CLI command variant.
+      agent:
+        adapter: copilot-cli
+        model: gpt-5.4-mini
+        executionMethod: command
+        commandPath: copilot
+        sandboxMode: workspace-write
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - copilot
+          - capabilities
+        labels:
+          variantDisplayName: copilot gpt-5.4-mini

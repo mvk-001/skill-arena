@@ -2,6 +2,7 @@ import { findScenario, loadBenchmarkManifest } from "../manifest.js";
 import {
   buildMergedBenchmarkSummary,
   renderMergedBenchmarkReport,
+  writeMarkdownReportOutput,
   writeMergedBenchmarkArtifacts,
 } from "../results.js";
 import { getDefaultParallelism, mapWithConcurrency } from "../concurrency.js";
@@ -16,6 +17,7 @@ async function main() {
     "--requests": true,
     "--max-concurrency": true,
     "--maxConcurrency": true,
+    "--markdown-output": true,
     "--dry-run": false,
   };
   ensureKnownLongOptions(process.argv, knownOptionSchema);
@@ -29,10 +31,11 @@ async function main() {
     ["--max-concurrency", "--maxConcurrency"],
   );
   const outputRootDirectory = process.cwd();
+  const markdownOutputPath = readStringOption(process.argv, "--markdown-output");
 
   if (!manifestPath) {
     throw new Error(
-      "Usage: node ./src/cli/run-benchmark.js <manifest-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--dry-run]",
+      "Usage: node ./src/cli/run-benchmark.js <manifest-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--markdown-output <path>] [--dry-run]",
     );
   }
 
@@ -90,12 +93,29 @@ async function main() {
       mergedSummary,
       cliReport,
     });
+    if (markdownOutputPath) {
+      const resolvedMarkdownOutputPath = path.resolve(outputRootDirectory, markdownOutputPath);
+      await writeMarkdownReportOutput({
+        outputPath: resolvedMarkdownOutputPath,
+        markdown: cliReport,
+      });
+      mergedArtifacts.markdownOutputPath = resolvedMarkdownOutputPath;
+    }
 
     console.log(cliReport);
     console.log("");
   }
 
   console.log(JSON.stringify({ results, mergedArtifacts }, null, 2));
+}
+
+function readStringOption(argv, optionName) {
+  const index = argv.indexOf(optionName);
+  if (index === -1) {
+    return null;
+  }
+
+  return argv[index + 1] ?? null;
 }
 
 function applyRuntimeOverrides({

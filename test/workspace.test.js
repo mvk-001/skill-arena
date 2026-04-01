@@ -31,7 +31,7 @@ async function initializeGitRepository(directoryPath) {
 
 test("workspace materialization copies the fixture tree", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -52,7 +52,7 @@ test("workspace materialization copies the fixture tree", async () => {
 
 test("workspace materialization starts each isolated execution workspace clean", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -81,7 +81,7 @@ test("workspace materialization starts each isolated execution workspace clean",
 
 test("skill overlays are applied only when skill mode is enabled", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -570,7 +570,7 @@ test("workspace sources are applied in declaration order", async () => {
         {
           id: "base",
           type: "local-path",
-          path: "fixtures/smoke-skill-following/base",
+          path: "evaluations/smoke-skill-following/fixtures/workspaces/base",
           target: "/",
         },
         {
@@ -643,7 +643,7 @@ test("inline skill sources are written into the workspace only for enabled runs"
         {
           id: "base",
           type: "local-path",
-          path: "fixtures/smoke-skill-following/base",
+          path: "evaluations/smoke-skill-following/fixtures/workspaces/base",
           target: "/",
         },
       ],

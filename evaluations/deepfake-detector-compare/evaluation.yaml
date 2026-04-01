@@ -1,0 +1,134 @@
+schemaVersion: 1
+benchmark:
+  id: deepfake-detector-compare
+  description: Compare Codex on deepfake detector triage with and without the local deepfake-detector skill.
+  tags:
+    - compare
+    - deepfake
+    - vision
+    - skill
+task:
+  prompts:
+    - id: json-triage
+      description: Produce a structured triage summary for the image set.
+      prompt: >-
+        Use the deepfake-detector workflow to triage the four images in `images/`.
+        Return JSON only with this exact shape:
+        { "files": [{ "filename": string, "classification": "likely_authentic"|"uncertain"|"likely_synthetic" }], "most_suspicious": string }.
+        Order `files` alphabetically by filename. The control image is `camera_like_control.jpg`.
+      evaluation:
+        assertions:
+          - type: is-json
+          - type: javascript
+            value: |
+              const parsed = JSON.parse(output.trim());
+              if (!parsed || typeof parsed !== "object") return false;
+              if (!Array.isArray(parsed.files) || parsed.files.length !== 4) return false;
+              const filenames = parsed.files.map((item) => item.filename);
+              const sortedFilenames = [...filenames].sort();
+              if (JSON.stringify(filenames) !== JSON.stringify(sortedFilenames)) return false;
+
+              const expected = new Map([
+                ["camera_like_control.jpg", "likely_authentic"],
+                ["synthetic_gradient.png", "uncertain"],
+                ["synthetic_checker.png", "uncertain"],
+                ["synthetic_upscaled.png", "uncertain"],
+              ]);
+
+              for (const item of parsed.files) {
+                if (!item || typeof item !== "object") return false;
+                if (!expected.has(item.filename)) return false;
+                if (item.classification !== expected.get(item.filename)) return false;
+              }
+
+              return parsed.most_suspicious === "synthetic_gradient.png";
+    - id: markdown-incident-note
+      description: Produce a short markdown incident note for the same triage.
+      prompt: >-
+        Write a concise markdown incident note that summarizes the triage outcome for the same four images.
+        Mention the control image, the three suspicious candidates, and one limitation from the skill docs such as that the detector is heuristic-only and not proof of provenance.
+        No JSON.
+      evaluation:
+        assertions:
+          - type: contains
+            value: camera_like_control.jpg
+          - type: contains
+            value: synthetic_gradient.png
+          - type: contains
+            value: synthetic_checker.png
+          - type: contains
+            value: synthetic_upscaled.png
+          - type: regex
+            value: heuristic[- ]only
+          - type: contains
+            value: provenance
+workspace:
+  sources:
+    - id: case-notes
+      type: local-path
+      path: evaluations/deepfake-detector-compare/fixtures/workspaces/base
+      target: /
+  setup:
+    initializeGit: true
+    env: {}
+evaluation:
+  assertions:
+    - type: javascript
+      value: |
+        return output.trim().length > 0;
+  requests: 2
+  timeoutMs: 600000
+  tracing: false
+  maxConcurrency: 2
+  noCache: true
+comparison:
+  profiles:
+    - id: no-skill
+      description: Fully isolated baseline without the deepfake-detector skill overlay.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
+      output:
+        tags:
+          - baseline
+        labels:
+          skill_state: off
+    - id: skill
+      description: Profile with only the declared deepfake-detector skill overlay enabled.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: evaluations/deepfake-detector-compare/fixtures/workspaces/skill-overlay/skills/deepfake-detector
+              skillId: deepfake-detector
+            install:
+              strategy: workspace-overlay
+      output:
+        tags:
+          - skill
+        labels:
+          skill_state: on
+  variants:
+    - id: codex-mini
+      description: Codex command backend with the mini coding model.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - codex
+          - mini
+        labels:
+          variantDisplayName: codex mini

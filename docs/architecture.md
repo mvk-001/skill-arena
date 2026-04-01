@@ -135,7 +135,7 @@ Provider executions may also write hook artifacts under the materialized workspa
 7. Export Promptfoo results as JSON.
 8. Normalize the results into a stable comparison matrix plus a merged report.
 
-For concrete config examples, see [Usage Guide](./usage.md) and the maintained [compare benchmark](../benchmarks/skill-arena-compare/compare.yaml).
+For concrete config examples, see [Usage Guide](./usage.md) and the maintained [compare benchmark](../evaluations/skill-arena-config-author/evaluation.yaml).
 
 ## Cross-tool capability mapping
 

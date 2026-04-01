@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Arena Run Results"
+  short_description: "Run compares and summarize benchmark results"
+  default_prompt: "Use $skill-arena-run-results to validate a compare config, execute the requested Skill Arena run, and summarize the result clearly for the user."

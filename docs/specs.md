@@ -37,6 +37,30 @@ Paths inside the manifest may be:
 
 For an end-to-end authoring example, see [Usage Guide](./usage.md).
 
+### Recommended repository layout
+
+Benchmarks do not need to live under a fixed folder name, but this repository
+recommends managing skill-focused evaluations under:
+
+```text
+evaluations/<skill-name>/evaluation.yaml
+evaluations/<skill-name>/fixtures/workspaces/...
+evaluations/<skill-name>/last_report.md
+```
+
+Recommended meaning:
+
+- `evaluations/<skill-name>/evaluation.yaml`
+  - the main compare config or manifest used to evaluate that skill
+- `evaluations/<skill-name>/fixtures/workspaces/`
+  - benchmark-specific workspace inputs used by that evaluation
+- `evaluations/<skill-name>/last_report.md`
+  - the latest human-readable execution summary or compare report snapshot
+
+This layout is a repository convention for maintainability, not a runtime
+requirement. The harness must continue to accept configs outside `benchmarks/`
+and outside `evaluations/` as long as declared paths are valid.
+
 ### Schema
 
 ```yaml
@@ -300,6 +324,22 @@ Compare configs should be authored in YAML for readability. JSON is also support
 
 Paths inside the config may be absolute local paths, runtime-working-directory-relative local paths, or external Git references according to the field schema.
 
+Recommended compare authoring layout for a skill-scoped evaluation:
+
+```text
+evaluations/<skill-name>/evaluation.yaml
+evaluations/<skill-name>/fixtures/workspaces/<workspace-name>/...
+evaluations/<skill-name>/last_report.md
+```
+
+When a repository keeps one evaluation directory per skill, benchmark authors
+should prefer:
+
+- `evaluation.yaml` as the primary compare config filename
+- fixture workspace inputs under `fixtures/workspaces/`
+- `last_report.md` as the latest human-readable report snapshot written after a
+  run when the workflow wants a stable checked-in summary
+
 ### Supported structure
 
 ```yaml
@@ -475,6 +515,14 @@ For compare configs, local filesystem paths are resolved using this contract:
 - relative local paths are not resolved against the installed package location
 - when a relative local path is missing in compare mode, the runner may bootstrap that relative directory from a unique packaged fixture match before workspace materialization
 
+For the recommended `evaluations/<skill-name>/...` layout, relative local paths
+inside `evaluation.yaml` should usually resolve from that evaluation directory,
+for example:
+
+- `fixtures/workspaces/base`
+- `fixtures/workspaces/calendar-readonly`
+- `fixtures/workspaces/with-hook`
+
 This applies to legacy fields such as `workspace.fixture` and `workspace.skillOverlay` and to declarative `local-path` entries such as `workspace.sources[*].path` and `comparison.profiles[*].capabilities.skills[*].source.path`.
 
 Bootstrap behavior in compare mode:
@@ -556,6 +604,9 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 - Workspace-injected skills are copied or written only for `skillMode: "enabled"` runs that resolve to `workspace-overlay`.
 - Compare profiles must default to deny-all isolation and expose only explicitly declared capabilities.
 - The harness must not require a benchmark to live under `benchmarks/` in order to run it.
+- The harness should treat the `evaluations/<skill-name>/...` layout as a
+  recommended repository convention when present, not as a special runtime-only
+  case.
 - The harness and benchmark definitions must not inject hidden prompt instructions or extra knowledge outside the exact benchmark prompt and the files materialized in folders explicitly shared with the agent for that run.
 
 ## Result directories

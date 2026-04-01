@@ -15,7 +15,7 @@ async function main() {
 
   if (!configPath || configPath.startsWith("--")) {
     throw new Error(
-      "Usage: node ./src/cli/run-evaluate.js <benchmark-config-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--reuse-unchanged-profiles] [--dry-run] [--verbose]",
+      "Usage: node ./src/cli/run-evaluate.js <benchmark-config-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--markdown-output <path>] [--reuse-unchanged-profiles] [--dry-run] [--verbose]",
     );
   }
   const knownOptionSchema = {
@@ -23,6 +23,7 @@ async function main() {
     "--requests": true,
     "--max-concurrency": true,
     "--maxConcurrency": true,
+    "--markdown-output": true,
     "--reuse-unchanged-profiles": false,
     "--dry-run": false,
     "--verbose": false,

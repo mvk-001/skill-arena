@@ -49,26 +49,26 @@ npm install
 ### Validate the maintained example
 
 ```bash
-npx . val-conf ./benchmarks/skill-arena-compare/compare.yaml
+npx . val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
 ### Generate the Promptfoo config without running agents
 
 ```bash
-npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+npx . evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
 ```
 
 ### Run the maintained example
 
 ```bash
-npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
+npx . evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
 ### Generate a starter compare config
 
 ```bash
 npx . gen-conf \
-  --output ./benchmarks/my-eval/compare.yaml \
+  --output ./evaluations/my-eval/evaluation.yaml \
   --prompt "Read the repository and summarize the architecture." \
   --evaluation-type llm-rubric \
   --evaluation-value "Score 1.0 only if the answer covers the main architecture." \
@@ -104,40 +104,46 @@ Use this reading order:
 
 Concrete repository examples:
 
-- [Maintained compare config](./benchmarks/skill-arena-compare/compare.yaml)
-- [Smoke compare config](./benchmarks/smoke-skill-following/compare.yaml)
-- [Copilot compare config](./benchmarks/copilot-cli-smoke-compare/compare.yaml)
+- [Maintained compare config](./evaluations/skill-arena-config-author/evaluation.yaml)
+- [Smoke compare config](./evaluations/smoke-skill-following/evaluation.yaml)
+- [Copilot compare config](./evaluations/copilot-cli-smoke-compare/evaluation.yaml)
 
 ## Common Commands
 
 Validate a config:
 
 ```bash
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
 Run a dry-run:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
 ```
 
 Run a live compare:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
+```
+
+Persist the latest Markdown report into the evaluation directory:
+
+```bash
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --markdown-output ./evaluations/skill-arena-config-author/last_report.md
 ```
 
 Override repeat count or concurrency for one local run:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --requests 2 --max-concurrency 2
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --requests 2 --max-concurrency 2
 ```
 
 Reuse unchanged profile outputs in compare mode:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --reuse-unchanged-profiles
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --reuse-unchanged-profiles
 ```
 
 ## Result Artifacts
@@ -162,7 +168,7 @@ The repository is intentionally CLI-first:
 
 - `bin/skill-arena.js`: installed CLI entrypoint
 - `src/`: runtime code for config loading, workspace materialization, adapters, Promptfoo config generation, and result normalization
-- `benchmarks/`: maintained benchmark examples
+- `evaluations/`: maintained evaluation examples and fixtures
 - `docs/`: user and contributor documentation
 - `test/`: unit tests for the runtime surface
 - `results/`: generated run artifacts

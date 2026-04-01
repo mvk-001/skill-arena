@@ -15,9 +15,9 @@ const execFileAsync = promisify(execFile);
 
 test("compare config expands into adapter x skill-mode scenarios", async () => {
   const compareConfigPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "gws-gmail-triage",
-    "compare.yaml",
+    "evaluation.yaml",
   );
   const { compareConfig } = await loadCompareConfig(compareConfigPath);
 
@@ -45,8 +45,8 @@ test("compare config requires an explicit skill definition for enabled skill mod
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
-      skillOverlay: "fixtures/smoke-skill-following/skill-overlay",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
+      skillOverlay: "evaluations/smoke-skill-following/fixtures/workspaces/skill-overlay",
       initializeGit: true,
     },
     evaluation: {
@@ -110,7 +110,7 @@ test("compare config supports explicit declarative skill definitions", () => {
         {
           id: "base",
           type: "local-path",
-          path: "fixtures/smoke-skill-following/base",
+          path: "evaluations/smoke-skill-following/fixtures/workspaces/base",
           target: "/",
         },
       ],
@@ -181,7 +181,7 @@ test("compare config supports direct profile declarations", () => {
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     evaluation: {
@@ -261,7 +261,7 @@ test("compare config supports prompt-level evaluation assertions", () => {
       ],
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     evaluation: {
@@ -308,7 +308,7 @@ test("compare config evaluation leaves maxConcurrency unset so runtime can auto-
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     evaluation: {
@@ -360,7 +360,7 @@ test("compare config defaults requests to 10 when omitted", () => {
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     evaluation: {
@@ -401,9 +401,9 @@ test("compare config defaults requests to 10 when omitted", () => {
 
 test("smoke compare config expands into codex and pi skill-mode scenarios", async () => {
   const compareConfigPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
-    "compare.yaml",
+    "evaluation.yaml",
   );
   const { compareConfig } = await loadCompareConfig(compareConfigPath);
 
@@ -433,7 +433,7 @@ test("compare config accepts copilot-cli variants", () => {
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     evaluation: {
@@ -477,9 +477,9 @@ test("compare config accepts copilot-cli variants", () => {
 
 test("copilot smoke compare config expands into skill and no-skill scenarios", async () => {
   const compareConfigPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "copilot-cli-smoke-compare",
-    "compare.yaml",
+    "evaluation.yaml",
   );
   const { compareConfig } = await loadCompareConfig(compareConfigPath);
 
@@ -530,7 +530,7 @@ test("compare config loader formats schema validation errors", async () => {
         prompt: "Return HELLO.",
       },
       workspace: {
-        fixture: "fixtures/smoke-skill-following/base",
+        fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
         initializeGit: true,
       },
       evaluation: {
@@ -562,7 +562,7 @@ test("compare config validation rejects duplicate ids and invalid normalized ski
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     evaluation: {
@@ -612,7 +612,7 @@ test("compare config validation rejects duplicate ids and invalid normalized ski
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     evaluation: {
@@ -656,8 +656,8 @@ test("compare config validation rejects duplicate ids and invalid normalized ski
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
-      skillOverlay: "fixtures/smoke-skill-following/skill-overlay",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
+      skillOverlay: "evaluations/smoke-skill-following/fixtures/workspaces/skill-overlay",
       initializeGit: true,
     },
     evaluation: {
@@ -696,7 +696,7 @@ test("compare expansion uses adapter and variant display labels for report label
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     evaluation: {
@@ -921,7 +921,7 @@ test("compare expansion uses skill mode id as report label when only one variant
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     evaluation: {
@@ -1014,8 +1014,8 @@ test("compare dry-run bootstraps missing relative source paths from packaged fix
     "task:",
     "  prompt: Return ALPHA-42.",
     "workspace:",
-    "  fixture: fixtures/smoke-skill-following/base",
-    "  skillOverlay: fixtures/smoke-skill-following/skill-overlay",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
+    "  skillOverlay: evaluations/smoke-skill-following/fixtures/workspaces/skill-overlay",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -1036,7 +1036,7 @@ test("compare dry-run bootstraps missing relative source paths from packaged fix
     "      skill:",
     "        source:",
     "          type: local-path",
-    "          path: fixtures/smoke-skill-following/skill-overlay",
+    "          path: evaluations/smoke-skill-following/fixtures/workspaces/skill-overlay",
     "        install:",
     "          strategy: workspace-overlay",
     "  variants:",
@@ -1053,8 +1053,8 @@ test("compare dry-run bootstraps missing relative source paths from packaged fix
     windowsHide: true,
   });
 
-  const bootstrappedBase = path.join(tempDirectory, "fixtures", "smoke-skill-following", "base");
-  const bootstrappedSkill = path.join(tempDirectory, "fixtures", "smoke-skill-following", "skill-overlay");
+  const bootstrappedBase = path.join(tempDirectory, "evaluations", "smoke-skill-following", "fixtures", "workspaces", "base");
+  const bootstrappedSkill = path.join(tempDirectory, "evaluations", "smoke-skill-following", "fixtures", "workspaces", "skill-overlay");
   const resultsRoot = path.join(tempDirectory, "results", "bootstrap-relative-compare");
   const runDirectories = await fs.readdir(resultsRoot);
   const noSkillRunDirectory = runDirectories.find((entry) => entry.endsWith("-codex-mini-no-skill"));
@@ -1065,9 +1065,9 @@ test("compare dry-run bootstraps missing relative source paths from packaged fix
     "MARKER=ALPHA-42\n",
   );
   assert.equal(
-    await fs.readFile(path.join(bootstrappedSkill, "skills", "marker-guide", "SKILL.md"), "utf8"),
-    await fs.readFile(
-      fromProjectRoot("fixtures", "smoke-skill-following", "skill-overlay", "skills", "marker-guide", "SKILL.md"),
+      await fs.readFile(path.join(bootstrappedSkill, "skills", "marker-guide", "SKILL.md"), "utf8"),
+      await fs.readFile(
+      fromProjectRoot("evaluations", "smoke-skill-following", "fixtures", "workspaces", "skill-overlay", "skills", "marker-guide", "SKILL.md"),
       "utf8",
     ),
   );
@@ -1105,8 +1105,8 @@ test("compare dry-run bootstraps nested fixture matches for repo-summary relativ
     "task:",
     "  prompt: Summarize the repository.",
     "workspace:",
-    "  fixture: fixtures/skill-arena-compare/base/fixtures/repo-summary/base",
-    "  skillOverlay: fixtures/skill-arena-compare/base/fixtures/repo-summary/skill-overlay",
+    "  fixture: evaluations/repo-summary/fixtures/workspaces/base",
+    "  skillOverlay: evaluations/repo-summary/fixtures/workspaces/skill-overlay",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -1127,7 +1127,7 @@ test("compare dry-run bootstraps nested fixture matches for repo-summary relativ
     "      skill:",
     "        source:",
     "          type: local-path",
-    "          path: fixtures/skill-arena-compare/base/fixtures/repo-summary/skill-overlay",
+    "          path: evaluations/repo-summary/fixtures/workspaces/skill-overlay",
     "        install:",
     "          strategy: workspace-overlay",
     "  variants:",
@@ -1145,11 +1145,11 @@ test("compare dry-run bootstraps nested fixture matches for repo-summary relativ
   });
 
   assert.match(
-    await fs.readFile(path.join(tempDirectory, "fixtures", "skill-arena-compare", "base", "fixtures", "repo-summary", "base", "README.md"), "utf8"),
+    await fs.readFile(path.join(tempDirectory, "evaluations", "repo-summary", "fixtures", "workspaces", "base", "README.md"), "utf8"),
     /repo summary fixture/i,
   );
   assert.equal(
-    await fs.stat(path.join(tempDirectory, "fixtures", "skill-arena-compare", "base", "fixtures", "repo-summary", "skill-overlay", "AGENTS.md")).catch(() => null),
+    await fs.stat(path.join(tempDirectory, "evaluations", "repo-summary", "fixtures", "workspaces", "skill-overlay", "AGENTS.md")).catch(() => null),
     null,
   );
 });
@@ -1167,7 +1167,7 @@ test("compare dry-run prints explicit maxConcurrency as the effective concurrenc
     "task:",
     "  prompt: Return HELLO.",
     "workspace:",
-    "  fixture: fixtures/smoke-skill-following/base",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -1204,7 +1204,7 @@ test("compare dry-run prints explicit maxConcurrency as the effective concurrenc
 test("skill-arena-compare plan scales eval timeout by batched compare workload", async () => {
   const { stdout } = await execFileAsync(
     process.execPath,
-    [fromProjectRoot("src", "cli", "run-compare.js"), "./benchmarks/skill-arena-compare/compare.yaml", "--dry-run"],
+    [fromProjectRoot("src", "cli", "run-compare.js"), "./evaluations/skill-arena-config-author/evaluation.yaml", "--dry-run"],
     {
       cwd: fromProjectRoot(),
       windowsHide: true,
@@ -1230,7 +1230,7 @@ test("compare dry-run rewrites local judge shorthand into a packaged Promptfoo p
     "task:",
     "  prompt: Return HELLO.",
     "workspace:",
-    "  fixture: fixtures/smoke-skill-following/base",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -1296,7 +1296,7 @@ test("compare dry-run appends prompt-level assertions to shared assertions", asy
     "    - id: prompt-b",
     "      prompt: Return WORLD.",
     "workspace:",
-    "  fixture: fixtures/smoke-skill-following/base",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -1350,7 +1350,7 @@ test("compare dry-run keeps unsupported capability profiles as unsupported cells
     "task:",
     "  prompt: Return HELLO.",
     "workspace:",
-    "  fixture: fixtures/smoke-skill-following/base",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -1411,7 +1411,7 @@ test("compare dry-run supports copilot agent and hook capability profiles", asyn
     "task:",
     "  prompt: Return HELLO.",
     "workspace:",
-    "  fixture: fixtures/smoke-skill-following/base",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -1511,7 +1511,7 @@ test("compare dry-run reports invalid copilot capability profiles as unsupported
     "task:",
     "  prompt: Return HELLO.",
     "workspace:",
-    "  fixture: fixtures/smoke-skill-following/base",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -1585,7 +1585,7 @@ test("compare dry-run reports invalid capability source types as unsupported cel
     "task:",
     "  prompt: Return HELLO.",
     "workspace:",
-    "  fixture: fixtures/smoke-skill-following/base",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -1640,9 +1640,9 @@ test("compare dry-run reports invalid capability source types as unsupported cel
 
 test("skill-arena-compare benchmark uses the remote skill and prompt-specific evaluations", async () => {
   const compareConfigPath = fromProjectRoot(
-    "benchmarks",
-    "skill-arena-compare",
-    "compare.yaml",
+    "evaluations",
+    "skill-arena-config-author",
+    "evaluation.yaml",
   );
   const { compareConfig } = await loadCompareConfig(compareConfigPath);
 
@@ -1692,7 +1692,7 @@ test("compare dry-run uses SKILL_ARENA_MAX_PARALLELISM when maxConcurrency is om
     "task:",
     "  prompt: Return HELLO.",
     "workspace:",
-    "  fixture: fixtures/smoke-skill-following/base",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
     "  initializeGit: true",
     "evaluation:",
     "  assertions:",
@@ -1731,6 +1731,7 @@ test("compare evaluate can reuse every unchanged profile from the latest compare
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-reuse-all-"));
   const workspaceDirectory = path.join(tempDirectory, "workspace-base");
   const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+  const markdownOutputPath = path.join(tempDirectory, "evaluations", "sample-skill", "last_report.md");
 
   await fs.mkdir(workspaceDirectory, { recursive: true });
   await fs.writeFile(path.join(workspaceDirectory, "README.md"), "base\n", "utf8");
@@ -1921,6 +1922,8 @@ test("compare evaluate can reuse every unchanged profile from the latest compare
     [
       fromProjectRoot("src", "cli", "run-compare.js"),
       "compare.yaml",
+      "--markdown-output",
+      markdownOutputPath,
       "--reuse-unchanged-profiles",
     ],
     {
@@ -1951,4 +1954,5 @@ test("compare evaluate can reuse every unchanged profile from the latest compare
   assert.equal(summary.scenarioSummaries.every((entry) => entry.reused === true), true);
   assert.equal(summary.matrix.rows[0].cells.baseline.displayValue, "100% (1/1)<br>tokens avg 10.0, sd 0.0");
   assert.equal(summary.matrix.rows[0].cells.skill.displayValue, "100% (1/1)<br>tokens avg 10.0, sd 0.0");
+  assert.match(await fs.readFile(markdownOutputPath, "utf8"), /# compare-reuse-all/);
 });

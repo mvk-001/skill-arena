@@ -31,13 +31,13 @@ All repository artifacts must be written in English. This includes code, comment
 2. `docs/architecture.md`
 3. `docs/specs.md`
 4. `docs/testing.md`
-5. `benchmarks/` manifests for concrete scenarios
+5. `evaluations/` configs and manifests for concrete scenarios
 
 ## Canonical sources of truth
 
 - `docs/architecture.md` defines the system design and execution flow.
 - `docs/specs.md` defines the benchmark manifest, adapter contract, workspace rules, and result expectations.
-- `benchmarks/` manifests define concrete benchmark scenarios.
+- `evaluations/` configs and manifests define concrete benchmark scenarios.
 
 ## Contributor rules
 
@@ -52,6 +52,6 @@ All repository artifacts must be written in English. This includes code, comment
 
 Codex does not have a native stable hook surface in this repository, so use the project closeout script as the required equivalent hook for autonomous loops.
 
-- Before closing an autonomous improvement loop or declaring an agent iteration complete, run `node skills/skill-arena-compare/scripts/run-rust-analyzer-hook.js`.
+- Before closing an autonomous improvement loop or declaring an agent iteration complete, run `node skills/skill-arena-config-author/scripts/run-rust-analyzer-hook.js`.
 - Treat a non-zero exit from that script as a failed closeout check.
 - If `rust-code-analysis` is not installed locally, install or point `SKILL_ARENA_RUST_CODE_ANALYSIS_BIN` at the binary when the loop depends on this guardrail.

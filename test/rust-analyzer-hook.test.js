@@ -10,7 +10,7 @@ import { fromProjectRoot } from "../src/project-paths.js";
 const execFileAsync = promisify(execFile);
 const hookScriptPath = fromProjectRoot(
   "skills",
-  "skill-arena-compare",
+  "skill-arena-config-author",
   "scripts",
   "run-rust-analyzer-hook.js",
 );

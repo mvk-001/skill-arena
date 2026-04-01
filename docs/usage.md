@@ -15,17 +15,17 @@ Most users should think in terms of one `compare.yaml` file and one repeated loo
 Start with the maintained example:
 
 ```bash
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
 Equivalent invocation forms also work:
 
 ```bash
-npx . evaluate ./benchmarks/skill-arena-compare/compare.yaml
-npx skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
-pnpm exec skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+npx . evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
+npx skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
+pnpm exec skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
 Every command accepts `--help`:
@@ -65,26 +65,32 @@ The runtime then expands the matrix as:
 
 Useful repository examples:
 
-- [Maintained compare config](../benchmarks/skill-arena-compare/compare.yaml)
-- [Smoke compare config](../benchmarks/smoke-skill-following/compare.yaml)
-- [Copilot compare config](../benchmarks/copilot-cli-smoke-compare/compare.yaml)
+- [Maintained compare config](../evaluations/skill-arena-config-author/evaluation.yaml)
+- [Smoke compare config](../evaluations/smoke-skill-following/evaluation.yaml)
+- [Copilot compare config](../evaluations/copilot-cli-smoke-compare/evaluation.yaml)
 
 Validate the config:
 
 ```bash
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
 Generate the Promptfoo config and workspaces without live evaluation:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
 ```
 
 Run the full compare:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
+```
+
+Persist the latest Markdown report next to the evaluation config:
+
+```bash
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --markdown-output ./evaluations/skill-arena-config-author/last_report.md
 ```
 
 ## Author A New Compare Config
@@ -93,7 +99,7 @@ Use `gen-conf` when you want a commented starter file with `TODO:` markers:
 
 ```bash
 npx skill-arena gen-conf \
-  --output ./benchmarks/my-benchmark/compare.yaml \
+  --output ./evaluations/my-benchmark/evaluation.yaml \
   --prompt "Read the repository and summarize the architecture." \
   --evaluation-type llm-rubric \
   --evaluation-value "Score 1.0 only if the answer covers the main architecture." \
@@ -127,7 +133,7 @@ workspace:
   sources:
     - id: base
       type: local-path
-      path: fixtures/repo-summary/base
+      path: evaluations/repo-summary/fixtures/workspaces/base
       target: /
   setup:
     initializeGit: true
@@ -152,7 +158,7 @@ comparison:
         skills:
           - source:
               type: local-path
-              path: fixtures/repo-summary/skill-bundle
+              path: evaluations/repo-summary/fixtures/workspaces/skill-overlay
             install:
               strategy: workspace-overlay
   variants:
@@ -177,13 +183,13 @@ Use [Specs](./specs.md) for the full schema and normalization rules.
 Override repeat count or concurrency for a one-off local run:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --requests 2 --max-concurrency 2
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --requests 2 --max-concurrency 2
 ```
 
 Both flag spellings are accepted:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --requests 1 --maxConcurrency 2
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --requests 1 --maxConcurrency 2
 ```
 
 If you need a machine-wide cap without editing YAML, set `SKILL_ARENA_MAX_PARALLELISM` before running the command.
@@ -193,7 +199,7 @@ If you need a machine-wide cap without editing YAML, set `SKILL_ARENA_MAX_PARALL
 When you are iterating on only one profile, use:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --reuse-unchanged-profiles
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --reuse-unchanged-profiles
 ```
 
 This tells the evaluator to reuse the latest matching outputs for unchanged profiles instead of rerunning every column.
@@ -300,7 +306,7 @@ comparison:
                     }
 ```
 
-For a repository example, see [copilot capability compare config](../benchmarks/copilot-cli-capabilities-compare/compare.yaml).
+For a repository example, see [copilot capability compare config](../evaluations/copilot-cli-capabilities-compare/evaluation.yaml).
 
 ## Inspect The Results
 

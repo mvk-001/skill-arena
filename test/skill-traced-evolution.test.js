@@ -10,7 +10,7 @@ import {
   initializeTraceRun,
   proposePatches,
   validateConsolidation,
-} from "../skills/skill-traced-evolution/scripts/traced-evolution-core.js";
+} from "../skills/skill-arena-traced-evolution/scripts/traced-evolution-core.js";
 
 async function createToySkill(rootDir) {
   const skillDir = path.join(rootDir, "toy-skill");
@@ -70,7 +70,7 @@ async function createTraceDirectory(rootDir) {
   return traceDir;
 }
 
-test("skill-traced-evolution initializes a trace run and imports normalized traces", async () => {
+test("skill-arena-traced-evolution initializes a trace run and imports normalized traces", async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-traced-init-"));
   const skillDir = await createToySkill(tempDir);
   const traceDir = await createTraceDirectory(tempDir);
@@ -90,7 +90,7 @@ test("skill-traced-evolution initializes a trace run and imports normalized trac
   assert.equal(pool.counts.failures, 2);
 });
 
-test("skill-traced-evolution proposes patches from success and failure traces", async () => {
+test("skill-arena-traced-evolution proposes patches from success and failure traces", async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-traced-propose-"));
   const skillDir = await createToySkill(tempDir);
   const traceDir = await createTraceDirectory(tempDir);
@@ -106,7 +106,7 @@ test("skill-traced-evolution proposes patches from success and failure traces", 
   assert.match(JSON.stringify(proposalState.proposals), /strength:strong-output-contract/);
 });
 
-test("skill-traced-evolution consolidates by prevalence and validates accepted patches", async () => {
+test("skill-arena-traced-evolution consolidates by prevalence and validates accepted patches", async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-traced-consolidate-"));
   const skillDir = await createToySkill(tempDir);
   const traceDir = await createTraceDirectory(tempDir);

@@ -1,0 +1,151 @@
+schemaVersion: 1
+benchmark:
+  id: openapi-integrator-compare
+  description: Compare Codex on OpenAPI-to-skill generation tasks with and without the local openapi-integrator skill.
+  tags:
+    - compare
+    - openapi
+    - swagger
+    - skill
+task:
+  prompts:
+    - id: openapi-3-skill-generation
+      description: Generate a skill folder from the OpenAPI 3 sample spec.
+      prompt: >-
+        Create the generated skill folder at `deliverables/task-manager` using
+        `specs/openapi-3.json` as the source of truth. The output must include
+        `SKILL.md`, `scripts/api_client.py`, and `references/openapi.json`.
+        Keep the generated skill aligned with the OpenAPI 3 input, including
+        `Task Manager API`, `list_tasks`, `create_task`, and bearer auth
+        mapping. Return only a brief completion note after the files are written.
+      evaluation:
+        assertions:
+          - type: file-contains
+            path: deliverables/task-manager/SKILL.md
+            value: Task Manager API
+          - type: file-contains
+            path: deliverables/task-manager/SKILL.md
+            value: TASK_MANAGER_BASE_URL
+          - type: file-contains
+            path: deliverables/task-manager/SKILL.md
+            value: bearerAuth
+          - type: file-contains
+            path: deliverables/task-manager/scripts/api_client.py
+            value: '"list_tasks"'
+          - type: file-contains
+            path: deliverables/task-manager/scripts/api_client.py
+            value: '"create_task"'
+          - type: file-contains
+            path: deliverables/task-manager/references/openapi.json
+            value: https://tasks.example.com/v1
+    - id: swagger-2-skill-generation
+      description: Generate a skill folder from the Swagger 2 sample spec.
+      prompt: >-
+        Create the generated skill folder at `deliverables/order-tracker` using
+        `specs/swagger-2.yaml` as the source of truth. The output must include
+        `SKILL.md`, `scripts/api_client.py`, and `references/openapi.yaml`.
+        Keep the generated skill aligned with the Swagger 2 input, including
+        `Order Tracker API`, `create_order`, the fallback operation ID
+        `get_orders_orderid`, and API key header mapping. Return only a brief
+        completion note after the files are written.
+      evaluation:
+        assertions:
+          - type: file-contains
+            path: deliverables/order-tracker/SKILL.md
+            value: Order Tracker API
+          - type: file-contains
+            path: deliverables/order-tracker/SKILL.md
+            value: ORDER_TRACKER_BASE_URL
+          - type: file-contains
+            path: deliverables/order-tracker/SKILL.md
+            value: X-API-Key
+          - type: file-contains
+            path: deliverables/order-tracker/scripts/api_client.py
+            value: '"get_orders_orderid"'
+          - type: file-contains
+            path: deliverables/order-tracker/scripts/api_client.py
+            value: '"create_order"'
+          - type: file-contains
+            path: deliverables/order-tracker/references/openapi.yaml
+            value: 'basePath: /api'
+workspace:
+  sources:
+    - id: base
+      type: local-path
+      path: evaluations/openapi-integrator-compare/fixtures/workspaces/base
+      target: /
+  setup:
+    initializeGit: true
+evaluation:
+  assertions:
+    - type: javascript
+      value: |
+        const fs = process.getBuiltinModule("node:fs");
+        const path = process.getBuiltinModule("node:path");
+        const requiredPaths = [
+          "deliverables/task-manager/SKILL.md",
+          "deliverables/task-manager/scripts/api_client.py",
+          "deliverables/task-manager/references/openapi.json",
+          "deliverables/order-tracker/SKILL.md",
+          "deliverables/order-tracker/scripts/api_client.py",
+          "deliverables/order-tracker/references/openapi.yaml",
+        ];
+        return requiredPaths.every((relativePath) =>
+          fs.existsSync(path.resolve(process.cwd(), relativePath))
+        );
+  requests: 2
+  timeoutMs: 600000
+  tracing: false
+  maxConcurrency: 2
+  noCache: true
+comparison:
+  profiles:
+    - id: no-skill
+      description: Fully isolated baseline without the openapi-integrator skill.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
+      output:
+        tags:
+          - baseline
+        labels:
+          skill_state: off
+    - id: skill
+      description: Workspace overlay with the local openapi-integrator skill enabled.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: evaluations/openapi-integrator-compare/fixtures/workspaces/skill-overlay/skills/openapi-integrator
+              skillId: openapi-integrator
+            install:
+              strategy: workspace-overlay
+      output:
+        tags:
+          - skill
+        labels:
+          skill_state: on
+  variants:
+    - id: codex-mini
+      description: Codex mini authoring variant.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: workspace-write
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - codex
+          - mini
+        labels:
+          variantDisplayName: codex mini

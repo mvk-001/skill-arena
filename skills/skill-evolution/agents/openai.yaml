@@ -1,4 +1,0 @@
-interface:
-  display_name: "Skill Evolution"
-  short_description: "Evolve a skill against a fixed benchmark"
-  default_prompt: "Use $skill-evolution to improve a skill against a fixed workspace and repeatable evaluation loop."

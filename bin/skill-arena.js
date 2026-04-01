@@ -17,7 +17,7 @@ const commandMap = {
 
 const commandDetails = {
   evaluate: {
-    usage: "evaluate <benchmark-config-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--reuse-unchanged-profiles] [--dry-run] [--verbose]",
+    usage: "evaluate <benchmark-config-path> [--scenario <scenario-id>] [--requests <n>] [--max-concurrency <n>] [--markdown-output <path>] [--reuse-unchanged-profiles] [--dry-run] [--verbose]",
     description:
       "Run one benchmark manifest or matrix evaluation config.",
     options: [
@@ -25,14 +25,15 @@ const commandDetails = {
       "--requests <n>: override effective evaluation requests for this run",
       "--max-concurrency <n>: override effective maxConcurrency for this run",
       "--maxConcurrency <n>: alias for --max-concurrency",
+      "--markdown-output <path>: overwrite a Markdown report file with the final human-readable report",
       "--reuse-unchanged-profiles: in compare mode, reuse the latest matching profile outputs when their scenario inputs are unchanged",
       "--dry-run: generate promptfoo config and skip execution",
       "--verbose: print full internal artifact paths and raw output",
       "--help: show evaluate usage",
     ],
     examples: [
-      "./benchmarks/skill-arena-compare/compare.yaml --dry-run",
-      "./benchmarks/skill-arena-compare/compare.yaml",
+      "./evaluations/skill-arena-config-author/evaluation.yaml --dry-run",
+      "./evaluations/skill-arena-config-author/evaluation.yaml --markdown-output ./evaluations/skill-arena-config-author/last_report.md",
     ],
   },
   "gen-conf": {
@@ -87,7 +88,7 @@ const commandDetails = {
     examples: [
       "--prompt \"summarize file A\" --evaluation-type javascript --evaluation-value @checks.js",
       "--prompt \"summarize file A\" --evaluation-type llm-rubric --evaluation-value \"Score 1.0 only if the file is summarized.\" --requests 3 --skill-type git",
-      "--output ./benchmarks/my-benchmark/evaluate.yaml --prompt \"create an evaluation config\" --skill-type local-path",
+      "--output ./evaluations/my-benchmark/evaluation.yaml --prompt \"create an evaluation config\" --skill-type local-path",
     ],
   },
   "val-conf": {
@@ -97,7 +98,7 @@ const commandDetails = {
       "--help: show val-conf usage",
     ],
     examples: [
-      "./benchmarks/skill-arena-compare/compare.yaml",
+      "./evaluations/skill-arena-config-author/evaluation.yaml",
     ],
   },
 };

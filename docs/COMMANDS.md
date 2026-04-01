@@ -310,10 +310,13 @@ Environment override notes:
 ## Examples
 
 # Dry-run the maintained compare benchmark
-`skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run`
+`skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run`
 
 # Validate the maintained compare benchmark
-`skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml`
+`skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml`
+
+# Persist the maintained compare report as Markdown
+`skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --markdown-output ./evaluations/skill-arena-config-author/last_report.md`
 
 # Scaffold a benchmark compare config
-`skill-arena gen-conf --output ./benchmarks/my-benchmark/compare.yaml --prompt "Read the repository and summarize the architecture." --evaluation-type llm-rubric --evaluation-value "Score 1.0 only if the answer covers the main architecture." --requests 3 --skill-type local-path`
+`skill-arena gen-conf --output ./evaluations/my-benchmark/evaluation.yaml --prompt "Read the repository and summarize the architecture." --evaluation-type llm-rubric --evaluation-value "Score 1.0 only if the answer covers the main architecture." --requests 3 --skill-type local-path`

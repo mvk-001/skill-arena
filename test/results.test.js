@@ -10,6 +10,7 @@ import {
   normalizeRawPromptfooResults,
   normalizePromptfooResults,
   normalizeOutput,
+  writeMarkdownReportOutput,
   writeMergedBenchmarkArtifacts,
   writePromptfooArtifacts,
   renderCompareMatrixReport,
@@ -381,6 +382,22 @@ test("writeMergedBenchmarkArtifacts writes merged summary and report", async () 
     await fs.readFile(path.join(tempDirectory, "report.md"), "utf8"),
     "# benchmark-id\n",
   );
+});
+
+test("writeMarkdownReportOutput overwrites the requested markdown path", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-markdown-output-"));
+  const outputPath = path.join(tempDirectory, "evaluations", "demo-skill", "last_report.md");
+
+  await writeMarkdownReportOutput({
+    outputPath,
+    markdown: "# first\n",
+  });
+  await writeMarkdownReportOutput({
+    outputPath,
+    markdown: "# second\n",
+  });
+
+  assert.equal(await fs.readFile(outputPath, "utf8"), "# second\n");
 });
 
 test("normalizeRawPromptfooResults handles alternate outputs payloads", async () => {

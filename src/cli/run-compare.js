@@ -8,6 +8,7 @@ import {
   buildCompareMatrixSummary,
   normalizeRawPromptfooResults,
   renderCompareMatrixReport,
+  writeMarkdownReportOutput,
   writeMergedBenchmarkArtifacts,
   writePromptfooArtifacts,
 } from "../results.js";
@@ -57,11 +58,12 @@ async function main() {
     reuseUnchangedProfiles,
     verboseOutput,
     outputRootDirectory,
+    markdownOutputPath,
   } = runtimeOptions;
 
   if (!compareConfigPath) {
     throw new Error(
-      "Usage: node ./src/cli/run-compare.js <compare-config-path> [--requests <n>] [--max-concurrency <n>] [--reuse-unchanged-profiles] [--dry-run] [--verbose]",
+      "Usage: node ./src/cli/run-compare.js <compare-config-path> [--requests <n>] [--max-concurrency <n>] [--markdown-output <path>] [--reuse-unchanged-profiles] [--dry-run] [--verbose]",
     );
   }
 
@@ -274,6 +276,14 @@ async function main() {
       cliReport,
     });
     await logExecution(executionLogPath, `merged artifacts written to ${mergedArtifacts.reportPath}`);
+    let markdownArtifact = null;
+    if (markdownOutputPath) {
+      markdownArtifact = await writeMarkdownReportOutput({
+        outputPath: path.resolve(outputRootDirectory, markdownOutputPath),
+        markdown: cliReport,
+      });
+      await logExecution(executionLogPath, `markdown report copied to ${markdownArtifact.outputPath}`);
+    }
 
     console.log("## Evaluation Result");
     console.log("");
@@ -289,6 +299,7 @@ async function main() {
         summaryPath,
         executionLogPath,
         mergedArtifacts,
+        markdownArtifact,
       });
       console.log("");
       console.log("## Raw Output");
@@ -298,6 +309,7 @@ async function main() {
         promptfooResultsPath,
         summaryPath,
         mergedArtifacts,
+        markdownArtifact,
         results: [
           ...compareSummary.matrix.rows.map((row) => ({
             rowId: row.rowId,
@@ -331,6 +343,7 @@ function parseCompareRuntimeOptions(argv) {
     "--requests": true,
     "--max-concurrency": true,
     "--maxConcurrency": true,
+    "--markdown-output": true,
     "--reuse-unchanged-profiles": false,
     "--dry-run": false,
     "--verbose": false,
@@ -348,7 +361,17 @@ function parseCompareRuntimeOptions(argv) {
     reuseUnchangedProfiles: argv.includes("--reuse-unchanged-profiles"),
     verboseOutput: argv.includes("--verbose"),
     outputRootDirectory: process.cwd(),
+    markdownOutputPath: readStringOption(argv, "--markdown-output"),
   };
+}
+
+function readStringOption(argv, optionName) {
+  const index = argv.indexOf(optionName);
+  if (index === -1) {
+    return null;
+  }
+
+  return argv[index + 1] ?? null;
 }
 
 // ── Scenario classification ────────────────────────────────────────
@@ -1041,6 +1064,7 @@ function printCompareArtifactPaths({
   summaryPath,
   executionLogPath,
   mergedArtifacts,
+  markdownArtifact,
 }) {
   console.log("Compare artifacts");
   console.log(`- Run directory: ${compareRunDirectory}`);
@@ -1057,6 +1081,9 @@ function printCompareArtifactPaths({
   } else {
     console.log(`- Final merged summary: ${path.join(compareRunDirectory, "merged", "merged-summary.json")}`);
     console.log(`- Final merged report: ${path.join(compareRunDirectory, "merged", "report.md")}`);
+  }
+  if (markdownArtifact?.outputPath) {
+    console.log(`- Markdown output: ${markdownArtifact.outputPath}`);
   }
 
   console.log("");

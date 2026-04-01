@@ -9,7 +9,7 @@ import {
   breedNextGeneration,
   rankGeneration,
   seedGeneration,
-} from "../skills/skill-evolution/scripts/evolution-core.js";
+} from "../skills/skill-arena-evolution/scripts/evolution-core.js";
 
 async function createToySkill(rootDir) {
   const skillDir = path.join(rootDir, "toy-skill");
@@ -33,8 +33,8 @@ async function createToySkill(rootDir) {
   return skillDir;
 }
 
-test("skill-evolution seeds a deterministic ten-candidate generation", async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-evolution-seed-"));
+test("skill-arena-evolution seeds a deterministic ten-candidate generation", async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-evolution-seed-"));
   const skillDir = await createToySkill(tempDir);
   const outputDir = path.join(tempDir, "run");
 
@@ -60,8 +60,8 @@ test("skill-evolution seeds a deterministic ten-candidate generation", async () 
   );
 });
 
-test("skill-evolution ranks candidates by fitness and keeps deterministic survivors", async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-evolution-rank-"));
+test("skill-arena-evolution ranks candidates by fitness and keeps deterministic survivors", async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-evolution-rank-"));
   const skillDir = await createToySkill(tempDir);
   const outputDir = path.join(tempDir, "run");
 
@@ -84,8 +84,8 @@ test("skill-evolution ranks candidates by fitness and keeps deterministic surviv
   assert.equal(ranking.ranking[1].fitness, 0.95);
 });
 
-test("skill-evolution breeds the next generation from the top two candidates and logs the winner", async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-evolution-breed-"));
+test("skill-arena-evolution breeds the next generation from the top two candidates and logs the winner", async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-evolution-breed-"));
   const skillDir = await createToySkill(tempDir);
   const outputDir = path.join(tempDir, "run");
 

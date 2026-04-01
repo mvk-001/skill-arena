@@ -11,7 +11,7 @@ import { fromProjectRoot } from "../src/project-paths.js";
 
 test("sample manifest parses successfully", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -25,7 +25,7 @@ test("sample manifest parses successfully", async () => {
 
 test("system skill benchmarks normalize without workspace overlays", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "gws-gmail-triage",
     "manifest.json",
   );
@@ -49,7 +49,7 @@ test("manifest validation rejects unsupported adapter ids", async () => {
       prompt: "Hello",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     scenarios: [
@@ -89,8 +89,8 @@ test("enabled skill mode defaults to workspace overlay when legacy skillOverlay 
       prompt: "Hello",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
-      skillOverlay: "fixtures/smoke-skill-following/skill-overlay",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
+      skillOverlay: "evaluations/smoke-skill-following/fixtures/workspaces/skill-overlay",
       initializeGit: true,
     },
     scenarios: [
@@ -131,7 +131,7 @@ test("manifest validation accepts llm-rubric assertions", () => {
       prompt: "Summarize the repository state.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     scenarios: [
@@ -176,7 +176,7 @@ test("manifest evaluation leaves maxConcurrency unset so runtime can use local p
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     scenarios: [
@@ -225,7 +225,7 @@ test("manifest validation accepts declarative workspace sources and explicit ski
         {
           id: "base",
           type: "local-path",
-          path: "fixtures/smoke-skill-following/base",
+          path: "evaluations/smoke-skill-following/fixtures/workspaces/base",
           target: "/",
         },
       ],
@@ -285,7 +285,7 @@ test("manifest validation accepts git skills that select a skill folder inside t
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     scenarios: [
@@ -337,7 +337,7 @@ test("yaml manifests load successfully", async () => {
       "task:",
       "  prompt: Return HELLO.",
       "workspace:",
-      "  fixture: fixtures/smoke-skill-following/base",
+      "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
       "  initializeGit: true",
       "scenarios:",
       "  - id: yaml-scenario",
@@ -397,7 +397,7 @@ test("manifest loader formats schema validation errors", async () => {
         prompt: "Return HELLO.",
       },
       workspace: {
-        fixture: "fixtures/smoke-skill-following/base",
+        fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
         initializeGit: true,
       },
       scenarios: [],
@@ -414,12 +414,12 @@ test("manifest loader formats schema validation errors", async () => {
 test("resolveManifestPath preserves absolute paths and resolves repository-relative paths", () => {
   const absolutePath = "C:\\temp\\manifest.json";
   assert.equal(resolveManifestPath(absolutePath), absolutePath);
-  assert.match(resolveManifestPath("benchmarks/smoke-skill-following/manifest.json"), /benchmarks[\\/]smoke-skill-following[\\/]manifest\.json$/);
+  assert.match(resolveManifestPath("evaluations/smoke-skill-following/manifest.json"), /evaluations[\\/]smoke-skill-following[\\/]manifest\.json$/);
 });
 
 test("findScenario returns a scenario and rejects unknown ids", async () => {
   const manifestPath = fromProjectRoot(
-    "benchmarks",
+    "evaluations",
     "smoke-skill-following",
     "manifest.json",
   );
@@ -444,7 +444,7 @@ test("copilot-cli defaults commandPath to copilot", () => {
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     scenarios: [
@@ -483,7 +483,7 @@ test("copilot-cli rejects sdk execution", () => {
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     scenarios: [
@@ -520,7 +520,7 @@ test("opencode rejects sdk execution", () => {
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     scenarios: [
@@ -557,7 +557,7 @@ test("manifest validation rejects duplicate scenario ids and invalid normalized 
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     scenarios: [
@@ -600,7 +600,7 @@ test("manifest validation rejects duplicate scenario ids and invalid normalized 
       prompt: "Return HELLO.",
     },
     workspace: {
-      fixture: "fixtures/smoke-skill-following/base",
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
       initializeGit: true,
     },
     scenarios: [

@@ -1,7 +1,7 @@
 schemaVersion: 1
 benchmark:
   id: skill-arena-compare
-  description: Evaluate the skill-arena-compare workspace skill on authoring a compare config for the remote gws-calendar-agenda skill.
+  description: Evaluate the skill-arena-config-author workspace skill on authoring a compare config for the remote gws-calendar-agenda skill.
   tags:
     - compare
     - skill
@@ -51,7 +51,7 @@ evaluation:
     - type: contains
       value: "id: gws-calendar-agenda-compare-generated"
     - type: contains
-      value: "path: fixtures/gws-calendar-agenda-compare/base"
+      value: "path: evaluations/gws-calendar-agenda-compare/fixtures/workspaces/base"
     - type: contains
       value: "comparison:"
     - type: contains
@@ -130,7 +130,7 @@ evaluation:
           && normalized.includes("\n  variants:\n")
           && normalized.includes("JSON only")
           && normalized.includes("Markdown only")
-          && normalized.includes("path: fixtures/gws-calendar-agenda-compare/base")
+          && normalized.includes("path: evaluations/gws-calendar-agenda-compare/fixtures/workspaces/base")
           && normalized.includes("skillPath: skills/gws-calendar-agenda")
           && normalized.includes("model: gpt-5.1-codex-mini")
           && normalized.includes("networkAccessEnabled: true")
@@ -145,7 +145,7 @@ evaluation:
   maxConcurrency: 4
   noCache: true
 workspace:
-  fixture: fixtures/skill-arena-compare/base
+  fixture: evaluations/skill-arena-config-author/fixtures/workspaces/base
   initializeGit: true
 comparison:
   profiles:
@@ -161,15 +161,15 @@ comparison:
           skillDisplayName: no-skill
           skillModeId: no-skill
     - id: skill
-      description: Workspace overlay with the repo-local skill-arena-compare skill enabled.
+      description: Workspace overlay with the repo-local skill-arena-config-author skill enabled.
       isolation:
         inheritSystem: false
       capabilities:
         skills:
           - source:
               type: local-path
-              path: fixtures/skill-arena-compare/skill-overlay/skills/skill-arena-compare
-              skillId: skill-arena-compare
+              path: evaluations/skill-arena-config-author/fixtures/workspaces/skill-overlay/skills/skill-arena-config-author
+              skillId: skill-arena-config-author
             install:
               strategy: workspace-overlay
       output:

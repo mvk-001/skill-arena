@@ -14,14 +14,14 @@ The default loop is:
 
 ```bash
 npm test
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
 ```
 
 Run the live evaluation only when that loop is clean:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
 ## Prerequisites
@@ -78,7 +78,7 @@ Those exclusions keep the threshold focused on the stable unit-testable runtime 
 Before running a maintained benchmark, validate its config:
 
 ```bash
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
 This catches malformed YAML, invalid schema combinations, and unfinished `TODO:` fields from `gen-conf`.
@@ -88,7 +88,7 @@ This catches malformed YAML, invalid schema combinations, and unfinished `TODO:`
 Use `--dry-run` to verify materialization and config generation without launching live agent executions:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
 ```
 
 This is the fastest high-signal check after config or runtime changes because it confirms that Skill Arena can:
@@ -104,27 +104,27 @@ This is the fastest high-signal check after config or runtime changes because it
 When the dry-run is clean, run the maintained compare benchmark:
 
 ```bash
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
 Generic form:
 
 ```bash
-skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml
+skill-arena evaluate ./evaluations/<evaluation-id>/evaluation.yaml
 ```
 
 Useful variants:
 
 ```bash
-skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --requests 2
-skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --max-concurrency 2
-skill-arena evaluate ./benchmarks/<benchmark-id>/compare.yaml --reuse-unchanged-profiles
+skill-arena evaluate ./evaluations/<evaluation-id>/evaluation.yaml --requests 2
+skill-arena evaluate ./evaluations/<evaluation-id>/evaluation.yaml --max-concurrency 2
+skill-arena evaluate ./evaluations/<evaluation-id>/evaluation.yaml --reuse-unchanged-profiles
 ```
 
 Scaffold a config when you need a new benchmark:
 
 ```bash
-skill-arena gen-conf --output ./benchmarks/<benchmark-id>/compare.yaml --prompt "Describe the task." --skill-type local-path
+skill-arena gen-conf --output ./evaluations/<evaluation-id>/evaluation.yaml --prompt "Describe the task." --skill-type local-path
 ```
 
 ## What A Compare Run Does
@@ -231,7 +231,7 @@ Useful follow-up checks:
 Before closing an autonomous improvement loop in this repository, run:
 
 ```bash
-node skills/skill-arena-compare/scripts/run-rust-analyzer-hook.js
+node skills/skill-arena-config-author/scripts/run-rust-analyzer-hook.js
 ```
 
 This is the required repository closeout guardrail for autonomous loops. It writes JSON artifacts under `.tmp/rust-code-analysis-loop/`.
@@ -244,8 +244,8 @@ Use this short sequence when you change the runner, Promptfoo integration, works
 
 ```bash
 npm test
-skill-arena val-conf ./benchmarks/skill-arena-compare/compare.yaml
-skill-arena evaluate ./benchmarks/skill-arena-compare/compare.yaml --dry-run
+skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
+skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
 ```
 
 What this covers:
