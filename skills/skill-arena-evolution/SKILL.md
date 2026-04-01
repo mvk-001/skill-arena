@@ -85,7 +85,6 @@ Read [references/fitness-design.md](references/fitness-design.md) when the scori
   - `SKILL.md`
   - `references/*`
   - `scripts/*`
-  - `agents/openai.yaml` only when the interface contract must change
 
 Use `scripts/create-population.js` to materialize the first generation and write candidate manifests.
 
