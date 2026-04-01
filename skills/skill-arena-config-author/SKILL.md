@@ -181,6 +181,12 @@ support, still model it explicitly. The compare run should surface that cell as
 - Prefer assertions that reject partial compare configs. If the prompt asks for
   two profiles, one variant, or one workspace base source, do not accept an
   output that only includes a subset and happens to satisfy a few field checks.
+- When a prompt specifies an exact set of workspace sources, assert the source
+  types and count that were requested instead of only checking that one desired
+  source appears somewhere.
+- When a prompt specifies shared assertions explicitly, assert that the required
+  assertion types are present in the shared `evaluation.assertions` block and,
+  when the set is closed in the prompt, that no required item is missing.
 - When the benchmark asks for file output, prefer file-aware assertions such as
   `file-contains`, `javascript`, or `llm-rubric` over checking only the final
   chat response.
@@ -320,6 +326,8 @@ Assertion design:
   profile ids, adapters, and capability-family expectations.
 - Prompt-level assertions should also carry exact profile-count and variant-count
   expectations whenever the prompt names a closed set.
+- Prompt-level assertions should carry exact workspace-source-count expectations
+  whenever the prompt names a closed set of sources.
 - If one row asks for `workspace.sources` with `git` or `empty`, do not keep a
   shared assertion that forces every row to use `local-path`.
 

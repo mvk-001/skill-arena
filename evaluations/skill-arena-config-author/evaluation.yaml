@@ -200,6 +200,7 @@ task:
           - type: javascript
             value: |
               const normalized = output.replace(/\r\n/g, "\n");
+              const workspaceSection = normalized.match(/^workspace:\n([\s\S]*?)(?=^evaluation:\s*$)/m)?.[1] ?? "";
               const comparisonSection = normalized.match(/^comparison:\n([\s\S]*)$/m)?.[1] ?? "";
               const evaluationSection = normalized.match(/^evaluation:\n([\s\S]*?)(?=^comparison:\s*$)/m)?.[1] ?? "";
               const profileIds = Array.from(
@@ -227,6 +228,19 @@ task:
                 && profileIds.length === 2;
               const hasExpectedVariants = variantIds.includes("copilot-mini")
                 && variantIds.length === 1;
+              const workspaceSourceTypes = Array.from(
+                workspaceSection.matchAll(/^\s+- (?:id:\s+[^\n]+\n\s+)?type:\s+([A-Za-z0-9-]+)\s*$/gm),
+                (match) => match[1],
+              );
+              const hasExpectedWorkspace = workspaceSourceTypes.length === 1
+                && workspaceSourceTypes[0] === "local-path"
+                && /path:\s+fixtures\/inline-copilot\/base\b/.test(workspaceSection);
+              const sharedAssertionTypes = Array.from(
+                evaluationSection.matchAll(/^\s+- type:\s+([A-Za-z0-9-]+)\s*$/gm),
+                (match) => match[1],
+              );
+              const hasExpectedSharedAssertions = sharedAssertionTypes.includes("llm-rubric")
+                && sharedAssertionTypes.includes("contains");
               return hasInlineFiles
                 && hasSkillMd
                 && hasGreeterSkillId
@@ -239,7 +253,9 @@ task:
                 && hasContains
                 && hasNetworkFalse
                 && hasExpectedProfiles
-                && hasExpectedVariants;
+                && hasExpectedVariants
+                && hasExpectedWorkspace
+                && hasExpectedSharedAssertions;
     - id: multi-profile-file-contains
       description: Generate a compare.yaml with three profiles and a file-contains assertion.
       prompt: >-
@@ -258,15 +274,21 @@ task:
           - type: javascript
             value: |
               const normalized = output.replace(/\r\n/g, "\n");
+              const workspaceSection = normalized.match(/^workspace:\n([\s\S]*?)(?=^evaluation:\s*$)/m)?.[1] ?? "";
               const comparisonSection = normalized.match(/^comparison:\n([\s\S]*)$/m)?.[1] ?? "";
               const evaluationSection = normalized.match(/^evaluation:\n([\s\S]*?)(?=^comparison:\s*$)/m)?.[1] ?? "";
               const profileIds = Array.from(
-                comparisonSection.matchAll(/^\s+- id:\s+([A-Za-z0-9-]+)\s*$/gm),
+                (comparisonSection.match(/^\s+profiles:\s*$/m) ? comparisonSection.split(/^\s+variants:\s*$/m)[0] : "").matchAll(/^\s+- id:\s+([A-Za-z0-9-]+)\s*$/gm),
+                (match) => match[1],
+              );
+              const variantIds = Array.from(
+                (comparisonSection.match(/^\s+variants:\s*$/m) ? comparisonSection.split(/^\s+variants:\s*$/m)[1] ?? "" : "").matchAll(/^\s+- id:\s+([A-Za-z0-9-]+)\s*$/gm),
                 (match) => match[1],
               );
               const hasThreeProfiles = profileIds.includes("baseline")
                 && profileIds.includes("skill-a")
-                && profileIds.includes("skill-b");
+                && profileIds.includes("skill-b")
+                && profileIds.length === 3;
               const hasFileContains = /type:\s+file-contains\b/.test(evaluationSection);
               const hasOutputPath = /path:\s+output\/summary\.txt\b/.test(evaluationSection)
                 || /output\/summary\.txt/.test(evaluationSection);
@@ -278,6 +300,14 @@ task:
               const hasWorkspaceWrite = /sandboxMode:\s+workspace-write\b/.test(comparisonSection);
               const hasBothOverlays = (comparisonSection.match(/strategy:\s+workspace-overlay\b/g) ?? []).length >= 2;
               const hasBaselineEmpty = /- id:\s+baseline[\s\S]*?capabilities:\s+\{\}/m.test(comparisonSection);
+              const workspaceSourceTypes = Array.from(
+                workspaceSection.matchAll(/^\s+- (?:id:\s+[^\n]+\n\s+)?type:\s+([A-Za-z0-9-]+)\s*$/gm),
+                (match) => match[1],
+              );
+              const hasExpectedWorkspace = workspaceSourceTypes.length === 1
+                && workspaceSourceTypes[0] === "local-path"
+                && /path:\s+fixtures\/three-profile\/base\b/.test(workspaceSection);
+              const hasExpectedVariant = variantIds.includes("codex-mini") && variantIds.length === 1;
               return hasThreeProfiles
                 && hasFileContains
                 && hasOutputPath
@@ -286,7 +316,9 @@ task:
                 && hasReporterSkill
                 && hasWorkspaceWrite
                 && hasBothOverlays
-                && hasBaselineEmpty;
+                && hasBaselineEmpty
+                && hasExpectedWorkspace
+                && hasExpectedVariant;
     - id: copilot-inline-skill-with-capability-bundles
       description: Generate a compare.yaml with an inline skill plus copilot instructions, agents, hooks, and deterministic assertions.
       prompt: >-
@@ -372,6 +404,10 @@ task:
               );
               const hasGitWorkspace = /type:\s+git\b[\s\S]*?repo:\s+https:\/\/github\.com\/example\/repo\.git\b[\s\S]*?ref:\s+main\b[\s\S]*?subpath:\s+fixtures\/base\b[\s\S]*?target:\s+\//m.test(workspaceSection);
               const hasEmptyWorkspace = /type:\s+empty\b[\s\S]*?target:\s+\/scratch\b/m.test(workspaceSection);
+              const workspaceSourceTypes = Array.from(
+                workspaceSection.matchAll(/^\s+- (?:id:\s+[^\n]+\n\s+)?type:\s+([A-Za-z0-9-]+)\s*$/gm),
+                (match) => match[1],
+              );
               const hasInstructions = /instructions:\s*[\s\S]*?fixtures\/opencode\/instructions[\s\S]*?target:\s+\//m.test(comparisonSection);
               const hasAgents = /agents:\s*[\s\S]*?fixtures\/opencode\/agents[\s\S]*?target:\s+\/\.opencode\/agents[\s\S]*?agentId:\s+reviewer\b/m.test(comparisonSection);
               const hasOpencodeVariant = /adapter:\s+opencode\b/.test(comparisonSection)
@@ -384,6 +420,7 @@ task:
                 && variantIds.length === 1;
               return hasGitWorkspace
                 && hasEmptyWorkspace
+                && workspaceSourceTypes.length === 2
                 && hasInstructions
                 && hasAgents
                 && hasOpencodeVariant

@@ -30,6 +30,16 @@ Use these defaults unless the user gives a stronger constraint:
 - reevaluation: score every candidate every generation
 - acceptance rule: promote only candidates that improve or preserve the validated best score
 - baseline: preserve one stable control copy of the incoming skill and never overwrite it silently
+- evaluation requests: prefer a minimum of `3` so the results have at least a
+  small distribution instead of a single-run anecdote
+- parallel requests:
+  - choose a level that keeps the machine responsive and avoids turning rate limits or local contention into benchmark noise
+  - start conservative when the benchmark is expensive or flaky
+  - increase parallelism only after one stable low-concurrency run
+- cache policy:
+  - disable cache while validating whether a new mutation actually changed behavior
+  - enable reuse or cache only for unchanged profiles or unchanged candidates when the benchmark and inputs are identical
+  - do not compare a cached incumbent against a freshly executed challenger without stating that asymmetry
 
 Prefer a user-defined rubric as the fitness function.
 If the user does not provide one, derive the minimal rubric from the task, fixture, and evaluation command, then write that rubric down before generating variants.
@@ -42,6 +52,11 @@ If the user does not provide one, derive the minimal rubric from the task, fixtu
 - Confirm the evaluation command is reproducible.
 - Define the fitness rule in one place.
 - Identify any hard gates such as tests, linters, schema validation, or required output shape.
+- Estimate an appropriate parallel request count before the loop starts:
+  - `1` when the benchmark is flaky, stateful, or likely to hit shared-resource conflicts
+  - `2-4` for most local evolution loops where you want some speedup without adding much noise
+  - higher only after confirming the benchmark remains stable and machine capacity is not the bottleneck
+- Prefer lowering parallelism before lowering requests when results look noisy.
 
 Read [references/fitness-design.md](references/fitness-design.md) when the scoring rule is vague or mixes tests with rubric scoring.
 
@@ -62,6 +77,19 @@ Use `scripts/create-population.js` to materialize the first generation and write
 ### 3. Evaluate every candidate
 
 - Run the same evaluation method for every candidate.
+- When the task is to run, inspect, or summarize Skill Arena evaluation output,
+  use the dedicated skill [$skill-arena-run-results](C:\Users\villa\dev\skill-arena\skills\skill-arena-run-results\SKILL.md)
+  instead of improvising the reporting workflow.
+- Use cache deliberately:
+  - prefer fresh execution for newly mutated candidates
+  - use `--reuse-unchanged-profiles` or equivalent reuse only when you have
+    verified that the candidate, prompt set, and benchmark inputs are unchanged
+  - if cache or reuse is enabled, say which options were reused and which were
+    freshly executed
+- Use parallelism deliberately:
+  - if latency is dominated by local CPU, filesystem, or CLI startup, keep concurrency modest
+  - if the benchmark is mostly independent remote calls and remains stable, moderate parallelism is usually acceptable
+  - if error rates increase with concurrency, treat that as benchmark noise and step back down
 - Record raw outputs and the normalized fitness value for each one.
 - Reject candidates that break required gates even if they look promising qualitatively.
 - Keep scoring artifacts outside the skill files when possible so the skill content stays reviewable.
@@ -103,6 +131,12 @@ Read [references/mutation-operators.md](references/mutation-operators.md) when y
 - If nothing improved, keep the incumbent and log that the generation failed.
 - Before starting another generation or stopping, report the iteration summary
   so the user can see what the loop learned from that round.
+- Include the key evaluation run facts in that summary:
+  - requests per cell or total requests actually executed
+  - max concurrency or effective parallelism used
+  - success ratio for each option that was compared
+  - which option was selected as best
+  - why it won, including the deciding signals and any hard gates
 
 Use `scripts/write-generation-log.js` to append a generation summary with scores, survivors, parents, mutations, and accepted winner.
 
@@ -121,6 +155,8 @@ The final output should identify:
 - the final score
 - the rejected alternatives and why they were discarded
 - the files that changed in the winning skill
+- the important execution facts for the winning evaluation, including request
+  count, concurrency, and per-option success ratios
 
 ## Operating Rules
 
@@ -133,6 +169,8 @@ The final output should identify:
 - Do not let hidden context or external knowledge drift into the benchmark loop.
 - Every iteration must include a concise summary of findings before the next
   mutation or final closeout.
+- The final closeout must report the winning option and the reason it beat the
+  alternatives, not just that it was accepted.
 
 ## References And Helpers
 
