@@ -216,7 +216,12 @@ export function resolveFitness(result) {
       return numericScores.reduce((sum, value) => sum + value, 0) / numericScores.length;
     }
   }
-  throw new Error("Could not resolve a numeric fitness from the result payload.");
+  const topKeys = result ? Object.keys(result).sort().join(", ") : "(null)";
+  throw new Error(
+    `Could not resolve a numeric fitness from the result payload. ` +
+    `Top-level keys found: ${topKeys}. ` +
+    `Expected one of: fitness, score, summary.fitness, summary.passRate, summary.successRate, stats.successes/failures, outputs[*].score/success.`
+  );
 }
 
 export async function rankGeneration(generationDir) {
@@ -228,6 +233,19 @@ export async function rankGeneration(generationDir) {
     const candidateRoot = path.join(candidatesDir, name);
     const manifest = await readJson(path.join(candidateRoot, "candidate.json"));
     const resultPath = path.join(candidateRoot, "result.json");
+    let resultExists = false;
+    try {
+      await fs.access(resultPath);
+      resultExists = true;
+    } catch {
+      // result.json not found for this candidate
+    }
+    if (!resultExists) {
+      throw new Error(
+        `Missing result.json for ${manifest.candidateId} at ${resultPath}. ` +
+        `Run the evaluator on all candidates before ranking.`
+      );
+    }
     const result = await readJson(resultPath);
     ranking.push({
       candidateId: manifest.candidateId,
@@ -255,6 +273,12 @@ export async function rankGeneration(generationDir) {
   return rankingState;
 }
 
+/**
+ * Create a crossover skill by alternating file ownership between two parents.
+ * Files are sorted lexicographically; even-indexed files come from the left
+ * parent, odd-indexed from the right. When a file exists in only one parent,
+ * that parent supplies it regardless of index position.
+ */
 export async function copyCrossoverSkill({
   leftSkillDir,
   rightSkillDir,

@@ -41,6 +41,24 @@ const ISSUE_PATCH_LIBRARY = {
     conflictGroup: "analysis-depth",
     summary: "Require deeper agentic analysis for recurring failures.",
   },
+  "verbose-skill-md": {
+    targetFile: "SKILL.md",
+    changeType: "restructure",
+    conflictGroup: "skill-md-size",
+    summary: "Move bulky detail from SKILL.md into references to reduce cognitive load.",
+  },
+  "missing-hard-gates": {
+    targetFile: "SKILL.md",
+    changeType: "strengthen-rule",
+    conflictGroup: "hard-gates",
+    summary: "Add explicit hard gates (tests, schema checks) before rubric scoring.",
+  },
+  "flaky-benchmark-tolerance": {
+    targetFile: "SKILL.md",
+    changeType: "strengthen-rule",
+    conflictGroup: "benchmark-stability",
+    summary: "Detect and reject flaky benchmark results before using them for decisions.",
+  },
 };
 
 const STRENGTH_PATCH_LIBRARY = {
@@ -67,6 +85,18 @@ const STRENGTH_PATCH_LIBRARY = {
     changeType: "reinforce-strength",
     conflictGroup: "trace-schema",
     summary: "Keep explicit success and failure trace labeling.",
+  },
+  "strong-baseline-preservation": {
+    targetFile: "SKILL.md",
+    changeType: "reinforce-strength",
+    conflictGroup: "baseline-discipline",
+    summary: "Preserve strong baseline protection and comparison discipline.",
+  },
+  "strong-deterministic-ordering": {
+    targetFile: "SKILL.md",
+    changeType: "reinforce-strength",
+    conflictGroup: "determinism",
+    summary: "Preserve deterministic tie-breaking and ranking order.",
   },
 };
 
@@ -218,7 +248,7 @@ export function proposalsFromTrace(trace) {
     const template = patchTemplateFor("issue", issue);
     proposals.push({
       patchId: patchIdFor("issue", issue),
-      evidenceKind: "failure",
+      evidenceKind: trace.outcome === "success" ? "success" : "failure",
       sourceTraceId: trace.traceId,
       sourceOutcome: trace.outcome,
       tag: issue,
@@ -230,7 +260,7 @@ export function proposalsFromTrace(trace) {
     const template = patchTemplateFor("strength", strength);
     proposals.push({
       patchId: patchIdFor("strength", strength),
-      evidenceKind: "success",
+      evidenceKind: trace.outcome === "success" ? "success" : "failure",
       sourceTraceId: trace.traceId,
       sourceOutcome: trace.outcome,
       tag: strength,
@@ -258,6 +288,11 @@ export async function proposePatches(runDir) {
   return proposalState;
 }
 
+/**
+ * Aggregate patch support across all proposals.
+ * Groups proposals by patchId and counts unique supporting traces.
+ * Patches supported by both success and failure evidence get supportClass "combined".
+ */
 export function aggregatePatchSupport(proposals) {
   const grouped = new Map();
   for (const proposal of proposals) {
@@ -297,6 +332,13 @@ function isAllowedTargetFile(targetFile) {
   return ALLOWED_TARGET_PREFIXES.some((prefix) => targetFile === prefix || targetFile.startsWith(prefix));
 }
 
+/**
+ * Select the final consolidated patch set from aggregated patches.
+ * Patches are sorted by support (descending), then by supportClass (combined first),
+ * then by patchId (lexicographic) for determinism. Within each conflict group, only
+ * the highest-support patch wins; others are rejected with reason "conflict-lost".
+ * Patches targeting files outside ALLOWED_TARGET_PREFIXES are rejected as out-of-scope.
+ */
 export function consolidateAggregatedPatches(aggregatedPatches, minSupport = DEFAULT_MIN_SUPPORT) {
   const eligible = aggregatedPatches
     .filter((patch) => patch.support >= minSupport)
@@ -364,6 +406,8 @@ export async function consolidatePatches({
 export async function validateConsolidation(runDir) {
   const state = await readJson(path.join(runDir, "consolidated", "consolidated-patches.json"));
   const violations = [];
+
+  // Guard 1: scope — reject patches targeting files outside the skill bundle
   for (const patch of state.accepted) {
     if (!isAllowedTargetFile(patch.targetFile)) {
       violations.push({
@@ -374,6 +418,7 @@ export async function validateConsolidation(runDir) {
     }
   }
 
+  // Guard 2: conflict — reject duplicate conflict groups in accepted set
   const conflictGroups = new Set();
   for (const patch of state.accepted) {
     if (conflictGroups.has(patch.conflictGroup)) {
@@ -384,6 +429,18 @@ export async function validateConsolidation(runDir) {
       });
     }
     conflictGroups.add(patch.conflictGroup);
+  }
+
+  // Guard 3: format — verify the baseline skill directory is intact
+  const baselineSkillDir = path.join(runDir, "baseline-skill");
+  try {
+    await fs.access(path.join(baselineSkillDir, "SKILL.md"));
+  } catch {
+    violations.push({
+      patchId: "(baseline)",
+      reason: "missing-baseline-skill-md",
+      targetFile: "SKILL.md",
+    });
   }
 
   const validation = {

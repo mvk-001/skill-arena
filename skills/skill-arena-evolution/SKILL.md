@@ -8,6 +8,8 @@ description: Evolve an existing skill against a fixed workspace and repeatable e
 Improve a skill through a repeatable evolutionary loop instead of one-shot edits.
 Use this skill only when the workspace, benchmark fixture, and scoring method are stable enough to compare generations fairly.
 
+The loop is inspired by genetic-algorithm selection pressure and the autonomous experiment loop from [autoresearch](https://github.com/karpathy/autoresearch): seed candidates, evaluate against a fixed metric, keep what improved, discard what regressed, breed the next generation, and never stop iterating until the fitness plateaus or the user intervenes.
+
 ## Inputs
 
 Collect these inputs before changing the target skill:
@@ -41,6 +43,21 @@ Use these defaults unless the user gives a stronger constraint:
   - disable cache while validating whether a new mutation actually changed behavior
   - enable reuse or cache only for unchanged profiles or unchanged candidates when the benchmark and inputs are identical
   - do not compare a cached incumbent against a freshly executed challenger without stating that asymmetry
+- simplicity criterion:
+  - all else being equal, simpler is better
+  - a small fitness improvement that adds significant complexity to the skill is not worth keeping
+  - a fitness-neutral change that removes complexity or improves clarity is worth keeping
+  - weigh the complexity cost against the improvement magnitude before accepting any candidate
+- crash and failure handling:
+  - if a candidate crashes during evaluation (missing output, runtime error, timeout), try to diagnose the cause
+  - if the crash is a trivial fix (typo, missing import, path error), fix it and re-evaluate once
+  - if the idea itself is fundamentally broken, mark it as crashed with fitness `0`, log the failure reason, and move on
+  - do not spend more than one retry on a crashing candidate
+- autonomous loop discipline:
+  - once the evolution loop has begun, do not pause to ask the user if you should continue
+  - the loop runs until fitness plateaus, success criteria are met, or the user intervenes
+  - if you run out of mutation ideas, re-read the current skill and references for new angles, try combining near-misses from previous generations, or try more radical structural changes
+  - report each iteration summary before proceeding to the next generation
 
 Prefer a user-defined rubric as the fitness function.
 If the user does not provide one, derive the minimal rubric from the task, fixture, and evaluation command, then write that rubric down before generating variants.
@@ -92,8 +109,8 @@ Use `scripts/create-population.js` to materialize the first generation and write
 
 - Run the same evaluation method for every candidate.
 - When the task is to run, inspect, or summarize Skill Arena evaluation output,
-  use the dedicated skill [$skill-arena-run-results](C:\Users\villa\dev\skill-arena\skills\skill-arena-run-results\SKILL.md)
-  instead of improvising the reporting workflow.
+  use the dedicated skill `$skill-arena-run-results`
+  instead of improvising the reporting workflow. Consider that execution would take several minutes.
 - Use cache deliberately:
   - prefer fresh execution for newly mutated candidates
   - use `--reuse-unchanged-profiles` or equivalent reuse only when you have
@@ -185,12 +202,21 @@ The final output should identify:
   mutation or final closeout.
 - The final closeout must report the winning option and the reason it beat the
   alternatives, not just that it was accepted.
+- Every candidate must have a binary outcome: keep or discard. There is no
+  "maybe" or "revisit later" status. Either it beats the incumbent and gets
+  promoted, or it is discarded and its hypothesis is recorded for learning.
+- Treat the skill bundle as the only file you modify. The benchmark config,
+  workspace fixtures, and evaluation harness are read-only during the loop.
+  If the benchmark needs to change, stop the loop, fix the benchmark, and
+  restart from a fresh generation.
 
 ## References And Helpers
 
-- `references/evolution-loop.md`: selection policy and generation rhythm
-- `references/fitness-design.md`: how to define and normalize fitness
-- `references/mutation-operators.md`: practical mutation and crossover operators
+- `references/evolution-loop.md`: selection policy, generation rhythm, and plateau detection
+- `references/fitness-design.md`: how to define, normalize, and compose fitness
+- `references/mutation-operators.md`: practical mutation and crossover operators with examples
+- `assets/decision-tree.md`: choose the shortest path for the current evolution task
+- `assets/fast-path.md`: step-by-step quick start for a single evolution loop
 - `scripts/create-population.js`: create a generation skeleton and candidate manifests
 - `scripts/rank-results.js`: normalize scores and rank candidates
 - `scripts/breed-generation.js`: keep top two and generate the next eight candidates

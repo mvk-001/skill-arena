@@ -22,6 +22,29 @@ For compare-authoring tasks, the final answer is usually the file content only.
 - If you wrote `deliverables/compare.yaml`, answer with that file's contents
   only.
 
+## Final Gate
+
+Before returning YAML, run one short hard-gate pass against the exact brief.
+
+1. Extract the closed-set literals first:
+   - output path
+   - prompt ids
+   - profile ids
+   - variant ids
+   - exact enum values such as `read-only`, `workspace-write`, `never`, or
+     `system-installed`
+2. Draft or scaffold the compare config.
+3. Before the final answer, verify all of these:
+   - the first visible text is `schemaVersion: 1`
+   - there is no prose, bullets, headings, fences, or next-step text outside
+     the YAML body
+   - every closed-set literal from the brief appears with the exact name and
+     exact count requested
+   - if the brief requires file output, write the file first and then return
+     that file's YAML only
+4. If shell commands work, run the validator before returning. If validation
+   fails, fix the YAML instead of narrating the failure.
+
 ## Preferred Evaluation Layout
 
 When the user does not provide a different destination, prefer this repository
@@ -126,13 +149,8 @@ support, still model it explicitly. The compare run should surface that cell as
 
 ## Decision Tree
 
-1. Read the user brief first.
-2. Open `assets/fast-path.md`.
-3. If the task matches the repository benchmark, run the scaffold script first.
-4. Otherwise open `assets/fast-path.md`.
-5. If shell access works, inspect the workspace and run the validator.
-6. If shell access is blocked or flaky, finish offline. Do not stop with a
-   blocker message when the needed values are already available.
+Open `assets/decision-tree.md` and follow the shortest matching route instead
+of re-deriving the workflow from memory.
 
 ## Do This
 
