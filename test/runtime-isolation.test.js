@@ -13,8 +13,6 @@ test("runtime isolation seeds Codex home with only shared system state for codex
 
   await fs.mkdir(path.join(sourceCodexHome, "skills", ".system", "builtin"), { recursive: true });
   await fs.mkdir(path.join(sourceCodexHome, "skills", "user-skill"), { recursive: true });
-  await fs.mkdir(path.join(sourceCodexHome, "rules"), { recursive: true });
-  await fs.mkdir(path.join(sourceCodexHome, "vendor_imports"), { recursive: true });
   await fs.writeFile(path.join(sourceCodexHome, "auth.json"), "{\"token\":\"x\"}", "utf8");
   await fs.writeFile(path.join(sourceCodexHome, "config.toml"), "model = \"gpt-5\"\n", "utf8");
   await fs.writeFile(path.join(sourceCodexHome, "version.json"), "{\"version\":1}", "utf8");
@@ -22,8 +20,6 @@ test("runtime isolation seeds Codex home with only shared system state for codex
   await fs.writeFile(path.join(sourceCodexHome, "AGENTS.md"), "# user instructions\n", "utf8");
   await fs.writeFile(path.join(sourceCodexHome, "skills", ".system", "builtin", "SKILL.md"), "system", "utf8");
   await fs.writeFile(path.join(sourceCodexHome, "skills", "user-skill", "SKILL.md"), "user", "utf8");
-  await fs.writeFile(path.join(sourceCodexHome, "rules", "default.md"), "rule", "utf8");
-  await fs.writeFile(path.join(sourceCodexHome, "vendor_imports", "vendor.json"), "{}", "utf8");
 
   const previousCodexHome = process.env.CODEX_HOME;
   process.env.CODEX_HOME = sourceCodexHome;
@@ -44,15 +40,15 @@ test("runtime isolation seeds Codex home with only shared system state for codex
     assert.match(await fs.readFile(path.join(isolation.codexHome, "auth.json"), "utf8"), /token/);
     assert.equal(await fs.stat(path.join(isolation.codexHome, "AGENTS.md")).catch(() => null), null);
     assert.equal(await fs.stat(path.join(isolation.codexHome, "skills", "user-skill")).catch(() => null), null);
+    assert.equal(await fs.stat(path.join(isolation.codexHome, "config.toml")).catch(() => null), null);
+    assert.equal(await fs.stat(path.join(isolation.codexHome, "version.json")).catch(() => null), null);
+    assert.equal(await fs.stat(path.join(isolation.codexHome, ".codex-global-state.json")).catch(() => null), null);
     assert.match(
       await fs.readFile(path.join(isolation.codexHome, "skills", ".system", "builtin", "SKILL.md"), "utf8"),
       /system/,
     );
-    assert.match(await fs.readFile(path.join(isolation.codexHome, "rules", "default.md"), "utf8"), /rule/);
-    assert.match(
-      await fs.readFile(path.join(isolation.codexHome, "vendor_imports", "vendor.json"), "utf8"),
-      /\{\}/,
-    );
+    assert.equal(await fs.stat(path.join(isolation.codexHome, "rules")).catch(() => null), null);
+    assert.equal(await fs.stat(path.join(isolation.codexHome, "vendor_imports")).catch(() => null), null);
   } finally {
     if (previousCodexHome == null) {
       delete process.env.CODEX_HOME;
@@ -107,7 +103,7 @@ test("runtime isolation reports declared profile skills as the only allowed visi
   assert.equal(isolation.environment.TEMP, path.join(executionRootDirectory, "tmp"));
 });
 
-test("runtime isolation seeds pi home with local auth and settings", async () => {
+test("runtime isolation seeds pi home with local auth only", async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-runtime-pi-"));
   const sourceHome = path.join(tempDirectory, "source-home");
   const executionRootDirectory = path.join(tempDirectory, "execution-root");
@@ -137,14 +133,8 @@ test("runtime isolation seeds pi home with local auth and settings", async () =>
       await fs.readFile(path.join(isolatedPiAgentDirectory, "auth.json"), "utf8"),
       /token/,
     );
-    assert.match(
-      await fs.readFile(path.join(isolatedPiAgentDirectory, "settings.json"), "utf8"),
-      /github-copilot/,
-    );
-    assert.match(
-      await fs.readFile(path.join(isolatedPiAgentDirectory, "bin", "rg.exe"), "utf8"),
-      /binary/,
-    );
+    assert.equal(await fs.stat(path.join(isolatedPiAgentDirectory, "settings.json")).catch(() => null), null);
+    assert.equal(await fs.stat(path.join(isolatedPiAgentDirectory, "bin", "rg.exe")).catch(() => null), null);
   } finally {
     if (previousHome == null) {
       delete process.env.HOME;
@@ -156,6 +146,62 @@ test("runtime isolation seeds pi home with local auth and settings", async () =>
       delete process.env.USERPROFILE;
     } else {
       process.env.USERPROFILE = previousUserProfile;
+    }
+  }
+});
+
+test("runtime isolation seeds opencode home with local auth only", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-runtime-opencode-"));
+  const sourceHome = path.join(tempDirectory, "source-home");
+  const executionRootDirectory = path.join(tempDirectory, "execution-root");
+  const sourceConfigDirectory = path.join(sourceHome, ".config", "opencode");
+  const sourceDataDirectory = path.join(sourceHome, ".local", "share", "opencode");
+
+  await fs.mkdir(sourceConfigDirectory, { recursive: true });
+  await fs.mkdir(sourceDataDirectory, { recursive: true });
+  await fs.writeFile(path.join(sourceConfigDirectory, "opencode.json"), "{\"theme\":\"fancy\"}", "utf8");
+  await fs.writeFile(path.join(sourceConfigDirectory, "tui.json"), "{\"compact\":true}", "utf8");
+  await fs.writeFile(path.join(sourceDataDirectory, "auth.json"), "{\"token\":\"x\"}", "utf8");
+
+  const previousHome = process.env.HOME;
+  const previousXdgConfigHome = process.env.XDG_CONFIG_HOME;
+  const previousXdgDataHome = process.env.XDG_DATA_HOME;
+  process.env.HOME = sourceHome;
+  process.env.XDG_CONFIG_HOME = path.join(sourceHome, ".config");
+  process.env.XDG_DATA_HOME = path.join(sourceHome, ".local", "share");
+
+  try {
+    const isolation = await createRuntimeIsolation(executionRootDirectory, {
+      id: "opencode-baseline",
+      skillMode: "disabled",
+      agent: {
+        adapter: "opencode",
+      },
+    });
+
+    assert.match(
+      await fs.readFile(path.join(isolation.environment.XDG_DATA_HOME, "opencode", "auth.json"), "utf8"),
+      /token/,
+    );
+    assert.equal(await fs.stat(path.join(isolation.environment.XDG_CONFIG_HOME, "opencode", "opencode.json")).catch(() => null), null);
+    assert.equal(await fs.stat(path.join(isolation.environment.XDG_CONFIG_HOME, "opencode", "tui.json")).catch(() => null), null);
+  } finally {
+    if (previousHome == null) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = previousHome;
+    }
+
+    if (previousXdgConfigHome == null) {
+      delete process.env.XDG_CONFIG_HOME;
+    } else {
+      process.env.XDG_CONFIG_HOME = previousXdgConfigHome;
+    }
+
+    if (previousXdgDataHome == null) {
+      delete process.env.XDG_DATA_HOME;
+    } else {
+      process.env.XDG_DATA_HOME = previousXdgDataHome;
     }
   }
 });

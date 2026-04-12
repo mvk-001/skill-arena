@@ -100,6 +100,31 @@ For `pi`, the generated provider runs with strict skill isolation by default:
 
 For `codex`, skill scope defaults are applied through generated `skills.config` values unless the scenario uses `system-installed` skills.
 
+Runtime isolation intentionally seeds only the minimum host state needed for authenticated execution:
+
+- credentials such as `auth.json` may be copied into the isolated home when a local CLI requires them
+- host defaults and personalization files such as Codex `config.toml`, Pi `settings.json`, or OpenCode `opencode.json` are not copied
+- benchmark profiles therefore compare the same authenticated tool surface without inheriting user-specific default behavior from the host machine
+
+### Effective runtime isolation
+
+Strict compare-mode isolation targets four inputs only:
+
+- the prompt
+- the materialized workspace
+- the declared profile capabilities
+- the minimum credentials required for local authentication
+
+Adapter-specific isolation is intentionally uneven because external CLIs do not expose identical control surfaces.
+
+| Adapter | Auth seeded into isolated home | Strict isolation defaults | Residual limitation |
+| --- | --- | --- | --- |
+| `codex` | `auth.json` plus packaged `.system` skills only | isolated `CODEX_HOME`, generated skill scope config, workspace-only skill injection | runtime behavior still depends on the local Codex CLI implementation |
+| `pi` | `auth.json` only | isolated home, `--no-skills`, explicit `--skill` for declared bundles only | no Codex-like first-class sandbox surface |
+| `opencode` | `auth.json` only | isolated config dir, generated config content, `--pure`, workspace-only agents and skills | provider semantics still depend on the local OpenCode CLI |
+| `claude-code` | no host config by default beyond explicit env/auth passed in | isolated project workspace, `CLAUDE.md` and `.claude/*` mirrored from the workspace, `--setting-sources project` by default | runtime-specific hidden orchestration remains outside Skill Arena control |
+| `copilot-cli` | no host config by default beyond explicit env/auth passed in | isolated config dir, `--config-dir`, `--disable-builtin-mcps`, `--disallow-temp-dir`, `--no-auto-update`, `--no-experimental`, `COPILOT_CUSTOM_INSTRUCTIONS_DIRS=` | isolation is partial because the CLI remains more opaque than Codex, Pi, or OpenCode |
+
 ### Result outputs
 
 Each run writes a predictable directory under `results/<benchmark-id>/<timestamp>-<scenario-id>/`:

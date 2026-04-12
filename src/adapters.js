@@ -46,6 +46,7 @@ const adapterRegistry = {
             allowedSkillIds: getAllowedSkillIds(isolatedEnvironment),
             codexHome: isolatedEnvironment?.CODEX_HOME,
           }),
+          strict_runtime_isolation: true,
         },
       };
     },
@@ -84,6 +85,7 @@ const adapterRegistry = {
             scenario,
             baseConfig: scenario.agent.config,
           }),
+          strict_runtime_isolation: true,
         },
       };
     },
@@ -111,6 +113,7 @@ const adapterRegistry = {
           ),
           allowed_skills: getAllowedSkillIds(isolatedEnvironment),
           disable_other_skills: resolveSkillStrategy(scenario) !== "system-installed",
+          strict_runtime_isolation: true,
         },
       };
     },
@@ -140,6 +143,7 @@ const adapterRegistry = {
           disable_other_skills: resolveSkillStrategy(scenario) !== "system-installed",
           agent: getOpenCodeAgentId(scenario),
           opencode_config: scenario.agent.config ?? {},
+          strict_runtime_isolation: true,
         },
       };
     },
@@ -177,6 +181,7 @@ const adapterRegistry = {
           enable_streaming: scenario.evaluation.tracing,
           agent: getClaudeCodeAgentId(scenario),
           claude_code_config: scenario.agent.config ?? {},
+          strict_runtime_isolation: true,
         },
       };
     },

@@ -27,7 +27,9 @@ test("copilot provider builds best-effort CLI arguments", () => {
     },
   });
 
-  const args = provider.buildCommandArguments("Return HELLO.");
+  const args = provider.buildCommandArguments("Return HELLO.", {
+    configDirectory: "C:/temp/workspace/.skill-arena/copilot-config",
+  });
 
   assert.deepEqual(args, [
     "-p",
@@ -39,6 +41,12 @@ test("copilot provider builds best-effort CLI arguments", () => {
     "gpt-5",
     "--agent",
     "vscode",
+    "--config-dir",
+    "C:/temp/workspace/.skill-arena/copilot-config",
+    "--disable-builtin-mcps",
+    "--disallow-temp-dir",
+    "--no-auto-update",
+    "--no-experimental",
     "--allow-all-tools",
     "--allow-all-urls",
     "--allow-all-paths",
@@ -77,6 +85,8 @@ test("copilot provider returns trimmed output on success", async () => {
       assert.equal(options.env.SAMPLE_FLAG, "1");
       assert.equal(options.env.HOME, isolatedHome);
       assert.equal(options.env.USERPROFILE, isolatedHome);
+      assert.match(options.env.COPILOT_CONFIG_DIR, /copilot-config/);
+      assert.equal(options.env.COPILOT_CUSTOM_INSTRUCTIONS_DIRS, "");
       return {
         stdout: "ALPHA-42\n",
         stderr: "",
@@ -91,6 +101,23 @@ test("copilot provider returns trimmed output on success", async () => {
   assert.equal(response.metadata.backend, "command");
   assert.equal(response.metadata.commandPath, "copilot");
   assert.equal(response.metadata.executionEventHook.eventCount, 0);
+});
+
+test("copilot provider prepares a strict isolated config directory", async () => {
+  const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-copilot-config-"));
+  const provider = new CopilotSystemProvider({
+    config: {
+      working_dir: workingDirectory,
+    },
+  });
+
+  const runtimeConfig = await provider.prepareRuntimeConfig();
+  const configJson = JSON.parse(await fs.readFile(path.join(runtimeConfig.configDirectory, "config.json"), "utf8"));
+
+  assert.equal(configJson.autoUpdate, false);
+  assert.equal(configJson.disableAllHooks, true);
+  assert.equal(configJson.experimental, false);
+  assert.equal(configJson.custom_agents.default_local_only, true);
 });
 
 test("copilot provider falls back to message extracted from JSON lines", async () => {
@@ -169,6 +196,10 @@ test("copilot provider exposes ids, trims fallback fields, and handles empty out
     "--output-format",
     "json",
     "--no-color",
+    "--disable-builtin-mcps",
+    "--disallow-temp-dir",
+    "--no-auto-update",
+    "--no-experimental",
     "--no-ask-user",
     "--deny-tool",
     "browser",

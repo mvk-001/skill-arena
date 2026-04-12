@@ -20,6 +20,7 @@ test("opencode provider builds CLI arguments with model and agent", () => {
     "run",
     "--format",
     "json",
+    "--pure",
     "--model",
     "anthropic/claude-sonnet-4-5",
     "--agent",
@@ -54,6 +55,22 @@ test("opencode provider mirrors allowed skills and AGENTS instructions into runt
   assert.match(copiedSkill, /marker-guide/);
   assert.deepEqual(configContent.instructions, ["AGENTS.md"]);
   assert.equal(configContent.model, "openai/gpt-5");
+});
+
+test("opencode provider can disable strict isolation behavior explicitly", () => {
+  const provider = new OpenCodeSystemProvider({
+    config: {
+      working_dir: "C:/temp/workspace",
+      strict_runtime_isolation: false,
+    },
+  });
+
+  assert.deepEqual(provider.buildCommandArguments("Return HELLO."), [
+    "run",
+    "--format",
+    "json",
+    "Return HELLO.",
+  ]);
 });
 
 test("opencode provider returns extracted output and writes an execution-event hook", async () => {

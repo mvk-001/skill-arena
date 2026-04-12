@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 import {
   spawnProviderCommand,
@@ -24,9 +25,11 @@ export default class CopilotSystemProvider {
   async callApi(prompt, _context, callOptions) {
     assertRequiredConfig(this.config, "copilot-cli", ["working_dir"]);
 
+    const runtimeConfig = await this.prepareRuntimeConfig();
     const useWindowsPromptWrapper = process.platform === "win32";
     const args = this.buildCommandArguments(
       useWindowsPromptWrapper ? WINDOWS_PROMPT_PLACEHOLDER : prompt,
+      runtimeConfig,
     );
     const appliedSettings = this.describeAppliedSettings();
     const { stdout, stderr, exitCode } = await withRetry(
@@ -34,7 +37,7 @@ export default class CopilotSystemProvider {
         command: this.config.command_path ?? "copilot",
         args,
         cwd: this.config.working_dir,
-        env: this.buildEnvironment(),
+        env: this.buildEnvironment(runtimeConfig.environment),
         promptText: useWindowsPromptWrapper ? prompt : undefined,
         abortSignal: callOptions?.abortSignal,
       }),
@@ -89,14 +92,56 @@ export default class CopilotSystemProvider {
     };
   }
 
-  buildCommandArguments(prompt) {
+  async prepareRuntimeConfig() {
+    const configDirectory = path.join(
+      this.config.working_dir,
+      ".skill-arena",
+      "copilot-config",
+    );
+    const strictIsolation = this.config.strict_runtime_isolation !== false;
+    const runtimeConfig = strictIsolation
+      ? {
+          autoUpdate: false,
+          disableAllHooks: true,
+          experimental: false,
+          custom_agents: {
+            default_local_only: true,
+          },
+        }
+      : {};
+
+    await fs.rm(configDirectory, { recursive: true, force: true });
+    await fs.mkdir(configDirectory, { recursive: true });
+    await fs.writeFile(
+      path.join(configDirectory, "config.json"),
+      JSON.stringify(runtimeConfig, null, 2),
+      "utf8",
+    );
+
+    return {
+      configDirectory,
+      environment: {
+        COPILOT_CONFIG_DIR: configDirectory,
+        COPILOT_CUSTOM_INSTRUCTIONS_DIRS: "",
+        COPILOT_HOME: configDirectory,
+      },
+    };
+  }
+
+  buildCommandArguments(prompt, runtimeConfig = null) {
     const args = ["-p", prompt, "--output-format", "json", "--no-color"];
     const adapterConfig = this.config.copilot_config ?? {};
     const additionalDirectories = this.config.additional_directories ?? [];
+    const strictIsolation = this.config.strict_runtime_isolation !== false;
 
     pushOption(args, "--model", this.config.model);
     pushOption(args, "--agent", adapterConfig.agent);
+    pushOption(args, "--config-dir", runtimeConfig?.configDirectory);
     pushFlag(args, "--no-custom-instructions", adapterConfig.noCustomInstructions === true);
+    pushFlag(args, "--disable-builtin-mcps", strictIsolation);
+    pushFlag(args, "--disallow-temp-dir", strictIsolation);
+    pushFlag(args, "--no-auto-update", strictIsolation);
+    pushFlag(args, "--no-experimental", strictIsolation);
     pushFlag(args, "--allow-all-tools", this.config.approval_policy === "never");
     pushFlag(
       args,
@@ -126,8 +171,11 @@ export default class CopilotSystemProvider {
     return args;
   }
 
-  buildEnvironment() {
-    return buildIsolatedProviderEnvironment(this.config.cli_env);
+  buildEnvironment(runtimeEnvironment = {}) {
+    return buildIsolatedProviderEnvironment({
+      ...this.config.cli_env,
+      ...runtimeEnvironment,
+    });
   }
 
   describeAppliedSettings() {

@@ -155,7 +155,14 @@ export default class ClaudeCodeSystemProvider {
   }
 
   buildEnvironment() {
-    return buildIsolatedProviderEnvironment(this.config.cli_env);
+    const cliEnvironment = {
+      ...(this.config.cli_env ?? {}),
+    };
+    if (this.config.strict_runtime_isolation !== false && !cliEnvironment.CLAUDE_CONFIG_DIR && cliEnvironment.HOME) {
+      cliEnvironment.CLAUDE_CONFIG_DIR = path.join(cliEnvironment.HOME, ".claude");
+    }
+
+    return buildIsolatedProviderEnvironment(cliEnvironment);
   }
 
   describeAppliedSettings(runtimeLayout) {

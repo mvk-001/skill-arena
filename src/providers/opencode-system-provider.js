@@ -90,6 +90,9 @@ export default class OpenCodeSystemProvider {
 
   buildCommandArguments(prompt) {
     const args = ["run", "--format", "json"];
+    if (this.config.strict_runtime_isolation !== false) {
+      args.push("--pure");
+    }
 
     pushOption(args, "--model", this.config.model);
     pushOption(args, "--agent", this.config.agent);

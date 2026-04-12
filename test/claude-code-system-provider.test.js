@@ -120,6 +120,7 @@ test("claude-code provider preserves explicit CLAUDE.md, reports failures, and a
     assert.equal(environment.SKILL_ARENA_HOST_LEAK, undefined);
     assert.equal(environment.PATH, "C:/tooling");
     assert.equal(environment.HOME, "C:/isolated/home");
+    assert.equal(environment.CLAUDE_CONFIG_DIR, "C:\\isolated\\home\\.claude");
   } finally {
     if (previousHostLeak == null) {
       delete process.env.SKILL_ARENA_HOST_LEAK;

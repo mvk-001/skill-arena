@@ -494,6 +494,24 @@ Materialized capability rules in V1:
 - For materialized capability sources, `source.target` is required unless `source.type` is `empty`.
 - Compare-mode strict isolation does not support system-installed capability bundles.
 
+Strict runtime isolation in compare mode is enabled by default for maintained benchmarks. In practice this means:
+
+- each provider receives a fresh materialized workspace
+- each provider runs with an ephemeral home or config directory when the CLI supports it
+- only minimum authentication files may be copied from the host into that isolated home
+- host personalization files, plugin settings, themes, and default instruction search paths must not be copied
+- declared workspace-overlay skills and capability bundles are the only benchmark-visible additions beyond the base workspace
+
+Effective isolation by adapter:
+
+| Adapter | Isolation strength | Notes |
+| --- | --- | --- |
+| `codex` | strong | isolated `CODEX_HOME`, generated skill scope config, auth-only host seeding |
+| `pi` | strong | isolated home plus `--no-skills` and explicit `--skill` mounting only |
+| `opencode` | strong | isolated config dir plus `--pure` and generated config content |
+| `claude-code` | medium | project-scoped materialization is strong, but the runtime remains externally managed |
+| `copilot-cli` | partial | isolated config and disabled built-in surfaces help, but the CLI remains comparatively opaque |
+
 Adapter-specific V1 rules:
 
 - `copilot-cli` custom agents require exactly one `capabilities.agents[*]` entry per profile.
@@ -621,6 +639,7 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 - System-installed skills are not copied into the workspace.
 - Workspace-injected skills are copied or written only for `skillMode: "enabled"` runs that resolve to `workspace-overlay`.
 - Compare profiles must default to deny-all isolation and expose only explicitly declared capabilities.
+- Runtime isolation may seed the minimum local authentication state required by a CLI, but it must not copy host personalization or default-behavior config files into the isolated home.
 - The harness must not require a benchmark to live under `benchmarks/` in order to run it.
 - The harness should treat the `evaluations/<skill-name>/...` layout as a
   recommended repository convention when present, not as a special runtime-only

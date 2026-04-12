@@ -1,7 +1,7 @@
 schemaVersion: 1
 benchmark:
   id: data-extractor-invoice-compare
-  description: Targeted invoice-only extraction comparison for the data-extractor benchmark.
+  description: Targeted invoice-only extraction comparison for the vendored data-extractor benchmark.
   tags:
     - compare
     - extraction
@@ -189,6 +189,28 @@ comparison:
           - mini
         labels:
           variantDisplayName: copilot mini
+    - id: copilot-gpt54
+      description: Copilot CLI with GPT-5.4 for a stronger baseline and skill comparison.
+      agent:
+        adapter: copilot-cli
+        model: gpt-5.4
+        executionMethod: command
+        commandPath: copilot
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config:
+          noCustomInstructions: true
+      output:
+        tags:
+          - copilot
+          - gpt-5.4
+        labels:
+          variantDisplayName: copilot gpt-5.4
     - id: pi-gpt5mini
       description: PI with the low-cost GPT-5 mini model.
       agent:
@@ -231,3 +253,45 @@ comparison:
           - gpt-5.4
         labels:
           variantDisplayName: pi gpt-5.4
+    - id: opencode-mini
+      description: OpenCode with a low-cost GPT-5.4 mini variant.
+      agent:
+        adapter: opencode
+        model: openai/gpt-5.4-mini
+        executionMethod: command
+        commandPath: opencode
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - opencode
+          - mini
+        labels:
+          variantDisplayName: opencode mini
+    - id: opencode-gpt54
+      description: OpenCode with GPT-5.4 for a stronger baseline and skill comparison.
+      agent:
+        adapter: opencode
+        model: openai/gpt-5.4
+        executionMethod: command
+        commandPath: opencode
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - opencode
+          - gpt-5.4
+        labels:
+          variantDisplayName: opencode gpt-5.4

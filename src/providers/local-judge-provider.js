@@ -28,20 +28,24 @@ const DEFAULTS = {
     additional_directories: [],
     cli_env: {},
     copilot_config: {},
+    strict_runtime_isolation: true,
   },
   pi: {
     command_path: "pi",
     cli_env: {},
+    strict_runtime_isolation: true,
   },
   opencode: {
     command_path: "opencode",
     cli_env: {},
     opencode_config: {},
+    strict_runtime_isolation: true,
   },
   "claude-code": {
     command_path: "claude",
     cli_env: {},
     claude_code_config: {},
+    strict_runtime_isolation: true,
   },
 };
 
@@ -135,6 +139,10 @@ export default class LocalJudgeProvider {
               this.config.modelReasoningEffort
               ?? this.config.model_reasoning_effort
               ?? DEFAULTS["copilot-cli"].model_reasoning_effort,
+            strict_runtime_isolation:
+              this.config.strictRuntimeIsolation
+              ?? this.config.strict_runtime_isolation
+              ?? DEFAULTS["copilot-cli"].strict_runtime_isolation,
           },
         });
       case "pi":
@@ -146,6 +154,10 @@ export default class LocalJudgeProvider {
             working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
             model: this.config.model,
             cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS.pi.cli_env,
+            strict_runtime_isolation:
+              this.config.strictRuntimeIsolation
+              ?? this.config.strict_runtime_isolation
+              ?? DEFAULTS.pi.strict_runtime_isolation,
           },
         });
       case "opencode":
@@ -169,6 +181,10 @@ export default class LocalJudgeProvider {
               this.config.opencodeConfig
               ?? this.config.opencode_config
               ?? DEFAULTS.opencode.opencode_config,
+            strict_runtime_isolation:
+              this.config.strictRuntimeIsolation
+              ?? this.config.strict_runtime_isolation
+              ?? DEFAULTS.opencode.strict_runtime_isolation,
           },
         });
       case "claude-code":
@@ -209,6 +225,10 @@ export default class LocalJudgeProvider {
               this.config.claudeCodeConfig
               ?? this.config.claude_code_config
               ?? DEFAULTS["claude-code"].claude_code_config,
+            strict_runtime_isolation:
+              this.config.strictRuntimeIsolation
+              ?? this.config.strict_runtime_isolation
+              ?? DEFAULTS["claude-code"].strict_runtime_isolation,
           },
         });
       default:

@@ -116,13 +116,11 @@ async function seedCodexHome({
     return;
   }
 
-  await copyOptionalCodexFiles(sourceCodexHome, destinationCodexHome);
+  await copyIfPresent(path.join(sourceCodexHome, "auth.json"), path.join(destinationCodexHome, "auth.json"));
   if (copyGlobalAgents) {
     await copyIfPresent(path.join(sourceCodexHome, "AGENTS.md"), path.join(destinationCodexHome, "AGENTS.md"));
   }
   await copyDirectoryIfPresent(path.join(sourceCodexHome, "skills", ".system"), destinationSystemSkillsDirectory);
-  await copyDirectoryIfPresent(path.join(sourceCodexHome, "rules"), path.join(destinationCodexHome, "rules"));
-  await copyDirectoryIfPresent(path.join(sourceCodexHome, "vendor_imports"), path.join(destinationCodexHome, "vendor_imports"));
   await fs.mkdir(destinationSkillsDirectory, { recursive: true });
 }
 
@@ -142,14 +140,6 @@ async function seedPiHome({
     path.join(sourcePiAgentDirectory, "auth.json"),
     path.join(destinationPiAgentDirectory, "auth.json"),
   );
-  await copyIfPresent(
-    path.join(sourcePiAgentDirectory, "settings.json"),
-    path.join(destinationPiAgentDirectory, "settings.json"),
-  );
-  await copyDirectoryIfPresent(
-    path.join(sourcePiAgentDirectory, "bin"),
-    path.join(destinationPiAgentDirectory, "bin"),
-  );
 }
 
 async function seedOpenCodeHome({
@@ -163,18 +153,6 @@ async function seedOpenCodeHome({
   await fs.mkdir(destinationDataDirectory, { recursive: true });
 
   await Promise.all([
-    copyIfPresent(
-      path.join(sourceConfigDirectory, "opencode.json"),
-      path.join(destinationConfigDirectory, "opencode.json"),
-    ),
-    copyIfPresent(
-      path.join(sourceConfigDirectory, "opencode.jsonc"),
-      path.join(destinationConfigDirectory, "opencode.jsonc"),
-    ),
-    copyIfPresent(
-      path.join(sourceConfigDirectory, "tui.json"),
-      path.join(destinationConfigDirectory, "tui.json"),
-    ),
     copyIfPresent(
       path.join(sourceDataDirectory, "auth.json"),
       path.join(destinationDataDirectory, "auth.json"),
@@ -268,18 +246,6 @@ async function prepareIsolationFilesystem(paths) {
   );
   await fs.mkdir(path.dirname(paths.gitConfigPath), { recursive: true });
   await fs.writeFile(paths.gitConfigPath, "", "utf8");
-}
-
-async function copyOptionalCodexFiles(sourceCodexHome, destinationCodexHome) {
-  await Promise.all([
-    copyIfPresent(path.join(sourceCodexHome, "auth.json"), path.join(destinationCodexHome, "auth.json")),
-    copyIfPresent(path.join(sourceCodexHome, "config.toml"), path.join(destinationCodexHome, "config.toml")),
-    copyIfPresent(path.join(sourceCodexHome, "version.json"), path.join(destinationCodexHome, "version.json")),
-    copyIfPresent(
-      path.join(sourceCodexHome, ".codex-global-state.json"),
-      path.join(destinationCodexHome, ".codex-global-state.json"),
-    ),
-  ]);
 }
 
 function isNonVisibleSkillSource(skillSource) {
