@@ -270,6 +270,37 @@ test("llm-rubric opencode local judge shorthand rewrites to packaged custom prov
   assert.equal(config.tests[0].assert[0].provider.config.provider_id, "skill-arena:judge:opencode");
 });
 
+test("llm-rubric claude-code local judge shorthand rewrites to packaged custom provider", async () => {
+  const manifestPath = fromProjectRoot(
+    "evaluations",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = structuredClone(findScenario(manifest, "codex-mini-no-skill"));
+
+  scenario.evaluation.assertions = [
+    {
+      type: "llm-rubric",
+      value: "Score 1 only if the answer is ALPHA-42.",
+      provider: "skill-arena:judge:claude-code",
+    },
+  ];
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      environment: {},
+      gitReady: true,
+    },
+  });
+
+  assert.equal(config.tests[0].assert[0].provider.config.adapter, "claude-code");
+  assert.equal(config.tests[0].assert[0].provider.config.provider_id, "skill-arena:judge:claude-code");
+});
+
 test("opencode scenarios generate Promptfoo custom script providers", async () => {
   const manifestPath = fromProjectRoot(
     "evaluations",
@@ -305,6 +336,44 @@ test("opencode scenarios generate Promptfoo custom script providers", async () =
   assert.match(config.providers[0].id, /opencode-system-provider\.js$/);
   assert.equal(config.providers[0].config.model, "openai/gpt-5");
   assert.equal(config.providers[0].config.command_path, "opencode");
+  assert.equal(config.providers[0].config.working_dir, "C:/temp/workspace");
+});
+
+test("claude-code scenarios generate Promptfoo custom script providers", async () => {
+  const manifestPath = fromProjectRoot(
+    "evaluations",
+    "smoke-skill-following",
+    "manifest.json",
+  );
+  const { manifest } = await loadBenchmarkManifest(manifestPath);
+  const scenario = structuredClone(findScenario(manifest, "codex-mini-no-skill"));
+
+  scenario.id = "claude-code-sonnet-no-skill";
+  scenario.agent.adapter = "claude-code";
+  scenario.agent.model = "claude-sonnet-4-20250514";
+  scenario.agent.commandPath = "claude";
+
+  const parsedScenario = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: manifest.benchmark,
+    task: manifest.task,
+    workspace: manifest.workspace,
+    scenarios: [scenario],
+  }).scenarios[0];
+
+  const config = buildPromptfooConfig({
+    manifest,
+    scenario: parsedScenario,
+    workspace: {
+      workspaceDirectory: "C:/temp/workspace",
+      environment: {},
+      gitReady: true,
+    },
+  });
+
+  assert.match(config.providers[0].id, /claude-code-system-provider\.js$/);
+  assert.equal(config.providers[0].config.model, "claude-sonnet-4-20250514");
+  assert.equal(config.providers[0].config.command_path, "claude");
   assert.equal(config.providers[0].config.working_dir, "C:/temp/workspace");
 });
 

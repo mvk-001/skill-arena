@@ -12,6 +12,7 @@ const ADAPTER_CAPABILITY_FAMILIES = {
   "copilot-cli": new Set(["instructions", "skills", "agents", "hooks"]),
   "pi": new Set(["skills"]),
   "opencode": new Set(["instructions", "skills", "agents"]),
+  "claude-code": new Set(["instructions", "skills", "agents", "hooks"]),
 };
 
 const DEFAULT_CAPABILITY_FAMILIES = new Set(["skills"]);
@@ -80,6 +81,10 @@ export function validateScenarioCapabilities(scenario) {
     return validateOpenCodeCapabilities(scenario.profile?.capabilities ?? {});
   }
 
+  if (scenario.agent.adapter === "claude-code") {
+    return validateClaudeCodeCapabilities(scenario.profile?.capabilities ?? {});
+  }
+
   return validateMaterializedCapabilities(
     scenario.profile?.capabilities ?? {},
     ["instructions"],
@@ -108,6 +113,19 @@ function validateOpenCodeCapabilities(capabilities) {
   return validateMaterializedCapabilities(capabilities, [
     "instructions",
     "agents",
+  ]);
+}
+
+function validateClaudeCodeCapabilities(capabilities) {
+  const agentError = validateSingleAgentCapability(capabilities.agents ?? []);
+  if (agentError) {
+    return agentError.replace('"copilot-cli"', '"claude-code"');
+  }
+
+  return validateMaterializedCapabilities(capabilities, [
+    "instructions",
+    "agents",
+    "hooks",
   ]);
 }
 

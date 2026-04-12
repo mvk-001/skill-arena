@@ -126,11 +126,18 @@ test("workspace sanitization strips base AGENTS.md and base skills from isolated
   const skillDirectory = path.join(tempDirectory, "skill-overlay");
 
   await fs.mkdir(path.join(baseDirectory, "skills", "base-only"), { recursive: true });
+  await fs.mkdir(path.join(baseDirectory, ".claude", "skills", "base-claude"), { recursive: true });
   await fs.mkdir(path.join(skillDirectory, "skills", "allowed-skill"), { recursive: true });
   await fs.writeFile(path.join(baseDirectory, "AGENTS.md"), "# Base instructions\n", "utf8");
+  await fs.writeFile(path.join(baseDirectory, "CLAUDE.md"), "# Base Claude instructions\n", "utf8");
   await fs.writeFile(
     path.join(baseDirectory, "skills", "base-only", "SKILL.md"),
     "---\nname: base-only\n---\n",
+    "utf8",
+  );
+  await fs.writeFile(
+    path.join(baseDirectory, ".claude", "skills", "base-claude", "SKILL.md"),
+    "---\nname: base-claude\n---\n",
     "utf8",
   );
   await fs.writeFile(path.join(skillDirectory, "AGENTS.md"), "# Allowed overlay\n", "utf8");
@@ -214,6 +221,14 @@ test("workspace sanitization strips base AGENTS.md and base skills from isolated
   );
   assert.equal(
     await fs.stat(path.join(disabledWorkspace.workspaceDirectory, "skills")).catch(() => null),
+    null,
+  );
+  assert.equal(
+    await fs.stat(path.join(disabledWorkspace.workspaceDirectory, "CLAUDE.md")).catch(() => null),
+    null,
+  );
+  assert.equal(
+    await fs.stat(path.join(disabledWorkspace.workspaceDirectory, ".claude")).catch(() => null),
     null,
   );
   assert.match(

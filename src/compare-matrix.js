@@ -192,6 +192,7 @@ export function createUnsupportedCellEntry(skippedCell) {
     passRate: 0,
     displayValue: "unsupported",
     tokenUsage: createEmptyTokenUsageSummary(),
+    latency: createEmptyLatencySummary(),
     codeMetrics: null,
     sampleOutputs: [],
     reason: skippedCell.reason,
@@ -232,6 +233,7 @@ export function createMatrixCellEntry(routeEntry, evaluationRequests) {
     passRate: 0,
     displayValue: "-",
     tokenUsage: createEmptyTokenUsageSummary(),
+    latency: createEmptyLatencySummary(),
     codeMetrics: null,
     sampleOutputs: [],
   };
@@ -248,6 +250,7 @@ export function updateCellEntry({ cellEntry, output, evaluationRequests }) {
     cellEntry.tokenUsage,
     output.tokenUsage,
   );
+  cellEntry.latency = buildLatencySummary(cellEntry.latency, output.latencyMs);
   cellEntry.codeMetrics = buildCodeMetricsSummary(
     cellEntry.codeMetrics,
     output.codeMetricsDelta,
@@ -257,6 +260,7 @@ export function updateCellEntry({ cellEntry, output, evaluationRequests }) {
     passedRuns: cellEntry.passedRuns,
     evaluationRequests,
     tokenUsage: cellEntry.tokenUsage,
+    latency: cellEntry.latency,
     codeMetrics: cellEntry.codeMetrics,
   });
 
@@ -274,6 +278,15 @@ export function createEmptyTokenUsageSummary() {
     count: 0,
     averageTotalTokens: null,
     stddevTotalTokens: null,
+    samples: [],
+  };
+}
+
+export function createEmptyLatencySummary() {
+  return {
+    count: 0,
+    averageLatencyMs: null,
+    stddevLatencyMs: null,
     samples: [],
   };
 }
@@ -307,8 +320,41 @@ function extractTotalTokens(tokenUsage) {
 }
 
 function summarizeTokenSamples(samples) {
+  const summary = summarizeNumericSamples(samples);
+  return {
+    count: summary.count,
+    averageTotalTokens: summary.average,
+    stddevTotalTokens: summary.stddev,
+    samples: summary.samples,
+  };
+}
+
+// ── Latency ────────────────────────────────────────────────────────
+
+function buildLatencySummary(currentSummary, latencyMs) {
+  const previous = currentSummary ?? createEmptyLatencySummary();
+
+  if (typeof latencyMs !== "number" || !Number.isFinite(latencyMs)) {
+    return previous;
+  }
+
+  const samples = [
+    ...(Array.isArray(previous.samples) ? previous.samples : []),
+    latencyMs,
+  ];
+
+  const summary = summarizeNumericSamples(samples);
+  return {
+    count: summary.count,
+    averageLatencyMs: summary.average,
+    stddevLatencyMs: summary.stddev,
+    samples: summary.samples,
+  };
+}
+
+function summarizeNumericSamples(samples) {
   if (!Array.isArray(samples) || samples.length === 0) {
-    return createEmptyTokenUsageSummary();
+    return { count: 0, average: null, stddev: null, samples: [] };
   }
 
   const count = samples.length;
@@ -318,8 +364,8 @@ function summarizeTokenSamples(samples) {
 
   return {
     count,
-    averageTotalTokens: average,
-    stddevTotalTokens: Math.sqrt(variance),
+    average,
+    stddev: Math.sqrt(variance),
     samples,
   };
 }
@@ -391,6 +437,7 @@ function formatCellDisplayValue({
   passedRuns,
   evaluationRequests,
   tokenUsage,
+  latency,
   codeMetrics,
 }) {
   const lines = [`${formatPercent(passRate)} (${passedRuns}/${evaluationRequests})`];
@@ -398,6 +445,11 @@ function formatCellDisplayValue({
   const tokensText = formatTokenUsageDisplay(tokenUsage);
   if (tokensText) {
     lines.push(`tokens avg ${tokensText.average}, sd ${tokensText.stddev}`);
+  }
+
+  const latencyText = formatLatencyDisplay(latency);
+  if (latencyText) {
+    lines.push(`time avg ${latencyText.average} ms, sd ${latencyText.stddev} ms`);
   }
 
   lines.push(...formatCodeMetricsDisplay(codeMetrics));
@@ -412,6 +464,17 @@ function formatTokenUsageDisplay(tokenUsage) {
   return {
     average: formatNumericMetric(tokenUsage.averageTotalTokens),
     stddev: formatNumericMetric(tokenUsage.stddevTotalTokens),
+  };
+}
+
+function formatLatencyDisplay(latency) {
+  if (!latency || latency.count === 0) {
+    return null;
+  }
+
+  return {
+    average: formatNumericMetric(latency.averageLatencyMs),
+    stddev: formatNumericMetric(latency.stddevLatencyMs),
   };
 }
 
@@ -463,6 +526,13 @@ function stripSingleCellState(cell) {
           count: cell.tokenUsage.count ?? 0,
           averageTotalTokens: cell.tokenUsage.averageTotalTokens ?? null,
           stddevTotalTokens: cell.tokenUsage.stddevTotalTokens ?? null,
+        }
+      : null,
+    latency: cell.latency
+      ? {
+          count: cell.latency.count ?? 0,
+          averageLatencyMs: cell.latency.averageLatencyMs ?? null,
+          stddevLatencyMs: cell.latency.stddevLatencyMs ?? null,
         }
       : null,
     codeMetrics: cell.codeMetrics

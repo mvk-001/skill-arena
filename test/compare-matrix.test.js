@@ -13,6 +13,7 @@ import {
   createMatrixCellEntry,
   updateCellEntry,
   createEmptyTokenUsageSummary,
+  createEmptyLatencySummary,
   formatPercent,
   formatNumericMetric,
   formatSignedNumericMetric,
@@ -126,6 +127,14 @@ test("createEmptyTokenUsageSummary returns zeroed structure", () => {
   assert.deepEqual(summary.samples, []);
 });
 
+test("createEmptyLatencySummary returns zeroed structure", () => {
+  const summary = createEmptyLatencySummary();
+  assert.equal(summary.count, 0);
+  assert.equal(summary.averageLatencyMs, null);
+  assert.equal(summary.stddevLatencyMs, null);
+  assert.deepEqual(summary.samples, []);
+});
+
 // ── Unsupported cell entry ──────────────────────────────────────────
 
 test("createUnsupportedCellEntry sets status and fields", () => {
@@ -143,6 +152,7 @@ test("createUnsupportedCellEntry sets status and fields", () => {
   assert.equal(cell.requestedRuns, 0);
   assert.equal(cell.passRate, 0);
   assert.equal(cell.reason, "unsupported capability");
+  assert.equal(cell.latency.count, 0);
   assert.deepEqual(cell.sampleOutputs, []);
 });
 
@@ -197,6 +207,7 @@ test("updateCellEntry increments success and pass rate", () => {
     success: true,
     error: null,
     text: "output-1",
+    latencyMs: 100,
     tokenUsage: { total: 100 },
     codeMetricsDelta: null,
   };
@@ -207,11 +218,13 @@ test("updateCellEntry increments success and pass rate", () => {
   assert.equal(cell.failedRuns, 0);
   assert.equal(cell.passRate, 0.5);
   assert.equal(cell.sampleOutputs.length, 1);
+  assert.equal(cell.latency.averageLatencyMs, 100);
 
   const output2 = {
     success: false,
     error: "timeout",
     text: "output-2",
+    latencyMs: 200,
     tokenUsage: { total: 200 },
     codeMetricsDelta: null,
   };
@@ -223,6 +236,9 @@ test("updateCellEntry increments success and pass rate", () => {
   assert.equal(cell.errors, 1);
   assert.equal(cell.passRate, 0.5);
   assert.equal(cell.sampleOutputs.length, 2);
+  assert.equal(cell.latency.count, 2);
+  assert.equal(cell.latency.averageLatencyMs, 150);
+  assert.equal(cell.latency.stddevLatencyMs, 50);
 });
 
 test("updateCellEntry does not count assertion failures as execution errors", () => {
@@ -286,11 +302,24 @@ test("updateCellEntry handles zero evaluationRequests", () => {
   const cell = createMatrixCellEntry(null, 0);
   updateCellEntry({
     cellEntry: cell,
-    output: { success: true, error: null, text: "ok", tokenUsage: null, codeMetricsDelta: null },
+    output: { success: true, error: null, text: "ok", latencyMs: 25, tokenUsage: null, codeMetricsDelta: null },
     evaluationRequests: 0,
   });
 
   assert.equal(cell.passRate, 0);
+});
+
+test("updateCellEntry ignores missing latency values", () => {
+  const cell = createMatrixCellEntry(null, 2);
+
+  updateCellEntry({
+    cellEntry: cell,
+    output: { success: true, error: null, text: "ok", latencyMs: null, tokenUsage: null, codeMetricsDelta: null },
+    evaluationRequests: 2,
+  });
+
+  assert.equal(cell.latency.count, 0);
+  assert.equal(cell.latency.averageLatencyMs, null);
 });
 
 test("updateCellEntry accumulates code metrics across multiple outputs", () => {
@@ -667,6 +696,7 @@ test("buildMatrix display value includes token and code metric info", () => {
       success: true,
       error: null,
       text: "result",
+      latencyMs: 42,
       tokenUsage: { total: 100 },
       codeMetricsDelta: {
         changedOriginalFiles: ["main.js"],
@@ -690,6 +720,7 @@ test("buildMatrix display value includes token and code metric info", () => {
   const displayValue = matrix.rows[0].cells.baseline.displayValue;
   assert.ok(displayValue.includes("100%"));
   assert.ok(displayValue.includes("tokens avg"));
+  assert.ok(displayValue.includes("time avg"));
   assert.ok(displayValue.includes("code loc.sloc"));
 });
 
@@ -714,6 +745,7 @@ test("buildMatrix strips token usage samples and code metric samples in output",
       success: true,
       error: null,
       text: "ok",
+      latencyMs: 10,
       tokenUsage: { total: 100 },
       codeMetricsDelta: {
         changedOriginalFiles: ["a.js"],
@@ -735,5 +767,6 @@ test("buildMatrix strips token usage samples and code metric samples in output",
   const cell = matrix.rows[0].cells.baseline;
   // Samples should be stripped
   assert.equal(cell.tokenUsage.samples, undefined);
+  assert.equal(cell.latency.samples, undefined);
   assert.equal(cell.codeMetrics.metrics.cyclomatic.samples, undefined);
 });

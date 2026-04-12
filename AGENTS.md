@@ -3,6 +3,11 @@
 ## User Preferences
 if there is another step to improve your progress, another stage, a validation that can be done, coverage test, unit testing, manual verification using playwright, research to understand better best way to go, do not ask it for confirmation, just do it, do your best effort to have your work as polished as possible.
 
+## Decision Records
+
+- Record durable technical or workflow decisions as ADRs under `.specs/adr/*.md`.
+- Read existing ADRs before changing a previously chosen technical direction.
+
 
 ## Project goal
 

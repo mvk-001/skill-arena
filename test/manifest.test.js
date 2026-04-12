@@ -545,6 +545,82 @@ test("opencode rejects sdk execution", () => {
   }));
 });
 
+test("claude-code defaults commandPath to claude", () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "claude-default-check",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
+      initializeGit: true,
+    },
+    scenarios: [
+      {
+        id: "claude-default",
+        description: "Uses claude defaults",
+        skillMode: "disabled",
+        agent: {
+          adapter: "claude-code",
+          executionMethod: "command",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "HELLO",
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  assert.equal(manifest.scenarios[0].agent.commandPath, "claude");
+});
+
+test("claude-code rejects sdk execution", () => {
+  assert.throws(() => benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "claude-sdk-check",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
+      initializeGit: true,
+    },
+    scenarios: [
+      {
+        id: "claude-sdk",
+        description: "Invalid claude execution method",
+        skillMode: "disabled",
+        agent: {
+          adapter: "claude-code",
+          executionMethod: "sdk",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "HELLO",
+            },
+          ],
+        },
+      },
+    ],
+  }));
+});
+
 test("manifest validation rejects duplicate scenario ids and invalid normalized skill states", () => {
   assert.throws(() => benchmarkManifestSchema.parse({
     schemaVersion: 1,

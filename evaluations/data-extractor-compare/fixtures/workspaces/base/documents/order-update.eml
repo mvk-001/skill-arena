@@ -1,0 +1,17 @@
+From: shipping@parcelpro.test
+To: ops@northwind-analytics.test
+Subject: Shipment confirmation for SO-7781
+Date: Fri, 10 Apr 2026 09:15:00 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Hello team,
+
+Order SO-7781 left our warehouse this morning.
+
+Shipped via: ParcelPro Express
+Tracking number: 1Z999AA10123456784
+Estimated arrival date: 2026-04-14
+
+Regards,
+ParcelPro Shipping Desk

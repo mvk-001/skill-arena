@@ -1,4 +1,5 @@
 import CodexSystemProvider from "./codex-system-provider.js";
+import ClaudeCodeSystemProvider from "./claude-code-system-provider.js";
 import CopilotSystemProvider from "./copilot-system-provider.js";
 import OpenCodeSystemProvider from "./opencode-system-provider.js";
 import PiSystemProvider from "./pi-system-provider.js";
@@ -36,6 +37,11 @@ const DEFAULTS = {
     command_path: "opencode",
     cli_env: {},
     opencode_config: {},
+  },
+  "claude-code": {
+    command_path: "claude",
+    cli_env: {},
+    claude_code_config: {},
   },
 };
 
@@ -163,6 +169,46 @@ export default class LocalJudgeProvider {
               this.config.opencodeConfig
               ?? this.config.opencode_config
               ?? DEFAULTS.opencode.opencode_config,
+          },
+        });
+      case "claude-code":
+        return new ClaudeCodeSystemProvider({
+          config: {
+            ...DEFAULTS["claude-code"],
+            ...normalizeBaseConfig(this.config),
+            command_path:
+              this.config.commandPath
+              ?? this.config.command_path
+              ?? DEFAULTS["claude-code"].command_path,
+            working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
+            model: this.config.model,
+            cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS["claude-code"].cli_env,
+            sandbox_mode:
+              this.config.sandboxMode
+              ?? this.config.sandbox_mode,
+            approval_policy:
+              this.config.approvalPolicy
+              ?? this.config.approval_policy,
+            web_search_enabled:
+              this.config.webSearchEnabled
+              ?? this.config.web_search_enabled,
+            network_access_enabled:
+              this.config.networkAccessEnabled
+              ?? this.config.network_access_enabled,
+            model_reasoning_effort:
+              this.config.modelReasoningEffort
+              ?? this.config.model_reasoning_effort,
+            additional_directories:
+              this.config.additionalDirectories
+              ?? this.config.additional_directories,
+            agent: this.config.agent,
+            enable_streaming:
+              this.config.enableStreaming
+              ?? this.config.enable_streaming,
+            claude_code_config:
+              this.config.claudeCodeConfig
+              ?? this.config.claude_code_config
+              ?? DEFAULTS["claude-code"].claude_code_config,
           },
         });
       default:

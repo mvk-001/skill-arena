@@ -224,6 +224,7 @@ When one prompt row needs extra checks, append them under `task.prompts[*].evalu
 - `skill-arena:judge:copilot-cli`
 - `skill-arena:judge:pi`
 - `skill-arena:judge:opencode`
+- `skill-arena:judge:claude-code`
 
 Object form is also supported when you need judge-specific overrides:
 
@@ -255,6 +256,7 @@ Profiles can compare more than just skills. V1 support is intentionally narrow:
 - `copilot-cli`: `instructions`, `skills`, `agents`, `hooks`
 - `pi`: `skills`
 - `opencode`: `instructions`, `skills`, `agents`
+- `claude-code`: `instructions`, `skills`, `agents`, `hooks`
 
 Minimal `copilot-cli` example:
 

@@ -8,10 +8,11 @@ test("getAdapter returns registered adapters and rejects unknown ids", () => {
   assert.equal(getAdapter("copilot-cli").id, "copilot-cli");
   assert.equal(getAdapter("pi").id, "pi");
   assert.equal(getAdapter("opencode").id, "opencode");
+  assert.equal(getAdapter("claude-code").id, "claude-code");
   assert.throws(() => getAdapter("unknown"), /Unsupported adapter id "unknown"\./);
 });
 
-test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi, and opencode", () => {
+test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi, opencode, and claude-code", () => {
   const context = {
     workspaceDirectory: "C:/temp/workspace",
     workspaceEnvironment: {
@@ -117,6 +118,46 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
       },
     },
   });
+  const claudeCodeProvider = buildPromptfooProvider({
+    ...context,
+    scenario: {
+      profile: {
+        capabilities: {
+          agents: [
+            {
+              agentId: "reviewer",
+              source: {
+                type: "inline-files",
+                target: "/",
+                files: [
+                  {
+                    path: ".claude/agents/reviewer.md",
+                    content: "---\nname: reviewer\ndescription: Reviews code\ntools: Read, Grep, Glob\n---\n",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      agent: {
+        adapter: "claude-code",
+        commandPath: "claude",
+        model: "claude-sonnet-4-20250514",
+        sandboxMode: "read-only",
+        approvalPolicy: "never",
+        webSearchEnabled: false,
+        networkAccessEnabled: false,
+        reasoningEffort: "medium",
+        additionalDirectories: ["fixtures"],
+        cliEnv: { CLAUDE_FLAG: "1", HOME: "C:/should-not-win" },
+        config: { settings: { env: { PROJECT_ONLY: "1" } } },
+      },
+      evaluation: {
+        tracing: true,
+      },
+    },
+  });
 
   assert.match(codexProvider.id, /codex-system-provider\.js$/);
   assert.equal(codexProvider.config.skip_git_repo_check, true);
@@ -138,6 +179,11 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
   assert.equal(opencodeProvider.config.cli_env.HOME, "C:/temp/home");
   assert.equal(opencodeProvider.config.agent, "reviewer");
   assert.equal(codexProvider.config.cli_env.CODEX_HOME, "C:/temp/codex-home");
+  assert.match(claudeCodeProvider.id, /claude-code-system-provider\.js$/);
+  assert.equal(claudeCodeProvider.config.command_path, "claude");
+  assert.equal(claudeCodeProvider.config.cli_env.CLAUDE_FLAG, "1");
+  assert.equal(claudeCodeProvider.config.cli_env.HOME, "C:/temp/home");
+  assert.equal(claudeCodeProvider.config.agent, "reviewer");
 });
 
 test("buildPromptfooProvider rejects additional directories outside the workspace", () => {
@@ -416,6 +462,30 @@ test("buildPromptfooProvider interpolates $WORKSPACE for opencode adapter", () =
   assert.equal(provider.config.cli_env.SCRIPT, "/tmp/ws/run.sh");
 });
 
+test("buildPromptfooProvider interpolates $WORKSPACE for claude-code adapter", () => {
+  const provider = buildPromptfooProvider({
+    workspaceDirectory: "/tmp/ws",
+    workspaceEnvironment: {
+      DATA_DIR: "$WORKSPACE/data",
+    },
+    isolatedEnvironment: {},
+    gitReady: true,
+    scenario: {
+      agent: {
+        adapter: "claude-code",
+        commandPath: "claude",
+        model: "claude-sonnet-4-20250514",
+        cliEnv: { SCRIPT: "${WORKSPACE}/run.sh" },
+        config: {},
+      },
+      evaluation: { tracing: false },
+    },
+  });
+
+  assert.equal(provider.config.cli_env.DATA_DIR, "/tmp/ws/data");
+  assert.equal(provider.config.cli_env.SCRIPT, "/tmp/ws/run.sh");
+});
+
 test("buildPromptfooProvider omits opencode agent when no compare profile agent is declared", () => {
   const provider = buildPromptfooProvider({
     workspaceDirectory: "/tmp/ws",
@@ -486,6 +556,63 @@ test("buildPromptfooProvider rejects invalid opencode compare profile agents", (
         adapter: "opencode",
         commandPath: "opencode",
         model: "openai/gpt-5",
+        cliEnv: {},
+        config: {},
+      },
+      evaluation: { tracing: false },
+    },
+  }), /requires profile\.capabilities\.agents\[\*\]\.agentId/);
+});
+
+test("buildPromptfooProvider rejects invalid claude-code compare profile agents", () => {
+  assert.throws(() => buildPromptfooProvider({
+    workspaceDirectory: "C:/temp/workspace",
+    workspaceEnvironment: {},
+    isolatedEnvironment: {},
+    gitReady: true,
+    scenario: {
+      profile: {
+        capabilities: {
+          agents: [
+            { agentId: "one", source: { type: "empty" } },
+            { agentId: "two", source: { type: "empty" } },
+          ],
+        },
+      },
+      agent: {
+        adapter: "claude-code",
+        commandPath: "claude",
+        model: "claude-sonnet-4-20250514",
+        cliEnv: {},
+        config: {},
+      },
+      evaluation: { tracing: false },
+    },
+  }), /supports at most one compare profile agent/);
+
+  assert.throws(() => buildPromptfooProvider({
+    workspaceDirectory: "C:/temp/workspace",
+    workspaceEnvironment: {},
+    isolatedEnvironment: {},
+    gitReady: true,
+    scenario: {
+      profile: {
+        capabilities: {
+          agents: [
+            {
+              source: {
+                type: "inline-files",
+                target: "/",
+                files: [{ path: ".claude/agents/reviewer.md", content: "# Reviewer" }],
+              },
+            },
+          ],
+        },
+      },
+      agent: {
+        adapter: "claude-code",
+        commandPath: "claude",
+        model: "claude-sonnet-4-20250514",
         cliEnv: {},
         config: {},
       },

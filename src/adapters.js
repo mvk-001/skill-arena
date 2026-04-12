@@ -3,7 +3,7 @@ import path from "node:path";
 import { fromPackageRoot } from "./project-paths.js";
 import { resolveModelAlias } from "./model-alias.js";
 
-export const ADAPTER_IDS = ["codex", "copilot-cli", "pi", "opencode"];
+export const ADAPTER_IDS = ["codex", "copilot-cli", "pi", "opencode", "claude-code"];
 
 const adapterRegistry = {
   codex: {
@@ -144,6 +144,43 @@ const adapterRegistry = {
       };
     },
   },
+  "claude-code": {
+    id: "claude-code",
+    supported: true,
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
+      const providerPath = fromPackageRoot("src", "providers", "claude-code-system-provider.js");
+      const providerId = buildProviderId("claude-code", scenario.agent.model);
+
+      return {
+        id: providerPath,
+        label: providerId,
+        config: {
+          provider_id: providerId,
+          command_path: scenario.agent.commandPath,
+          model: scenario.agent.model,
+          working_dir: workspaceDirectory,
+          sandbox_mode: scenario.agent.sandboxMode,
+          approval_policy: scenario.agent.approvalPolicy,
+          web_search_enabled: scenario.agent.webSearchEnabled,
+          network_access_enabled: scenario.agent.networkAccessEnabled,
+          model_reasoning_effort: scenario.agent.reasoningEffort,
+          additional_directories: resolveAdditionalDirectories(
+            workspaceDirectory,
+            scenario.agent.additionalDirectories,
+          ),
+          cli_env: buildCliEnvironment(
+            workspaceEnvironment,
+            scenario.agent.cliEnv,
+            isolatedEnvironment,
+            workspaceDirectory,
+          ),
+          enable_streaming: scenario.evaluation.tracing,
+          agent: getClaudeCodeAgentId(scenario),
+          claude_code_config: scenario.agent.config ?? {},
+        },
+      };
+    },
+  },
 };
 
 function resolveAdditionalDirectory(workspaceDirectory, directory) {
@@ -242,6 +279,28 @@ function getOpenCodeAgentId(scenario) {
   if (typeof agentId !== "string" || agentId.trim() === "") {
     throw new Error(
       "Adapter \"opencode\" requires profile.capabilities.agents[*].agentId to be a non-empty string.",
+    );
+  }
+
+  return agentId;
+}
+
+function getClaudeCodeAgentId(scenario) {
+  const profileAgents = getProfileCapabilities(scenario, "agents");
+  if (profileAgents.length === 0) {
+    return undefined;
+  }
+
+  if (profileAgents.length > 1) {
+    throw new Error(
+      `Adapter "claude-code" supports at most one compare profile agent, received ${profileAgents.length}.`,
+    );
+  }
+
+  const agentId = profileAgents[0]?.agentId;
+  if (typeof agentId !== "string" || agentId.trim() === "") {
+    throw new Error(
+      "Adapter \"claude-code\" requires profile.capabilities.agents[*].agentId to be a non-empty string.",
     );
   }
 

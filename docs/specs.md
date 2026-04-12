@@ -132,11 +132,13 @@ scenarios:
   - `copilot-cli`
   - `pi`
   - `opencode`
+  - `claude-code`
 - For `codex`, `agent.executionMethod` controls how the custom Promptfoo script invokes the local runtime:
   - `command`: execute the local `codex exec` command
   - `sdk`: invoke `@openai/codex-sdk`, which wraps the local CLI
 - `copilot-cli` supports only `executionMethod: "command"` in V1.
 - `opencode` supports only `executionMethod: "command"` in V1.
+- `claude-code` supports only `executionMethod: "command"` in V1.
 - `skillMode` must be one of:
   - `disabled`
   - `enabled`
@@ -424,6 +426,7 @@ comparison:
 - Compare reports should show rows as `prompt x variant` and columns as profiles.
 - Compare cells should report pass ratios against the requested execution count, for example `40% (4/10)`.
 - When token usage is available, compare cells must also report total-token aggregates for the observed runs, including average and standard deviation.
+- When execution latency is available, compare cells must also report per-run latency aggregates in milliseconds, including average and standard deviation.
 - When `rust-code-analysis` is available, compare cells may also report per-metric deltas between original and proposed code for modified original files only, including cell-level average and standard deviation for each changed metric.
 - Shared compare execution settings such as `requests`, `timeoutMs`, `tracing`, `maxConcurrency`, and `noCache` still come from top-level `evaluation`.
 - The compare CLI may reuse prior scenario outputs when `--reuse-unchanged-profiles` is enabled and the latest compare `summary.json` contains the same scenario fingerprint plus the expected output count for the current request and prompt shape.
@@ -476,6 +479,9 @@ Current compare support in V1:
 - `opencode`
   - supported: `instructions`, `skills`, `agents`
   - unsupported: `hooks`, `mcp`, `extensions`, `plugins`
+- `claude-code`
+  - supported: `instructions`, `skills`, `agents`, `hooks`
+  - unsupported: `mcp`, `extensions`, `plugins`
 
 Materialized capability rules in V1:
 
@@ -498,6 +504,11 @@ Adapter-specific V1 rules:
 - `opencode` custom agents require `agentId`.
 - Repository-level `opencode` agents should usually materialize files under `.opencode/agents/`.
 - `instructions` for `codex`, `copilot-cli`, or `opencode` should usually materialize `AGENTS.md` at the workspace root when you want project instructions in that profile.
+- `claude-code` custom agents require at most one `capabilities.agents[*]` entry per profile.
+- `claude-code` custom agents require `agentId`.
+- Repository-level `claude-code` agents should usually materialize files under `.claude/agents/`.
+- Repository-level `claude-code` hooks should usually materialize `.claude/settings.json`.
+- `instructions` for `claude-code` should usually materialize `CLAUDE.md` at the workspace root.
 
 Preferred explicit compare skill definitions use these source modes:
 
@@ -555,6 +566,7 @@ Local judge shorthand is also supported in V1 through packaged Promptfoo custom 
 - `skill-arena:judge:copilot-cli`
 - `skill-arena:judge:pi`
 - `skill-arena:judge:opencode`
+- `skill-arena:judge:claude-code`
 
 These judge providers are separate from the benchmarked agent adapters. They let Promptfoo run `llm-rubric` grading through the local CLI instead of a hosted API provider.
 
@@ -593,6 +605,12 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 - `pi`: supported
   - implemented as a Promptfoo custom script
   - currently uses `executionMethod: "command"` through the local `pi` CLI
+- `opencode`: supported
+  - implemented as a Promptfoo custom script
+  - supports `executionMethod: "command"` through the local `opencode` CLI
+- `claude-code`: supported
+  - implemented as a Promptfoo custom script
+  - supports `executionMethod: "command"` through the local `claude` CLI
 
 ## Workspace rules
 
@@ -635,7 +653,7 @@ Compare `summary.json` must include:
 - a `matrix` object with:
   - `columns`: profile ids and labels
   - `rows`: variant and prompt pairs
-  - per-cell aggregates including requested runs, completed runs, pass counts, error counts, token usage aggregates, optional code-metric delta aggregates, and a display string such as `40% (4/10)<br>tokens avg 120, sd 15.5` or `unsupported`
+  - per-cell aggregates including requested runs, completed runs, pass counts, error counts, token usage aggregates, latency aggregates, optional code-metric delta aggregates, and a display string such as `40% (4/10)<br>tokens avg 120, sd 15.5<br>time avg 320 ms, sd 20.0 ms` or `unsupported`
 
 ## Minimal execution defaults
 

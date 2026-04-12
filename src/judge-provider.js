@@ -1,7 +1,7 @@
 import { fromPackageRoot } from "./project-paths.js";
 
 export const LOCAL_JUDGE_PROVIDER_PREFIX = "skill-arena:judge:";
-export const LOCAL_JUDGE_ADAPTERS = new Set(["codex", "copilot-cli", "pi", "opencode"]);
+export const LOCAL_JUDGE_ADAPTERS = new Set(["codex", "copilot-cli", "pi", "opencode", "claude-code"]);
 
 export function isLocalJudgeProviderId(providerId) {
   return typeof providerId === "string"

@@ -1,0 +1,297 @@
+schemaVersion: 1
+benchmark:
+  id: data-extractor-compare
+  description: Compare simple structured document extraction with and without the remote data-extractor skill across low-cost assistant variants.
+  tags:
+    - compare
+    - extraction
+    - documents
+    - data-extractor
+task:
+  prompts:
+    - id: invoice-json
+      description: Extract stable invoice fields from an HTML invoice.
+      prompt: >-
+        Read `documents/invoice.html` and return only JSON. Use exactly these
+        top-level keys: `vendor`, `invoice_number`, `invoice_date`, `due_date`,
+        `currency`, `total`, and `line_items`. `line_items` must be an array of
+        objects with `description`, `quantity`, `unit_price`, and `line_total`.
+        Do not include markdown fences or commentary.
+      evaluation:
+        assertions:
+          - type: javascript
+            value: |
+              const data = JSON.parse(output);
+              const same = (actual, expected) => JSON.stringify(actual) === JSON.stringify(expected);
+              const normalizeMoney = (value) => {
+                if (typeof value === "number" && Number.isFinite(value)) {
+                  return value.toFixed(2);
+                }
+                if (typeof value === "string") {
+                  const trimmed = value.trim().replaceAll(",", "").replace(/^\$/, "");
+                  const numeric = Number(trimmed);
+                  if (Number.isFinite(numeric)) {
+                    return numeric.toFixed(2);
+                  }
+                }
+                return null;
+              };
+              const normalizeQuantity = (value) => {
+                if (typeof value === "number" && Number.isFinite(value)) {
+                  return value;
+                }
+                if (typeof value === "string") {
+                  const numeric = Number(value.trim());
+                  if (Number.isFinite(numeric)) {
+                    return numeric;
+                  }
+                }
+                return null;
+              };
+              const expectedItems = [
+                ["Data cleanup sprint", 10, "120.00", "1200.00"],
+                ["Quarterly dashboard refresh", 1, "2450.00", "2450.00"],
+                ["Priority support retainer", 1, "1025.00", "1025.00"],
+              ];
+              const normalizedItems = Array.isArray(data.line_items)
+                ? data.line_items.map((item) => [
+                    item?.description ?? null,
+                    normalizeQuantity(item?.quantity),
+                    normalizeMoney(item?.unit_price),
+                    normalizeMoney(item?.line_total),
+                  ])
+                : null;
+              return same(Object.keys(data).sort(), [
+                "currency",
+                "due_date",
+                "invoice_date",
+                "invoice_number",
+                "line_items",
+                "total",
+                "vendor",
+              ])
+                && data.vendor === "Northwind Analytics"
+                && data.invoice_number === "INV-2026-0418"
+                && data.invoice_date === "2026-04-01"
+                && data.due_date === "2026-04-15"
+                && data.currency === "USD"
+                && normalizeMoney(data.total) === "4675.00"
+                && Array.isArray(data.line_items)
+                && same(normalizedItems, expectedItems);
+    - id: shipping-email-json
+      description: Extract shipping metadata from an email message.
+      prompt: >-
+        Read `documents/order-update.eml` and return only JSON. Use exactly
+        these top-level keys: `from`, `to`, `subject`, `order_id`,
+        `tracking_number`, `shipped_via`, and `eta_date`. Do not include
+        markdown fences or commentary.
+      evaluation:
+        assertions:
+          - type: javascript
+            value: |
+              const data = JSON.parse(output);
+              const same = (actual, expected) => JSON.stringify(actual) === JSON.stringify(expected);
+              return same(Object.keys(data).sort(), [
+                "eta_date",
+                "from",
+                "order_id",
+                "shipped_via",
+                "subject",
+                "to",
+                "tracking_number",
+              ])
+                && data.from === "shipping@parcelpro.test"
+                && data.to === "ops@northwind-analytics.test"
+                && data.subject === "Shipment confirmation for SO-7781"
+                && data.order_id === "SO-7781"
+                && data.tracking_number === "1Z999AA10123456784"
+                && data.shipped_via === "ParcelPro Express"
+                && data.eta_date === "2026-04-14";
+    - id: directory-json
+      description: Extract a contact list from a Markdown directory.
+      prompt: >-
+        Read `documents/team-directory.md` and return only JSON. Use exactly
+        one top-level key named `contacts`. `contacts` must be an array of
+        objects with `name`, `title`, `email`, and `location`. Preserve the
+        document order. Do not include markdown fences or commentary.
+      evaluation:
+        assertions:
+          - type: javascript
+            value: |
+              const data = JSON.parse(output);
+              const same = (actual, expected) => JSON.stringify(actual) === JSON.stringify(expected);
+              const expectedContacts = [
+                {
+                  name: "Avery Cole",
+                  title: "Director of Operations",
+                  email: "avery.cole@northwind-analytics.test",
+                  location: "Boston, MA",
+                },
+                {
+                  name: "Jordan Lee",
+                  title: "Finance Manager",
+                  email: "jordan.lee@northwind-analytics.test",
+                  location: "Chicago, IL",
+                },
+                {
+                  name: "Priya Raman",
+                  title: "Client Success Lead",
+                  email: "priya.raman@northwind-analytics.test",
+                  location: "Austin, TX",
+                },
+              ];
+              return same(Object.keys(data), ["contacts"])
+                && Array.isArray(data.contacts)
+                && same(data.contacts, expectedContacts);
+workspace:
+  sources:
+    - id: base
+      type: local-path
+      path: evaluations/data-extractor-compare/fixtures/workspaces/base
+      target: /
+  setup:
+    initializeGit: true
+evaluation:
+  assertions:
+    - type: is-json
+  requests: 20
+  timeoutMs: 240000
+  tracing: false
+  maxConcurrency: 2
+  noCache: true
+comparison:
+  profiles:
+    - id: no-skill
+      description: Fully isolated baseline without the data-extractor skill.
+      isolation:
+        inheritSystem: false
+      capabilities: {}
+      output:
+        tags:
+          - baseline
+        labels:
+          skill_state: off
+    - id: skill
+      description: Workspace-overlay profile with only the vendored data-extractor skill enabled.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: evaluations/data-extractor-compare/vendor/claude-office-skills/data-extractor
+              skillId: data-extractor
+            install:
+              strategy: workspace-overlay
+      output:
+        tags:
+          - skill
+        labels:
+          skill_state: on
+  variants:
+    - id: codex-mini
+      description: Codex with the low-cost coding model.
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - codex
+          - mini
+        labels:
+          variantDisplayName: codex mini
+    - id: codex-gpt54
+      description: Codex with GPT-5.4 for a stronger baseline and skill comparison.
+      agent:
+        adapter: codex
+        model: gpt-5.4
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - codex
+          - gpt-5.4
+        labels:
+          variantDisplayName: codex gpt-5.4
+    - id: copilot-mini
+      description: Copilot CLI with the low-cost GPT-5.4 mini variant.
+      agent:
+        adapter: copilot-cli
+        model: gpt-5.4-mini
+        executionMethod: command
+        commandPath: copilot
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config:
+          noCustomInstructions: true
+      output:
+        tags:
+          - copilot
+          - mini
+        labels:
+          variantDisplayName: copilot mini
+    - id: pi-gpt5mini
+      description: PI with the low-cost GPT-5 mini model.
+      agent:
+        adapter: pi
+        model: github-copilot/gpt-5-mini
+        executionMethod: command
+        commandPath: pi
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - pi
+          - mini
+        labels:
+          variantDisplayName: pi gpt-5 mini
+    - id: pi-gpt54
+      description: PI with GPT-5.4 for a stronger baseline and skill comparison.
+      agent:
+        adapter: pi
+        model: openai-codex/gpt-5.4
+        executionMethod: command
+        commandPath: pi
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        config: {}
+      output:
+        tags:
+          - pi
+          - gpt-5.4
+        labels:
+          variantDisplayName: pi gpt-5.4

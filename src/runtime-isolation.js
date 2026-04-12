@@ -19,6 +19,8 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
   const codexSystemSkillsDirectory = path.join(codexSkillsDirectory, ".system");
   const piHome = path.join(userProfileDirectory, ".pi");
   const piAgentDirectory = path.join(piHome, "agent");
+  const claudeDirectory = path.join(homeDirectory, ".claude");
+  const claudeJsonPath = path.join(homeDirectory, ".claude.json");
   const gitConfigPath = path.join(executionRootDirectory, "gitconfig");
   const allowedSkills = inferVisibleSkillsForScenario(scenario);
   const skipHomeAgents = scenario?.agent?.adapter === "pi" || scenario?.agent?.adapter === "codex";
@@ -38,6 +40,7 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
     opencodeDataDirectory,
     piHome,
     piAgentDirectory,
+    claudeDirectory,
     codexSkillsDirectory,
     codexSystemSkillsDirectory,
     gitConfigPath,
@@ -56,6 +59,10 @@ export async function createRuntimeIsolation(executionRootDirectory, scenario = 
   await seedOpenCodeHome({
     destinationConfigDirectory: opencodeConfigDirectory,
     destinationDataDirectory: opencodeDataDirectory,
+  });
+  await seedClaudeCodeHome({
+    destinationClaudeDirectory: claudeDirectory,
+    destinationClaudeJsonPath: claudeJsonPath,
   });
 
   return {
@@ -175,6 +182,14 @@ async function seedOpenCodeHome({
   ]);
 }
 
+async function seedClaudeCodeHome({
+  destinationClaudeDirectory,
+  destinationClaudeJsonPath,
+}) {
+  await fs.mkdir(destinationClaudeDirectory, { recursive: true });
+  await copyIfPresent(resolveSourceClaudeJsonPath(), destinationClaudeJsonPath);
+}
+
 function resolveSourceCodexHome() {
   const configuredCodexHome = process.env.CODEX_HOME;
   if (configuredCodexHome) {
@@ -198,6 +213,10 @@ function resolveSourceOpenCodeDataDirectory() {
   return process.env.XDG_DATA_HOME
     ? path.join(process.env.XDG_DATA_HOME, "opencode")
     : path.join(os.homedir(), ".local", "share", "opencode");
+}
+
+function resolveSourceClaudeJsonPath() {
+  return path.join(os.homedir(), ".claude.json");
 }
 
 async function copyIfPresent(sourcePath, destinationPath) {

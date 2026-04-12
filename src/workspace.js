@@ -355,7 +355,9 @@ async function copyDirectoryIntoTarget({ sourceDirectory, workspaceDirectory, ta
 
 async function sanitizeWorkspaceRoot(workspaceDirectory) {
   await fs.rm(path.join(workspaceDirectory, "AGENTS.md"), { force: true });
+  await fs.rm(path.join(workspaceDirectory, "CLAUDE.md"), { force: true });
   await fs.rm(path.join(workspaceDirectory, "skills"), { recursive: true, force: true });
+  await fs.rm(path.join(workspaceDirectory, ".claude"), { recursive: true, force: true });
 }
 
 async function ensureEmptyDirectory(directoryPath) {

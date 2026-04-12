@@ -412,6 +412,9 @@ function defaultVariantIdForAdapter(adapter) {
   if (adapter === "pi") {
     return "pi-gpt5mini";
   }
+  if (adapter === "claude-code") {
+    return "claude-code-sonnet";
+  }
   return "codex-mini";
 }
 
@@ -422,6 +425,9 @@ function defaultModelForAdapter(adapter) {
   if (adapter === "pi") {
     return "github-copilot/gpt-5-mini";
   }
+  if (adapter === "claude-code") {
+    return "claude-sonnet-4-20250514";
+  }
   return "gpt-5.1-codex-mini";
 }
 
@@ -431,6 +437,9 @@ function defaultCommandPathForAdapter(adapter) {
   }
   if (adapter === "pi") {
     return "pi";
+  }
+  if (adapter === "claude-code") {
+    return "claude";
   }
   return "codex";
 }
@@ -459,205 +468,283 @@ function renderCompareTemplate(options) {
     "  prompts:",
     "    # TODO: add one prompt entry per row you want in the compare matrix. Split prompts only when you want separate row-level reporting or prompt-specific assertions.",
   ];
-
-  prompts.forEach((prompt, index) => {
-    lines.push(`    - id: ${yamlString(prompt.id)}`);
-    lines.push("      # TODO: task.prompts[*].id should be a slug-like row identifier. Use a stable id so report rows stay readable across benchmark revisions.");
-    lines.push(`      description: ${yamlString(prompt.description)}`);
-    lines.push("      # TODO: description is free text. Explain what this row is checking and how it differs from the other prompts.");
-    lines.push(`      prompt: ${yamlString(prompt.prompt)}`);
-    lines.push("      # TODO: prompt is the exact task sent to the agent. Keep it benchmark-specific. Add output-format constraints only when the benchmark truly depends on them.");
-    lines.push("      # TODO: if this row needs checks that differ from the shared evaluation.assertions, add task.prompts[*].evaluation.assertions under this prompt.");
-  });
-
-  lines.push("workspace:");
-  lines.push("  sources:");
-  lines.push("    # TODO: keep source inputs immutable; the runner copies them into fresh workspaces.");
-  lines.push("    # TODO: choose the workspace source type by provenance: local-path for files already on disk, git for pinned external inputs, inline-files for tiny synthetic fixtures, empty for intentionally blank workspaces.");
-  lines.push(...renderWorkspaceSource(options));
-  if (!options.workspacePath && !options.workspaceRepo) {
-    lines.push("    # TODO: additional workspace.sources entries can coexist and are applied in order. Add multiple entries when you want a base layer plus overlays or helper files.");
-    lines.push("    # TODO: example additional local-path source:");
-    lines.push("    # - id: docs");
-    lines.push("    #   type: local-path");
-    lines.push("    #   path: ./fixtures/TODO/docs");
-    lines.push("    #   target: /docs");
-    lines.push("    # TODO: example additional git source:");
-    lines.push("    # - id: external-assets");
-    lines.push("    #   type: git");
-    lines.push("    #   repo: https://github.com/example/repo.git");
-    lines.push("    #   ref: main");
-    lines.push("    #   subpath: path/in/repo");
-    lines.push("    #   target: /vendor");
-    lines.push("    # TODO: example additional inline-files source:");
-    lines.push("    # - id: generated-notes");
-    lines.push("    #   type: inline-files");
-    lines.push("    #   target: /");
-    lines.push("    #   files:");
-    lines.push("    #     - path: NOTES.md");
-    lines.push("    #       content: |");
-    lines.push("    #         TODO: inline helper notes");
-    lines.push("    # TODO: example additional empty source:");
-    lines.push("    # - id: blank-layer");
-    lines.push("    #   type: empty");
-    lines.push("    #   target: /tmp");
-  }
-  lines.push("  setup:");
-  lines.push(`    initializeGit: ${yamlBoolean(options.initializeGit ?? true)}`);
-  lines.push("    # TODO: initializeGit is a closed choice: true or false. Use true when the agent or benchmark expects a Git repo; use false only when Git state would be irrelevant or misleading.");
-  lines.push("    # TODO: add workspace.setup.env only when the benchmark truly depends on run-specific environment variables.");
-    lines.push("    env: {}");
-  lines.push("    # TODO: workspace.setup.env is an open mapping of NAME: value. Put only reproducible runtime dependencies here, not secrets or machine-specific paths.");
-
-  lines.push("evaluation:");
-  lines.push("  assertions:");
-  lines.push("    # TODO: shared assertions apply to every compare cell. Put prompt-specific checks under task.prompts[*].evaluation.assertions instead.");
-  if (options.evaluationTypes.length === 0 && options.evaluationValues.length === 0) {
-    lines.push("    # TODO: because you did not preselect assertion types, this template includes one example of every supported V1 assertion type below.");
-    lines.push("    # TODO: keep only the assertions that fit your benchmark; multiple assertion types can coexist in the same list.");
-  }
-  assertions.forEach((assertion) => {
-    lines.push(`    - type: ${yamlString(assertion.type)}`);
-    if (!SUPPORTED_ASSERTION_TYPES.includes(assertion.type)) {
-      lines.push("      # TODO: this assertion type is not part of the Skill Arena V1 supported set.");
-      lines.push(`      # TODO: replace it with one of: ${SUPPORTED_ASSERTION_TYPES.join(", ")}.`);
-    } else {
-      lines.push(`      # TODO: supported assertion types are: ${SUPPORTED_ASSERTION_TYPES.join(", ")}.`);
-      lines.push("      # TODO: choose equals for exact output, contains/icontains for stable substrings, regex for format patterns, is-json for JSON shape, javascript for custom logic, file-contains for workspace file checks, llm-rubric for judge-based scoring.");
-    }
-    if (assertion.type === "llm-rubric") {
-      lines.push(`      provider: ${yamlString(options.evaluationProvider ?? "skill-arena:judge:codex")}`);
-      lines.push("      # TODO: provider choices are usually skill-arena:judge:codex, skill-arena:judge:copilot-cli, skill-arena:judge:pi, or a hosted Promptfoo provider such as openai:gpt-5-mini.");
-      lines.push("      # TODO: choose a local judge when you want the benchmark to stay CLI-local; choose a hosted judge only when you need a specific external grader.");
-    }
-    lines.push(`      value: ${yamlString(assertion.value)}`);
-    lines.push("      # TODO: value meaning depends on type: expected exact text for equals, required substring for contains/icontains, pattern for regex, rubric text for llm-rubric, or script/logic reference for javascript.");
-  });
-  lines.push(`  requests: ${options.requests ?? 10}`);
-  lines.push("  # TODO: requests is a positive integer. Higher values reduce variance but cost more time and tokens. Use 1 for smoke checks, low single digits for iteration, and 10+ for more stable comparisons.");
-  lines.push(`  timeoutMs: ${options.timeoutMs ?? 180000}`);
-  lines.push("  # TODO: timeoutMs is a positive integer in milliseconds. Set it high enough for the slowest expected cell, especially when prompts require repo analysis or external CLI work.");
-  lines.push(`  tracing: ${yamlBoolean(options.tracing ?? false)}`);
-  lines.push("  # TODO: tracing is a closed choice: true or false. Enable it when you need extra Promptfoo trace detail; keep it false for normal benchmark runs to reduce noise.");
-  if (options.maxConcurrency !== null) {
-    lines.push(`  maxConcurrency: ${options.maxConcurrency}`);
-    lines.push("  # TODO: remove maxConcurrency to let the harness use local machine parallelism.");
-  } else {
-    lines.push("  # TODO: uncomment maxConcurrency only when you want a fixed, machine-independent cap.");
-    lines.push("  # maxConcurrency: 4");
-  }
-  lines.push(`  noCache: ${yamlBoolean(options.noCache ?? true)}`);
-  lines.push("  # TODO: noCache is a closed choice: true or false. Keep true for reproducible repeated evaluations; switch to false only when you intentionally want Promptfoo caching.");
-
-  lines.push("comparison:");
-  lines.push("  profiles:");
-  lines.push("    # TODO: keep at least one isolated control profile and add as many explicit alternatives as the benchmark needs.");
-  lines.push("    - id: no-skill");
-  lines.push("      # TODO: id should be slug-like. Use short ids because they become compare column labels.");
-  lines.push("      description: Fully isolated control with no declared capabilities.");
-  lines.push("      # TODO: description is free text. Explain what this control profile represents.");
-  lines.push("      isolation:");
-  lines.push("        inheritSystem: false");
-  lines.push("        # TODO: keep inheritSystem false so compare profiles remain deny-all and explicit.");
-  lines.push("      capabilities: {}");
-  lines.push("      # TODO: capabilities is an explicit object. Leave it empty for the control profile.");
-  lines.push("    - id: skill-alternative-1");
-  lines.push("      # TODO: add more profiles only when each one encodes a clear benchmark hypothesis.");
-  lines.push("      description: Declared capability profile with one explicit skill.");
-  lines.push("      # TODO: description should identify the capability bundle, for example remote git skill, local skill group, or skill plus agent.");
-  lines.push("      isolation:");
-  lines.push("        inheritSystem: false");
-  lines.push("      capabilities:");
-  lines.push("        skills:");
-  lines.push("          -");
-  lines.push(...indentLines(renderSkillSource(options), 12));
-  lines.push("      # TODO: duplicate this profile block when you want more compare columns such as no-skill, skill-alternative-1, skill-alternative-2, or tool-specific capability bundles.");
-  lines.push("  variants:");
-  lines.push("    # TODO: add one variant per adapter/model/runtime configuration you want as separate rows for each prompt.");
-  lines.push(`    - id: ${yamlString(variant.id)}`);
-  lines.push("      # TODO: variant id should be slug-like and stable. Include adapter/model hints when it helps row readability.");
-  lines.push(`      description: ${yamlString(variant.description)}`);
-  lines.push("      # TODO: description is free text. Explain why this runtime configuration is included.");
-  lines.push("      agent:");
-  lines.push(`        adapter: ${yamlString(variant.adapter)}`);
-  lines.push("        # TODO: adapter choices are exactly: codex, copilot-cli, pi.");
-  lines.push("        # TODO: choose the adapter that matches the local CLI you actually want to benchmark.");
-  lines.push(`        model: ${yamlString(variant.model)}`);
-  lines.push("        # TODO: model is provider-specific free text. Use the exact model id accepted by the chosen adapter and prefer one that is stable and documented for the benchmark.");
-  lines.push(`        executionMethod: ${yamlString(variant.executionMethod)}`);
-  lines.push("        # TODO: executionMethod is adapter-dependent. Common choice is command. Codex also supports sdk. Prefer command when you want to mirror the installed CLI behavior.");
-  lines.push(`        commandPath: ${yamlString(variant.commandPath)}`);
-  lines.push("        # TODO: commandPath is the executable name or path used locally, for example codex, copilot, or pi. Override it only when the binary is not on PATH under the default name.");
-  lines.push(`        sandboxMode: ${yamlString(variant.sandboxMode)}`);
-  lines.push("        # TODO: sandboxMode is adapter-specific policy text. Common values include read-only, workspace-write, and danger-full-access. Choose the narrowest mode that still allows the task to succeed.");
-  lines.push(`        approvalPolicy: ${yamlString(variant.approvalPolicy)}`);
-  lines.push("        # TODO: approvalPolicy is adapter-specific policy text. Common values include never and on-request. Prefer never for reproducible unattended benchmarks.");
-  lines.push(`        webSearchEnabled: ${yamlBoolean(variant.webSearchEnabled)}`);
-  lines.push("        # TODO: webSearchEnabled is a closed choice: true or false. Enable it only when the task explicitly requires live web access.");
-  lines.push(`        networkAccessEnabled: ${yamlBoolean(variant.networkAccessEnabled)}`);
-  lines.push("        # TODO: networkAccessEnabled is a closed choice: true or false. Enable it only when the task needs networked tools, remote repos, or external services during agent execution.");
-  lines.push(`        reasoningEffort: ${yamlString(variant.reasoningEffort)}`);
-  lines.push("        # TODO: reasoningEffort is adapter-specific text. Common values are low or medium; choose higher effort only when the task is materially reasoning-bound and you accept extra cost/latency.");
-  lines.push("        additionalDirectories: []");
-  lines.push("        # TODO: additionalDirectories is an open list of extra readable paths. Keep it empty unless the benchmark must expose files outside the materialized workspace.");
-  lines.push("        cliEnv: {}");
-  lines.push("        # TODO: cliEnv is an open mapping of environment variables passed to the agent CLI. Use it for reproducible CLI tweaks, not for secrets.");
-  if (Object.keys(variant.config ?? {}).length === 0) {
-    lines.push("        config: {}");
-  } else {
-    lines.push("        config:");
-    for (const [key, value] of Object.entries(variant.config)) {
-      lines.push(`          ${key}: ${yamlValueForMapping(value)}`);
-    }
-  }
-  lines.push("        # TODO: config is an adapter-specific open mapping for advanced overrides. Leave empty unless the adapter contract requires extra fields for this benchmark.");
-  lines.push("      output:");
-  lines.push("        labels:");
-  lines.push(`          variantDisplayName: ${yamlString(variant.variantDisplayName)}`);
-  lines.push("          # TODO: variantDisplayName is the human label shown in merged reports. Choose something short and readable, for example codex mini or copilot gpt-5.");
-  lines.push("      # TODO: duplicate this variant block when you want more rows per prompt for other adapters or models.");
-  if (!options.adapter && !options.model) {
-    lines.push("    # TODO: example additional variant for copilot-cli:");
-    lines.push("    # - id: copilot-gpt5");
-    lines.push("    #   description: Compare against GitHub Copilot CLI on GPT-5.");
-    lines.push("    #   agent:");
-    lines.push("    #     adapter: copilot-cli");
-    lines.push("    #     model: gpt-5");
-    lines.push("    #     executionMethod: command");
-    lines.push("    #     commandPath: copilot");
-    lines.push("    #     sandboxMode: read-only");
-    lines.push("    #     approvalPolicy: never");
-    lines.push("    #     webSearchEnabled: false");
-    lines.push("    #     networkAccessEnabled: false");
-    lines.push("    #     reasoningEffort: low");
-    lines.push("    #     additionalDirectories: []");
-    lines.push("    #     cliEnv: {}");
-    lines.push("    #     config: {}");
-    lines.push("    #   output:");
-    lines.push("    #     labels:");
-    lines.push("    #       variantDisplayName: copilot gpt-5");
-    lines.push("    # TODO: example additional variant for pi:");
-    lines.push("    # - id: pi-gpt5mini");
-    lines.push("    #   description: Compare against PI on GPT-5 mini.");
-    lines.push("    #   agent:");
-    lines.push("    #     adapter: pi");
-    lines.push("    #     model: github-copilot/gpt-5-mini");
-    lines.push("    #     executionMethod: command");
-    lines.push("    #     commandPath: pi");
-    lines.push("    #     sandboxMode: read-only");
-    lines.push("    #     approvalPolicy: never");
-    lines.push("    #     webSearchEnabled: false");
-    lines.push("    #     networkAccessEnabled: false");
-    lines.push("    #     reasoningEffort: low");
-    lines.push("    #     additionalDirectories: []");
-    lines.push("    #     cliEnv: {}");
-    lines.push("    #     config: {}");
-    lines.push("    #   output:");
-    lines.push("    #     labels:");
-    lines.push("    #       variantDisplayName: pi gpt-5 mini");
-  }
+  lines.push(...renderPromptBlocks(prompts));
+  lines.push(...renderWorkspaceSection(options));
+  lines.push(...renderEvaluationSection(options, assertions));
+  lines.push(...renderComparisonSection(options, variant));
 
   return `${lines.join("\n")}\n`;
+}
+
+function renderPromptBlocks(prompts) {
+  return prompts.flatMap((prompt) => [
+    `    - id: ${yamlString(prompt.id)}`,
+    "      # TODO: task.prompts[*].id should be a slug-like row identifier. Use a stable id so report rows stay readable across benchmark revisions.",
+    `      description: ${yamlString(prompt.description)}`,
+    "      # TODO: description is free text. Explain what this row is checking and how it differs from the other prompts.",
+    `      prompt: ${yamlString(prompt.prompt)}`,
+    "      # TODO: prompt is the exact task sent to the agent. Keep it benchmark-specific. Add output-format constraints only when the benchmark truly depends on them.",
+    "      # TODO: if this row needs checks that differ from the shared evaluation.assertions, add task.prompts[*].evaluation.assertions under this prompt.",
+  ]);
+}
+
+function renderWorkspaceSection(options) {
+  const lines = [
+    "workspace:",
+    "  sources:",
+    "    # TODO: keep source inputs immutable; the runner copies them into fresh workspaces.",
+    "    # TODO: choose the workspace source type by provenance: local-path for files already on disk, git for pinned external inputs, inline-files for tiny synthetic fixtures, empty for intentionally blank workspaces.",
+    ...renderWorkspaceSource(options),
+  ];
+
+  if (!options.workspacePath && !options.workspaceRepo) {
+    lines.push(...renderAdditionalWorkspaceSourceExamples());
+  }
+
+  lines.push(
+    "  setup:",
+    `    initializeGit: ${yamlBoolean(options.initializeGit ?? true)}`,
+    "    # TODO: initializeGit is a closed choice: true or false. Use true when the agent or benchmark expects a Git repo; use false only when Git state would be irrelevant or misleading.",
+    "    # TODO: add workspace.setup.env only when the benchmark truly depends on run-specific environment variables.",
+    "    env: {}",
+    "    # TODO: workspace.setup.env is an open mapping of NAME: value. Put only reproducible runtime dependencies here, not secrets or machine-specific paths.",
+  );
+
+  return lines;
+}
+
+function renderAdditionalWorkspaceSourceExamples() {
+  return [
+    "    # TODO: additional workspace.sources entries can coexist and are applied in order. Add multiple entries when you want a base layer plus overlays or helper files.",
+    "    # TODO: example additional local-path source:",
+    "    # - id: docs",
+    "    #   type: local-path",
+    "    #   path: ./fixtures/TODO/docs",
+    "    #   target: /docs",
+    "    # TODO: example additional git source:",
+    "    # - id: external-assets",
+    "    #   type: git",
+    "    #   repo: https://github.com/example/repo.git",
+    "    #   ref: main",
+    "    #   subpath: path/in/repo",
+    "    #   target: /vendor",
+    "    # TODO: example additional inline-files source:",
+    "    # - id: generated-notes",
+    "    #   type: inline-files",
+    "    #   target: /",
+    "    #   files:",
+    "    #     - path: NOTES.md",
+    "    #       content: |",
+    "    #         TODO: inline helper notes",
+    "    # TODO: example additional empty source:",
+    "    # - id: blank-layer",
+    "    #   type: empty",
+    "    #   target: /tmp",
+  ];
+}
+
+function renderEvaluationSection(options, assertions) {
+  const lines = [
+    "evaluation:",
+    "  assertions:",
+    "    # TODO: shared assertions apply to every compare cell. Put prompt-specific checks under task.prompts[*].evaluation.assertions instead.",
+  ];
+
+  if (options.evaluationTypes.length === 0 && options.evaluationValues.length === 0) {
+    lines.push(
+      "    # TODO: because you did not preselect assertion types, this template includes one example of every supported V1 assertion type below.",
+      "    # TODO: keep only the assertions that fit your benchmark; multiple assertion types can coexist in the same list.",
+    );
+  }
+
+  lines.push(
+    ...assertions.flatMap((assertion) => renderAssertionBlock(assertion, options)),
+    `  requests: ${options.requests ?? 10}`,
+    "  # TODO: requests is a positive integer. Higher values reduce variance but cost more time and tokens. Use 1 for smoke checks, low single digits for iteration, and 10+ for more stable comparisons.",
+    `  timeoutMs: ${options.timeoutMs ?? 180000}`,
+    "  # TODO: timeoutMs is a positive integer in milliseconds. Set it high enough for the slowest expected cell, especially when prompts require repo analysis or external CLI work.",
+    `  tracing: ${yamlBoolean(options.tracing ?? false)}`,
+    "  # TODO: tracing is a closed choice: true or false. Enable it when you need extra Promptfoo trace detail; keep it false for normal benchmark runs to reduce noise.",
+    ...renderConcurrencyLines(options),
+    `  noCache: ${yamlBoolean(options.noCache ?? true)}`,
+    "  # TODO: noCache is a closed choice: true or false. Keep true for reproducible repeated evaluations; switch to false only when you intentionally want Promptfoo caching.",
+  );
+
+  return lines;
+}
+
+function renderAssertionBlock(assertion, options) {
+  const lines = [`    - type: ${yamlString(assertion.type)}`];
+
+  if (!SUPPORTED_ASSERTION_TYPES.includes(assertion.type)) {
+    lines.push(
+      "      # TODO: this assertion type is not part of the Skill Arena V1 supported set.",
+      `      # TODO: replace it with one of: ${SUPPORTED_ASSERTION_TYPES.join(", ")}.`,
+    );
+  } else {
+    lines.push(
+      `      # TODO: supported assertion types are: ${SUPPORTED_ASSERTION_TYPES.join(", ")}.`,
+      "      # TODO: choose equals for exact output, contains/icontains for stable substrings, regex for format patterns, is-json for JSON shape, javascript for custom logic, file-contains for workspace file checks, llm-rubric for judge-based scoring.",
+    );
+  }
+
+  if (assertion.type === "llm-rubric") {
+    lines.push(
+      `      provider: ${yamlString(options.evaluationProvider ?? "skill-arena:judge:codex")}`,
+      "      # TODO: provider choices are usually skill-arena:judge:codex, skill-arena:judge:copilot-cli, skill-arena:judge:pi, skill-arena:judge:opencode, skill-arena:judge:claude-code, or a hosted Promptfoo provider such as openai:gpt-5-mini.",
+      "      # TODO: choose a local judge when you want the benchmark to stay CLI-local; choose a hosted judge only when you need a specific external grader.",
+    );
+  }
+
+  lines.push(
+    `      value: ${yamlString(assertion.value)}`,
+    "      # TODO: value meaning depends on type: expected exact text for equals, required substring for contains/icontains, pattern for regex, rubric text for llm-rubric, or script/logic reference for javascript.",
+  );
+
+  return lines;
+}
+
+function renderConcurrencyLines(options) {
+  if (options.maxConcurrency !== null) {
+    return [
+      `  maxConcurrency: ${options.maxConcurrency}`,
+      "  # TODO: remove maxConcurrency to let the harness use local machine parallelism.",
+    ];
+  }
+
+  return [
+    "  # TODO: uncomment maxConcurrency only when you want a fixed, machine-independent cap.",
+    "  # maxConcurrency: 4",
+  ];
+}
+
+function renderComparisonSection(options, variant) {
+  const lines = [
+    "comparison:",
+    "  profiles:",
+    "    # TODO: keep at least one isolated control profile and add as many explicit alternatives as the benchmark needs.",
+    "    - id: no-skill",
+    "      # TODO: id should be slug-like. Use short ids because they become compare column labels.",
+    "      description: Fully isolated control with no declared capabilities.",
+    "      # TODO: description is free text. Explain what this control profile represents.",
+    "      isolation:",
+    "        inheritSystem: false",
+    "        # TODO: keep inheritSystem false so compare profiles remain deny-all and explicit.",
+    "      capabilities: {}",
+    "      # TODO: capabilities is an explicit object. Leave it empty for the control profile.",
+    "    - id: skill-alternative-1",
+    "      # TODO: add more profiles only when each one encodes a clear benchmark hypothesis.",
+    "      description: Declared capability profile with one explicit skill.",
+    "      # TODO: description should identify the capability bundle, for example remote git skill, local skill group, or skill plus agent.",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities:",
+    "        skills:",
+    "          -",
+    ...indentLines(renderSkillSource(options), 12),
+    "      # TODO: duplicate this profile block when you want more compare columns such as no-skill, skill-alternative-1, skill-alternative-2, or tool-specific capability bundles.",
+    "  variants:",
+    "    # TODO: add one variant per adapter/model/runtime configuration you want as separate rows for each prompt.",
+    ...renderVariantBlock(variant),
+  ];
+
+  if (!options.adapter && !options.model) {
+    lines.push(...renderAdditionalVariantExamples());
+  }
+
+  return lines;
+}
+
+function renderVariantBlock(variant) {
+  const configLines = Object.keys(variant.config ?? {}).length === 0
+    ? ["        config: {}"]
+    : [
+      "        config:",
+      ...Object.entries(variant.config).map(
+        ([key, value]) => `          ${key}: ${yamlValueForMapping(value)}`,
+      ),
+    ];
+
+  return [
+    `    - id: ${yamlString(variant.id)}`,
+    "      # TODO: variant id should be slug-like and stable. Include adapter/model hints when it helps row readability.",
+    `      description: ${yamlString(variant.description)}`,
+    "      # TODO: description is free text. Explain why this runtime configuration is included.",
+    "      agent:",
+    `        adapter: ${yamlString(variant.adapter)}`,
+    "        # TODO: adapter choices are exactly: codex, copilot-cli, pi, opencode, claude-code.",
+    "        # TODO: choose the adapter that matches the local CLI you actually want to benchmark.",
+    `        model: ${yamlString(variant.model)}`,
+    "        # TODO: model is provider-specific free text. Use the exact model id accepted by the chosen adapter and prefer one that is stable and documented for the benchmark.",
+    `        executionMethod: ${yamlString(variant.executionMethod)}`,
+    "        # TODO: executionMethod is adapter-dependent. Common choice is command. Codex also supports sdk. Prefer command when you want to mirror the installed CLI behavior.",
+    `        commandPath: ${yamlString(variant.commandPath)}`,
+    "        # TODO: commandPath is the executable name or path used locally, for example codex, copilot, or pi. Override it only when the binary is not on PATH under the default name.",
+    `        sandboxMode: ${yamlString(variant.sandboxMode)}`,
+    "        # TODO: sandboxMode is adapter-specific policy text. Common values include read-only, workspace-write, and danger-full-access. Choose the narrowest mode that still allows the task to succeed.",
+    `        approvalPolicy: ${yamlString(variant.approvalPolicy)}`,
+    "        # TODO: approvalPolicy is adapter-specific policy text. Common values include never and on-request. Prefer never for reproducible unattended benchmarks.",
+    `        webSearchEnabled: ${yamlBoolean(variant.webSearchEnabled)}`,
+    "        # TODO: webSearchEnabled is a closed choice: true or false. Enable it only when the task explicitly requires live web access.",
+    `        networkAccessEnabled: ${yamlBoolean(variant.networkAccessEnabled)}`,
+    "        # TODO: networkAccessEnabled is a closed choice: true or false. Enable it only when the task needs networked tools, remote repos, or external services during agent execution.",
+    `        reasoningEffort: ${yamlString(variant.reasoningEffort)}`,
+    "        # TODO: reasoningEffort is adapter-specific text. Common values are low or medium; choose higher effort only when the task is materially reasoning-bound and you accept extra cost/latency.",
+    "        additionalDirectories: []",
+    "        # TODO: additionalDirectories is an open list of extra readable paths. Keep it empty unless the benchmark must expose files outside the materialized workspace.",
+    "        cliEnv: {}",
+    "        # TODO: cliEnv is an open mapping of environment variables passed to the agent CLI. Use it for reproducible CLI tweaks, not for secrets.",
+    ...configLines,
+    "        # TODO: config is an adapter-specific open mapping for advanced overrides. Leave empty unless the adapter contract requires extra fields for this benchmark.",
+    "      output:",
+    "        labels:",
+    `          variantDisplayName: ${yamlString(variant.variantDisplayName)}`,
+    "          # TODO: variantDisplayName is the human label shown in merged reports. Choose something short and readable, for example codex mini or copilot gpt-5.",
+    "      # TODO: duplicate this variant block when you want more rows per prompt for other adapters or models.",
+  ];
+}
+
+function renderAdditionalVariantExamples() {
+  return [
+    "    # TODO: example additional variant for copilot-cli:",
+    "    # - id: copilot-gpt5",
+    "    #   description: Compare against GitHub Copilot CLI on GPT-5.",
+    "    #   agent:",
+    "    #     adapter: copilot-cli",
+    "    #     model: gpt-5",
+    "    #     executionMethod: command",
+    "    #     commandPath: copilot",
+    "    #     sandboxMode: read-only",
+    "    #     approvalPolicy: never",
+    "    #     webSearchEnabled: false",
+    "    #     networkAccessEnabled: false",
+    "    #     reasoningEffort: low",
+    "    #     additionalDirectories: []",
+    "    #     cliEnv: {}",
+    "    #     config: {}",
+    "    #   output:",
+    "    #     labels:",
+    "    #       variantDisplayName: copilot gpt-5",
+    "    # TODO: example additional variant for pi:",
+    "    # - id: pi-gpt5mini",
+    "    #   description: Compare against PI on GPT-5 mini.",
+    "    #   agent:",
+    "    #     adapter: pi",
+    "    #     model: github-copilot/gpt-5-mini",
+    "    #     executionMethod: command",
+    "    #     commandPath: pi",
+    "    #     sandboxMode: read-only",
+    "    #     approvalPolicy: never",
+    "    #     webSearchEnabled: false",
+    "    #     networkAccessEnabled: false",
+    "    #     reasoningEffort: low",
+    "    #     additionalDirectories: []",
+    "    #     cliEnv: {}",
+    "    #     config: {}",
+    "    #   output:",
+    "    #     labels:",
+    "    #       variantDisplayName: pi gpt-5 mini",
+  ];
 }
 
 function renderWorkspaceSource(options) {
@@ -882,7 +969,7 @@ function printUsage() {
   console.error("  --variant-id <id>               Variant identifier");
   console.error("  --variant-description <text>    Variant description");
   console.error("  --variant-display-name <text>   Human-readable variant label");
-  console.error("  --adapter <id>                 codex | copilot-cli | pi");
+  console.error("  --adapter <id>                 codex | copilot-cli | pi | opencode | claude-code");
   console.error("  --model <id>                   Variant model");
   console.error("  --execution-method <id>         Variant execution method");
   console.error("  --command-path <path>           Variant executable path");

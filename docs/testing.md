@@ -31,6 +31,7 @@ skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
 - local Codex CLI available on `PATH` as `codex`
 - local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
 - local OpenCode CLI available on `PATH` as `opencode` when testing `opencode` scenarios
+- local Claude Code CLI available on `PATH` as `claude` when testing `claude-code` scenarios
 - Codex authenticated on the machine before running live evaluations
 
 ## 1. Run Unit Tests
@@ -143,6 +144,7 @@ Behavior to expect:
 - rows are variant and prompt pairs
 - matrix cells report pass ratio against the requested execution count
 - when token usage is available, cells also report average and standard deviation aggregates
+- when execution latency is available, cells also report average and standard deviation aggregates in milliseconds
 - when `rust-code-analysis` is installed, cells may also report changed-code metrics for modified original files only
 
 ## Local Path And Reuse Rules

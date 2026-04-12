@@ -71,7 +71,7 @@ test("local judge provider delegates to codex-compatible config defaults", async
   assert.equal(delegate.config.approval_policy, "never");
 });
 
-test("local judge provider delegates to copilot, pi, and opencode configs", () => {
+test("local judge provider delegates to copilot, pi, opencode, and claude-code configs", () => {
   const copilotProvider = new LocalJudgeProvider({
     config: {
       adapter: "copilot-cli",
@@ -93,6 +93,13 @@ test("local judge provider delegates to copilot, pi, and opencode configs", () =
       model: "openai/gpt-5",
     },
   });
+  const claudeCodeProvider = new LocalJudgeProvider({
+    config: {
+      adapter: "claude-code",
+      provider_id: "skill-arena:judge:claude-code",
+      model: "claude-sonnet-4-20250514",
+    },
+  });
 
   assert.equal(copilotProvider.buildDelegate().config.command_path, "copilot");
   assert.equal(copilotProvider.buildDelegate().config.model, "gpt-5");
@@ -100,6 +107,8 @@ test("local judge provider delegates to copilot, pi, and opencode configs", () =
   assert.equal(piProvider.buildDelegate().config.model, "github-copilot/gpt-5-mini");
   assert.equal(opencodeProvider.buildDelegate().config.command_path, "opencode");
   assert.equal(opencodeProvider.buildDelegate().config.model, "openai/gpt-5");
+  assert.equal(claudeCodeProvider.buildDelegate().config.command_path, "claude");
+  assert.equal(claudeCodeProvider.buildDelegate().config.model, "claude-sonnet-4-20250514");
 });
 
 test("local judge provider exposes ids and forwards callApi to the delegate", async () => {

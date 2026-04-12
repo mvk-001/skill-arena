@@ -69,6 +69,8 @@ The adapter layer maps a manifest scenario into a Promptfoo provider definition.
 - `codex`
 - `copilot-cli`
 - `pi`
+- `opencode`
+- `claude-code`
 
 ### Promptfoo config generator
 
@@ -84,6 +86,12 @@ For `copilot-cli`, the generated provider is also a file-based custom script. V1
 - `command`: shell out to the local `copilot` CLI
 
 `copilot-cli` maps sandbox, network, web, and approval settings on a best-effort basis because the Copilot CLI does not expose the same execution controls as Codex.
+
+For `claude-code`, the generated provider is also a file-based custom script. V1 supports:
+
+- `command`: shell out to the local `claude` CLI with `-p`
+
+`claude-code` materializes generic benchmark instruction and skill bundles into Claude Code's project-native discovery layout (`CLAUDE.md` and `.claude/skills/*`) inside the isolated execution workspace. Sandbox, network, web, and approval settings are mapped on a best-effort basis through generated Claude settings plus CLI flags.
 
 For `pi`, the generated provider runs with strict skill isolation by default:
 
@@ -109,7 +117,7 @@ Compare runs write under `results/<benchmark-id>/<timestamp>-compare/` and inclu
 - `merged/report.md`
 - `merged/merged-summary.json`
 
-Provider executions may also write hook artifacts under the materialized workspace at `.skill-arena/hooks/execution-events/`. These JSON files capture the observable command invocation plus any parsed event or tool-call stream emitted by `codex`, `copilot-cli`, `pi`, or `opencode`.
+Provider executions may also write hook artifacts under the materialized workspace at `.skill-arena/hooks/execution-events/`. These JSON files capture the observable command invocation plus any parsed event or tool-call stream emitted by `codex`, `copilot-cli`, `pi`, `opencode`, or `claude-code`.
 
 ## Execution flow
 
@@ -150,13 +158,13 @@ Compare profiles are capability-oriented on purpose. Similar names across tools 
 | Capability | Codex | Copilot CLI | OpenCode | Pi | Claude Code |
 | --- | --- | --- | --- | --- | --- |
 | Project instruction file | Native (`AGENTS.md`) | Native | Native (`AGENTS.md`) | Native (`AGENTS.md`) | Native (`CLAUDE.md`) |
-| Skills | Native | Native | Native | Native | No |
-| Skill groups / multiple skills | Native | Native | Native | Native | No |
+| Skills | Native | Native | Native | Native | Native (`.claude/skills`) |
+| Skill groups / multiple skills | Native | Native | Native | Native | Native |
 | Hooks / event hooks | No | Native | Analogous via plugins | Analogous via extensions | Native |
 | Custom agents | Native | Native | Native | No | Native |
 | Subagents / delegation | Native | Native | Native | Analogous via extensions/packages | Native |
 | MCP servers | Native | Native | Native | Analogous via extensions | Native |
-| Runtime plugin / extension API | No | No | Native plugins | Native extensions/packages | No |
+| Runtime plugin / extension API | No | No | Native plugins | Native extensions/packages | Native plugins |
 | IDE plugin / IDE extension | No | No | IDE-only | No | Native IDE integration |
 
 Notes:

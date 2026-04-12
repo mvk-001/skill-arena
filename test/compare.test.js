@@ -1573,6 +1573,205 @@ test("compare dry-run reports invalid copilot capability profiles as unsupported
   assert.match(stdout, /\| Unsupported cells \| 1 \|/);
 });
 
+test("compare dry-run supports claude-code skill, agent, and hook capability profiles", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-claude-capabilities-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: claude-capability-profile-compare",
+    "  description: Compare claude-code capability profiles.",
+    "  tags: [compare, claude]",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: contains",
+    "      value: HELLO",
+    "  requests: 1",
+    "comparison:",
+    "  profiles:",
+    "    - id: baseline",
+    "      description: Baseline",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities: {}",
+    "    - id: reviewer-skill-agent",
+    "      description: Claude profile",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities:",
+    "        instructions:",
+    "          - source:",
+    "              type: inline-files",
+    "              target: /",
+    "              files:",
+    "                - path: CLAUDE.md",
+    "                  content: |",
+    "                    # Compare instructions",
+    "                    Return HELLO.",
+    "        skills:",
+    "          - source:",
+    "              type: inline-files",
+    "              files:",
+    "                - path: skills/reviewer-skill/SKILL.md",
+    "                  content: |",
+    "                    ---",
+    "                    name: reviewer-skill",
+    "                    description: Return HELLO when asked.",
+    "                    ---",
+    "",
+    "                    Return HELLO.",
+    "            install:",
+    "              strategy: workspace-overlay",
+    "        agents:",
+    "          - agentId: reviewer",
+    "            source:",
+    "              type: inline-files",
+    "              target: /",
+    "              files:",
+    "                - path: .claude/agents/reviewer.md",
+    "                  content: |",
+    "                    ---",
+    "                    name: reviewer",
+    "                    description: Review the workspace and keep the answer concise.",
+    "                    tools: Read, Grep, Glob",
+    "                    model: sonnet",
+    "                    ---",
+    "",
+    "                    Review the workspace and keep the answer concise.",
+    "        hooks:",
+    "          - source:",
+    "              type: inline-files",
+    "              target: /",
+    "              files:",
+    "                - path: .claude/settings.json",
+    "                  content: |",
+    "                    {",
+    "                      \"hooks\": {",
+    "                        \"PostToolUse\": []",
+    "                      }",
+    "                    }",
+    "  variants:",
+    "    - id: claude-sonnet",
+    "      description: Claude Code",
+    "      agent:",
+    "        adapter: claude-code",
+    "        model: claude-sonnet-4-20250514",
+    "        commandPath: claude",
+    "        executionMethod: command",
+    "        sandboxMode: workspace-write",
+    "        approvalPolicy: never",
+    "        webSearchEnabled: false",
+    "        networkAccessEnabled: false",
+    "        reasoningEffort: medium",
+    "        additionalDirectories: []",
+    "        cliEnv: {}",
+    "        config: {}",
+  ].join("\n"), "utf8");
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"],
+    {
+      cwd: tempDirectory,
+      windowsHide: true,
+    },
+  );
+
+  assert.match(stdout, /\| Profiles \| 2 \|/);
+  assert.match(stdout, /\| Unsupported cells \| 0 \|/);
+
+  const resultsRoot = path.join(tempDirectory, "results", "claude-capability-profile-compare");
+  const runDirectories = await fs.readdir(resultsRoot);
+  assert.equal(runDirectories.some((entry) => entry.endsWith("-claude-sonnet-baseline")), true);
+  assert.equal(runDirectories.some((entry) => entry.endsWith("-claude-sonnet-reviewer-skill-agent")), true);
+});
+
+test("compare dry-run reports invalid claude-code capability profiles as unsupported cells", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-claude-invalid-capability-"));
+  const compareConfigPath = path.join(tempDirectory, "compare.yaml");
+
+  await fs.writeFile(compareConfigPath, [
+    "schemaVersion: 1",
+    "benchmark:",
+    "  id: invalid-claude-capability-profile-compare",
+    "  description: Compare invalid claude-code capability profiles.",
+    "task:",
+    "  prompt: Return HELLO.",
+    "workspace:",
+    "  fixture: evaluations/smoke-skill-following/fixtures/workspaces/base",
+    "  initializeGit: true",
+    "evaluation:",
+    "  assertions:",
+    "    - type: contains",
+    "      value: HELLO",
+    "  requests: 1",
+    "comparison:",
+    "  profiles:",
+    "    - id: baseline",
+    "      description: Baseline",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities: {}",
+    "    - id: broken-agent-profile",
+    "      description: Missing agent id",
+    "      isolation:",
+    "        inheritSystem: false",
+    "      capabilities:",
+    "        agents:",
+    "          - source:",
+    "              type: inline-files",
+    "              target: /",
+    "              files:",
+    "                - path: .claude/agents/reviewer.md",
+    "                  content: |",
+    "                    ---",
+    "                    name: reviewer",
+    "                    description: Review the workspace and keep the answer concise.",
+    "                    ---",
+    "",
+    "                    Review the workspace and keep the answer concise.",
+    "  variants:",
+    "    - id: claude-sonnet",
+    "      description: Claude Code",
+    "      agent:",
+    "        adapter: claude-code",
+    "        model: claude-sonnet-4-20250514",
+    "        commandPath: claude",
+    "        executionMethod: command",
+    "        sandboxMode: workspace-write",
+    "        approvalPolicy: never",
+    "        webSearchEnabled: false",
+    "        networkAccessEnabled: false",
+    "        reasoningEffort: medium",
+    "        additionalDirectories: []",
+    "        cliEnv: {}",
+    "        config: {}",
+  ].join("\n"), "utf8");
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [fromProjectRoot("src", "cli", "run-compare.js"), "compare.yaml", "--dry-run"],
+    {
+      cwd: tempDirectory,
+      windowsHide: true,
+    },
+  );
+
+  assert.match(stdout, /\| Profiles \| 2 \|/);
+  assert.match(stdout, /\| Unsupported cells \| 1 \|/);
+
+  const resultsRoot = path.join(tempDirectory, "results", "invalid-claude-capability-profile-compare");
+  const runDirectories = await fs.readdir(resultsRoot);
+  assert.equal(runDirectories.some((entry) => entry.endsWith("-claude-sonnet-baseline")), true);
+  assert.equal(runDirectories.some((entry) => entry.endsWith("-claude-sonnet-broken-agent-profile")), false);
+});
+
 test("compare dry-run reports invalid capability source types as unsupported cells", async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-compare-invalid-capability-source-"));
   const compareConfigPath = path.join(tempDirectory, "compare.yaml");
@@ -1986,7 +2185,7 @@ test("compare evaluate can reuse every unchanged profile from the latest compare
   assert.match(executionLog, /promptfoo eval skipped because every supported scenario was reused/);
   assert.equal(summary.scenarioSummaries.length, 2);
   assert.equal(summary.scenarioSummaries.every((entry) => entry.reused === true), true);
-  assert.equal(summary.matrix.rows[0].cells.baseline.displayValue, "100% (1/1)<br>tokens avg 10.0, sd 0.0");
-  assert.equal(summary.matrix.rows[0].cells.skill.displayValue, "100% (1/1)<br>tokens avg 10.0, sd 0.0");
+  assert.equal(summary.matrix.rows[0].cells.baseline.displayValue, "100% (1/1)<br>tokens avg 10.0, sd 0.0<br>time avg 1.0 ms, sd 0.0 ms");
+  assert.equal(summary.matrix.rows[0].cells.skill.displayValue, "100% (1/1)<br>tokens avg 10.0, sd 0.0<br>time avg 1.0 ms, sd 0.0 ms");
   assert.match(await fs.readFile(markdownOutputPath, "utf8"), /# compare-reuse-all/);
 });
