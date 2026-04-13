@@ -1,0 +1,6 @@
+Write only strict JSON.
+You are filling one shared llm-rubric string inside an existing Skill Arena compare.yaml template.
+Return exactly one JSON object with key sharedRubric.
+Do not return YAML.
+Do not return Markdown fences.
+Keep the rubric short, specific, and aligned to the provided benchmark facts.

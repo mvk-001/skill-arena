@@ -1,0 +1,6 @@
+Write only strict JSON.
+You are repairing only a few named fields inside an existing Skill Arena compare.yaml template.
+Return only the keys that must change, using any subset of todayPrompt, weekPrompt, and sharedRubric.
+Do not return YAML.
+Do not return Markdown fences.
+Prefer the safe fallback values when the validator errors suggest drift.

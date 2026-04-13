@@ -1,0 +1,8 @@
+2026-03-16T16:21:30-04:00 | baseline | no-skill=0/8, skill=7/8 | classification: 1 skill failure was a true negative because the model returned prose ("already contains...", "Tests:") instead of raw YAML.
+2026-03-16T16:21:30-04:00 | hypothesis-001 | skill | Add an explicit instruction to rerun the bundled command even when deliverables/compare.yaml already exists, and forbid pre-inspection decisions about file correctness.
+2026-03-16T16:27:10-04:00 | result-001 | reverted | skill dropped from 7/8 to 5/8 after hypothesis-001. New failures still returned prose summaries, so the change added noise instead of improving compliance.
+2026-03-16T16:27:10-04:00 | hypothesis-002 | skill | Compress the skill to a tiny protocol and move the "run exact command + return raw stdout only" rule into frontmatter description and body to reduce narrative drift.
+2026-03-16T16:39:05-04:00 | result-002 | reverted | skill stayed worse at 5/8 after hypothesis-002. Shorter wording alone did not stop prose summaries or manual authoring drift.
+2026-03-16T16:39:05-04:00 | hypothesis-003 | skill | Introduce a one-shot wrapper script with no flags and update SKILL.md to point at that shorter fixed command, reducing execution friction and copy error surface.
+2026-03-16T16:52:10-04:00 | result-003 | reverted | skill dropped further to 3/8 after hypothesis-003. The wrapper script amplified drift instead of increasing command obedience, so the experiment was reverted.
+2026-03-16T17:04:05-04:00 | revert-check | original-skill-restored | Re-ran the benchmark after restoring the original SKILL.md and removing the wrapper script. Result was still skill=3/8, which indicates high run-to-run variance; no improvement was reproduced, so only learning.log was kept.

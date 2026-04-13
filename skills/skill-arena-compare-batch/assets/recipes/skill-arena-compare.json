@@ -1,0 +1,13 @@
+{
+  "benchmark": {
+    "id": "gws-calendar-agenda-compare-generated",
+    "description": "Compare Codex mini on Google Calendar agenda requests with and without the remote gws-calendar-agenda skill.",
+    "tags": ["compare", "calendar", "gws", "codex"]
+  },
+  "defaults": {
+    "todayPrompt": "Return today's agenda across all calendars. Prefer `gws calendar +agenda` in read-only mode. Return JSON only.",
+    "weekPrompt": "Return this week's agenda across all calendars. Prefer `gws calendar +agenda` in read-only mode. Return Markdown only.",
+    "sharedRubric": "Score 1.0 only if the answer is raw YAML for a valid Skill Arena compare config that compares no-skill versus skill for the remote gws-calendar-agenda skill, uses the required runtime-relative workspace path, keeps exactly two prompt rows with JSON-only and Markdown-only contracts, and uses only supported Skill Arena compare schema keys and assertion types.",
+    "weekRegex": "(?m)^(#|[-*] )"
+  }
+}

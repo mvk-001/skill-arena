@@ -1,0 +1,4 @@
+interface:
+  display_name: "Compare Batch"
+  short_description: "Batch compare.yaml authoring"
+  default_prompt: "Use $skill-arena-compare-batch to generate a valid Skill Arena compare.yaml through its bundled batch script."
