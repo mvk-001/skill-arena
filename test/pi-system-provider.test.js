@@ -61,6 +61,36 @@ test("pi provider writes an execution-event hook artifact", async () => {
   assert.equal(payload.toolEvents[0].data.toolName, "search");
 });
 
+test("pi provider extracts session usage from JSON-line events", async () => {
+  const provider = new PiSystemProvider({
+    config: {
+      command_path: "pi",
+      working_dir: "C:/temp/workspace",
+    },
+    spawnProcess: async () => ({
+      stdout: [
+        "{\"type\":\"assistant.message\",\"content\":\"DONE\"}",
+        "{\"type\":\"result\",\"usage\":{\"premiumRequests\":1,\"totalApiDurationMs\":250,\"sessionDurationMs\":900,\"codeChanges\":{\"linesAdded\":3,\"linesRemoved\":1,\"filesModified\":[\"a.txt\"]}}}",
+      ].join("\n"),
+      stderr: "",
+      exitCode: 0,
+    }),
+  });
+
+  const response = await provider.callApi("Return the marker.");
+
+  assert.deepEqual(response.metadata.sessionUsage, {
+    premiumRequests: 1,
+    totalApiDurationMs: 250,
+    sessionDurationMs: 900,
+    codeChanges: {
+      linesAdded: 3,
+      linesRemoved: 1,
+      filesModified: ["a.txt"],
+    },
+  });
+});
+
 test("pi provider does not inherit arbitrary host environment variables", () => {
   const previousHostLeak = process.env.SKILL_ARENA_HOST_LEAK;
   const previousPath = process.env.PATH;

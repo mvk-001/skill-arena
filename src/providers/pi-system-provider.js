@@ -43,6 +43,7 @@ export default class PiSystemProvider {
       },
     );
     const observedEvents = parseJsonLines(stdout);
+    const sessionUsage = extractSessionUsage(observedEvents);
     const executionEventHook = await writeExecutionEventHook({
       workingDirectory: this.config.working_dir,
       adapter: "pi",
@@ -62,6 +63,7 @@ export default class PiSystemProvider {
         metadata: {
           backend: "command",
           stderr: stderr.trim() || null,
+          sessionUsage,
           executionEventHook,
         },
       };
@@ -72,6 +74,7 @@ export default class PiSystemProvider {
       metadata: {
         backend: "command",
         stderr: stderr.trim() || null,
+        sessionUsage,
         executionEventHook,
       },
     };
@@ -128,4 +131,45 @@ async function spawnProcess({
     promptDirectoryPrefix: "skill-arena-pi-prompt-",
     abortSignal,
   });
+}
+
+function extractSessionUsage(events) {
+  if (!Array.isArray(events) || events.length === 0) {
+    return null;
+  }
+
+  for (const event of [...events].reverse()) {
+    const usage = normalizeSessionUsage(event?.usage ?? event?.data?.usage);
+    if (usage) {
+      return usage;
+    }
+  }
+
+  return null;
+}
+
+function normalizeSessionUsage(usage) {
+  if (!usage || typeof usage !== "object") {
+    return null;
+  }
+
+  const normalized = {};
+
+  if (Number.isFinite(usage.premiumRequests)) {
+    normalized.premiumRequests = usage.premiumRequests;
+  }
+
+  if (Number.isFinite(usage.totalApiDurationMs)) {
+    normalized.totalApiDurationMs = usage.totalApiDurationMs;
+  }
+
+  if (Number.isFinite(usage.sessionDurationMs)) {
+    normalized.sessionDurationMs = usage.sessionDurationMs;
+  }
+
+  if (usage.codeChanges && typeof usage.codeChanges === "object") {
+    normalized.codeChanges = usage.codeChanges;
+  }
+
+  return Object.keys(normalized).length > 0 ? normalized : null;
 }

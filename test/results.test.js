@@ -237,6 +237,33 @@ test("normalizeOutput captures compare row metadata", () => {
   assert.equal(output.rowId, "codex-worst:gmail");
 });
 
+test("normalizeOutput preserves session usage metadata when token usage is unavailable", () => {
+  const output = normalizeOutput({
+    provider: "pi",
+    prompt: {
+      raw: "Prompt text",
+    },
+    response: {
+      output: "{\"ok\":true}",
+    },
+    success: true,
+    metadata: {
+      sessionUsage: {
+        premiumRequests: 1,
+        totalApiDurationMs: 250,
+        sessionDurationMs: 900,
+      },
+    },
+  }, 0);
+
+  assert.equal(output.tokenUsage, null);
+  assert.deepEqual(output.sessionUsage, {
+    premiumRequests: 1,
+    totalApiDurationMs: 250,
+    sessionDurationMs: 900,
+  });
+});
+
 test("compare matrix report renders pass ratios by skill-mode column", () => {
   const mergedSummary = buildCompareMatrixSummary({
     manifest: {

@@ -174,6 +174,11 @@ export function normalizeOutput(output, index) {
       ?? output.response?.tokenUsage
       ?? output.gradingResult?.tokensUsed
       ?? null,
+    sessionUsage:
+      metadata.sessionUsage
+      ?? output.response?.sessionUsage
+      ?? output.sessionUsage
+      ?? null,
     codeMetricsDelta: metadata.codeMetricsDelta ?? null,
     executionEventHook: metadata.executionEventHook ?? null,
     error: output.error ?? failureReason ?? null,
