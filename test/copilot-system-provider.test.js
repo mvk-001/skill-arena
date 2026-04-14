@@ -105,6 +105,8 @@ test("copilot provider returns trimmed output on success", async () => {
 
 test("copilot provider prepares a strict isolated config directory", async () => {
   const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-copilot-config-"));
+  await fs.mkdir(path.join(workingDirectory, "skills", "marker-guide"), { recursive: true });
+  await fs.writeFile(path.join(workingDirectory, "skills", "marker-guide", "SKILL.md"), "---\nname: marker-guide\n---\n", "utf8");
   const provider = new CopilotSystemProvider({
     config: {
       working_dir: workingDirectory,
@@ -118,6 +120,10 @@ test("copilot provider prepares a strict isolated config directory", async () =>
   assert.equal(configJson.disableAllHooks, true);
   assert.equal(configJson.experimental, false);
   assert.equal(configJson.custom_agents.default_local_only, true);
+  assert.match(
+    await fs.readFile(path.join(workingDirectory, ".github", "skills", "marker-guide", "SKILL.md"), "utf8"),
+    /marker-guide/,
+  );
 });
 
 test("copilot provider falls back to message extracted from JSON lines", async () => {
@@ -224,6 +230,27 @@ test("copilot provider exposes ids, trims fallback fields, and handles empty out
 
   const emptyResponse = await emptyOutputProvider.callApi("Return the marker.");
   assert.equal(emptyResponse.output, "");
+});
+
+test("copilot provider prepends the configured skill activation preamble", async () => {
+  const provider = new CopilotSystemProvider({
+    config: {
+      command_path: "copilot",
+      working_dir: "C:/temp/workspace",
+      prompt_preamble: "Skill activation: use /marker-guide.",
+    },
+    spawnProcess: async (options) => {
+      assert.equal(options.promptText, "Skill activation: use /marker-guide.\n\nTask:\nReturn HELLO.");
+      return {
+        stdout: "DONE",
+        stderr: "",
+        exitCode: 0,
+      };
+    },
+  });
+
+  const response = await provider.callApi("Return HELLO.");
+  assert.equal(response.output, "DONE");
 });
 
 test("copilot provider executes a PATH-resolved Windows command and normalizes prompt whitespace", {

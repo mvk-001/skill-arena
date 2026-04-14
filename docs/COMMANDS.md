@@ -211,7 +211,7 @@ Allowed enum values exposed by the CLI:
 
 - `--skill-type`: `git`, `local-path`, `system-installed`, `inline-files`
 - `--workspace-source-type`: `local-path`, `git`, `inline-files`, `empty`
-- `--adapter`: `codex`, `copilot-cli`, `pi`, `opencode`, `claude-code`
+- `--adapter`: `codex`, `copilot-cli`, `pi`, `opencode`, `claude-code`, `gemini-cli`
 
 Generation patterns:
 

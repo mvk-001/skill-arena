@@ -4,6 +4,7 @@ import {
   spawnProviderCommand,
   withPromptPlaceholder,
 } from "./command-process.js";
+import { prependPromptPreamble } from "../prompt-augmentation.js";
 import { parseJsonLines, writeExecutionEventHook } from "./execution-event-hook.js";
 import { buildIsolatedProviderEnvironment } from "./provider-environment.js";
 import { assertRequiredConfig } from "./provider-validation.js";
@@ -24,11 +25,12 @@ export default class CopilotSystemProvider {
 
   async callApi(prompt, _context, callOptions) {
     assertRequiredConfig(this.config, "copilot-cli", ["working_dir"]);
+    const effectivePrompt = prependPromptPreamble(prompt, this.config.prompt_preamble);
 
     const runtimeConfig = await this.prepareRuntimeConfig();
     const useWindowsPromptWrapper = process.platform === "win32";
     const args = this.buildCommandArguments(
-      useWindowsPromptWrapper ? WINDOWS_PROMPT_PLACEHOLDER : prompt,
+      useWindowsPromptWrapper ? WINDOWS_PROMPT_PLACEHOLDER : effectivePrompt,
       runtimeConfig,
     );
     const appliedSettings = this.describeAppliedSettings();
@@ -38,7 +40,7 @@ export default class CopilotSystemProvider {
         args,
         cwd: this.config.working_dir,
         env: this.buildEnvironment(runtimeConfig.environment),
-        promptText: useWindowsPromptWrapper ? prompt : undefined,
+        promptText: useWindowsPromptWrapper ? effectivePrompt : undefined,
         abortSignal: callOptions?.abortSignal,
       }),
       {
@@ -112,6 +114,7 @@ export default class CopilotSystemProvider {
 
     await fs.rm(configDirectory, { recursive: true, force: true });
     await fs.mkdir(configDirectory, { recursive: true });
+    await mirrorWorkspaceSkillsToCopilotDirectory(this.config.working_dir);
     await fs.writeFile(
       path.join(configDirectory, "config.json"),
       JSON.stringify(runtimeConfig, null, 2),
@@ -187,6 +190,39 @@ export default class CopilotSystemProvider {
       webSearchEnabled: this.config.web_search_enabled ?? null,
     };
   }
+}
+
+async function mirrorWorkspaceSkillsToCopilotDirectory(workingDirectory) {
+  const sourceSkillsDirectory = path.join(workingDirectory, "skills");
+  const sourceEntries = await fs.readdir(sourceSkillsDirectory, { withFileTypes: true }).catch(() => []);
+
+  if (sourceEntries.length === 0) {
+    return [];
+  }
+
+  const destinationSkillsDirectory = path.join(workingDirectory, ".github", "skills");
+  await fs.mkdir(destinationSkillsDirectory, { recursive: true });
+
+  const mirrored = [];
+  for (const entry of sourceEntries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    const sourceDirectory = path.join(sourceSkillsDirectory, entry.name);
+    const skillFile = path.join(sourceDirectory, "SKILL.md");
+    const skillExists = await fs.stat(skillFile).catch(() => null);
+    if (!skillExists?.isFile()) {
+      continue;
+    }
+
+    const destinationDirectory = path.join(destinationSkillsDirectory, entry.name);
+    await fs.rm(destinationDirectory, { recursive: true, force: true });
+    await fs.cp(sourceDirectory, destinationDirectory, { recursive: true });
+    mirrored.push(path.relative(workingDirectory, destinationDirectory).split(path.sep).join("/"));
+  }
+
+  return mirrored;
 }
 
 function extractFinalOutput(stdout) {

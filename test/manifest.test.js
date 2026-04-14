@@ -77,6 +77,45 @@ test("manifest validation rejects unsupported adapter ids", async () => {
   assert.throws(() => benchmarkManifestSchema.parse(invalidManifest));
 });
 
+test("manifest validation accepts gemini-cli with command execution", () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "gemini-check",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: {
+      prompt: "Hello",
+    },
+    workspace: {
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
+      initializeGit: true,
+    },
+    scenarios: [
+      {
+        id: "gemini",
+        description: "Gemini adapter",
+        skillMode: "disabled",
+        agent: {
+          adapter: "gemini-cli",
+          executionMethod: "command",
+        },
+        evaluation: {
+          assertions: [
+            {
+              type: "equals",
+              value: "Hello",
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  assert.equal(manifest.scenarios[0].agent.commandPath, "gemini");
+});
+
 test("enabled skill mode defaults to workspace overlay when legacy skillOverlay exists", () => {
   const manifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,

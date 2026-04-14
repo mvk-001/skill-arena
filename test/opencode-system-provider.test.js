@@ -104,6 +104,27 @@ test("opencode provider returns extracted output and writes an execution-event h
   assert.equal(payload.toolEvents[0].data.toolName, "bash");
 });
 
+test("opencode provider prepends the configured skill activation preamble", async () => {
+  const provider = new OpenCodeSystemProvider({
+    config: {
+      command_path: "opencode",
+      working_dir: "C:/temp/workspace",
+      prompt_preamble: "Skill activation: load marker-guide.",
+    },
+    spawnProcess: async (options) => {
+      assert.equal(options.promptText, "Skill activation: load marker-guide.\n\nTask:\nReturn HELLO.");
+      return {
+        stdout: "{\"message\":\"DONE\"}",
+        stderr: "",
+        exitCode: 0,
+      };
+    },
+  });
+
+  const response = await provider.callApi("Return HELLO.");
+  assert.equal(response.output, "DONE");
+});
+
 test("opencode provider preserves explicit instructions config, handles plain JSON output, and reports failures", async () => {
   const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-opencode-json-"));
   const provider = new OpenCodeSystemProvider({

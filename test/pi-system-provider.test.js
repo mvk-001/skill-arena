@@ -34,6 +34,27 @@ test("pi provider forwards isolated home variables into the CLI environment", as
   assert.equal(response.output, "ALPHA-42");
 });
 
+test("pi provider prepends the configured skill activation preamble", async () => {
+  const provider = new PiSystemProvider({
+    config: {
+      command_path: "pi",
+      working_dir: "C:/temp/workspace",
+      prompt_preamble: "Skill activation: use /skill:marker-guide.",
+    },
+    spawnProcess: async (options) => {
+      assert.equal(options.promptText, "Skill activation: use /skill:marker-guide.\n\nTask:\nReturn HELLO.");
+      return {
+        stdout: "DONE",
+        stderr: "",
+        exitCode: 0,
+      };
+    },
+  });
+
+  const response = await provider.callApi("Return HELLO.");
+  assert.equal(response.output, "DONE");
+});
+
 test("pi provider writes an execution-event hook artifact", async () => {
   const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-pi-hook-"));
   const provider = new PiSystemProvider({

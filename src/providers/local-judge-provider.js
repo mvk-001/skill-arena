@@ -1,6 +1,7 @@
 import CodexSystemProvider from "./codex-system-provider.js";
 import ClaudeCodeSystemProvider from "./claude-code-system-provider.js";
 import CopilotSystemProvider from "./copilot-system-provider.js";
+import GeminiCliSystemProvider from "./gemini-cli-system-provider.js";
 import OpenCodeSystemProvider from "./opencode-system-provider.js";
 import PiSystemProvider from "./pi-system-provider.js";
 
@@ -45,6 +46,12 @@ const DEFAULTS = {
     command_path: "claude",
     cli_env: {},
     claude_code_config: {},
+    strict_runtime_isolation: true,
+  },
+  "gemini-cli": {
+    command_path: "gemini",
+    cli_env: {},
+    gemini_cli_config: {},
     strict_runtime_isolation: true,
   },
 };
@@ -229,6 +236,47 @@ export default class LocalJudgeProvider {
               this.config.strictRuntimeIsolation
               ?? this.config.strict_runtime_isolation
               ?? DEFAULTS["claude-code"].strict_runtime_isolation,
+          },
+        });
+      case "gemini-cli":
+        return new GeminiCliSystemProvider({
+          config: {
+            ...DEFAULTS["gemini-cli"],
+            ...normalizeBaseConfig(this.config),
+            command_path:
+              this.config.commandPath
+              ?? this.config.command_path
+              ?? DEFAULTS["gemini-cli"].command_path,
+            working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
+            model: this.config.model,
+            cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS["gemini-cli"].cli_env,
+            sandbox_mode:
+              this.config.sandboxMode
+              ?? this.config.sandbox_mode,
+            approval_policy:
+              this.config.approvalPolicy
+              ?? this.config.approval_policy,
+            web_search_enabled:
+              this.config.webSearchEnabled
+              ?? this.config.web_search_enabled,
+            network_access_enabled:
+              this.config.networkAccessEnabled
+              ?? this.config.network_access_enabled,
+            model_reasoning_effort:
+              this.config.modelReasoningEffort
+              ?? this.config.model_reasoning_effort,
+            additional_directories:
+              this.config.additionalDirectories
+              ?? this.config.additional_directories
+              ?? [],
+            gemini_cli_config:
+              this.config.geminiCliConfig
+              ?? this.config.gemini_cli_config
+              ?? DEFAULTS["gemini-cli"].gemini_cli_config,
+            strict_runtime_isolation:
+              this.config.strictRuntimeIsolation
+              ?? this.config.strict_runtime_isolation
+              ?? DEFAULTS["gemini-cli"].strict_runtime_isolation,
           },
         });
       default:

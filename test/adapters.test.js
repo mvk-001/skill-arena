@@ -9,10 +9,11 @@ test("getAdapter returns registered adapters and rejects unknown ids", () => {
   assert.equal(getAdapter("pi").id, "pi");
   assert.equal(getAdapter("opencode").id, "opencode");
   assert.equal(getAdapter("claude-code").id, "claude-code");
+  assert.equal(getAdapter("gemini-cli").id, "gemini-cli");
   assert.throws(() => getAdapter("unknown"), /Unsupported adapter id "unknown"\./);
 });
 
-test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi, opencode, and claude-code", () => {
+test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi, opencode, claude-code, and gemini-cli", () => {
   const context = {
     workspaceDirectory: "C:/temp/workspace",
     workspaceEnvironment: {
@@ -21,6 +22,7 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
     isolatedEnvironment: {
       HOME: "C:/temp/home",
       CODEX_HOME: "C:/temp/codex-home",
+      SKILL_ARENA_ALLOWED_SKILLS: "marker-guide",
     },
     gitReady: false,
   };
@@ -41,6 +43,11 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
         additionalDirectories: ["fixtures"],
         cliEnv: { CODEX_FLAG: "1", CODEX_HOME: "C:/should-not-win" },
         config: { profile: "bench" },
+      },
+      skill: {
+        install: {
+          strategy: "workspace-overlay",
+        },
       },
       evaluation: {
         tracing: true,
@@ -64,6 +71,11 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
         cliEnv: { COPILOT_FLAG: "1", HOME: "C:/should-not-win" },
         config: { agent: "terminal" },
       },
+      skill: {
+        install: {
+          strategy: "workspace-overlay",
+        },
+      },
       evaluation: {
         tracing: false,
       },
@@ -78,6 +90,11 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
         commandPath: "pi",
         model: "github-copilot/gpt-5-mini",
         cliEnv: { PI_FLAG: "1", HOME: "C:/should-not-win" },
+      },
+      skill: {
+        install: {
+          strategy: "workspace-overlay",
+        },
       },
       evaluation: {
         tracing: false,
@@ -112,6 +129,11 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
         model: "openai/gpt-5",
         cliEnv: { OPENCODE_FLAG: "1", HOME: "C:/should-not-win" },
         config: { provider: { openai: {} } },
+      },
+      skill: {
+        install: {
+          strategy: "workspace-overlay",
+        },
       },
       evaluation: {
         tracing: false,
@@ -153,8 +175,39 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
         cliEnv: { CLAUDE_FLAG: "1", HOME: "C:/should-not-win" },
         config: { settings: { env: { PROJECT_ONLY: "1" } } },
       },
+      skill: {
+        install: {
+          strategy: "workspace-overlay",
+        },
+      },
       evaluation: {
         tracing: true,
+      },
+    },
+  });
+  const geminiProvider = buildPromptfooProvider({
+    ...context,
+    scenario: {
+      agent: {
+        adapter: "gemini-cli",
+        commandPath: "gemini",
+        model: "gemini-2.5-pro",
+        sandboxMode: "workspace-write",
+        approvalPolicy: "never",
+        webSearchEnabled: false,
+        networkAccessEnabled: false,
+        reasoningEffort: "low",
+        additionalDirectories: ["fixtures"],
+        cliEnv: { GEMINI_FLAG: "1", HOME: "C:/should-not-win" },
+        config: { general: { vimMode: true } },
+      },
+      skill: {
+        install: {
+          strategy: "workspace-overlay",
+        },
+      },
+      evaluation: {
+        tracing: false,
       },
     },
   });
@@ -163,27 +216,37 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
   assert.equal(codexProvider.config.skip_git_repo_check, true);
   assert.equal(codexProvider.config.additional_directories[0], "C:\\temp\\workspace\\fixtures");
   assert.equal(codexProvider.config.cli_env.CODEX_FLAG, "1");
+  assert.match(codexProvider.config.prompt_preamble, /\$marker-guide/);
 
   assert.match(copilotProvider.id, /copilot-system-provider\.js$/);
   assert.deepEqual(copilotProvider.config.additional_directories, ["C:\\temp\\workspace\\fixtures"]);
   assert.equal(copilotProvider.config.cli_env.COPILOT_FLAG, "1");
   assert.equal(copilotProvider.config.copilot_config.agent, "terminal");
+  assert.match(copilotProvider.config.prompt_preamble, /\/marker-guide/);
 
   assert.match(piProvider.id, /pi-system-provider\.js$/);
   assert.equal(piProvider.config.command_path, "pi");
   assert.equal(piProvider.config.cli_env.PI_FLAG, "1");
   assert.equal(piProvider.config.cli_env.HOME, "C:/temp/home");
+  assert.match(piProvider.config.prompt_preamble, /\/skill:marker-guide/);
   assert.match(opencodeProvider.id, /opencode-system-provider\.js$/);
   assert.equal(opencodeProvider.config.command_path, "opencode");
   assert.equal(opencodeProvider.config.cli_env.OPENCODE_FLAG, "1");
   assert.equal(opencodeProvider.config.cli_env.HOME, "C:/temp/home");
   assert.equal(opencodeProvider.config.agent, "reviewer");
+  assert.match(opencodeProvider.config.prompt_preamble, /marker-guide/);
   assert.equal(codexProvider.config.cli_env.CODEX_HOME, "C:/temp/codex-home");
   assert.match(claudeCodeProvider.id, /claude-code-system-provider\.js$/);
   assert.equal(claudeCodeProvider.config.command_path, "claude");
   assert.equal(claudeCodeProvider.config.cli_env.CLAUDE_FLAG, "1");
   assert.equal(claudeCodeProvider.config.cli_env.HOME, "C:/temp/home");
   assert.equal(claudeCodeProvider.config.agent, "reviewer");
+  assert.match(claudeCodeProvider.config.prompt_preamble, /marker-guide/);
+  assert.match(geminiProvider.id, /gemini-cli-system-provider\.js$/);
+  assert.equal(geminiProvider.config.command_path, "gemini");
+  assert.equal(geminiProvider.config.cli_env.GEMINI_FLAG, "1");
+  assert.equal(geminiProvider.config.cli_env.HOME, "C:/temp/home");
+  assert.match(geminiProvider.config.prompt_preamble, /activate_skill/);
 });
 
 test("buildPromptfooProvider rejects additional directories outside the workspace", () => {

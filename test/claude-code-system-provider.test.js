@@ -83,6 +83,28 @@ test("claude-code provider returns extracted output and writes an execution-even
   assert.equal(payload.toolEvents[0].data.tool_name, "Read");
 });
 
+test("claude-code provider prepends the configured skill activation preamble", async () => {
+  const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-claude-code-prompt-"));
+  const provider = new ClaudeCodeSystemProvider({
+    config: {
+      command_path: "claude",
+      working_dir: workingDirectory,
+      prompt_preamble: "Skill activation: load marker-guide.",
+    },
+    spawnProcess: async (options) => {
+      assert.equal(options.promptText, "Skill activation: load marker-guide.\n\nTask:\nReturn HELLO.");
+      return {
+        stdout: "{\"message\":\"DONE\"}",
+        stderr: "",
+        exitCode: 0,
+      };
+    },
+  });
+
+  const response = await provider.callApi("Return HELLO.");
+  assert.equal(response.output, "DONE");
+});
+
 test("claude-code provider preserves explicit CLAUDE.md, reports failures, and avoids host env leaks", async () => {
   const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-claude-code-json-"));
   await fs.writeFile(path.join(workingDirectory, "CLAUDE.md"), "# Existing Claude instructions\n", "utf8");

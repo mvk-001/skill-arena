@@ -50,6 +50,8 @@ This preserves source inputs and gives each eval an isolated workspace.
 
 Workspace-injected skills can contain any files needed by the benchmarked agent, including root-level instruction files such as `AGENTS.md` and bundled skill assets such as `skills/<skill-id>/SKILL.md`.
 
+When a scenario enables declared skills, the runtime also adds a small adapter-specific prompt preamble whose only job is to force explicit skill activation before the original benchmark task.
+
 Compare profiles may also materialize non-skill capability bundles such as repository instructions, custom agents, and hooks when the selected adapter supports them. These capability bundles are applied after base workspace sanitization so the profile can intentionally reintroduce files such as `AGENTS.md` or `.github/agents/*`.
 
 For explicit skill declarations, the preferred contract is to declare one benchmarked skill bundle through one of these source modes:
@@ -71,6 +73,7 @@ The adapter layer maps a manifest scenario into a Promptfoo provider definition.
 - `pi`
 - `opencode`
 - `claude-code`
+- `gemini-cli`
 
 ### Promptfoo config generator
 
@@ -86,6 +89,7 @@ For `copilot-cli`, the generated provider is also a file-based custom script. V1
 - `command`: shell out to the local `copilot` CLI
 
 `copilot-cli` maps sandbox, network, web, and approval settings on a best-effort basis because the Copilot CLI does not expose the same execution controls as Codex.
+When compare or manifest profiles declare workspace skills for `copilot-cli`, the runtime mirrors them into `.github/skills/` inside the isolated workspace before execution.
 
 For `claude-code`, the generated provider is also a file-based custom script. V1 supports:
 
@@ -93,12 +97,19 @@ For `claude-code`, the generated provider is also a file-based custom script. V1
 
 `claude-code` materializes generic benchmark instruction and skill bundles into Claude Code's project-native discovery layout (`CLAUDE.md` and `.claude/skills/*`) inside the isolated execution workspace. Sandbox, network, web, and approval settings are mapped on a best-effort basis through generated Claude settings plus CLI flags.
 
+For `gemini-cli`, the generated provider is also a file-based custom script. V1 supports:
+
+- `command`: shell out to the local `gemini` CLI with `-p`
+
+`gemini-cli` materializes generic benchmark instruction and skill bundles into Gemini CLI's project-native discovery layout (`GEMINI.md` and `.gemini/skills/*`) inside the isolated execution workspace. Sandbox, network, web, and approval settings are mapped on a best-effort basis through generated Gemini project settings plus CLI flags.
+
 For `pi`, the generated provider runs with strict skill isolation by default:
 
 - `--no-skills` disables implicit skill discovery
 - when a test enables a workspace-overlay skill, it passes explicit `--skill` paths for those declared skill IDs
 
 For `codex`, skill scope defaults are applied through generated `skills.config` values unless the scenario uses `system-installed` skills.
+For skill-enabled scenarios across adapters, Skill Arena also prepends an adapter-specific explicit activation hint before the benchmark task so the runtime can force the declared skill path instead of depending only on implicit matching.
 
 Runtime isolation intentionally seeds only the minimum host state needed for authenticated execution:
 
@@ -124,6 +135,7 @@ Adapter-specific isolation is intentionally uneven because external CLIs do not 
 | `opencode` | `auth.json` only | isolated config dir, generated config content, `--pure`, workspace-only agents and skills | provider semantics still depend on the local OpenCode CLI |
 | `claude-code` | no host config by default beyond explicit env/auth passed in | isolated project workspace, `CLAUDE.md` and `.claude/*` mirrored from the workspace, `--setting-sources project` by default | runtime-specific hidden orchestration remains outside Skill Arena control |
 | `copilot-cli` | no host config by default beyond explicit env/auth passed in | isolated config dir, `--config-dir`, `--disable-builtin-mcps`, `--disallow-temp-dir`, `--no-auto-update`, `--no-experimental`, `COPILOT_CUSTOM_INSTRUCTIONS_DIRS=` | isolation is partial because the CLI remains more opaque than Codex, Pi, or OpenCode |
+| `gemini-cli` | no host config by default beyond explicit env/auth passed in | isolated home, generated `.gemini/settings.json`, mirrored `GEMINI.md`, mirrored `.gemini/skills/*`, generated system-settings override paths | Gemini exposes only coarse sandbox and approval controls, so exact policy parity is best-effort |
 
 ### Result outputs
 
@@ -142,7 +154,7 @@ Compare runs write under `results/<benchmark-id>/<timestamp>-compare/` and inclu
 - `merged/report.md`
 - `merged/merged-summary.json`
 
-Provider executions may also write hook artifacts under the materialized workspace at `.skill-arena/hooks/execution-events/`. These JSON files capture the observable command invocation plus any parsed event or tool-call stream emitted by `codex`, `copilot-cli`, `pi`, `opencode`, or `claude-code`.
+Provider executions may also write hook artifacts under the materialized workspace at `.skill-arena/hooks/execution-events/`. These JSON files capture the observable command invocation plus any parsed event or tool-call stream emitted by `codex`, `copilot-cli`, `pi`, `opencode`, `claude-code`, or `gemini-cli`.
 
 ## Execution flow
 

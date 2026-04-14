@@ -133,12 +133,14 @@ scenarios:
   - `pi`
   - `opencode`
   - `claude-code`
+  - `gemini-cli`
 - For `codex`, `agent.executionMethod` controls how the custom Promptfoo script invokes the local runtime:
   - `command`: execute the local `codex exec` command
   - `sdk`: invoke `@openai/codex-sdk`, which wraps the local CLI
 - `copilot-cli` supports only `executionMethod: "command"` in V1.
 - `opencode` supports only `executionMethod: "command"` in V1.
 - `claude-code` supports only `executionMethod: "command"` in V1.
+- `gemini-cli` supports only `executionMethod: "command"` in V1.
 - `skillMode` must be one of:
   - `disabled`
   - `enabled`
@@ -258,6 +260,8 @@ Supported skill source types in V1:
 Supported install strategies in V1:
 
 - `none`
+
+When a scenario or compare profile enables declared skills, the runtime may prepend a narrow adapter-specific activation preamble that only selects the declared skill path and then preserves the exact benchmark task under a `Task:` header.
 - `workspace-overlay`
 - `system-installed`
 
@@ -482,6 +486,9 @@ Current compare support in V1:
 - `claude-code`
   - supported: `instructions`, `skills`, `agents`, `hooks`
   - unsupported: `mcp`, `extensions`, `plugins`
+- `gemini-cli`
+  - supported: `instructions`, `skills`
+  - unsupported: `agents`, `hooks`, `mcp`, `extensions`, `plugins`
 
 Materialized capability rules in V1:
 
@@ -511,6 +518,7 @@ Effective isolation by adapter:
 | `opencode` | strong | isolated config dir plus `--pure` and generated config content |
 | `claude-code` | medium | project-scoped materialization is strong, but the runtime remains externally managed |
 | `copilot-cli` | partial | isolated config and disabled built-in surfaces help, but the CLI remains comparatively opaque |
+| `gemini-cli` | medium | isolated home plus generated `.gemini` project layout and settings override files |
 
 Adapter-specific V1 rules:
 
@@ -518,6 +526,7 @@ Adapter-specific V1 rules:
 - `copilot-cli` custom agents require `agentId`.
 - Repository-level `copilot-cli` agents should usually materialize files under `.github/agents/`.
 - Repository-level `copilot-cli` hooks should usually materialize files under `.github/hooks/`.
+- Repository-level `copilot-cli` skills should usually materialize under `.github/skills/`. Skill Arena may mirror declared workspace skills there during isolated execution.
 - `opencode` custom agents require at most one `capabilities.agents[*]` entry per profile.
 - `opencode` custom agents require `agentId`.
 - Repository-level `opencode` agents should usually materialize files under `.opencode/agents/`.
@@ -527,6 +536,8 @@ Adapter-specific V1 rules:
 - Repository-level `claude-code` agents should usually materialize files under `.claude/agents/`.
 - Repository-level `claude-code` hooks should usually materialize `.claude/settings.json`.
 - `instructions` for `claude-code` should usually materialize `CLAUDE.md` at the workspace root.
+- Repository-level `gemini-cli` skills should usually materialize under `.gemini/skills/`. Skill Arena may mirror declared workspace skills there during isolated execution.
+- `instructions` for `gemini-cli` should usually materialize `GEMINI.md` at the workspace root.
 
 Preferred explicit compare skill definitions use these source modes:
 
@@ -585,6 +596,7 @@ Local judge shorthand is also supported in V1 through packaged Promptfoo custom 
 - `skill-arena:judge:pi`
 - `skill-arena:judge:opencode`
 - `skill-arena:judge:claude-code`
+- `skill-arena:judge:gemini-cli`
 
 These judge providers are separate from the benchmarked agent adapters. They let Promptfoo run `llm-rubric` grading through the local CLI instead of a hosted API provider.
 
@@ -629,6 +641,9 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 - `claude-code`: supported
   - implemented as a Promptfoo custom script
   - supports `executionMethod: "command"` through the local `claude` CLI
+- `gemini-cli`: supported
+  - implemented as a Promptfoo custom script
+  - supports `executionMethod: "command"` through the local `gemini` CLI
 
 ## Workspace rules
 
@@ -644,7 +659,8 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 - The harness should treat the `evaluations/<skill-name>/...` layout as a
   recommended repository convention when present, not as a special runtime-only
   case.
-- The harness and benchmark definitions must not inject hidden prompt instructions or extra knowledge outside the exact benchmark prompt and the files materialized in folders explicitly shared with the agent for that run.
+- The harness and benchmark definitions must not inject hidden task instructions or extra knowledge outside the exact benchmark prompt and the files materialized in folders explicitly shared with the agent for that run.
+- The only prompt augmentation exception is the explicit skill-activation preamble for declared skills. That preamble must be limited to activating the declared skill path and must not change the benchmark task itself.
 
 ## Result directories
 
@@ -689,6 +705,6 @@ Unless a manifest explicitly overrides them, scenarios should use:
 - local machine parallelism for `evaluation.maxConcurrency`
 - `noCache: true`
 
-The harness must not add task instructions beyond the benchmark prompt and the files available in the workspace. It must not supply hidden context or knowledge from outside the prompt and the folders explicitly shared with the agent.
+The harness must not add task instructions beyond the benchmark prompt and the files available in the workspace. It must not supply hidden context or knowledge from outside the prompt and the folders explicitly shared with the agent. The only exception is the narrow explicit skill-activation preamble for declared skills.
 
 Exception: benchmarks that exercise external system CLIs may require broader sandbox access than the default. When that is necessary, the manifest must declare the exception explicitly in the scenario.

@@ -41,6 +41,30 @@ test("codex provider forwards isolated home variables into the CLI environment",
   assert.equal(response.metadata.backend, "command");
 });
 
+test("codex provider prepends the configured skill activation preamble", async () => {
+  const provider = new CodexSystemProvider({
+    config: {
+      command_path: "codex",
+      working_dir: "C:/temp/workspace",
+      sandbox_mode: "read-only",
+      approval_policy: "never",
+      network_access_enabled: false,
+      prompt_preamble: "Skill activation: use $marker-guide.",
+    },
+    spawnProcess: async (options) => {
+      assert.match(options.stdinText, /^Skill activation: use \$marker-guide\./);
+      assert.match(options.stdinText, /\n\nTask:\nReturn HELLO\./);
+      return {
+        stdout: "",
+        stderr: "",
+        exitCode: 0,
+      };
+    },
+  });
+
+  await provider.callApi("Return HELLO.");
+});
+
 test("codex provider builds command arguments with the isolated working directory", () => {
   const provider = new CodexSystemProvider({
     config: {

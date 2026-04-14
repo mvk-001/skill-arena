@@ -4,6 +4,7 @@ import {
   spawnProviderCommand,
   withPromptPlaceholder,
 } from "./command-process.js";
+import { prependPromptPreamble } from "../prompt-augmentation.js";
 import { parseJsonLines, writeExecutionEventHook } from "./execution-event-hook.js";
 import { buildIsolatedProviderEnvironment } from "./provider-environment.js";
 import { assertRequiredConfig } from "./provider-validation.js";
@@ -25,11 +26,12 @@ export default class ClaudeCodeSystemProvider {
 
   async callApi(prompt, _context, callOptions) {
     assertRequiredConfig(this.config, "claude-code", ["working_dir"]);
+    const effectivePrompt = prependPromptPreamble(prompt, this.config.prompt_preamble);
 
     const runtimeLayout = await this.prepareRuntimeLayout();
     const useWindowsPromptWrapper = process.platform === "win32";
     const args = this.buildCommandArguments(
-      useWindowsPromptWrapper ? WINDOWS_PROMPT_PLACEHOLDER : prompt,
+      useWindowsPromptWrapper ? WINDOWS_PROMPT_PLACEHOLDER : effectivePrompt,
       runtimeLayout,
     );
     const appliedSettings = this.describeAppliedSettings(runtimeLayout);
@@ -39,7 +41,7 @@ export default class ClaudeCodeSystemProvider {
         args,
         cwd: this.config.working_dir,
         env: this.buildEnvironment(),
-        promptText: useWindowsPromptWrapper ? prompt : undefined,
+        promptText: useWindowsPromptWrapper ? effectivePrompt : undefined,
         abortSignal: callOptions?.abortSignal,
       }),
       {

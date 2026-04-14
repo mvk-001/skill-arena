@@ -13,6 +13,7 @@ const ADAPTER_CAPABILITY_FAMILIES = {
   "pi": new Set(["skills"]),
   "opencode": new Set(["instructions", "skills", "agents"]),
   "claude-code": new Set(["instructions", "skills", "agents", "hooks"]),
+  "gemini-cli": new Set(["instructions", "skills"]),
 };
 
 const DEFAULT_CAPABILITY_FAMILIES = new Set(["skills"]);

@@ -2,8 +2,9 @@ import path from "node:path";
 
 import { fromPackageRoot } from "./project-paths.js";
 import { resolveModelAlias } from "./model-alias.js";
+import { buildSkillActivationPrompt } from "./prompt-augmentation.js";
 
-export const ADAPTER_IDS = ["codex", "copilot-cli", "pi", "opencode", "claude-code"];
+export const ADAPTER_IDS = ["codex", "copilot-cli", "pi", "opencode", "claude-code", "gemini-cli"];
 
 const adapterRegistry = {
   codex: {
@@ -47,6 +48,11 @@ const adapterRegistry = {
             codexHome: isolatedEnvironment?.CODEX_HOME,
           }),
           strict_runtime_isolation: true,
+          prompt_preamble: buildSkillActivationPrompt({
+            adapter: "codex",
+            allowedSkillIds: getAllowedSkillIds(isolatedEnvironment),
+            skillStrategy: resolveSkillStrategy(scenario),
+          }),
         },
       };
     },
@@ -86,6 +92,11 @@ const adapterRegistry = {
             baseConfig: scenario.agent.config,
           }),
           strict_runtime_isolation: true,
+          prompt_preamble: buildSkillActivationPrompt({
+            adapter: "copilot-cli",
+            allowedSkillIds: getAllowedSkillIds(isolatedEnvironment),
+            skillStrategy: resolveSkillStrategy(scenario),
+          }),
         },
       };
     },
@@ -114,6 +125,11 @@ const adapterRegistry = {
           allowed_skills: getAllowedSkillIds(isolatedEnvironment),
           disable_other_skills: resolveSkillStrategy(scenario) !== "system-installed",
           strict_runtime_isolation: true,
+          prompt_preamble: buildSkillActivationPrompt({
+            adapter: "pi",
+            allowedSkillIds: getAllowedSkillIds(isolatedEnvironment),
+            skillStrategy: resolveSkillStrategy(scenario),
+          }),
         },
       };
     },
@@ -144,6 +160,11 @@ const adapterRegistry = {
           agent: getOpenCodeAgentId(scenario),
           opencode_config: scenario.agent.config ?? {},
           strict_runtime_isolation: true,
+          prompt_preamble: buildSkillActivationPrompt({
+            adapter: "opencode",
+            allowedSkillIds: getAllowedSkillIds(isolatedEnvironment),
+            skillStrategy: resolveSkillStrategy(scenario),
+          }),
         },
       };
     },
@@ -182,6 +203,52 @@ const adapterRegistry = {
           agent: getClaudeCodeAgentId(scenario),
           claude_code_config: scenario.agent.config ?? {},
           strict_runtime_isolation: true,
+          prompt_preamble: buildSkillActivationPrompt({
+            adapter: "claude-code",
+            allowedSkillIds: getAllowedSkillIds(isolatedEnvironment),
+            skillStrategy: resolveSkillStrategy(scenario),
+          }),
+        },
+      };
+    },
+  },
+  "gemini-cli": {
+    id: "gemini-cli",
+    supported: true,
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
+      const providerPath = fromPackageRoot("src", "providers", "gemini-cli-system-provider.js");
+      const providerId = buildProviderId("gemini-cli", scenario.agent.model);
+
+      return {
+        id: providerPath,
+        label: providerId,
+        config: {
+          provider_id: providerId,
+          command_path: scenario.agent.commandPath,
+          model: scenario.agent.model,
+          working_dir: workspaceDirectory,
+          sandbox_mode: scenario.agent.sandboxMode,
+          approval_policy: scenario.agent.approvalPolicy,
+          web_search_enabled: scenario.agent.webSearchEnabled,
+          network_access_enabled: scenario.agent.networkAccessEnabled,
+          model_reasoning_effort: scenario.agent.reasoningEffort,
+          additional_directories: resolveAdditionalDirectories(
+            workspaceDirectory,
+            scenario.agent.additionalDirectories,
+          ),
+          cli_env: buildCliEnvironment(
+            workspaceEnvironment,
+            scenario.agent.cliEnv,
+            isolatedEnvironment,
+            workspaceDirectory,
+          ),
+          gemini_cli_config: scenario.agent.config ?? {},
+          strict_runtime_isolation: true,
+          prompt_preamble: buildSkillActivationPrompt({
+            adapter: "gemini-cli",
+            allowedSkillIds: getAllowedSkillIds(isolatedEnvironment),
+            skillStrategy: resolveSkillStrategy(scenario),
+          }),
         },
       };
     },

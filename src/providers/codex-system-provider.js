@@ -8,6 +8,7 @@ import {
   buildIsolatedProviderEnvironment,
   resolveProcessTempDirectory,
 } from "./provider-environment.js";
+import { prependPromptPreamble } from "../prompt-augmentation.js";
 import { assertRequiredConfig } from "./provider-validation.js";
 import { withRetry } from "./retry.js";
 
@@ -24,13 +25,14 @@ export default class CodexSystemProvider {
 
   async callApi(prompt, context, callOptions) {
     assertRequiredConfig(this.config, "codex", ["working_dir"]);
+    const effectivePrompt = prependPromptPreamble(prompt, this.config.prompt_preamble);
 
     if (this.config.execution_method === "sdk") {
-      return this.runWithSdk(prompt, callOptions);
+      return this.runWithSdk(effectivePrompt, callOptions);
     }
 
     if (this.config.execution_method === "command" || !this.config.execution_method) {
-      return this.runWithCommand(prompt, callOptions);
+      return this.runWithCommand(effectivePrompt, callOptions);
     }
 
     throw new Error(

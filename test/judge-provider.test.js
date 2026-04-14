@@ -13,9 +13,11 @@ test("local judge helpers detect supported shorthand ids", () => {
   assert.equal(isLocalJudgeProviderId("skill-arena:judge:copilot-cli"), true);
   assert.equal(isLocalJudgeProviderId("skill-arena:judge:pi"), true);
   assert.equal(isLocalJudgeProviderId("skill-arena:judge:opencode"), true);
+  assert.equal(isLocalJudgeProviderId("skill-arena:judge:gemini-cli"), true);
   assert.equal(isLocalJudgeProviderId("openai:gpt-5-mini"), false);
   assert.equal(getLocalJudgeAdapter("skill-arena:judge:copilot-cli"), "copilot-cli");
   assert.equal(getLocalJudgeAdapter("skill-arena:judge:opencode"), "opencode");
+  assert.equal(getLocalJudgeAdapter("skill-arena:judge:gemini-cli"), "gemini-cli");
 });
 
 test("local judge helpers reject unsupported ids and ignore invalid provider shapes", () => {
@@ -71,7 +73,7 @@ test("local judge provider delegates to codex-compatible config defaults", async
   assert.equal(delegate.config.approval_policy, "never");
 });
 
-test("local judge provider delegates to copilot, pi, opencode, and claude-code configs", () => {
+test("local judge provider delegates to copilot, pi, opencode, claude-code, and gemini-cli configs", () => {
   const copilotProvider = new LocalJudgeProvider({
     config: {
       adapter: "copilot-cli",
@@ -100,6 +102,13 @@ test("local judge provider delegates to copilot, pi, opencode, and claude-code c
       model: "claude-sonnet-4-20250514",
     },
   });
+  const geminiProvider = new LocalJudgeProvider({
+    config: {
+      adapter: "gemini-cli",
+      provider_id: "skill-arena:judge:gemini-cli",
+      model: "gemini-2.5-pro",
+    },
+  });
 
   assert.equal(copilotProvider.buildDelegate().config.command_path, "copilot");
   assert.equal(copilotProvider.buildDelegate().config.model, "gpt-5");
@@ -109,6 +118,8 @@ test("local judge provider delegates to copilot, pi, opencode, and claude-code c
   assert.equal(opencodeProvider.buildDelegate().config.model, "openai/gpt-5");
   assert.equal(claudeCodeProvider.buildDelegate().config.command_path, "claude");
   assert.equal(claudeCodeProvider.buildDelegate().config.model, "claude-sonnet-4-20250514");
+  assert.equal(geminiProvider.buildDelegate().config.command_path, "gemini");
+  assert.equal(geminiProvider.buildDelegate().config.model, "gemini-2.5-pro");
 });
 
 test("local judge provider exposes ids and forwards callApi to the delegate", async () => {

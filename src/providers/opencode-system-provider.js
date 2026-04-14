@@ -4,6 +4,7 @@ import {
   spawnProviderCommand,
   withPromptPlaceholder,
 } from "./command-process.js";
+import { prependPromptPreamble } from "../prompt-augmentation.js";
 import { parseJsonLines, writeExecutionEventHook } from "./execution-event-hook.js";
 import { buildIsolatedProviderEnvironment } from "./provider-environment.js";
 import { assertRequiredConfig } from "./provider-validation.js";
@@ -24,11 +25,12 @@ export default class OpenCodeSystemProvider {
 
   async callApi(prompt, _context, callOptions) {
     assertRequiredConfig(this.config, "opencode", ["working_dir"]);
+    const effectivePrompt = prependPromptPreamble(prompt, this.config.prompt_preamble);
 
     const runtimeConfig = await this.prepareRuntimeConfig();
     const useWindowsPromptWrapper = process.platform === "win32";
     const args = this.buildCommandArguments(
-      useWindowsPromptWrapper ? WINDOWS_PROMPT_PLACEHOLDER : prompt,
+      useWindowsPromptWrapper ? WINDOWS_PROMPT_PLACEHOLDER : effectivePrompt,
     );
     const appliedSettings = this.describeAppliedSettings(runtimeConfig);
     const { stdout, stderr, exitCode } = await withRetry(
@@ -37,7 +39,7 @@ export default class OpenCodeSystemProvider {
         args,
         cwd: this.config.working_dir,
         env: this.buildEnvironment(runtimeConfig.environment),
-        promptText: useWindowsPromptWrapper ? prompt : undefined,
+        promptText: useWindowsPromptWrapper ? effectivePrompt : undefined,
         abortSignal: callOptions?.abortSignal,
       }),
       {
