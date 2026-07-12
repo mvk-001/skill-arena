@@ -73,6 +73,7 @@ test("gen-conf command shows inline help", async () => {
   assert.match(output, /skill-arena gen-conf \[--output <path>\] \[--prompt <text>\] \[options\]/);
   assert.match(output, /Generate a commented evaluation config template with TODO placeholders/);
   assert.match(output, /--skill-type <type>/);
+  assert.match(output, /--env-passthrough <name>/);
   assert.match(output, /codex, copilot-cli, pi, opencode, claude-code, gemini-cli/);
   assert.match(output, /skill-arena gen-conf --prompt "summarize file A"/);
 });
@@ -124,6 +125,10 @@ test("gen-conf writes a commented compare template with requested options", asyn
     "8",
     "--skill-type",
     "git",
+    "--env-passthrough",
+    "OPENAI_API_KEY",
+    "--variant-env-passthrough",
+    "GITHUB_TOKEN",
   ]);
 
   const generated = fs.readFileSync(outputPath, "utf8");
@@ -148,6 +153,8 @@ test("gen-conf writes a commented compare template with requested options", asyn
   assert.match(generated, /capabilities:\n        skills:/);
   assert.match(generated, /requests: 3/);
   assert.match(generated, /maxConcurrency: 8/);
+  assert.match(generated, /envPassthrough:\n      - "OPENAI_API_KEY"/);
+  assert.match(generated, /envPassthrough:\n          - "GITHUB_TOKEN"/);
 });
 
 test("gen-conf includes all supported assertion examples when none are specified", async () => {

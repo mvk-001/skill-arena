@@ -273,6 +273,7 @@ test("manifest validation accepts declarative workspace sources and explicit ski
         env: {
           SAMPLE_FLAG: "1",
         },
+        envPassthrough: ["OPENAI_API_KEY"],
       },
     },
     scenarios: [
@@ -309,6 +310,8 @@ test("manifest validation accepts declarative workspace sources and explicit ski
 
   assert.equal(manifest.task.prompts[0].id, "prompt-1");
   assert.equal(manifest.workspace.setup.env.SAMPLE_FLAG, "1");
+  assert.deepEqual(manifest.workspace.setup.envPassthrough, ["OPENAI_API_KEY"]);
+  assert.deepEqual(manifest.scenarios[0].agent.envPassthrough, []);
   assert.equal(manifest.scenarios[0].skill.source.type, "inline");
 });
 

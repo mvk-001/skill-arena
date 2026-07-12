@@ -48,7 +48,7 @@ function findMarkdownFiles(directoryPath) {
 
 function extractMarkdownLinks(markdown) {
   const links = [];
-  const pattern = /(?<!!)\[[^\]]*\]\((?<target><[^>]+>|[^\s)]+)(?:\s+["'][^"']*["'])?\)/g;
+  const pattern = /\[[^\]]*\]\((?<target><[^>]+>|[^\s)]+)(?:\s+["'][^"']*["'])?\)/g;
 
   for (const match of markdown.matchAll(pattern)) {
     links.push({

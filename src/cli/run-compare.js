@@ -517,6 +517,7 @@ function buildProfileMap(runs, manifest, routerProviderPath) {
       scenario,
       workspaceDirectory: workspace.executionWorkspaceDirectory ?? workspace.workspaceDirectory,
       workspaceEnvironment: workspace.environment ?? {},
+      workspaceEnvironmentPassthrough: workspace.environmentPassthrough ?? [],
       isolatedEnvironment: workspace.executionEnvironment ?? {},
       gitReady: workspace.gitReady,
     });

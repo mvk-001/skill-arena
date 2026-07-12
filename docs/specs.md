@@ -106,6 +106,7 @@ scenarios:
       reasoningEffort: low
       additionalDirectories: []
       cliEnv: {}
+      envPassthrough: []
       config: {}
     evaluation:
       assertions:
@@ -174,6 +175,8 @@ workspace:
     initializeGit: true
     env:
       EXAMPLE_FLAG: "1"
+    envPassthrough:
+      - EXAMPLE_API_TOKEN
 ```
 
 Supported source types in V1:
@@ -214,6 +217,13 @@ Required workspace behavior:
 - `target` is resolved relative to the materialized workspace root.
 - `workspace.setup.initializeGit: true` initializes a Git repository in the run workspace so agent providers can operate with their default safety checks.
 - `workspace.setup.env` defines environment variables for provider execution in that run workspace.
+- `workspace.setup.envPassthrough` is a name-only allowlist of required host
+  environment variables shared by every scenario or compare cell. Secret values
+  are resolved by the provider at execution time and are not written to the
+  benchmark YAML or generated Promptfoo config.
+- `agent.envPassthrough` adds required host variables for one scenario or
+  compare variant. Names must use portable environment-variable syntax and a
+  missing variable fails evaluation preparation before the agent runs.
 - Environment variable values in `workspace.setup.env` and `scenario.agent.cliEnv` support the `$WORKSPACE` placeholder. At runtime, every occurrence of `$WORKSPACE` or `${WORKSPACE}` in a value string is replaced with the absolute path of the materialized execution workspace. This lets benchmark authors declare paths relative to the workspace without knowing the actual runtime directory:
 
 ```yaml
@@ -223,6 +233,16 @@ workspace:
       MY_CONFIG: "$WORKSPACE/config/settings.json"
       DATA_DIR: "${WORKSPACE}/data"
 ```
+
+Environment precedence is, from lowest to highest:
+
+1. explicitly allowlisted host variables
+2. `workspace.setup.env`
+3. `agent.cliEnv`
+4. the harness-managed isolation environment
+
+Use `envPassthrough` for credentials. Static `env` and `cliEnv` values are
+serialized into generated artifacts and therefore must not contain secrets.
 
 ### Skill model
 
@@ -512,6 +532,9 @@ Strict runtime isolation in compare mode is enabled by default for maintained be
 - each provider receives a fresh materialized workspace
 - each provider runs with an ephemeral home or config directory when the CLI supports it
 - only minimum authentication files may be copied from the host into that isolated home
+- only host environment variables named by `envPassthrough` may cross the
+  environment boundary beyond the small platform allowlist required to launch
+  local commands
 - host personalization files, plugin settings, themes, and default instruction search paths must not be copied
 - declared workspace-overlay skills and capability bundles are the only benchmark-visible additions beyond the base workspace
 

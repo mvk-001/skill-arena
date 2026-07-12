@@ -152,6 +152,9 @@ Runtime isolation intentionally seeds only the minimum host state needed for aut
 - credentials such as `auth.json` may be copied into the isolated home when a local CLI requires them
 - host defaults and personalization files such as Codex `config.toml`, Pi `settings.json`, or OpenCode `opencode.json` are not copied
 - benchmark profiles therefore compare the same authenticated tool surface without inheriting user-specific default behavior from the host machine
+- benchmark-declared `envPassthrough` names are resolved only when a provider
+  launches its agent process, so credential values do not enter generated
+  Promptfoo configuration artifacts
 
 ### Effective runtime isolation
 
@@ -161,6 +164,11 @@ Strict compare-mode isolation targets four inputs only:
 - the materialized workspace
 - the declared profile capabilities
 - the minimum credentials required for local authentication
+
+Credential-dependent tools use explicit name-only allowlists rather than full
+host-environment inheritance. Shared names come from
+`workspace.setup.envPassthrough`; variant-specific names come from
+`agent.envPassthrough`. Missing names fail before agent execution.
 
 Adapter-specific isolation is intentionally uneven because external CLIs do not expose identical control surfaces.
 

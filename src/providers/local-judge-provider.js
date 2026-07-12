@@ -85,6 +85,7 @@ export default class LocalJudgeProvider {
             working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
             model: this.config.model,
             cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS.codex.cli_env,
+            env_passthrough: resolveEnvPassthrough(this.config),
             codex_config: this.config.codexConfig ?? this.config.codex_config ?? DEFAULTS.codex.codex_config,
             additional_directories:
               this.config.additionalDirectories
@@ -118,6 +119,7 @@ export default class LocalJudgeProvider {
             working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
             model: this.config.model,
             cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS["copilot-cli"].cli_env,
+            env_passthrough: resolveEnvPassthrough(this.config),
             copilot_config:
               this.config.copilotConfig
               ?? this.config.copilot_config
@@ -161,6 +163,7 @@ export default class LocalJudgeProvider {
             working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
             model: this.config.model,
             cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS.pi.cli_env,
+            env_passthrough: resolveEnvPassthrough(this.config),
             strict_runtime_isolation:
               this.config.strictRuntimeIsolation
               ?? this.config.strict_runtime_isolation
@@ -179,6 +182,7 @@ export default class LocalJudgeProvider {
             working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
             model: this.config.model,
             cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS.opencode.cli_env,
+            env_passthrough: resolveEnvPassthrough(this.config),
             agent: this.config.agent,
             allowed_skills: this.config.allowedSkills ?? this.config.allowed_skills,
             disable_other_skills:
@@ -206,6 +210,7 @@ export default class LocalJudgeProvider {
             working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
             model: this.config.model,
             cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS["claude-code"].cli_env,
+            env_passthrough: resolveEnvPassthrough(this.config),
             sandbox_mode:
               this.config.sandboxMode
               ?? this.config.sandbox_mode,
@@ -250,6 +255,7 @@ export default class LocalJudgeProvider {
             working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
             model: this.config.model,
             cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS["gemini-cli"].cli_env,
+            env_passthrough: resolveEnvPassthrough(this.config),
             sandbox_mode:
               this.config.sandboxMode
               ?? this.config.sandbox_mode,
@@ -283,6 +289,10 @@ export default class LocalJudgeProvider {
         throw new Error(`Unsupported local judge adapter "${String(adapter)}".`);
     }
   }
+}
+
+function resolveEnvPassthrough(config) {
+  return config.envPassthrough ?? config.env_passthrough ?? [];
 }
 
 function normalizeBaseConfig(config) {

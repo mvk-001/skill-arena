@@ -1,5 +1,7 @@
 import os from "node:os";
 
+import { resolveHostEnvironmentVariables } from "../environment.js";
+
 const PASSTHROUGH_ENV_KEYS = [
   "PATH",
   "Path",
@@ -31,7 +33,7 @@ const PASSTHROUGH_ENV_KEYS = [
   "TZ",
 ];
 
-export function buildIsolatedProviderEnvironment(cliEnv = {}) {
+export function buildIsolatedProviderEnvironment(cliEnv = {}, envPassthrough = []) {
   const environment = {};
 
   for (const key of PASSTHROUGH_ENV_KEYS) {
@@ -64,6 +66,7 @@ export function buildIsolatedProviderEnvironment(cliEnv = {}) {
 
   return {
     ...environment,
+    ...resolveHostEnvironmentVariables(envPassthrough),
     ...resolvedCliEnvironment,
   };
 }

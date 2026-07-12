@@ -3,6 +3,10 @@ import path from "node:path";
 import { fromPackageRoot } from "./project-paths.js";
 import { resolveModelAlias } from "./model-alias.js";
 import { buildSkillActivationPrompt } from "./prompt-augmentation.js";
+import {
+  assertHostEnvironmentVariables,
+  mergeEnvironmentPassthrough,
+} from "./environment.js";
 
 export const ADAPTER_IDS = ["codex", "copilot-cli", "pi", "opencode", "claude-code", "gemini-cli"];
 
@@ -10,7 +14,7 @@ const adapterRegistry = {
   codex: {
     id: "codex",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment, gitReady }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, environmentPassthrough, isolatedEnvironment, gitReady }) {
       const providerPath = fromPackageRoot("src", "providers", "codex-system-provider.js");
       const providerId = buildProviderId("codex", scenario.agent.executionMethod, scenario.agent.model);
 
@@ -38,6 +42,7 @@ const adapterRegistry = {
             isolatedEnvironment,
             workspaceDirectory,
           ),
+          env_passthrough: environmentPassthrough,
           enable_streaming: scenario.evaluation.tracing,
           deep_tracing: scenario.evaluation.tracing,
           skip_git_repo_check: !gitReady,
@@ -60,7 +65,7 @@ const adapterRegistry = {
   "copilot-cli": {
     id: "copilot-cli",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, environmentPassthrough, isolatedEnvironment }) {
       const providerPath = fromPackageRoot("src", "providers", "copilot-system-provider.js");
       const providerId = buildProviderId("copilot-cli", scenario.agent.model);
 
@@ -87,6 +92,7 @@ const adapterRegistry = {
             isolatedEnvironment,
             workspaceDirectory,
           ),
+          env_passthrough: environmentPassthrough,
           copilot_config: buildCopilotConfig({
             scenario,
             baseConfig: scenario.agent.config,
@@ -104,7 +110,7 @@ const adapterRegistry = {
   pi: {
     id: "pi",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, environmentPassthrough, isolatedEnvironment }) {
       const providerPath = fromPackageRoot("src", "providers", "pi-system-provider.js");
       const providerId = buildProviderId("pi", scenario.agent.model);
 
@@ -122,6 +128,7 @@ const adapterRegistry = {
             isolatedEnvironment,
             workspaceDirectory,
           ),
+          env_passthrough: environmentPassthrough,
           allowed_skills: getAllowedSkillIds(isolatedEnvironment),
           disable_other_skills: resolveSkillStrategy(scenario) !== "system-installed",
           strict_runtime_isolation: true,
@@ -137,7 +144,7 @@ const adapterRegistry = {
   opencode: {
     id: "opencode",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, environmentPassthrough, isolatedEnvironment }) {
       const providerPath = fromPackageRoot("src", "providers", "opencode-system-provider.js");
       const providerId = buildProviderId("opencode", scenario.agent.model);
 
@@ -155,6 +162,7 @@ const adapterRegistry = {
             isolatedEnvironment,
             workspaceDirectory,
           ),
+          env_passthrough: environmentPassthrough,
           allowed_skills: getAllowedSkillIds(isolatedEnvironment),
           disable_other_skills: resolveSkillStrategy(scenario) !== "system-installed",
           agent: getOpenCodeAgentId(scenario),
@@ -172,7 +180,7 @@ const adapterRegistry = {
   "claude-code": {
     id: "claude-code",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, environmentPassthrough, isolatedEnvironment }) {
       const providerPath = fromPackageRoot("src", "providers", "claude-code-system-provider.js");
       const providerId = buildProviderId("claude-code", scenario.agent.model);
 
@@ -199,6 +207,7 @@ const adapterRegistry = {
             isolatedEnvironment,
             workspaceDirectory,
           ),
+          env_passthrough: environmentPassthrough,
           enable_streaming: scenario.evaluation.tracing,
           agent: getClaudeCodeAgentId(scenario),
           claude_code_config: scenario.agent.config ?? {},
@@ -215,7 +224,7 @@ const adapterRegistry = {
   "gemini-cli": {
     id: "gemini-cli",
     supported: true,
-    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, isolatedEnvironment }) {
+    buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, environmentPassthrough, isolatedEnvironment }) {
       const providerPath = fromPackageRoot("src", "providers", "gemini-cli-system-provider.js");
       const providerId = buildProviderId("gemini-cli", scenario.agent.model);
 
@@ -242,6 +251,7 @@ const adapterRegistry = {
             isolatedEnvironment,
             workspaceDirectory,
           ),
+          env_passthrough: environmentPassthrough,
           gemini_cli_config: scenario.agent.config ?? {},
           strict_runtime_isolation: true,
           prompt_preamble: buildSkillActivationPrompt({
@@ -487,8 +497,15 @@ export function buildPromptfooProvider(context) {
     );
   }
 
+  const environmentPassthrough = mergeEnvironmentPassthrough(
+    context.workspaceEnvironmentPassthrough,
+    context.scenario.agent.envPassthrough,
+  );
+  assertHostEnvironmentVariables(environmentPassthrough);
+
   const resolvedContext = {
     ...context,
+    environmentPassthrough,
     scenario: {
       ...context.scenario,
       agent: {

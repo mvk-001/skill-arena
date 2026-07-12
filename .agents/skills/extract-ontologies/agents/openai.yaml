@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ontology Extraction"
+  short_description: "Author reviewed RDF/OWL ontologies"
+  default_prompt: "Use $extract-ontologies to derive and validate a reviewed ontology model, evidence ledger, RDF data, and SHACL shapes from these source materials before Semantic OKF materialization."

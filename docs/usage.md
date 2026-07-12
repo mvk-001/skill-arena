@@ -126,6 +126,42 @@ Useful `gen-conf` flags:
 - `--requests <n>`: prefill `evaluation.requests`
 - `--max-concurrency <n>` or `--maxConcurrency <n>`: prefill `evaluation.maxConcurrency`
 - `--adapter <id>` and `--model <id>`: prefill the first variant
+- `--env-passthrough <name>`: repeat to allow a required host variable for all cells
+- `--variant-env-passthrough <name>`: repeat to add a required host variable for the first variant
+
+### Pass Credentials Without Storing Secrets
+
+Declare only credential names in the evaluation config:
+
+```yaml
+workspace:
+  setup:
+    initializeGit: true
+    env:
+      TOOL_MODE: readonly
+    envPassthrough:
+      - GITHUB_TOKEN
+comparison:
+  variants:
+    - id: codex-mini
+      agent:
+        adapter: codex
+        envPassthrough:
+          - OPENAI_API_KEY
+```
+
+Set the values in the shell that launches Skill Arena:
+
+```powershell
+$env:GITHUB_TOKEN = "..."
+$env:OPENAI_API_KEY = "..."
+skill-arena evaluate ./evaluations/my-benchmark/evaluation.yaml --dry-run
+```
+
+The allowlists are required-variable contracts. A missing name fails the dry
+run before an agent starts. Generated configs contain `GITHUB_TOKEN` and
+`OPENAI_API_KEY`, but not their values. Keep non-secret reproducible settings in
+`workspace.setup.env` or `agent.cliEnv`.
 
 ### Minimal example
 

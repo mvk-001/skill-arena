@@ -178,7 +178,7 @@ export default class CopilotSystemProvider {
     return buildIsolatedProviderEnvironment({
       ...this.config.cli_env,
       ...runtimeEnvironment,
-    });
+    }, this.config.env_passthrough);
   }
 
   describeAppliedSettings() {

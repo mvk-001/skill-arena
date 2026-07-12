@@ -4,6 +4,7 @@ import {
   agentSchema,
   assertionSchema,
   benchmarkMetadataSchema,
+  environmentVariableNameSchema,
   skillSchema,
   slugSchema,
   taskPromptDefinitionSchema,
@@ -114,6 +115,7 @@ const normalizedCompareConfigSchema = z.object({
     setup: z.object({
       initializeGit: z.boolean(),
       env: z.record(z.string(), z.string()),
+      envPassthrough: z.array(environmentVariableNameSchema),
     }),
   }),
   evaluation: z.object({

@@ -49,6 +49,8 @@ document in the same change.
 - Use lower-case, kebab-case names for new files in `docs/`.
 - Prefer one maintained example over copied YAML snapshots in this directory.
 - Link to executable examples under `evaluations/` instead of duplicating them.
+- Keep reproducible README diagram sources, static verification renders, and
+  animated renders together under [`docs/assets/`](./assets/).
 - Keep workflow guidance in `usage.md`, field-level requirements in `specs.md`,
   and implementation details in `architecture.md`.
 - Run `npm run docs:check` after changing Markdown links or moving files.

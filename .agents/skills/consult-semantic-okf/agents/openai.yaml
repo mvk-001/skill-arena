@@ -1,0 +1,4 @@
+interface:
+  display_name: "Semantic OKF Consultant"
+  short_description: "Query and synthesize validated semantic knowledge"
+  default_prompt: "Use $consult-semantic-okf to answer from this validated Semantic OKF snapshot with exact evidence, and run its mandatory planner and preflight gates for cross-source synthesis."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Semantic OKF Builder"
+  short_description: "Create and refresh semantic knowledge snapshots"
+  default_prompt: "Use $build-semantic-okf to add or update reviewed sources and publish a validated Semantic OKF snapshot."

@@ -452,6 +452,77 @@ test("buildPromptfooProvider interpolates $WORKSPACE in workspace env, cliEnv, a
   assert.equal(env.ISOLATED_PATH, "C:/runs/workspace-42/isolated/path");
 });
 
+test("buildPromptfooProvider keeps host credential values out of generated provider config", () => {
+  const previous = process.env.SKILL_ARENA_TEST_TOKEN;
+  process.env.SKILL_ARENA_TEST_TOKEN = "secret-that-must-not-be-serialized";
+
+  try {
+    const provider = buildPromptfooProvider({
+      workspaceDirectory: "/tmp/ws",
+      workspaceEnvironment: {},
+      workspaceEnvironmentPassthrough: ["SKILL_ARENA_TEST_TOKEN"],
+      isolatedEnvironment: {},
+      gitReady: true,
+      scenario: {
+        agent: {
+          adapter: "codex",
+          executionMethod: "command",
+          commandPath: "codex",
+          model: "gpt-5.1-codex-mini",
+          sandboxMode: "read-only",
+          approvalPolicy: "never",
+          webSearchEnabled: false,
+          networkAccessEnabled: false,
+          reasoningEffort: "low",
+          additionalDirectories: [],
+          cliEnv: {},
+          envPassthrough: ["SKILL_ARENA_TEST_TOKEN"],
+          config: {},
+        },
+        evaluation: { tracing: false },
+      },
+    });
+
+    assert.deepEqual(provider.config.env_passthrough, ["SKILL_ARENA_TEST_TOKEN"]);
+    assert.doesNotMatch(JSON.stringify(provider), /secret-that-must-not-be-serialized/);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.SKILL_ARENA_TEST_TOKEN;
+    } else {
+      process.env.SKILL_ARENA_TEST_TOKEN = previous;
+    }
+  }
+});
+
+test("buildPromptfooProvider fails early when a required host variable is missing", () => {
+  const previous = process.env.SKILL_ARENA_MISSING_TOKEN;
+  delete process.env.SKILL_ARENA_MISSING_TOKEN;
+
+  try {
+    assert.throws(() => buildPromptfooProvider({
+      workspaceDirectory: "/tmp/ws",
+      workspaceEnvironment: {},
+      workspaceEnvironmentPassthrough: ["SKILL_ARENA_MISSING_TOKEN"],
+      isolatedEnvironment: {},
+      gitReady: true,
+      scenario: {
+        agent: {
+          adapter: "pi",
+          commandPath: "pi",
+          model: "github-copilot/gpt-5-mini",
+          cliEnv: {},
+          envPassthrough: [],
+        },
+        evaluation: { tracing: false },
+      },
+    }), /Required host environment variable not set: SKILL_ARENA_MISSING_TOKEN/);
+  } finally {
+    if (previous !== undefined) {
+      process.env.SKILL_ARENA_MISSING_TOKEN = previous;
+    }
+  }
+});
+
 test("buildPromptfooProvider interpolates $WORKSPACE for copilot-cli and pi adapters", () => {
   const baseContext = {
     workspaceDirectory: "/tmp/ws",

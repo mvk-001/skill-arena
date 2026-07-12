@@ -107,7 +107,7 @@ export default class OpenCodeSystemProvider {
     return buildIsolatedProviderEnvironment({
       ...this.config.cli_env,
       ...runtimeEnvironment,
-    });
+    }, this.config.env_passthrough);
   }
 
   async prepareRuntimeConfig() {

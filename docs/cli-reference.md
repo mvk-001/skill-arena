@@ -106,6 +106,7 @@ required values.
 | `--workspace-ref <ref>` | Git ref for a workspace source. |
 | `--workspace-subpath <path>` | Subpath within the workspace repository. |
 | `--initialize-git <true|false>` | Set `workspace.setup.initializeGit`. |
+| `--env-passthrough <name>` | Allow a required host variable for every cell; repeatable. |
 | `--skill-type <type>` | `git`, `local-path`, `system-installed`, or `inline-files`. |
 | `--skill-path <path>` | Local skill or overlay path. |
 | `--skill-id <slug>` | Installed skill identifier. |
@@ -130,6 +131,7 @@ required values.
 | `--web-search-enabled <true|false>` | Set the web-search flag. |
 | `--network-access-enabled <true|false>` | Set the network-access flag. |
 | `--reasoning-effort <id>` | Set adapter-specific reasoning effort. |
+| `--variant-env-passthrough <name>` | Add a required host variable to the generated variant; repeatable. |
 
 Example:
 
@@ -158,6 +160,10 @@ skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
 ## Environment variables
+
+Benchmark credentials are declared by name with
+`workspace.setup.envPassthrough` or `agent.envPassthrough`. The variables below
+configure Skill Arena itself and do not need those allowlists.
 
 | Variable | Effect |
 | --- | --- |

@@ -207,7 +207,10 @@ export default class CodexSystemProvider {
   }
 
   buildEnvironment() {
-    return buildIsolatedProviderEnvironment(this.config.cli_env);
+    return buildIsolatedProviderEnvironment(
+      this.config.cli_env,
+      this.config.env_passthrough,
+    );
   }
 
   assertCommandConfiguration() {

@@ -147,7 +147,10 @@ export default class GeminiCliSystemProvider {
       cliEnvironment.USERPROFILE = cliEnvironment.HOME;
     }
 
-    return buildIsolatedProviderEnvironment(cliEnvironment);
+    return buildIsolatedProviderEnvironment(
+      cliEnvironment,
+      this.config.env_passthrough,
+    );
   }
 
   describeAppliedSettings(runtimeLayout) {

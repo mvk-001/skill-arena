@@ -186,6 +186,7 @@ export async function materializeWorkspace({
     environment: {
       ...manifest.workspace.setup.env,
     },
+    environmentPassthrough: [...(manifest.workspace.setup.envPassthrough ?? [])],
     executionEnvironment: runtimeIsolation.environment,
     isolation: {
       executionRootDirectory,

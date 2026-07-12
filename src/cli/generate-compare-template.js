@@ -1,7 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const DEFAULT_OUTPUT_PATH = "compare.generated.yaml";
+import { assertEnvironmentVariableName } from "../environment.js";
+
+const DEFAULT_OUTPUT_PATH = "evaluate.generated.yaml";
 const SUPPORTED_ASSERTION_TYPES = [
   "equals",
   "contains",
@@ -41,6 +43,7 @@ const OPTION_DEFAULTS = {
   workspaceRef: null,
   workspaceSubpath: null,
   initializeGit: null,
+  workspaceEnvPassthrough: [],
   skillType: "local-path",
   skillPath: null,
   skillId: null,
@@ -60,6 +63,7 @@ const OPTION_DEFAULTS = {
   webSearchEnabled: null,
   networkAccessEnabled: null,
   reasoningEffort: null,
+  variantEnvPassthrough: [],
 };
 const OPTION_HANDLERS = {
   "--output": (options, value) => {
@@ -131,6 +135,10 @@ const OPTION_HANDLERS = {
   "--initialize-git": (options, value, flagName) => {
     options.initializeGit = parseBooleanOption(flagName, value);
   },
+  "--env-passthrough": (options, value) => {
+    assertEnvironmentVariableName(value);
+    options.workspaceEnvPassthrough.push(value);
+  },
   "--skill-type": (options, value) => {
     options.skillType = value;
   },
@@ -188,6 +196,10 @@ const OPTION_HANDLERS = {
   "--reasoning-effort": (options, value) => {
     options.reasoningEffort = value;
   },
+  "--variant-env-passthrough": (options, value) => {
+    assertEnvironmentVariableName(value);
+    options.variantEnvPassthrough.push(value);
+  },
 };
 
 async function main() {
@@ -228,6 +240,8 @@ function parseArguments(argv) {
     promptDescriptions: [],
     evaluationTypes: [],
     evaluationValues: [],
+    workspaceEnvPassthrough: [],
+    variantEnvPassthrough: [],
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -400,6 +414,7 @@ function resolveVariant(options) {
     webSearchEnabled: options.webSearchEnabled ?? false,
     networkAccessEnabled: options.networkAccessEnabled ?? false,
     reasoningEffort: options.reasoningEffort ?? "low",
+    envPassthrough: options.variantEnvPassthrough,
     config,
     variantDisplayName,
   };
@@ -526,6 +541,8 @@ function renderWorkspaceSection(options) {
     "    # TODO: add workspace.setup.env only when the benchmark truly depends on run-specific environment variables.",
     "    env: {}",
     "    # TODO: workspace.setup.env is an open mapping of NAME: value. Put only reproducible runtime dependencies here, not secrets or machine-specific paths.",
+    ...renderYamlList("envPassthrough", options.workspaceEnvPassthrough, 4),
+    "    # envPassthrough is an explicit allowlist of required host variables; only names are stored in YAML and generated artifacts.",
   );
 
   return lines;
@@ -712,6 +729,8 @@ function renderVariantBlock(variant) {
     "        # TODO: additionalDirectories is an open list of extra readable paths. Keep it empty unless the benchmark must expose files outside the materialized workspace.",
     "        cliEnv: {}",
     "        # TODO: cliEnv is an open mapping of environment variables passed to the agent CLI. Use it for reproducible CLI tweaks, not for secrets.",
+    ...renderYamlList("envPassthrough", variant.envPassthrough, 8),
+    "        # envPassthrough adds variant-specific required host variables without serializing their values.",
     ...configLines,
     "        # TODO: config is an adapter-specific open mapping for advanced overrides. Leave empty unless the adapter contract requires extra fields for this benchmark.",
     "      output:",
@@ -948,6 +967,18 @@ function slugify(value) {
     .replaceAll(/^-+|-+$/g, "");
 }
 
+function renderYamlList(key, values, indentation) {
+  const prefix = " ".repeat(indentation);
+  if (!values || values.length === 0) {
+    return [`${prefix}${key}: []`];
+  }
+
+  return [
+    `${prefix}${key}:`,
+    ...[...new Set(values)].map((value) => `${prefix}  - ${yamlString(value)}`),
+  ];
+}
+
 function printUsage() {
   console.error("Usage: node ./src/cli/generate-compare-template.js [options]");
   console.error("");
@@ -984,6 +1015,7 @@ function printUsage() {
   console.error("  --workspace-ref <ref>           Workspace git ref");
   console.error("  --workspace-subpath <path>      Workspace git subpath");
   console.error("  --initialize-git <true|false>   Set workspace.setup.initializeGit");
+  console.error("  --env-passthrough <name>        Allow a required host variable for every cell; repeatable");
   console.error("  --variant-id <id>               Variant identifier");
   console.error("  --variant-description <text>    Variant description");
   console.error("  --variant-display-name <text>   Human-readable variant label");
@@ -996,6 +1028,7 @@ function printUsage() {
   console.error("  --web-search-enabled <true|false> Variant web search flag");
   console.error("  --network-access-enabled <true|false> Variant network access flag");
   console.error("  --reasoning-effort <id>         Variant reasoning effort");
+  console.error("  --variant-env-passthrough <name> Allow a required host variable for this variant; repeatable");
   console.error("");
   console.error("Example:");
   console.error(

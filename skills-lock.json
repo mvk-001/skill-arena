@@ -1,10 +1,25 @@
 {
   "version": 1,
   "skills": {
+    "build-semantic-okf": {
+      "source": "C:\\Users\\villa\\dev\\knowledge",
+      "sourceType": "local",
+      "computedHash": "f39dc55afd343bf55c7ecee3f45b9c676f139095ff160cc589555e598723a650"
+    },
+    "consult-semantic-okf": {
+      "source": "C:\\Users\\villa\\dev\\knowledge",
+      "sourceType": "local",
+      "computedHash": "e857159967f810691b25246fda82f609902f4fc03b972a47f347659a46aade54"
+    },
     "d3-animated-svg": {
       "source": "C:\\Users\\villa\\dev\\skills",
       "sourceType": "local",
       "computedHash": "da0cf3458d7b837b63aa63da3fe51168cb671a2c546be716ec8dc116f4cb6912"
+    },
+    "extract-ontologies": {
+      "source": "C:\\Users\\villa\\dev\\knowledge",
+      "sourceType": "local",
+      "computedHash": "bd624b0bb3ba07f11792f3dbc575ca60c8935ddfaf71a11061a3cf9e3be93a19"
     },
     "know": {
       "source": "C:\\Users\\villa\\dev\\knowledge",

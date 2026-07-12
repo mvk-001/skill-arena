@@ -13,6 +13,7 @@ export function buildPromptfooConfig({ manifest, scenario, workspace }) {
     scenario,
     workspaceDirectory: executionWorkspaceDirectory,
     workspaceEnvironment: workspace.environment ?? {},
+    workspaceEnvironmentPassthrough: workspace.environmentPassthrough ?? [],
     isolatedEnvironment: workspace.executionEnvironment ?? {},
     gitReady: workspace.gitReady,
   });

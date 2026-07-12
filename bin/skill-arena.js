@@ -65,6 +65,7 @@ const commandDetails = {
       "--workspace-ref <ref>: workspace git ref",
       "--workspace-subpath <path>: workspace git repo subpath",
       "--initialize-git <true|false>: set workspace setup initializeGit",
+      "--env-passthrough <name>: allow a required host variable for every cell; repeatable",
       "--requests <n>: set evaluation.requests",
       "--max-concurrency <n>: set evaluation.maxConcurrency",
       "--maxConcurrency <n>: alias for --max-concurrency",
@@ -83,6 +84,7 @@ const commandDetails = {
       "--web-search-enabled <true|false>: set variant webSearchEnabled",
       "--network-access-enabled <true|false>: set variant networkAccessEnabled",
       "--reasoning-effort <id>: variant reasoning effort",
+      "--variant-env-passthrough <name>: allow a required host variable for the generated variant; repeatable",
       "--help: show gen-conf usage",
     ],
     examples: [

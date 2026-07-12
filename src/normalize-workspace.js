@@ -28,6 +28,7 @@ export function normalizeWorkspace(workspace) {
     setup: {
       initializeGit: workspace.setup?.initializeGit ?? workspace.initializeGit ?? true,
       env: workspace.setup?.env ?? {},
+      envPassthrough: workspace.setup?.envPassthrough ?? [],
     },
   };
 }

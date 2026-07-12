@@ -1,9 +1,14 @@
 import { z } from "zod";
 
 import { deriveSkillSourceLabel, normalizeManifestShape } from "./normalize.js";
+import { ENVIRONMENT_VARIABLE_NAME_PATTERN } from "./environment.js";
 
 export const slugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
   message: "Expected a lowercase slug using letters, numbers, and hyphens.",
+});
+
+export const environmentVariableNameSchema = z.string().regex(ENVIRONMENT_VARIABLE_NAME_PATTERN, {
+  message: "Expected a portable environment variable name using letters, numbers, and underscores.",
 });
 
 const deterministicAssertionSchema = z.object({
@@ -82,6 +87,7 @@ const baseAgentSchema = z.object({
     .default("low"),
   additionalDirectories: z.array(z.string()).default([]),
   cliEnv: z.record(z.string(), z.string()).default({}),
+  envPassthrough: z.array(environmentVariableNameSchema).default([]),
   config: z.record(z.string(), z.unknown()).default({}),
 });
 
@@ -226,6 +232,7 @@ export const workspaceSourceSchema = z.discriminatedUnion("type", [
 const workspaceSetupSchema = z.object({
   initializeGit: z.boolean().default(true),
   env: z.record(z.string(), z.string()).default({}),
+  envPassthrough: z.array(environmentVariableNameSchema).default([]),
 });
 
 const declarativeWorkspaceSchema = z.object({
@@ -233,6 +240,7 @@ const declarativeWorkspaceSchema = z.object({
   setup: workspaceSetupSchema.default({
     initializeGit: true,
     env: {},
+    envPassthrough: [],
   }),
 });
 

@@ -1,146 +1,103 @@
 # Skill Arena
 
-Skill Arena is a CLI-first benchmark harness for measuring whether coding
-agents perform better with or without explicit capability bundles under the
-same task, workspace, and execution constraints.
+Skill Arena is a CLI-first benchmark harness for measuring whether skills and
+other agent capabilities improve real task performance.
 
-It uses Promptfoo as the execution engine, but benchmark authors work with
-declarative Skill Arena YAML instead of raw Promptfoo configuration.
+**Main benefit:** replace intuition with reproducible evidence. Every profile
+runs against the same prompt, workspace, agent configuration, and constraints,
+so the comparison isolates what the added capability actually changed.
 
-## What it compares
+![Skill Arena turns fixed benchmark inputs into normalized evidence and a clear capability decision.](./docs/assets/skill-arena-value.animated.svg)
 
-A compare evaluation defines:
+## What you can do
 
-- one or more exact task prompts
-- an isolated workspace assembled from declared sources
-- assertions that determine success
-- capability profiles such as `no-skill` and `skill`
-- agent variants such as Codex, Copilot CLI, Pi, OpenCode, Claude Code, or
-  Gemini CLI
-- a request count for repeated executions
+- Compare a `no-skill` control against one or more skills or capability bundles.
+- Benchmark Codex, Copilot CLI, Pi, OpenCode, Claude Code, and Gemini CLI.
+- Repeat every matrix cell and compare pass rate, tokens, latency, and artifacts.
+- Materialize isolated workspaces from local, Git, empty, or inline sources.
+- Use deterministic assertions or local/hosted LLM judges.
+- Evolve a skill from scored candidates or from labeled execution traces.
 
-The runtime expands those inputs into a matrix:
-
-- rows: `prompt x variant`
-- columns: profiles
-- cells: repeated executions with normalized results and artifacts
-
-The recommended checked-in filename is
-`evaluations/<benchmark-id>/evaluation.yaml`. `compare.yaml` remains a valid
-name when a standalone workflow calls for it.
+Skill Arena expands each evaluation into a matrix of
+`prompt × agent variant × capability profile`, then writes normalized JSON and
+a human-readable comparison report.
 
 ## Quick start
 
-### Requirements
-
-- Node.js 24 or newer
-- Git on `PATH`
-- at least one supported local agent CLI installed and authenticated
+Requires Node.js 24+, Git, and at least one authenticated supported agent CLI.
 
 ```bash
-git clone <repo-url>
-cd skill-arena
 npm install
-```
-
-Validate and dry-run the maintained example:
-
-```bash
 npx . val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
 npx . evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
-```
-
-Run it when the dry-run is clean:
-
-```bash
 npx . evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
 ```
 
-Generate a starter config:
+Generate a new evaluation:
 
 ```bash
 npx . gen-conf \
   --output ./evaluations/my-benchmark/evaluation.yaml \
-  --prompt "Read the repository and summarize the architecture." \
+  --prompt "Complete the benchmark task." \
   --evaluation-type llm-rubric \
-  --evaluation-value "Score 1.0 only if the main architecture is covered." \
-  --requests 3 \
-  --skill-type local-path
+  --evaluation-value "Score 1.0 only when every requirement is satisfied." \
+  --skill-type local-path \
+  --requests 3
 ```
 
-## Core concepts
+See the [usage guide](./docs/usage.md) for source shapes, capability profiles,
+judges, profile reuse, and result inspection.
 
-| Term | Meaning |
+## Skill improvement toolkit
+
+The repository includes skills for defining the benchmark, executing it, and
+improving another skill through two evidence strategies.
+
+![Skill Arena supports population evolution and trace-based evolution on top of a trusted benchmark and normalized results.](./docs/assets/evolution-strategies.animated.svg)
+
+| Skill | Role |
 | --- | --- |
-| Workspace | Files materialized into a fresh isolated run directory. |
-| Profile | The capability bundle under comparison, such as `no-skill` or `skill`. |
-| Variant | The agent adapter, model, and runtime settings used for a row. |
-| Requests | The repeated executions performed for each matrix cell. |
+| [`skill-arena-config-author`](./skills/skill-arena-config-author/SKILL.md) | Generate, repair, and validate compare configs with explicit controls and alternatives. |
+| [`skill-arena-compare-batch`](./skills/skill-arena-compare-batch/SKILL.md) | Use a scripted, benchmark-specific batch path for low-error config authoring. |
+| [`skill-arena-run-results`](./skills/skill-arena-run-results/SKILL.md) | Validate, dry-run, execute, and summarize comparisons without dumping raw harness noise. |
+| [`skill-arena-evolution`](./skills/skill-arena-evolution/SKILL.md) | Search candidate variants through selection, mutation, and crossover. |
+| [`skill-arena-traced-evolution`](./skills/skill-arena-traced-evolution/SKILL.md) | Distill recurring lessons from independent success and failure traces. |
 
-The normal workflow is:
+### Evolution strategies
 
-1. Author or update one evaluation config.
-2. Run `skill-arena val-conf`.
-3. Run `skill-arena evaluate --dry-run`.
-4. Run `skill-arena evaluate`.
-5. Inspect the normalized report under `results/`.
+| | Population evolution | Traced evolution |
+| --- | --- | --- |
+| Use when | Candidate variants can be scored repeatedly under a fixed benchmark. | You have diverse labeled success and failure trajectories. |
+| Method | Seed 10 candidates, score all, keep the top 2, then mutate or cross over. | Propose independent trace-local patches, then consolidate by prevalence. |
+| Guardrail | Keep the incumbent unless a candidate preserves or improves validated fitness. | Filter scope and conflicts, then validate the consolidated update on holdout traces. |
+| Output | One winning skill variant. | One coherent transferable skill update. |
+
+Both strategies keep the benchmark fixed and promote only validated changes.
+Population evolution explores alternatives; traced evolution extracts repeated,
+generalizable lessons from observed behavior.
+
+## Outputs
+
+Compare runs write to `results/<benchmark-id>/<timestamp>-compare/`:
+
+```text
+promptfooconfig.yaml
+promptfoo-results.json
+summary.json
+merged/merged-summary.json
+merged/report.md
+```
+
+Use `summary.json` for automation and `merged/report.md` for human review.
 
 ## Documentation
 
-Start at the [documentation index](./docs/README.md), or go directly to:
+- [Documentation index](./docs/README.md)
+- [CLI reference](./docs/cli-reference.md)
+- [Architecture](./docs/architecture.md)
+- [Configuration specs](./docs/specs.md)
+- [Testing](./docs/testing.md)
 
-- [Usage guide](./docs/usage.md) for the authoring and execution workflow
-- [CLI reference](./docs/cli-reference.md) for commands and options
-- [Architecture](./docs/architecture.md) for runtime design
-- [Configuration specs](./docs/specs.md) for canonical contracts
-- [Testing](./docs/testing.md) for validation sequences
-
-Executable examples:
-
-- [Maintained compare evaluation](./evaluations/skill-arena-config-author/evaluation.yaml)
-- [Skill-following smoke evaluation](./evaluations/smoke-skill-following/evaluation.yaml)
-- [Copilot CLI smoke evaluation](./evaluations/copilot-cli-smoke-compare/evaluation.yaml)
-
-## Result artifacts
-
-Compare runs write to:
-
-```text
-results/<benchmark-id>/<timestamp>-compare/
-├── promptfooconfig.yaml
-├── promptfoo-results.json
-├── summary.json
-└── merged/
-    ├── merged-summary.json
-    └── report.md
-```
-
-`summary.json` is the stable machine-readable result. `merged/report.md` is the
-primary human-readable comparison.
-
-## Repository map
-
-| Path | Responsibility |
-| --- | --- |
-| `bin/skill-arena.js` | Installed CLI entry point. |
-| `src/` | Runtime, adapters, materialization, Promptfoo generation, and normalization. |
-| `test/` | Unit and integration-style CLI tests. |
-| `evaluations/` | Maintained benchmark configs, fixtures, and report snapshots. |
-| `skills/` | Skills maintained and benchmarked by this repository. |
-| `docs/` | User and contributor documentation. |
-| `.specs/adr/` | Architecture decision records. |
-| `results/` | Generated run artifacts; ignored by Git. |
-
-## Supported adapters
-
-- `codex`
-- `copilot-cli`
-- `pi`
-- `opencode`
-- `claude-code`
-- `gemini-cli`
-
-Adapter control surfaces are not identical. See
-[effective runtime isolation](./docs/architecture.md#effective-runtime-isolation)
-and [compare capability families](./docs/specs.md#compare-capability-families)
-before interpreting cross-agent results as equivalent.
+Executable examples live under [`evaluations/`](./evaluations/). Generated
+Mermaid sources and their static verification renders live under
+[`docs/assets/`](./docs/assets/).

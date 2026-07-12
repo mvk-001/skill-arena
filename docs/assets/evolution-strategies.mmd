@@ -1,5 +1,5 @@
-%%{init: {"theme":"base","themeVariables":{"fontFamily":"Open Sans, Arial, sans-serif","primaryColor":"#cdf3ff","primaryTextColor":"#333e48","primaryBorderColor":"#007298","secondaryColor":"#fff4cc","secondaryTextColor":"#333e48","secondaryBorderColor":"#e77204","tertiaryColor":"#f9ccff","tertiaryTextColor":"#333e48","tertiaryBorderColor":"#652f6c","lineColor":"#696969","textColor":"#333e48","mainBkg":"#ffffff","clusterBkg":"#f7f7f7","clusterBorder":"#cfcfcf","edgeLabelBackground":"#ffffff"},"flowchart":{"curve":"basis","nodeSpacing":30,"rankSpacing":42,"htmlLabels":true}}}%%
-flowchart TB
+%%{init: {"theme":"base","fontFamily":"Open Sans, Arial, sans-serif","themeVariables":{"fontFamily":"Open Sans, Arial, sans-serif","fontSize":"18px","primaryColor":"#cdf3ff","primaryTextColor":"#333e48","primaryBorderColor":"#007298","secondaryColor":"#fff4cc","secondaryTextColor":"#333e48","secondaryBorderColor":"#e77204","tertiaryColor":"#f9ccff","tertiaryTextColor":"#333e48","tertiaryBorderColor":"#652f6c","lineColor":"#696969","textColor":"#333e48","mainBkg":"#ffffff","clusterBkg":"#f7f7f7","clusterBorder":"#cfcfcf","edgeLabelBackground":"#ffffff"},"flowchart":{"curve":"basis","nodeSpacing":34,"rankSpacing":48,"htmlLabels":true}}}%%
+flowchart LR
     author["Config Author<br/><small>define a valid fixed benchmark</small>"]
     runner["Run Results<br/><small>execute, normalize, report</small>"]
     benchmark["Trusted benchmark + evidence"]
@@ -9,20 +9,11 @@ flowchart TB
     runner --> benchmark
     benchmark --> choice
 
-    choice -->|"repeatable candidate scores"| p1["Population evolution<br/><small>seed 10 candidates</small>"]
-    p1 --> p2["Score every candidate"]
-    p2 --> p3["Keep top 2"]
-    p3 --> p4["Mutate + crossover"]
-    p4 --> p5["Promote only validated wins"]
-    p5 -. "repeat until plateau" .-> p2
+    choice -->|"repeatable scores"| population["Population evolution<br/><small>10 candidates → score all → keep 2<br/>mutate + crossover until plateau</small>"]
+    choice -->|"labeled trajectories"| traceStrategy["Traced evolution<br/><small>independent patches → prevalence + conflicts<br/>holdout before promotion</small>"]
 
-    choice -->|"diverse labeled trajectories"| t1["Traced evolution<br/><small>label success + failure</small>"]
-    t1 --> t2["Analyze independently"]
-    t2 --> t3["Consolidate by prevalence"]
-    t3 --> t4["Filter conflicts + scope"]
-    t4 --> t5["Validate on holdout"]
-    p5 --> winner["Validated skill improvement"]
-    t5 --> winner
+    population --> winner["Validated skill improvement"]
+    traceStrategy --> winner
 
     classDef support fill:#cdf3ff,stroke:#007298,color:#333e48,stroke-width:2px;
     classDef decision fill:#fff4cc,stroke:#e77204,color:#333e48,stroke-width:2px;
@@ -31,6 +22,6 @@ flowchart TB
     classDef result fill:#dbffcc,stroke:#45842a,color:#333e48,stroke-width:3px;
     class author,runner,benchmark support;
     class choice decision;
-    class p1,p2,p3,p4,p5 genetic;
-    class t1,t2,t3,t4,t5 traced;
+    class population genetic;
+    class traceStrategy traced;
     class winner result;
