@@ -10,9 +10,13 @@ tmp/
 deliverables/
 # Browser screenshots generated during visual documentation checks.
 output/playwright/
+.playwright-cli/
+__pycache__/
+*.py[cod]
 bin/
 !bin/
 !bin/skill-arena.js
 *.tgz
 *.log
 nul
+.agents
