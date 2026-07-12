@@ -29,6 +29,7 @@ import {
 } from "../workspace.js";
 import { ensureKnownLongOptions, parsePositiveIntegerOption } from "./cli-options.js";
 import { resolveScenarioSupport } from "../capability-validation.js";
+import { mergeEnvironmentPassthrough } from "../environment.js";
 import {
   buildMatrix,
   buildRouteKey,
@@ -951,6 +952,10 @@ function printExecutionPlan({
   const supportedCells = Math.max(0, compareCells - unsupportedCells);
   const freshSupportedCells = Math.max(0, freshCompareCells - unsupportedCells);
   const totalRequests = freshSupportedCells * requestsPerCell;
+  const requiredHostEnvironmentVariables = mergeEnvironmentPassthrough(
+    compareConfig.workspace.setup.envPassthrough,
+    ...compareConfig.comparison.variants.map((variant) => variant.agent.envPassthrough),
+  );
 
   const planRows = [
     ["Benchmark", manifest.benchmark.id],
@@ -965,6 +970,7 @@ function printExecutionPlan({
     ["Total requests", totalRequests],
     ["Reused scenarios", reusePlan?.reusableScenarioIds?.size ?? 0],
     ["Parallel requests", effectiveConcurrency],
+    ["Required host variables", requiredHostEnvironmentVariables.join(", ") || "none"],
     ["Effective timeout", `${effectiveEvalTimeoutMs} ms`],
   ];
 

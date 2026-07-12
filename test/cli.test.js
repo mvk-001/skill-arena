@@ -180,6 +180,33 @@ test("gen-conf includes all supported assertion examples when none are specified
   assert.match(generated, /example additional variant for pi/);
 });
 
+test("val-conf reports required host variable names without requiring their values", async () => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "skill-arena-val-conf-env-"));
+  const outputPath = path.join(outputDirectory, "evaluation.yaml");
+
+  await execFileAsync(process.execPath, [
+    binPath,
+    "gen-conf",
+    "--output",
+    outputPath,
+    "--evaluation-type",
+    "contains",
+    "--evaluation-value",
+    "OK",
+    "--env-passthrough",
+    "SHARED_API_TOKEN",
+    "--variant-env-passthrough",
+    "VARIANT_API_TOKEN",
+  ]);
+
+  const { stdout } = await execFileAsync(process.execPath, [binPath, "val-conf", outputPath]);
+  const summary = JSON.parse(stdout);
+  assert.deepEqual(summary.requiredHostEnvironmentVariables, [
+    "SHARED_API_TOKEN",
+    "VARIANT_API_TOKEN",
+  ]);
+});
+
 test("evaluate command shows inline help", async () => {
   const { stdout, stderr } = await execFileAsync(process.execPath, [binPath, "evaluate", "--help"]);
   const output = commandOutput(stdout, stderr);

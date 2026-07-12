@@ -3,6 +3,7 @@ import path from "node:path";
 import { loadBenchmarkManifest } from "../manifest.js";
 import { loadCompareConfig } from "../compare.js";
 import { detectConfigKind, parseConfigFile } from "./config-file.js";
+import { mergeEnvironmentPassthrough } from "../environment.js";
 
 const TODO_MARKER = /TODO:/i;
 const MAX_TODO_REPORTS = 30;
@@ -111,6 +112,10 @@ function buildManifestValidationSummary({
       todoFindings,
     }),
     scenarioCount: manifest.scenarios.length,
+    requiredHostEnvironmentVariables: collectRequiredHostEnvironmentVariables(
+      manifest.workspace,
+      manifest.scenarios,
+    ),
     scenarioIds: manifest.scenarios.map((scenario) => scenario.id),
     scenarioSummaries: manifest.scenarios.map((scenario) => ({
       id: scenario.id,
@@ -138,9 +143,20 @@ function buildCompareValidationSummary({
     promptIds: compareConfig.task.prompts.map((prompt) => prompt.id),
     variantCount: compareConfig.comparison.variants.length,
     profileCount: compareConfig.comparison.profiles.length,
+    requiredHostEnvironmentVariables: collectRequiredHostEnvironmentVariables(
+      compareConfig.workspace,
+      compareConfig.comparison.variants,
+    ),
     variantIds: compareConfig.comparison.variants.map((variant) => variant.id),
     profileIds: compareConfig.comparison.profiles.map((profile) => profile.id),
   };
+}
+
+function collectRequiredHostEnvironmentVariables(workspace, entries) {
+  return mergeEnvironmentPassthrough(
+    workspace.setup.envPassthrough,
+    ...entries.map((entry) => entry.agent.envPassthrough),
+  );
 }
 
 function buildBaseValidationSummary({

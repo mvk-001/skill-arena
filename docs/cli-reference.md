@@ -154,6 +154,8 @@ skill-arena val-conf <config-path>
 
 Validation checks YAML or JSON parsing, schema constraints, source shapes, and
 unfinished required `TODO:` values. It does not execute agents.
+The normalized summary lists `requiredHostEnvironmentVariables` by name without
+reading or printing their values.
 
 ```bash
 skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
