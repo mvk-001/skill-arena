@@ -122,12 +122,33 @@ Useful `gen-conf` flags:
 - `--prompt-description <text>`: optional description for the next prompt
 - `--evaluation-type <type>` and `--evaluation-value <value>`: repeat to prefill assertions
 - `--skill-type <type>`: `git`, `local-path`, `system-installed`, or `inline-files`
-- `--workspace-source-type <type>`: `local-path`, `git`, `inline-files`, or `empty`
+- `--workspace-source-type <type>`: `none`, `local-path`, `git`, `inline-files`, or `empty`
 - `--requests <n>`: prefill `evaluation.requests`
 - `--max-concurrency <n>` or `--maxConcurrency <n>`: prefill `evaluation.maxConcurrency`
 - `--adapter <id>` and `--model <id>`: prefill the first variant
 - `--env-passthrough <name>`: repeat to allow a required host variable for all cells
 - `--variant-env-passthrough <name>`: repeat to add a required host variable for the first variant
+
+### Evaluate Without Workspace Files
+
+Omit `sources` when the task does not need local input files:
+
+```yaml
+workspace:
+  setup:
+    initializeGit: true
+```
+
+The explicit equivalent is `sources: []`. Skill Arena still creates an
+isolated workspace and applies profile capabilities, skills, environment
+settings, and Git initialization. The older `type: empty` source remains valid,
+but is no longer necessary for a source-free evaluation.
+
+Generate this shape with:
+
+```bash
+skill-arena gen-conf --workspace-source-type none
+```
 
 ### Pass Credentials Without Storing Secrets
 

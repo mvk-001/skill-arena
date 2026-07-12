@@ -130,6 +130,10 @@ scenarios:
 - `task.prompts[*].id` should be slug-like when present.
 - `workspace` must fully describe how to materialize the run workspace.
 - `workspace.sources` is the preferred representation and must be applied in declaration order.
+- `workspace.sources` may be omitted or set to `[]` when an evaluation does not
+  require input files. Both forms normalize to an empty source list while
+  preserving workspace setup, profile capabilities, skill overlays, isolation,
+  and optional Git initialization.
 - Each `workspace.sources[*]` entry must declare a `type` and a `target`.
 - `workspace.setup` defines post-materialization setup such as Git initialization.
 - `agent.adapter` must be one of:
@@ -188,7 +192,9 @@ Supported source types in V1:
 - `inline-files`
   - write one or more small files declared directly in the YAML
 - `empty`
-  - contribute no files and act as an explicit empty source
+  - contribute no files and act as an explicit no-op source
+  - retained for compatibility and intentional layered configs; source-free
+    evaluations should normally omit `sources` or use `sources: []`
 
 Common source fields:
 
@@ -214,6 +220,8 @@ Required workspace behavior:
 - Source inputs are immutable.
 - The harness must never mutate local source directories, fetched Git sources, or inline source definitions.
 - Sources are applied in order, so later sources may intentionally add or override files written by earlier sources.
+- A zero-source workspace starts as an empty directory before capabilities and
+  skills are materialized.
 - `target` is resolved relative to the materialized workspace root.
 - `workspace.setup.initializeGit: true` initializes a Git repository in the run workspace so agent providers can operate with their default safety checks.
 - `workspace.setup.env` defines environment variables for provider execution in that run workspace.

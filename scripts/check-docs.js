@@ -23,6 +23,15 @@ for (const filePath of markdownFiles) {
     localLinkCount += 1;
     validateLocalLink(filePath, link);
   }
+
+  for (const link of extractHtmlLinks(markdown)) {
+    if (isExternalLink(link.target)) {
+      continue;
+    }
+
+    localLinkCount += 1;
+    validateLocalLink(filePath, link);
+  }
 }
 
 if (errors.length > 0) {
@@ -53,6 +62,20 @@ function extractMarkdownLinks(markdown) {
   for (const match of markdown.matchAll(pattern)) {
     links.push({
       target: match.groups.target.replace(/^<|>$/g, ""),
+      line: markdown.slice(0, match.index).split("\n").length,
+    });
+  }
+
+  return links;
+}
+
+function extractHtmlLinks(markdown) {
+  const links = [];
+  const pattern = /\b(?:href|src)=["'](?<target>[^"']+)["']/gi;
+
+  for (const match of markdown.matchAll(pattern)) {
+    links.push({
+      target: match.groups.target,
       line: markdown.slice(0, match.index).split("\n").length,
     });
   }

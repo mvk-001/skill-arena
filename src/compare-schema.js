@@ -111,7 +111,7 @@ const normalizedCompareConfigSchema = z.object({
     prompts: z.array(taskPromptDefinitionSchema).min(1),
   }),
   workspace: z.object({
-    sources: z.array(workspaceSourceSchema).min(1),
+    sources: z.array(workspaceSourceSchema),
     setup: z.object({
       initializeGit: z.boolean(),
       env: z.record(z.string(), z.string()),

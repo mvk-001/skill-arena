@@ -41,9 +41,11 @@ conditions.**
 
 ## How it works
 
-![Skill Arena turns fixed benchmark inputs into normalized evidence and a clear capability decision.](./docs/assets/skill-arena-value.animated.svg)
+<p align="center">
+  <img src="./docs/assets/skill-arena-value.animated.svg" width="100%" alt="Skill Arena turns fixed benchmark inputs into normalized evidence and a clear capability decision.">
+</p>
 
-1. **Declare** exact prompts, workspace sources, assertions, profiles, and agent
+1. **Declare** exact prompts, zero or more workspace sources, assertions, profiles, and agent
    variants in YAML.
 2. **Materialize** a fresh isolated workspace for every supported comparison
    unit.
@@ -139,7 +141,9 @@ them, and improving other skills.
 
 ### Choose an evolution strategy
 
-![Skill Arena supports population evolution and trace-based evolution on top of a trusted benchmark and normalized results.](./docs/assets/evolution-strategies.animated.svg)
+<p align="center">
+  <img src="./docs/assets/evolution-strategies.animated.svg" width="100%" alt="Skill Arena supports population evolution and trace-based evolution on top of a trusted benchmark and normalized results.">
+</p>
 
 | | Population evolution | Traced evolution |
 | --- | --- | --- |
@@ -171,6 +175,7 @@ and [capability families](./docs/specs.md#compare-capability-families).
 ## Isolation and secrets
 
 - Every supported comparison unit receives a fresh materialized workspace.
+- Evaluations that need no input files may omit `workspace.sources` entirely.
 - Runtime homes or config directories are isolated where the local CLI permits
   it.
 - Only minimum authentication state is seeded; host personalization is not

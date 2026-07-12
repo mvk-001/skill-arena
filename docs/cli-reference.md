@@ -99,7 +99,7 @@ required values.
 
 | Option | Meaning |
 | --- | --- |
-| `--workspace-source-type <type>` | `local-path`, `git`, `inline-files`, or `empty`. |
+| `--workspace-source-type <type>` | `none`, `local-path`, `git`, `inline-files`, or `empty`. Use `none` for `sources: []`. |
 | `--workspace-path <path>` | Local workspace source path. |
 | `--workspace-target <path>` | Destination inside the materialized workspace. |
 | `--workspace-repo <url>` | Git repository for a workspace source. |

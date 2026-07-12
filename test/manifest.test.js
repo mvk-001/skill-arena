@@ -315,6 +315,65 @@ test("manifest validation accepts declarative workspace sources and explicit ski
   assert.equal(manifest.scenarios[0].skill.source.type, "inline");
 });
 
+test("manifest validation normalizes empty and omitted workspace sources to an empty list", () => {
+  for (const workspace of [
+    { sources: [], setup: { initializeGit: false } },
+    { setup: { initializeGit: false } },
+  ]) {
+    const manifest = benchmarkManifestSchema.parse({
+      schemaVersion: 1,
+      benchmark: {
+        id: "source-free-workspace",
+        description: "Source-free workspace fixture",
+        tags: [],
+      },
+      task: { prompt: "Return HELLO." },
+      workspace,
+      scenarios: [
+        {
+          id: "source-free",
+          description: "No workspace inputs",
+          skillMode: "disabled",
+          agent: { adapter: "codex" },
+          evaluation: {
+            assertions: [{ type: "equals", value: "HELLO" }],
+          },
+        },
+      ],
+    });
+
+    assert.deepEqual(manifest.workspace.sources, []);
+    assert.equal(manifest.workspace.setup.initializeGit, false);
+  }
+});
+
+test("manifest validation rejects mixed legacy and declarative workspace fields", () => {
+  assert.throws(() => benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "mixed-workspace",
+      description: "Invalid mixed workspace fixture",
+      tags: [],
+    },
+    task: { prompt: "Return HELLO." },
+    workspace: {
+      fixture: "fixtures/base",
+      sources: [],
+    },
+    scenarios: [
+      {
+        id: "mixed",
+        description: "Mixed workspace",
+        skillMode: "disabled",
+        agent: { adapter: "codex" },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  }));
+});
+
 test("manifest validation accepts git skills that select a skill folder inside the repo", () => {
   const manifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,

@@ -78,11 +78,14 @@ Workspace inputs are declared in YAML. Common sources include versioned fixtures
 Each scenario run creates a fresh run directory under `results/`. The materializer:
 
 1. creates an empty run workspace
-2. applies `workspace.sources` in declaration order
+2. applies zero or more `workspace.sources` entries in declaration order
 3. injects the skill only when the resolved skill install strategy is `workspace-overlay`
 4. initializes a Git repository inside the workspace when requested
 
 This preserves source inputs and gives each eval an isolated workspace.
+When `workspace.sources` is omitted or empty, the materializer continues from
+the fresh empty directory and still applies capabilities, skills, isolation,
+environment settings, and optional Git initialization.
 
 Workspace-injected skills can contain any files needed by the benchmarked agent, including root-level instruction files such as `AGENTS.md` and bundled skill assets such as `skills/<skill-id>/SKILL.md`.
 

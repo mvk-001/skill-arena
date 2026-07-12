@@ -20,6 +20,13 @@ const SUPPORTED_SKILL_TYPES = new Set([
   "system-installed",
   "inline-files",
 ]);
+const SUPPORTED_WORKSPACE_SOURCE_TYPES = new Set([
+  "none",
+  "local-path",
+  "git",
+  "inline-files",
+  "empty",
+]);
 const OPTION_DEFAULTS = {
   help: false,
   outputPath: DEFAULT_OUTPUT_PATH,
@@ -279,6 +286,13 @@ function parseArguments(argv) {
     );
   }
 
+  if (!SUPPORTED_WORKSPACE_SOURCE_TYPES.has(options.workspaceSourceType)) {
+    throw new Error(
+      `Unsupported --workspace-source-type "${options.workspaceSourceType}". `
+      + "Use one of: none, local-path, git, inline-files, empty.",
+    );
+  }
+
   return options;
 }
 
@@ -522,6 +536,15 @@ function renderPromptBlocks(prompts) {
 }
 
 function renderWorkspaceSection(options) {
+  if (options.workspaceSourceType === "none") {
+    return [
+      "workspace:",
+      "  sources: []",
+      "  # No files are materialized before profile capabilities or the agent run.",
+      ...renderWorkspaceSetup(options),
+    ];
+  }
+
   const lines = [
     "workspace:",
     "  sources:",
@@ -534,7 +557,13 @@ function renderWorkspaceSection(options) {
     lines.push(...renderAdditionalWorkspaceSourceExamples());
   }
 
-  lines.push(
+  lines.push(...renderWorkspaceSetup(options));
+
+  return lines;
+}
+
+function renderWorkspaceSetup(options) {
+  return [
     "  setup:",
     `    initializeGit: ${yamlBoolean(options.initializeGit ?? true)}`,
     "    # TODO: initializeGit is a closed choice: true or false. Use true when the agent or benchmark expects a Git repo; use false only when Git state would be irrelevant or misleading.",
@@ -543,9 +572,7 @@ function renderWorkspaceSection(options) {
     "    # TODO: workspace.setup.env is an open mapping of NAME: value. Put only reproducible runtime dependencies here, not secrets or machine-specific paths.",
     ...renderYamlList("envPassthrough", options.workspaceEnvPassthrough, 4),
     "    # envPassthrough is an explicit allowlist of required host variables; only names are stored in YAML and generated artifacts.",
-  );
-
-  return lines;
+  ];
 }
 
 function renderAdditionalWorkspaceSourceExamples() {
@@ -1008,7 +1035,7 @@ function printUsage() {
   console.error("  --maxConcurrency <n>           Alias for --max-concurrency");
   console.error("  --no-cache <true|false>        Set evaluation.noCache");
   console.error("  --tracing <true|false>         Set evaluation.tracing");
-  console.error("  --workspace-source-type <type>  local-path | git | inline-files | empty");
+  console.error("  --workspace-source-type <type>  none | local-path | git | inline-files | empty");
   console.error("  --workspace-path <path>         Local workspace source path");
   console.error("  --workspace-target <path>       Workspace source target");
   console.error("  --workspace-repo <url>          Workspace git repository");

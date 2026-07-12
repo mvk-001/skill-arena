@@ -180,6 +180,43 @@ test("gen-conf includes all supported assertion examples when none are specified
   assert.match(generated, /example additional variant for pi/);
 });
 
+test("gen-conf can generate and validate a source-free workspace", async () => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "skill-arena-gen-conf-no-sources-"));
+  const outputPath = path.join(outputDirectory, "evaluation.yaml");
+
+  await execFileAsync(process.execPath, [
+    binPath,
+    "gen-conf",
+    "--output",
+    outputPath,
+    "--workspace-source-type",
+    "none",
+    "--evaluation-type",
+    "contains",
+    "--evaluation-value",
+    "OK",
+  ]);
+
+  const generated = fs.readFileSync(outputPath, "utf8");
+  assert.match(generated, /workspace:\n  sources: \[\]/);
+  assert.doesNotMatch(generated, /type: empty/);
+
+  const { stdout } = await execFileAsync(process.execPath, [binPath, "val-conf", outputPath]);
+  assert.equal(JSON.parse(stdout).configKind, "compare");
+});
+
+test("gen-conf rejects unknown workspace source types", async () => {
+  await assert.rejects(
+    () => execFileAsync(process.execPath, [
+      binPath,
+      "gen-conf",
+      "--workspace-source-type",
+      "unknown",
+    ]),
+    /Unsupported --workspace-source-type "unknown"/,
+  );
+});
+
 test("val-conf reports required host variable names without requiring their values", async () => {
   const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "skill-arena-val-conf-env-"));
   const outputPath = path.join(outputDirectory, "evaluation.yaml");

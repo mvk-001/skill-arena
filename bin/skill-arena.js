@@ -58,7 +58,7 @@ const commandDetails = {
       "--skill-ref <ref>: git ref for git skills",
       "--skill-subpath <path>: git repo subpath for git skills",
       "--skill-path-in-repo <path>: skill folder inside git repo",
-      "--workspace-source-type <type>: workspace source type (local-path, git, inline-files, empty)",
+      "--workspace-source-type <type>: workspace source type (none, local-path, git, inline-files, empty)",
       "--workspace-path <path>: path for local workspace source",
       "--workspace-target <path>: workspace source target path",
       "--workspace-repo <url>: repository for workspace git source",

@@ -284,13 +284,13 @@ For credential-passthrough changes, also verify that a dry run fails when an
 allowlisted host variable is absent and that generated `promptfooconfig.yaml`
 contains the variable name but not its value.
 
-For credential-passthrough changes, also verify that a dry run fails when an
-allowlisted host variable is absent and that generated `promptfooconfig.yaml`
-contains the variable name but not its value.
-
 For profile-isolation validation after runtime changes, add at least one compare dry-run that:
 
 - uses `comparison.profiles`
 - includes one empty `no-skill` control profile with `inheritSystem: false`
 - includes one explicit capability profile
 - includes one intentionally unsupported capability family and confirms the cell is reported as `unsupported`
+
+For workspace-schema changes, include source-free dry-runs for both
+`workspace.sources: []` and an omitted `workspace.sources` field. Confirm that
+setup and Git initialization still behave as declared.

@@ -236,18 +236,23 @@ const workspaceSetupSchema = z.object({
 });
 
 const declarativeWorkspaceSchema = z.object({
-  sources: z.array(workspaceSourceSchema).min(1),
+  sources: z.array(workspaceSourceSchema).default([]),
   setup: workspaceSetupSchema.default({
     initializeGit: true,
     env: {},
     envPassthrough: [],
   }),
+  fixture: z.never().optional(),
+  skillOverlay: z.never().optional(),
+  initializeGit: z.never().optional(),
 });
 
 const legacyWorkspaceSchema = z.object({
   fixture: z.string().min(1),
   skillOverlay: skillOverlaySchema.optional(),
   initializeGit: z.boolean().default(true),
+  sources: z.never().optional(),
+  setup: z.never().optional(),
 });
 
 export const workspaceSchema = z.union([declarativeWorkspaceSchema, legacyWorkspaceSchema]);
@@ -368,7 +373,7 @@ const normalizedManifestSchema = z.object({
     prompts: z.array(taskPromptDefinitionSchema).min(1),
   }),
   workspace: z.object({
-    sources: z.array(workspaceSourceSchema).min(1),
+    sources: z.array(workspaceSourceSchema),
     setup: workspaceSetupSchema,
   }),
   scenarios: z.array(normalizedScenarioSchema).min(1),

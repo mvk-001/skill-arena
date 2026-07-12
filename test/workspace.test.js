@@ -1230,6 +1230,43 @@ test("workspace materialization supports empty sources and rejects escaping targ
   );
 });
 
+test("workspace materialization supports a workspace with no declared sources", async () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-without-sources",
+      description: "Workspace without source inputs",
+      tags: [],
+    },
+    task: { prompt: "Return HELLO." },
+    workspace: {
+      setup: {
+        initializeGit: false,
+      },
+    },
+    scenarios: [
+      {
+        id: "source-free",
+        description: "Source-free scenario",
+        skillMode: "disabled",
+        agent: { adapter: "codex" },
+        evaluation: {
+          assertions: [{ type: "equals", value: "HELLO" }],
+        },
+      },
+    ],
+  });
+
+  const workspace = await materializeWorkspace({
+    manifest,
+    scenario: manifest.scenarios[0],
+  });
+
+  assert.deepEqual(await fs.readdir(workspace.executionWorkspaceDirectory), []);
+  assert.deepEqual(await fs.readdir(workspace.workspaceDirectory), []);
+  assert.equal(workspace.gitReady, false);
+});
+
 test("workspace materialization rejects missing directories and broken git sources", async () => {
   const missingManifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,

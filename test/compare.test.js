@@ -399,6 +399,50 @@ test("compare config defaults requests to 10 when omitted", () => {
   assert.equal(compareConfig.evaluation.requests, 10);
 });
 
+test("compare configs support source-free workspaces with empty or omitted sources", () => {
+  for (const workspace of [
+    { sources: [], setup: { initializeGit: false } },
+    { setup: { initializeGit: false } },
+  ]) {
+    const compareConfig = compareConfigSchema.parse({
+      schemaVersion: 1,
+      benchmark: {
+        id: "source-free-compare",
+        description: "Compare without workspace files",
+        tags: [],
+      },
+      task: { prompt: "Return HELLO." },
+      workspace,
+      evaluation: {
+        assertions: [{ type: "equals", value: "HELLO" }],
+      },
+      comparison: {
+        profiles: [
+          {
+            id: "no-skill",
+            description: "Isolated control",
+            isolation: { inheritSystem: false },
+            capabilities: {},
+          },
+        ],
+        variants: [
+          {
+            id: "codex-mini",
+            description: "Codex source-free variant",
+            agent: { adapter: "codex" },
+          },
+        ],
+      },
+    });
+
+    assert.deepEqual(compareConfig.workspace.sources, []);
+    assert.deepEqual(
+      expandCompareConfigToManifest(compareConfig).workspace.sources,
+      [],
+    );
+  }
+});
+
 test("smoke compare config expands into codex and pi skill-mode scenarios", async () => {
   const compareConfigPath = fromProjectRoot(
     "evaluations",
