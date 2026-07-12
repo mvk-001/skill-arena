@@ -45,6 +45,20 @@ npx . gen-conf \
   --requests 3
 ```
 
+Credential-dependent benchmarks can allowlist host variables by name without
+putting their values in YAML:
+
+```yaml
+workspace:
+  setup:
+    envPassthrough:
+      - GITHUB_TOKEN
+```
+
+The runtime fails early when an allowlisted variable is missing and keeps its
+value out of generated Promptfoo artifacts. See the
+[usage guide](./docs/usage.md#pass-credentials-without-storing-secrets).
+
 See the [usage guide](./docs/usage.md) for source shapes, capability profiles,
 judges, profile reuse, and result inspection.
 

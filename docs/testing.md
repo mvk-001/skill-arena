@@ -280,6 +280,14 @@ What this covers:
 - `val-conf` confirms the maintained config still parses cleanly
 - `evaluate --dry-run` confirms workspace materialization and Promptfoo config generation still work
 
+For credential-passthrough changes, also verify that a dry run fails when an
+allowlisted host variable is absent and that generated `promptfooconfig.yaml`
+contains the variable name but not its value.
+
+For credential-passthrough changes, also verify that a dry run fails when an
+allowlisted host variable is absent and that generated `promptfooconfig.yaml`
+contains the variable name but not its value.
+
 For profile-isolation validation after runtime changes, add at least one compare dry-run that:
 
 - uses `comparison.profiles`
