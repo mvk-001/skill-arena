@@ -1,9 +1,6 @@
 # Skill Arena
 
-[![Node.js 24+](https://img.shields.io/badge/Node.js-24%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Schema V1](https://img.shields.io/badge/schema-V1-007298)](./docs/specs.md)
-[![Agent adapters: 6](https://img.shields.io/badge/agent_adapters-6-652f6c)](#supported-agent-runtimes)
-[![CLI first](https://img.shields.io/badge/interface-CLI--first-e77204)](#core-cli)
+[![Node.js 24+](https://img.shields.io/badge/Node.js-24%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/) [![Schema V1](https://img.shields.io/badge/schema-V1-007298)](./docs/specs.md) [![Agent adapters: 6](https://img.shields.io/badge/agent_adapters-6-652f6c)](#supported-agent-runtimes) [![CLI first](https://img.shields.io/badge/interface-CLI--first-e77204)](#core-cli)
 
 **Prove which skills and agent capabilities actually improve task performance.**
 
