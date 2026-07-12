@@ -36,11 +36,11 @@ test("buildSkillActivationPrompt returns adapter-specific explicit activation te
 
   assert.match(
     buildSkillActivationPrompt({
-      adapter: "gemini-cli",
+      adapter: "antigravity-cli",
       allowedSkillIds: ["marker-guide"],
       skillStrategy: "workspace-overlay",
     }),
-    /activate_skill/,
+    /\/marker-guide/,
   );
 });
 
@@ -114,11 +114,11 @@ test("buildSkillActivationPrompt covers unnamed branches for the remaining adapt
 
   assert.match(
     buildSkillActivationPrompt({
-      adapter: "gemini-cli",
+      adapter: "antigravity-cli",
       allowedSkillIds: [],
       skillStrategy: "system-installed",
     }),
-    /explicitly activate/,
+    /workspace or installed skill/,
   );
 });
 

@@ -40,7 +40,7 @@ skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
 - local Pi CLI available on `PATH` as `pi` when testing `pi` scenarios
 - local OpenCode CLI available on `PATH` as `opencode` when testing `opencode` scenarios
 - local Claude Code CLI available on `PATH` as `claude` when testing `claude-code` scenarios
-- local Gemini CLI available on `PATH` as `gemini` when testing `gemini-cli` scenarios
+- local Antigravity CLI available on `PATH` as `agy` when testing `antigravity-cli` scenarios
 - Codex authenticated on the machine before running live evaluations
 
 ## 0. Check Documentation

@@ -9,11 +9,11 @@ test("getAdapter returns registered adapters and rejects unknown ids", () => {
   assert.equal(getAdapter("pi").id, "pi");
   assert.equal(getAdapter("opencode").id, "opencode");
   assert.equal(getAdapter("claude-code").id, "claude-code");
-  assert.equal(getAdapter("gemini-cli").id, "gemini-cli");
+  assert.equal(getAdapter("antigravity-cli").id, "antigravity-cli");
   assert.throws(() => getAdapter("unknown"), /Unsupported adapter id "unknown"\./);
 });
 
-test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi, opencode, claude-code, and gemini-cli", () => {
+test("buildPromptfooProvider builds provider configs for all supported adapters", () => {
   const context = {
     workspaceDirectory: "C:/temp/workspace",
     workspaceEnvironment: {
@@ -185,21 +185,21 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
       },
     },
   });
-  const geminiProvider = buildPromptfooProvider({
+  const antigravityProvider = buildPromptfooProvider({
     ...context,
     scenario: {
       agent: {
-        adapter: "gemini-cli",
-        commandPath: "gemini",
-        model: "gemini-2.5-pro",
+        adapter: "antigravity-cli",
+        commandPath: "agy",
+        model: "Gemini 3.5 Flash (Low)",
         sandboxMode: "workspace-write",
         approvalPolicy: "never",
         webSearchEnabled: false,
         networkAccessEnabled: false,
         reasoningEffort: "low",
         additionalDirectories: ["fixtures"],
-        cliEnv: { GEMINI_FLAG: "1", HOME: "C:/should-not-win" },
-        config: { general: { vimMode: true } },
+        cliEnv: { ANTIGRAVITY_FLAG: "1", HOME: "C:/should-not-win" },
+        config: { printTimeout: "10m" },
       },
       skill: {
         install: {
@@ -242,11 +242,11 @@ test("buildPromptfooProvider builds provider configs for codex, copilot-cli, pi,
   assert.equal(claudeCodeProvider.config.cli_env.HOME, "C:/temp/home");
   assert.equal(claudeCodeProvider.config.agent, "reviewer");
   assert.match(claudeCodeProvider.config.prompt_preamble, /marker-guide/);
-  assert.match(geminiProvider.id, /gemini-cli-system-provider\.js$/);
-  assert.equal(geminiProvider.config.command_path, "gemini");
-  assert.equal(geminiProvider.config.cli_env.GEMINI_FLAG, "1");
-  assert.equal(geminiProvider.config.cli_env.HOME, "C:/temp/home");
-  assert.match(geminiProvider.config.prompt_preamble, /activate_skill/);
+  assert.match(antigravityProvider.id, /antigravity-cli-system-provider\.js$/);
+  assert.equal(antigravityProvider.config.command_path, "agy");
+  assert.equal(antigravityProvider.config.cli_env.ANTIGRAVITY_FLAG, "1");
+  assert.equal(antigravityProvider.config.cli_env.HOME, "C:/temp/home");
+  assert.match(antigravityProvider.config.prompt_preamble, /\/marker-guide/);
 });
 
 test("buildPromptfooProvider rejects additional directories outside the workspace", () => {

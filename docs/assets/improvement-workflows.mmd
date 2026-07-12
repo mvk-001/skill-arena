@@ -1,0 +1,27 @@
+%%{init: {"theme":"base","fontFamily":"Open Sans, Arial, sans-serif","themeVariables":{"fontFamily":"Open Sans, Arial, sans-serif","fontSize":"18px","primaryColor":"#cdf3ff","primaryTextColor":"#333e48","primaryBorderColor":"#007298","secondaryColor":"#fff4cc","secondaryTextColor":"#333e48","secondaryBorderColor":"#e77204","tertiaryColor":"#f9ccff","tertiaryTextColor":"#333e48","tertiaryBorderColor":"#652f6c","lineColor":"#696969","textColor":"#333e48","mainBkg":"#ffffff","clusterBkg":"#f7f7f7","clusterBorder":"#cfcfcf","edgeLabelBackground":"#ffffff"},"flowchart":{"curve":"basis","nodeSpacing":34,"rankSpacing":48,"htmlLabels":true}}}%%
+flowchart LR
+    author["Config Author<br/><small>define a valid fixed benchmark</small>"]
+    runner["Run Results<br/><small>execute, normalize, report</small>"]
+    benchmark["Trusted benchmark + evidence"]
+    choice{"Choose the evidence strategy"}
+
+    author --> benchmark
+    runner --> benchmark
+    benchmark --> choice
+
+    choice -->|"repeatable scores"| population["Population search<br/><small>10 candidates → score all → keep 2<br/>mutate + crossover until plateau</small>"]
+    choice -->|"labeled trajectories"| traceStrategy["Trace distillation<br/><small>independent patches → prevalence + conflicts<br/>holdout before promotion</small>"]
+
+    population --> winner["Validated skill improvement"]
+    traceStrategy --> winner
+
+    classDef support fill:#cdf3ff,stroke:#007298,color:#333e48,stroke-width:2px;
+    classDef decision fill:#fff4cc,stroke:#e77204,color:#333e48,stroke-width:2px;
+    classDef genetic fill:#ffccd5,stroke:#9e1b32,color:#333e48,stroke-width:2px;
+    classDef traced fill:#f9ccff,stroke:#652f6c,color:#333e48,stroke-width:2px;
+    classDef result fill:#dbffcc,stroke:#45842a,color:#333e48,stroke-width:3px;
+    class author,runner,benchmark support;
+    class choice decision;
+    class population genetic;
+    class traceStrategy traced;
+    class winner result;

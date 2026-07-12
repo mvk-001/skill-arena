@@ -29,6 +29,8 @@ Skill Arena documentation will use these boundaries:
 - `docs/specs.md` owns configuration and output contracts.
 - `docs/architecture.md` owns runtime design and source-module boundaries.
 - `docs/testing.md` owns validation workflows.
+- `docs/research-foundations.md` owns research provenance and adaptation
+  boundaries for skill-improvement workflows.
 - maintained executable YAML examples live under `evaluations/`, not `docs/`.
 
 The repository will run `npm run docs:check` to validate local links and heading

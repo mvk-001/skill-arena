@@ -31,6 +31,7 @@ export async function spawnProviderCommand({
 
     let stdout = "";
     let stderr = "";
+    let settled = false;
 
     childProcess.stdout.on("data", (chunk) => {
       stdout += chunk.toString();
@@ -40,20 +41,37 @@ export async function spawnProviderCommand({
       stderr += chunk.toString();
     });
 
-    childProcess.on("error", (error) => {
+    const settle = async ({ error, exitCode }) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
       cleanupAbortListener();
-      void cleanup();
-      reject(error);
-    });
+      try {
+        await cleanup();
+      } catch (cleanupError) {
+        reject(error ?? cleanupError);
+        return;
+      }
 
-    childProcess.on("exit", (exitCode) => {
-      cleanupAbortListener();
-      void cleanup();
+      if (error) {
+        reject(error);
+        return;
+      }
+
       resolve({
         stdout,
         stderr,
         exitCode: exitCode ?? 1,
       });
+    };
+
+    childProcess.on("error", (error) => {
+      void settle({ error, exitCode: null });
+    });
+
+    childProcess.on("close", (exitCode) => {
+      void settle({ error: null, exitCode });
     });
 
     if (typeof stdinText === "string") {
@@ -144,7 +162,12 @@ async function buildWindowsPowerShellCommand({
       script,
     ],
     cleanup: async () => {
-      await fs.rm(promptDirectory, { recursive: true, force: true });
+      await fs.rm(promptDirectory, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 50,
+      });
     },
   };
 }

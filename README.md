@@ -8,9 +8,7 @@ Skill Arena is a declarative, CLI-first benchmark harness for comparing coding
 agents under the same task, workspace, and execution constraints. It turns
 capability decisions into repeatable experiments and normalized evidence.
 
-**[Vision](#vision) · [Quick start](#quick-start) · [Core CLI](#core-cli) ·
-[Skill toolkit](#skill-toolkit) · [Evolution](#choose-an-evolution-strategy) ·
-[Documentation](#documentation)**
+**[Vision](#vision) · [Quick start](#quick-start) · [Core CLI](#core-cli) · [Skill toolkit](#skill-toolkit) · [Improvement workflows](#choose-an-improvement-workflow) · [Documentation](#documentation)**
 
 ## Vision
 
@@ -31,7 +29,7 @@ conditions.**
 | --- | --- |
 | Prove skill impact | Compare `no-skill` against one or more skill-enabled profiles under identical inputs. |
 | Choose the best alternative | Test several skills, instructions, agents, or hooks in one side-by-side matrix. |
-| Compare agent runtimes | Run the same benchmark across Codex, Copilot CLI, Pi, OpenCode, Claude Code, and Gemini CLI. |
+| Compare agent runtimes | Run the same benchmark across Codex, Copilot CLI, Pi, OpenCode, Claude Code, and Antigravity CLI. |
 | Measure reliability and efficiency | Repeat each cell and inspect pass rate, token usage, latency, errors, and artifacts. |
 | Protect benchmark integrity | Materialize fresh workspaces and expose only declared capabilities and minimum authentication state. |
 | Improve skills systematically | Search scored candidate variants or consolidate recurring lessons from labeled traces. |
@@ -39,7 +37,7 @@ conditions.**
 ## How it works
 
 <p align="center">
-  <img src="./docs/assets/skill-arena-value.animated.svg" width="100%" alt="Skill Arena turns fixed benchmark inputs into normalized evidence and a clear capability decision.">
+  <img src="https://raw.githubusercontent.com/mvk-001/skill-arena/main/docs/assets/skill-arena-value.gif" width="1200" alt="Skill Arena turns fixed benchmark inputs into normalized evidence and a clear capability decision.">
 </p>
 
 1. **Declare** exact prompts, zero or more workspace sources, assertions, profiles, and agent
@@ -133,16 +131,16 @@ them, and improving other skills.
 | [`skill-arena-config-author`](./skills/skill-arena-config-author/SKILL.md) | You need to generate, repair, or validate a declarative compare config. |
 | [`skill-arena-compare-batch`](./skills/skill-arena-compare-batch/SKILL.md) | You want a scripted, benchmark-specific, low-error authoring path. |
 | [`skill-arena-run-results`](./skills/skill-arena-run-results/SKILL.md) | You need to validate, dry-run, execute, inspect, and summarize a comparison. |
-| [`skill-arena-evolution`](./skills/skill-arena-evolution/SKILL.md) | You can score candidate skill variants repeatedly against a fixed benchmark. |
-| [`skill-arena-traced-evolution`](./skills/skill-arena-traced-evolution/SKILL.md) | You have labeled success and failure traces and want one transferable update. |
+| [`skill-arena-population-search`](./skills/skill-arena-population-search/SKILL.md) | You can score candidate skill variants repeatedly against a fixed benchmark. |
+| [`skill-arena-trace-distillation`](./skills/skill-arena-trace-distillation/SKILL.md) | You have labeled success and failure traces and want one transferable update. |
 
-### Choose an evolution strategy
+### Choose an improvement workflow
 
 <p align="center">
-  <img src="./docs/assets/evolution-strategies.animated.svg" width="100%" alt="Skill Arena supports population evolution and trace-based evolution on top of a trusted benchmark and normalized results.">
+  <img src="https://raw.githubusercontent.com/mvk-001/skill-arena/main/docs/assets/improvement-workflows.gif" width="1200" alt="Skill Arena supports population search and trace distillation on top of a trusted benchmark and normalized results.">
 </p>
 
-| | Population evolution | Traced evolution |
+| | Population search | Trace distillation |
 | --- | --- | --- |
 | Best input | Repeatable candidate fitness scores. | Diverse labeled success and failure trajectories. |
 | Search strategy | Seed 10 candidates, score all, keep the top 2, then mutate or cross over. | Produce independent trace-local patches, then consolidate recurring lessons. |
@@ -150,8 +148,9 @@ them, and improving other skills.
 | Final product | One winning skill variant. | One coherent, transferable skill update. |
 
 Both strategies keep the benchmark fixed and reject unvalidated changes.
-Population evolution explores the solution space; traced evolution distills
-systematic lessons from observed agent behavior.
+Population search explores the solution space; trace distillation extracts
+systematic lessons from observed agent behavior. See [Research foundations](./docs/research-foundations.md)
+for the papers, adopted mechanisms, and adaptation boundaries behind both workflows.
 
 ## Supported agent runtimes
 
@@ -162,7 +161,7 @@ systematic lessons from observed agent behavior.
 | `pi` | `pi` | skills |
 | `opencode` | `opencode` | instructions, skills, agents |
 | `claude-code` | `claude` | instructions, skills, agents, hooks |
-| `gemini-cli` | `gemini` | instructions, skills |
+| `antigravity-cli` | `agy` | instructions, skills |
 
 Adapters expose different native control surfaces. Skill Arena reports
 unsupported capability cells explicitly instead of pretending that every
@@ -217,6 +216,7 @@ decision-making.
 | [CLI reference](./docs/cli-reference.md) | Look up commands, options, and environment variables. |
 | [Architecture](./docs/architecture.md) | Understand execution flow, isolation, adapters, and module boundaries. |
 | [Configuration specs](./docs/specs.md) | Read the canonical schema and normalization contract. |
+| [Research foundations](./docs/research-foundations.md) | Trace the papers, related work, and adaptation boundaries behind skill improvement. |
 | [Testing](./docs/testing.md) | Validate documentation, runtime code, configs, and live runs. |
 | [ADRs](./.specs/adr/) | Review durable technical and workflow decisions. |
 

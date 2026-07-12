@@ -77,11 +77,11 @@ test("manifest validation rejects unsupported adapter ids", async () => {
   assert.throws(() => benchmarkManifestSchema.parse(invalidManifest));
 });
 
-test("manifest validation accepts gemini-cli with command execution", () => {
+test("manifest validation accepts antigravity-cli with command execution", () => {
   const manifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,
     benchmark: {
-      id: "gemini-check",
+      id: "antigravity-check",
       description: "Validation fixture",
       tags: [],
     },
@@ -94,11 +94,11 @@ test("manifest validation accepts gemini-cli with command execution", () => {
     },
     scenarios: [
       {
-        id: "gemini",
-        description: "Gemini adapter",
+        id: "antigravity",
+        description: "Antigravity adapter",
         skillMode: "disabled",
         agent: {
-          adapter: "gemini-cli",
+          adapter: "antigravity-cli",
           executionMethod: "command",
         },
         evaluation: {
@@ -113,7 +113,30 @@ test("manifest validation accepts gemini-cli with command execution", () => {
     ],
   });
 
-  assert.equal(manifest.scenarios[0].agent.commandPath, "gemini");
+  assert.equal(manifest.scenarios[0].agent.commandPath, "agy");
+});
+
+test("manifest validation rejects the removed gemini-cli adapter", () => {
+  assert.throws(() => benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "removed-adapter",
+      description: "Validation fixture",
+      tags: [],
+    },
+    task: { prompt: "Hello" },
+    workspace: {
+      fixture: "evaluations/smoke-skill-following/fixtures/workspaces/base",
+      initializeGit: true,
+    },
+    scenarios: [{
+      id: "legacy-google-cli",
+      description: "Removed adapter",
+      skillMode: "disabled",
+      agent: { adapter: "gemini-cli", executionMethod: "command" },
+      evaluation: { assertions: [{ type: "equals", value: "Hello" }] },
+    }],
+  }), /Invalid option/);
 });
 
 test("enabled skill mode defaults to workspace overlay when legacy skillOverlay exists", () => {

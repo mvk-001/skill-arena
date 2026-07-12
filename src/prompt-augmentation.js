@@ -27,10 +27,10 @@ export function buildSkillActivationPrompt({ adapter, allowedSkillIds = [], skil
       return hasNamedSkills
         ? `Skill activation: explicitly load and follow these skills before solving the task: ${skillIds.join(", ")}.`
         : "Skill activation: if a relevant skill is available, explicitly load and follow it before solving the task.";
-    case "gemini-cli":
+    case "antigravity-cli":
       return hasNamedSkills
-        ? `Skill activation: explicitly activate and follow these skills before solving the task: ${skillIds.join(", ")}. Use the native activate_skill flow when needed.`
-        : "Skill activation: if a relevant skill is available, explicitly activate and follow it before solving the task.";
+        ? `Skill activation: explicitly invoke and follow these skills before solving the task: ${skillIds.map((skillId) => `/${skillId}`).join(", ")}.`
+        : "Skill activation: if a relevant workspace or installed skill is available, explicitly invoke and follow it before solving the task.";
     default:
       return hasNamedSkills
         ? `Skill activation: explicitly load and follow these skills before solving the task: ${skillIds.join(", ")}.`

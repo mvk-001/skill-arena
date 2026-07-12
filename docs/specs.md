@@ -142,14 +142,14 @@ scenarios:
   - `pi`
   - `opencode`
   - `claude-code`
-  - `gemini-cli`
+  - `antigravity-cli`
 - For `codex`, `agent.executionMethod` controls how the custom Promptfoo script invokes the local runtime:
   - `command`: execute the local `codex exec` command
   - `sdk`: invoke `@openai/codex-sdk`, which wraps the local CLI
 - `copilot-cli` supports only `executionMethod: "command"` in V1.
 - `opencode` supports only `executionMethod: "command"` in V1.
 - `claude-code` supports only `executionMethod: "command"` in V1.
-- `gemini-cli` supports only `executionMethod: "command"` in V1.
+- `antigravity-cli` supports only `executionMethod: "command"` in V1.
 - `skillMode` must be one of:
   - `disabled`
   - `enabled`
@@ -520,7 +520,7 @@ Current compare support in V1:
 - `claude-code`
   - supported: `instructions`, `skills`, `agents`, `hooks`
   - unsupported: `mcp`, `extensions`, `plugins`
-- `gemini-cli`
+- `antigravity-cli`
   - supported: `instructions`, `skills`
   - unsupported: `agents`, `hooks`, `mcp`, `extensions`, `plugins`
 
@@ -555,7 +555,7 @@ Effective isolation by adapter:
 | `opencode` | strong | isolated config dir plus `--pure` and generated config content |
 | `claude-code` | medium | project-scoped materialization is strong, but the runtime remains externally managed |
 | `copilot-cli` | partial | isolated config and disabled built-in surfaces help, but the CLI remains comparatively opaque |
-| `gemini-cli` | medium | isolated home plus generated `.gemini` project layout and settings override files |
+| `antigravity-cli` | medium | isolated home plus generated Antigravity settings and mirrored `.agents/skills/*` project skills |
 
 Adapter-specific V1 rules:
 
@@ -573,8 +573,8 @@ Adapter-specific V1 rules:
 - Repository-level `claude-code` agents should usually materialize files under `.claude/agents/`.
 - Repository-level `claude-code` hooks should usually materialize `.claude/settings.json`.
 - `instructions` for `claude-code` should usually materialize `CLAUDE.md` at the workspace root.
-- Repository-level `gemini-cli` skills should usually materialize under `.gemini/skills/`. Skill Arena may mirror declared workspace skills there during isolated execution.
-- `instructions` for `gemini-cli` should usually materialize `GEMINI.md` at the workspace root.
+- Repository-level `antigravity-cli` skills should usually materialize under `.agents/skills/`. Skill Arena mirrors declared generic `skills/*` bundles there during isolated execution.
+- `instructions` for `antigravity-cli` should usually materialize `AGENTS.md`, `GEMINI.md`, or always-on rules under `.agents/rules/` at the workspace root.
 
 Preferred explicit compare skill definitions use these source modes:
 
@@ -633,7 +633,7 @@ Local judge shorthand is also supported in V1 through packaged Promptfoo custom 
 - `skill-arena:judge:pi`
 - `skill-arena:judge:opencode`
 - `skill-arena:judge:claude-code`
-- `skill-arena:judge:gemini-cli`
+- `skill-arena:judge:antigravity-cli`
 
 These judge providers are separate from the benchmarked agent adapters. They let Promptfoo run `llm-rubric` grading through the local CLI instead of a hosted API provider.
 
@@ -678,9 +678,9 @@ The benchmark runner is responsible for executing Promptfoo and writing normaliz
 - `claude-code`: supported
   - implemented as a Promptfoo custom script
   - supports `executionMethod: "command"` through the local `claude` CLI
-- `gemini-cli`: supported
+- `antigravity-cli`: supported
   - implemented as a Promptfoo custom script
-  - supports `executionMethod: "command"` through the local `gemini` CLI
+  - supports `executionMethod: "command"` through the local `agy` CLI in non-interactive print mode
 
 ## Workspace rules
 

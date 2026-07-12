@@ -122,7 +122,7 @@ required values.
 | `--variant-id <slug>` | Set the variant identifier. |
 | `--variant-description <text>` | Set the variant description. |
 | `--variant-display-name <text>` | Set the report row label. |
-| `--adapter <id>` | `codex`, `copilot-cli`, `pi`, `opencode`, `claude-code`, or `gemini-cli`. |
+| `--adapter <id>` | `codex`, `copilot-cli`, `pi`, `opencode`, `claude-code`, or `antigravity-cli`. |
 | `--model <id>` | Set the provider-specific model identifier. |
 | `--execution-method <id>` | Set the adapter execution method. |
 | `--command-path <path>` | Set the local CLI executable path. |

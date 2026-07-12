@@ -4,7 +4,7 @@ Date: 2026-04-14
 
 ## Status
 
-Accepted
+Superseded by [Replace Gemini CLI with Antigravity CLI](./2026-07-12-replace-gemini-cli-with-antigravity-cli.md)
 
 ## Context
 

@@ -8,7 +8,7 @@ import {
   mergeEnvironmentPassthrough,
 } from "./environment.js";
 
-export const ADAPTER_IDS = ["codex", "copilot-cli", "pi", "opencode", "claude-code", "gemini-cli"];
+export const ADAPTER_IDS = ["codex", "copilot-cli", "pi", "opencode", "claude-code", "antigravity-cli"];
 
 const adapterRegistry = {
   codex: {
@@ -221,12 +221,12 @@ const adapterRegistry = {
       };
     },
   },
-  "gemini-cli": {
-    id: "gemini-cli",
+  "antigravity-cli": {
+    id: "antigravity-cli",
     supported: true,
     buildProvider({ scenario, workspaceDirectory, workspaceEnvironment, environmentPassthrough, isolatedEnvironment }) {
-      const providerPath = fromPackageRoot("src", "providers", "gemini-cli-system-provider.js");
-      const providerId = buildProviderId("gemini-cli", scenario.agent.model);
+      const providerPath = fromPackageRoot("src", "providers", "antigravity-cli-system-provider.js");
+      const providerId = buildProviderId("antigravity-cli", scenario.agent.model);
 
       return {
         id: providerPath,
@@ -252,10 +252,10 @@ const adapterRegistry = {
             workspaceDirectory,
           ),
           env_passthrough: environmentPassthrough,
-          gemini_cli_config: scenario.agent.config ?? {},
+          antigravity_cli_config: scenario.agent.config ?? {},
           strict_runtime_isolation: true,
           prompt_preamble: buildSkillActivationPrompt({
-            adapter: "gemini-cli",
+            adapter: "antigravity-cli",
             allowedSkillIds: getAllowedSkillIds(isolatedEnvironment),
             skillStrategy: resolveSkillStrategy(scenario),
           }),

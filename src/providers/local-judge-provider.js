@@ -1,7 +1,7 @@
 import CodexSystemProvider from "./codex-system-provider.js";
 import ClaudeCodeSystemProvider from "./claude-code-system-provider.js";
 import CopilotSystemProvider from "./copilot-system-provider.js";
-import GeminiCliSystemProvider from "./gemini-cli-system-provider.js";
+import AntigravityCliSystemProvider from "./antigravity-cli-system-provider.js";
 import OpenCodeSystemProvider from "./opencode-system-provider.js";
 import PiSystemProvider from "./pi-system-provider.js";
 
@@ -48,10 +48,10 @@ const DEFAULTS = {
     claude_code_config: {},
     strict_runtime_isolation: true,
   },
-  "gemini-cli": {
-    command_path: "gemini",
+  "antigravity-cli": {
+    command_path: "agy",
     cli_env: {},
-    gemini_cli_config: {},
+    antigravity_cli_config: {},
     strict_runtime_isolation: true,
   },
 };
@@ -243,18 +243,18 @@ export default class LocalJudgeProvider {
               ?? DEFAULTS["claude-code"].strict_runtime_isolation,
           },
         });
-      case "gemini-cli":
-        return new GeminiCliSystemProvider({
+      case "antigravity-cli":
+        return new AntigravityCliSystemProvider({
           config: {
-            ...DEFAULTS["gemini-cli"],
+            ...DEFAULTS["antigravity-cli"],
             ...normalizeBaseConfig(this.config),
             command_path:
               this.config.commandPath
               ?? this.config.command_path
-              ?? DEFAULTS["gemini-cli"].command_path,
+              ?? DEFAULTS["antigravity-cli"].command_path,
             working_dir: this.config.workingDirectory ?? this.config.working_directory ?? process.cwd(),
             model: this.config.model,
-            cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS["gemini-cli"].cli_env,
+            cli_env: this.config.cliEnv ?? this.config.cli_env ?? DEFAULTS["antigravity-cli"].cli_env,
             env_passthrough: resolveEnvPassthrough(this.config),
             sandbox_mode:
               this.config.sandboxMode
@@ -275,14 +275,14 @@ export default class LocalJudgeProvider {
               this.config.additionalDirectories
               ?? this.config.additional_directories
               ?? [],
-            gemini_cli_config:
-              this.config.geminiCliConfig
-              ?? this.config.gemini_cli_config
-              ?? DEFAULTS["gemini-cli"].gemini_cli_config,
+            antigravity_cli_config:
+              this.config.antigravityCliConfig
+              ?? this.config.antigravity_cli_config
+              ?? DEFAULTS["antigravity-cli"].antigravity_cli_config,
             strict_runtime_isolation:
               this.config.strictRuntimeIsolation
               ?? this.config.strict_runtime_isolation
-              ?? DEFAULTS["gemini-cli"].strict_runtime_isolation,
+              ?? DEFAULTS["antigravity-cli"].strict_runtime_isolation,
           },
         });
       default:

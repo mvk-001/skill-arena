@@ -112,7 +112,7 @@ The adapter layer maps a manifest scenario into a Promptfoo provider definition.
 - `pi`
 - `opencode`
 - `claude-code`
-- `gemini-cli`
+- `antigravity-cli`
 
 ### Promptfoo config generator
 
@@ -136,11 +136,15 @@ For `claude-code`, the generated provider is also a file-based custom script. V1
 
 `claude-code` materializes generic benchmark instruction and skill bundles into Claude Code's project-native discovery layout (`CLAUDE.md` and `.claude/skills/*`) inside the isolated execution workspace. Sandbox, network, web, and approval settings are mapped on a best-effort basis through generated Claude settings plus CLI flags.
 
-For `gemini-cli`, the generated provider is also a file-based custom script. V1 supports:
+For `antigravity-cli`, the generated provider is also a file-based custom script. V1 supports:
 
-- `command`: shell out to the local `gemini` CLI with `-p`
+- `command`: shell out to the local `agy` CLI with `--print`
 
-`gemini-cli` materializes generic benchmark instruction and skill bundles into Gemini CLI's project-native discovery layout (`GEMINI.md` and `.gemini/skills/*`) inside the isolated execution workspace. Sandbox, network, web, and approval settings are mapped on a best-effort basis through generated Gemini project settings plus CLI flags.
+`antigravity-cli` uses Antigravity's project instruction discovery and mirrors
+generic benchmark skills into `.agents/skills/*` inside the isolated execution
+workspace. It writes settings under an isolated
+`~/.gemini/antigravity-cli/settings.json` and maps model, sandbox, approval, and
+additional-directory controls through `agy` flags on a best-effort basis.
 
 For `pi`, the generated provider runs with strict skill isolation by default:
 
@@ -182,7 +186,7 @@ Adapter-specific isolation is intentionally uneven because external CLIs do not 
 | `opencode` | `auth.json` only | isolated config dir, generated config content, `--pure`, workspace-only agents and skills | provider semantics still depend on the local OpenCode CLI |
 | `claude-code` | no host config by default beyond explicit env/auth passed in | isolated project workspace, `CLAUDE.md` and `.claude/*` mirrored from the workspace, `--setting-sources project` by default | runtime-specific hidden orchestration remains outside Skill Arena control |
 | `copilot-cli` | no host config by default beyond explicit env/auth passed in | isolated config dir, `--config-dir`, `--disable-builtin-mcps`, `--disallow-temp-dir`, `--no-auto-update`, `--no-experimental`, `COPILOT_CUSTOM_INSTRUCTIONS_DIRS=` | isolation is partial because the CLI remains more opaque than Codex, Pi, or OpenCode |
-| `gemini-cli` | no host config by default beyond explicit env/auth passed in | isolated home, generated `.gemini/settings.json`, mirrored `GEMINI.md`, mirrored `.gemini/skills/*`, generated system-settings override paths | Gemini exposes only coarse sandbox and approval controls, so exact policy parity is best-effort |
+| `antigravity-cli` | authentication remains in the operating-system secure keyring; no host settings are copied | isolated home, generated Antigravity settings, project instructions, mirrored `.agents/skills/*` | Antigravity exposes one sandbox toggle and one full auto-approval flag, so exact policy parity is best-effort |
 
 ### Result outputs
 
@@ -201,7 +205,7 @@ Compare runs write under `results/<benchmark-id>/<timestamp>-compare/` and inclu
 - `merged/report.md`
 - `merged/merged-summary.json`
 
-Provider executions may also write hook artifacts under the materialized workspace at `.skill-arena/hooks/execution-events/`. These JSON files capture the observable command invocation plus any parsed event or tool-call stream emitted by `codex`, `copilot-cli`, `pi`, `opencode`, `claude-code`, or `gemini-cli`.
+Provider executions may also write hook artifacts under the materialized workspace at `.skill-arena/hooks/execution-events/`. These JSON files capture the observable command invocation plus any parsed event or tool-call stream emitted by `codex`, `copilot-cli`, `pi`, `opencode`, `claude-code`, or `antigravity-cli`. Antigravity print mode currently contributes command metadata and plain output rather than a structured tool-event stream.
 
 ## Execution flow
 
@@ -239,17 +243,17 @@ Compare profiles are capability-oriented on purpose. Similar names across tools 
 - `No`: not documented as a supported capability
 - `Planned`: relevant for future adapter support in Skill Arena
 
-| Capability | Codex | Copilot CLI | OpenCode | Pi | Claude Code | Gemini CLI |
+| Capability | Codex | Copilot CLI | OpenCode | Pi | Claude Code | Antigravity CLI |
 | --- | --- | --- | --- | --- | --- | --- |
-| Project instruction file | Native (`AGENTS.md`) | Native | Native (`AGENTS.md`) | Native (`AGENTS.md`) | Native (`CLAUDE.md`) | Native (`GEMINI.md`) |
-| Skills | Native | Native | Native | Native | Native (`.claude/skills`) | Native (`.gemini/skills`) |
+| Project instruction file | Native (`AGENTS.md`) | Native | Native (`AGENTS.md`) | Native (`AGENTS.md`) | Native (`CLAUDE.md`) | Native (`AGENTS.md`, `GEMINI.md`, `.agents/rules`) |
+| Skills | Native | Native | Native | Native | Native (`.claude/skills`) | Native (`.agents/skills`) |
 | Skill groups / multiple skills | Native | Native | Native | Native | Native | Native |
-| Hooks / event hooks | No | Native | Analogous via plugins | Analogous via extensions | Native | No V1 mapping |
+| Hooks / event hooks | No | Native | Analogous via plugins | Analogous via extensions | Native | Native; no V1 mapping |
 | Custom agents | Native | Native | Native | No | Native | No V1 mapping |
-| Subagents / delegation | Native | Native | Native | Analogous via extensions/packages | Native | No V1 mapping |
-| MCP servers | Native | Native | Native | Analogous via extensions | Native | No V1 mapping |
-| Runtime plugin / extension API | No | No | Native plugins | Native extensions/packages | Native plugins | No V1 mapping |
-| IDE plugin / IDE extension | No | No | IDE-only | No | Native IDE integration | No V1 mapping |
+| Subagents / delegation | Native | Native | Native | Analogous via extensions/packages | Native | Native; no V1 mapping |
+| MCP servers | Native | Native | Native | Analogous via extensions | Native | Native; no V1 mapping |
+| Runtime plugin / extension API | No | No | Native plugins | Native extensions/packages | Native plugins | Native plugins; no V1 mapping |
+| IDE plugin / IDE extension | No | No | IDE-only | No | Native IDE integration | Native IDE integration |
 
 Notes:
 
@@ -258,7 +262,7 @@ Notes:
 - Copilot CLI hooks are native. OpenCode plugin hooks and Pi extension handlers are analogous, not equivalent.
 - Codex should remain `No` for hooks unless OpenAI documents a stable runtime hook surface suitable for deterministic benchmarking.
 - `No V1 mapping` means Skill Arena does not currently expose that capability
-  for Gemini CLI; it is not a claim about every Gemini product surface.
+  for Antigravity CLI; it is not a claim about the product's native surface.
 
 ## Design constraints
 

@@ -75,7 +75,7 @@ const commandDetails = {
       "--variant-id <id>: variant id override",
       "--variant-description <text>: variant description override",
       "--variant-display-name <text>: variant row label",
-      "--adapter <id>: variant agent adapter (codex, copilot-cli, pi, opencode, claude-code, gemini-cli)",
+      "--adapter <id>: variant agent adapter (codex, copilot-cli, pi, opencode, claude-code, antigravity-cli)",
       "--model <id>: variant model",
       "--execution-method <id>: variant execution method",
       "--command-path <path>: variant command path",

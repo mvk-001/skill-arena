@@ -41,8 +41,8 @@ test("listUnsupportedCapabilityFamilies returns unsupported hooks for opencode",
   assert.deepEqual(result, ["hooks"]);
 });
 
-test("listUnsupportedCapabilityFamilies returns unsupported agents and hooks for gemini-cli", () => {
-  const result = listUnsupportedCapabilityFamilies("gemini-cli", {
+test("listUnsupportedCapabilityFamilies returns unsupported agents and hooks for antigravity-cli", () => {
+  const result = listUnsupportedCapabilityFamilies("antigravity-cli", {
     instructions: [{ source: { type: "local-path" } }],
     skills: [{ source: { type: "local-path" } }],
     agents: [{ agentId: "agent-1" }],

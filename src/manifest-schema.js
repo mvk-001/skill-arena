@@ -70,7 +70,7 @@ export const promptEvaluationSchema = z.object({
 });
 
 const baseAgentSchema = z.object({
-  adapter: z.enum(["codex", "copilot-cli", "pi", "opencode", "claude-code", "gemini-cli"]),
+  adapter: z.enum(["codex", "copilot-cli", "pi", "opencode", "claude-code", "antigravity-cli"]),
   model: z.string().min(1).optional(),
   executionMethod: z.enum(["command", "sdk"]).default("command"),
   commandPath: z.string().min(1).optional(),
@@ -117,10 +117,10 @@ export const agentSchema = baseAgentSchema
       });
     }
 
-    if (agent.adapter === "gemini-cli" && agent.executionMethod !== "command") {
+    if (agent.adapter === "antigravity-cli" && agent.executionMethod !== "command") {
       context.addIssue({
         code: "custom",
-        message: "The gemini-cli adapter only supports executionMethod \"command\" in V1.",
+        message: "The antigravity-cli adapter only supports executionMethod \"command\" in V1.",
         path: ["executionMethod"],
       });
     }
@@ -140,8 +140,8 @@ function getDefaultCommandPath(adapter) {
       return "opencode";
     case "claude-code":
       return "claude";
-    case "gemini-cli":
-      return "gemini";
+    case "antigravity-cli":
+      return "agy";
     case "codex":
     default:
       return "codex";

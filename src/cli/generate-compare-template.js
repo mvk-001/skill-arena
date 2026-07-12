@@ -447,8 +447,8 @@ function defaultVariantIdForAdapter(adapter) {
   if (adapter === "claude-code") {
     return "claude-code-sonnet";
   }
-  if (adapter === "gemini-cli") {
-    return "gemini-pro";
+  if (adapter === "antigravity-cli") {
+    return "antigravity-flash";
   }
   return "codex-mini";
 }
@@ -466,8 +466,8 @@ function defaultModelForAdapter(adapter) {
   if (adapter === "claude-code") {
     return "claude-sonnet-4-20250514";
   }
-  if (adapter === "gemini-cli") {
-    return "gemini-2.5-pro";
+  if (adapter === "antigravity-cli") {
+    return "Gemini 3.5 Flash (Low)";
   }
   return "gpt-5.1-codex-mini";
 }
@@ -485,8 +485,8 @@ function defaultCommandPathForAdapter(adapter) {
   if (adapter === "claude-code") {
     return "claude";
   }
-  if (adapter === "gemini-cli") {
-    return "gemini";
+  if (adapter === "antigravity-cli") {
+    return "agy";
   }
   return "codex";
 }
@@ -653,7 +653,7 @@ function renderAssertionBlock(assertion, options) {
   if (assertion.type === "llm-rubric") {
     lines.push(
       `      provider: ${yamlString(options.evaluationProvider ?? "skill-arena:judge:codex")}`,
-      "      # TODO: provider choices are usually skill-arena:judge:codex, skill-arena:judge:copilot-cli, skill-arena:judge:pi, skill-arena:judge:opencode, skill-arena:judge:claude-code, skill-arena:judge:gemini-cli, or a hosted Promptfoo provider such as openai:gpt-5-mini.",
+      "      # TODO: provider choices are usually skill-arena:judge:codex, skill-arena:judge:copilot-cli, skill-arena:judge:pi, skill-arena:judge:opencode, skill-arena:judge:claude-code, skill-arena:judge:antigravity-cli, or a hosted Promptfoo provider such as openai:gpt-5-mini.",
       "      # TODO: choose a local judge when you want the benchmark to stay CLI-local; choose a hosted judge only when you need a specific external grader.",
     );
   }
@@ -734,7 +734,7 @@ function renderVariantBlock(variant) {
     "      # TODO: description is free text. Explain why this runtime configuration is included.",
     "      agent:",
     `        adapter: ${yamlString(variant.adapter)}`,
-    "        # TODO: adapter choices are exactly: codex, copilot-cli, pi, opencode, claude-code, gemini-cli.",
+    "        # TODO: adapter choices are exactly: codex, copilot-cli, pi, opencode, claude-code, antigravity-cli.",
     "        # TODO: choose the adapter that matches the local CLI you actually want to benchmark.",
     `        model: ${yamlString(variant.model)}`,
     "        # TODO: model is provider-specific free text. Use the exact model id accepted by the chosen adapter and prefer one that is stable and documented for the benchmark.",
@@ -1046,7 +1046,7 @@ function printUsage() {
   console.error("  --variant-id <id>               Variant identifier");
   console.error("  --variant-description <text>    Variant description");
   console.error("  --variant-display-name <text>   Human-readable variant label");
-  console.error("  --adapter <id>                 codex | copilot-cli | pi | opencode | claude-code | gemini-cli");
+  console.error("  --adapter <id>                 codex | copilot-cli | pi | opencode | claude-code | antigravity-cli");
   console.error("  --model <id>                   Variant model");
   console.error("  --execution-method <id>         Variant execution method");
   console.error("  --command-path <path>           Variant executable path");

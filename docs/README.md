@@ -11,6 +11,8 @@ Start with the guide that matches the work you are doing.
    variables, and exit behavior.
 3. [Configuration specs](./specs.md) — canonical schema, normalization rules,
    adapter contract, and output requirements.
+4. [Research foundations](./research-foundations.md) — provenance and adaptation
+   boundaries for the skill-improvement workflows.
 
 The maintained examples under [`evaluations/`](../evaluations/) are executable
 references. Use
@@ -37,6 +39,7 @@ Read [`AGENTS.md`](../AGENTS.md) before changing the repository.
 | CLI behavior | `skill-arena <command> --help`, then [CLI reference](./cli-reference.md) |
 | Maintained benchmark scenarios | [`evaluations/`](../evaluations/) |
 | Validation workflow | [Testing](./testing.md) |
+| Improvement-workflow research provenance | [Research foundations](./research-foundations.md) |
 | Historical decisions | [ADRs](../.specs/adr/) |
 
 When prose and executable behavior disagree, treat the implementation and its

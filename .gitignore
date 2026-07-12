@@ -10,6 +10,7 @@ tmp/
 deliverables/
 # Browser screenshots generated during visual documentation checks.
 output/playwright/
+output/animated-svg-to-gif/
 .playwright-cli/
 __pycache__/
 *.py[cod]

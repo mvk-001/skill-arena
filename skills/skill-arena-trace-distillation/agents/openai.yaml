@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Arena Trace Distillation"
+  short_description: "Distill traces into one skill update"
+  default_prompt: "Use $skill-arena-trace-distillation to improve a skill by distilling recurring lessons from success and failure traces."

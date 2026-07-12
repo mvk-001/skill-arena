@@ -74,7 +74,7 @@ test("gen-conf command shows inline help", async () => {
   assert.match(output, /Generate a commented evaluation config template with TODO placeholders/);
   assert.match(output, /--skill-type <type>/);
   assert.match(output, /--env-passthrough <name>/);
-  assert.match(output, /codex, copilot-cli, pi, opencode, claude-code, gemini-cli/);
+  assert.match(output, /codex, copilot-cli, pi, opencode, claude-code, antigravity-cli/);
   assert.match(output, /skill-arena gen-conf --prompt "summarize file A"/);
 });
 
@@ -96,6 +96,26 @@ test("gen-conf uses OpenCode defaults when that adapter is selected", async () =
   assert.match(generated, /adapter: "opencode"/);
   assert.match(generated, /model: "openai\/gpt-5\.4-mini"/);
   assert.match(generated, /commandPath: "opencode"/);
+});
+
+test("gen-conf uses Antigravity CLI defaults when that adapter is selected", async () => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "skill-arena-gen-conf-antigravity-"));
+  const outputPath = path.join(outputDirectory, "evaluation.yaml");
+
+  await execFileAsync(process.execPath, [
+    binPath,
+    "gen-conf",
+    "--output",
+    outputPath,
+    "--adapter",
+    "antigravity-cli",
+  ]);
+
+  const generated = fs.readFileSync(outputPath, "utf8");
+  assert.match(generated, /id: "antigravity-flash"/);
+  assert.match(generated, /adapter: "antigravity-cli"/);
+  assert.match(generated, /model: "Gemini 3\.5 Flash \(Low\)"/);
+  assert.match(generated, /commandPath: "agy"/);
 });
 
 test("gen-conf writes a commented compare template with requested options", async () => {
