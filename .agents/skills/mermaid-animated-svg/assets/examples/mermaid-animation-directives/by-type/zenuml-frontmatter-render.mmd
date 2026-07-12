@@ -1,0 +1,40 @@
+---
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#f9ccff'
+---
+zenuml
+  title Frontmatter render check
+  @Actor Author
+  @Boundary Docs
+  @Database Repo
+
+  Author->Docs: Open Markdown wrapper
+  Docs->Repo: Load paired .mmd source
+  Repo->Docs: Return diagram text
+  if(valid frontmatter) {
+    Docs->Author: Render colored shapes
+  } else {
+    Docs->Author: Show parser error
+  }
+
+%% Directive critique: Relies on explicit xy points and broad item/message groups because data-participant attributes are not selectable yet.
+%% @animate v1 duration=5s default-duration=300ms
+%% @animate target frame = role:item
+%% @animate point author-send = xy(54, 87)
+%% @animate point docs-open = xy(259, 87)
+%% @animate point repo-load = xy(461, 119)
+%% @animate point docs-return = xy(259, 151)
+%% @animate mark token at author-send shape=dot size=8 fill=#1971c2
+%% @animate at 0ms reveal frame mode=sequence gap=120ms effect=fade duration=240ms name=show-frame
+%% @animate at show-frame.end move token to docs-open duration=500ms name=open-docs
+%% @animate at open-docs.end move token to repo-load duration=500ms name=load-repo
+%% @animate at load-repo.end move token to docs-return duration=500ms name=return-text
+%% @animate at return-text.end hide token effect=fade duration=180ms

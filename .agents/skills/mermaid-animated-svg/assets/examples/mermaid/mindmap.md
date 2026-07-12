@@ -1,0 +1,29 @@
+# Mindmap
+
+```mermaid
+---
+config:
+  theme: base
+  layout: tidy-tree
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#f9ccff'
+---
+mindmap
+  root((Mermaid examples))
+    Sources
+      mmd[Standalone .mmd]
+      md(Markdown wrapper)
+    Styling
+      colors{{Theme variables}}
+      shapes)Node shapes(
+      classes[Class marker]
+    Validation
+      syntax((Render check))
+      repo[Repository validator]
+```

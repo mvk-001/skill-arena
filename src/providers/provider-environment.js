@@ -46,9 +46,25 @@ export function buildIsolatedProviderEnvironment(cliEnv = {}) {
     }
   }
 
+  const resolvedCliEnvironment = {};
+  for (const [key, value] of Object.entries(cliEnv)) {
+    if (typeof value === "string" && value.startsWith("$HOST_ENV:")) {
+      const sourceKey = value.slice("$HOST_ENV:".length);
+      if (!sourceKey || sourceKey !== key) {
+        throw new Error(`Host environment reference for ${key} must name the same variable.`);
+      }
+      if (process.env[sourceKey] === undefined) {
+        throw new Error(`Required host environment variable ${sourceKey} is not set.`);
+      }
+      resolvedCliEnvironment[key] = process.env[sourceKey];
+      continue;
+    }
+    resolvedCliEnvironment[key] = value;
+  }
+
   return {
     ...environment,
-    ...cliEnv,
+    ...resolvedCliEnvironment,
   };
 }
 

@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" id="my-svg" width="100%" viewBox="0 0 1026 235" style="max-width: 1026px; background-color: white;" role="graphics-document document" aria-roledescription="packet" data-animated-mermaid="true" data-animation="organic" data-element-count="6"><style>#my-svg{font-size:16px;fill:#333E48;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#my-svg .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#my-svg .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#my-svg .error-icon{fill:#ffccd5;}#my-svg .error-text{fill:#00332a;stroke:#00332a;}#my-svg .edge-thickness-normal{stroke-width:1px;}#my-svg .edge-thickness-thick{stroke-width:3.5px;}#my-svg .edge-pattern-solid{stroke-dasharray:0;}#my-svg .edge-thickness-invisible{stroke-width:0;fill:none;}#my-svg .edge-pattern-dashed{stroke-dasharray:3;}#my-svg .edge-pattern-dotted{stroke-dasharray:2;}#my-svg .marker{fill:#45842a;stroke:#45842a;}#my-svg .marker.cross{stroke:#45842a;}#my-svg svg{font-size:16px;}#my-svg p{margin:0;}#my-svg .packetByte{font-size:10px;}#my-svg .packetByte.start{fill:black;}#my-svg .packetByte.end{fill:black;}#my-svg .packetLabel{fill:black;font-size:12px;}#my-svg .packetTitle{fill:black;font-size:14px;}#my-svg .packetBlock{stroke:black;stroke-width:1;fill:#efefef;}#my-svg .node .neo-node{stroke:#007298;}#my-svg [data-look="neo"].node rect,#my-svg [data-look="neo"].cluster rect,#my-svg [data-look="neo"].node polygon{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node path{stroke:url(#my-svg-gradient);stroke-width:1px;}#my-svg [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node .neo-line path{stroke:#007298;filter:none;}#my-svg [data-look="neo"].node circle{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node circle .state-start{fill:#000000;}#my-svg [data-look="neo"].icon-shape .icon{fill:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].icon-shape .icon-neo path{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><style id="animated-mermaid-style" type="text/css">
+.am-step {
+  animation-delay: var(--am-delay, 0ms);
+  animation-duration: var(--am-duration, 650ms);
+  animation-fill-mode: backwards;
+  animation-timing-function: var(--am-easing, cubic-bezier(.2, .8, .2, 1));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.am-effect-fade { animation-name: am-fade; }
+.am-effect-pop { animation-name: am-pop; }
+.am-effect-slide-up { animation-name: am-slide-up; }
+.am-effect-slide-left { animation-name: am-slide-left; }
+.am-effect-zoom { animation-name: am-zoom; }
+.am-effect-draw { animation-name: am-draw; }
+.am-effect-grow-arrow {
+  animation-name: am-grow-arrow;
+  animation-timing-function: cubic-bezier(.16, .84, .28, 1);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@keyframes am-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes am-pop {
+  0% { opacity: 0; transform: scale(.92); }
+  70% { opacity: 1; transform: scale(1.025); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes am-slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-slide-left {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-zoom {
+  from { opacity: 0; transform: scale(.86); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-draw {
+  from {
+    opacity: 0;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  12% { opacity: 1; }
+  to {
+    opacity: 1;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes am-grow-arrow {
+  0% {
+    opacity: 0;
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  8% { opacity: 1; }
+  34% {
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-grow-distance-a, 6600);
+  }
+  62% {
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dashoffset: var(--am-grow-distance-b, 2400);
+  }
+  84% {
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dashoffset: var(--am-grow-distance-c, 360);
+  }
+  92% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+  }
+  100% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .am-step {
+    animation: none !important;
+    opacity: initial !important;
+    transform: none !important;
+    stroke-dasharray: initial !important;
+    stroke-dashoffset: initial !important;
+  }
+}
+</style><g class="am-step am-role-item am-effect-fade" style="--am-delay: 0.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" /><g class="am-step am-role-item am-effect-fade" style="--am-delay: 510.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><rect x="1" y="15" width="123" height="32" class="packetBlock" /><text x="62.5" y="31" class="packetLabel" dominant-baseline="middle" text-anchor="middle">Type</text><text x="1" y="13" class="packetByte start" dominant-baseline="auto" text-anchor="start">0</text><text x="124" y="13" class="packetByte end" dominant-baseline="auto" text-anchor="end">3</text><rect x="129" y="15" width="123" height="32" class="packetBlock" /><text x="190.5" y="31" class="packetLabel" dominant-baseline="middle" text-anchor="middle">Version</text><text x="129" y="13" class="packetByte start" dominant-baseline="auto" text-anchor="start">4</text><text x="252" y="13" class="packetByte end" dominant-baseline="auto" text-anchor="end">7</text><rect x="257" y="15" width="251" height="32" class="packetBlock" /><text x="382.5" y="31" class="packetLabel" dominant-baseline="middle" text-anchor="middle">Palette id</text><text x="257" y="13" class="packetByte start" dominant-baseline="auto" text-anchor="start">8</text><text x="508" y="13" class="packetByte end" dominant-baseline="auto" text-anchor="end">15</text><rect x="513" y="15" width="251" height="32" class="packetBlock" /><text x="638.5" y="31" class="packetLabel" dominant-baseline="middle" text-anchor="middle">Shape id</text><text x="513" y="13" class="packetByte start" dominant-baseline="auto" text-anchor="start">16</text><text x="764" y="13" class="packetByte end" dominant-baseline="auto" text-anchor="end">23</text><rect x="769" y="15" width="251" height="32" class="packetBlock" /><text x="894.5" y="31" class="packetLabel" dominant-baseline="middle" text-anchor="middle">Flags</text><text x="769" y="13" class="packetByte start" dominant-baseline="auto" text-anchor="start">24</text><text x="1020" y="13" class="packetByte end" dominant-baseline="auto" text-anchor="end">31</text></g><g class="am-step am-role-item am-effect-fade" style="--am-delay: 1020.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><rect x="1" y="62" width="1019" height="32" class="packetBlock" /><text x="510.5" y="78" class="packetLabel" dominant-baseline="middle" text-anchor="middle">Diagram source length</text><text x="1" y="60" class="packetByte start" dominant-baseline="auto" text-anchor="start">32</text><text x="1020" y="60" class="packetByte end" dominant-baseline="auto" text-anchor="end">63</text></g><g class="am-step am-role-item am-effect-fade" style="--am-delay: 1530.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><rect x="1" y="109" width="1019" height="32" class="packetBlock" /><text x="510.5" y="125" class="packetLabel" dominant-baseline="middle" text-anchor="middle">Content hash</text><text x="1" y="107" class="packetByte start" dominant-baseline="auto" text-anchor="start">64</text><text x="1020" y="107" class="packetByte end" dominant-baseline="auto" text-anchor="end">95</text></g><g class="am-step am-role-item am-effect-fade" style="--am-delay: 2040.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><rect x="1" y="156" width="1019" height="32" class="packetBlock" /><text x="510.5" y="172" class="packetLabel" dominant-baseline="middle" text-anchor="middle">Content hash</text><text x="1" y="154" class="packetByte start" dominant-baseline="auto" text-anchor="start">96</text><text x="1020" y="154" class="packetByte end" dominant-baseline="auto" text-anchor="end">127</text></g><text x="513" y="211.5" dominant-baseline="middle" text-anchor="middle" class="packetTitle am-step am-role-item am-effect-fade" style="--am-delay: 2550.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;">Example metadata packet</text></svg>

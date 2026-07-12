@@ -146,3 +146,44 @@ test("pi provider does not inherit arbitrary host environment variables", () => 
     }
   }
 });
+
+test("pi provider resolves explicit same-name host credential references", () => {
+  const previous = process.env.OPENROUTER_API_KEY;
+  process.env.OPENROUTER_API_KEY = "secret-for-test";
+
+  try {
+    const provider = new PiSystemProvider({
+      config: {
+        working_dir: "C:/temp/workspace",
+        cli_env: {
+          OPENROUTER_API_KEY: "$HOST_ENV:OPENROUTER_API_KEY",
+        },
+      },
+    });
+
+    const environment = provider.buildEnvironment();
+    assert.equal(environment.OPENROUTER_API_KEY, "secret-for-test");
+  } finally {
+    if (previous == null) {
+      delete process.env.OPENROUTER_API_KEY;
+    } else {
+      process.env.OPENROUTER_API_KEY = previous;
+    }
+  }
+});
+
+test("pi provider rejects mismatched host credential references", () => {
+  const provider = new PiSystemProvider({
+    config: {
+      working_dir: "C:/temp/workspace",
+      cli_env: {
+        OPENROUTER_API_KEY: "$HOST_ENV:DIFFERENT_KEY",
+      },
+    },
+  });
+
+  assert.throws(
+    () => provider.buildEnvironment(),
+    /must name the same variable/,
+  );
+});

@@ -1,0 +1,54 @@
+---
+config:
+  theme: base
+  treemap:
+    diagramPadding: 24
+    padding: 8
+    showValues: true
+    valueFormat: ','
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#dbffcc'
+---
+treemap-beta
+  "examples/mermaid"
+    "Sources"
+      ".mmd": 28:::source
+      ".md": 28:::docs
+    "Configuration"
+      "colors": 28:::theme
+      "shapes": 18:::shape
+    "Validation"
+      "repo": 1
+      "render": 28:::check
+  classDef source fill:#cdf3ff,color:#333E48,stroke:#007298;
+  classDef docs fill:#dbffcc,color:#333E48,stroke:#45842a;
+  classDef theme fill:#fff4cc,color:#333E48,stroke:#e77204;
+  classDef shape fill:#f9ccff,color:#333E48,stroke:#9e1b32;
+  classDef check fill:#f9ccff,color:#333E48,stroke:#652f6c;
+
+%% Directive critique: Label selectors work for readable sections/leaves; tiny hidden leaves are intentionally not emphasized.
+%% @animate v1 duration=4.5s default-duration=320ms
+%% @animate target sources = text:"Sources"
+%% @animate target config = text:"Configuration"
+%% @animate target validation = text:"Validation"
+%% @animate target mmd = text:".mmd"
+%% @animate target docs = text:".md"
+%% @animate target colors = text:"colors"
+%% @animate target shapes = text:"shapes"
+%% @animate target render = text:"render"
+%% @animate group sections = sources, config, validation
+%% @animate group leaves = mmd, docs, colors, shapes, render
+%% @animate point render-callout = offset(render.top, 0, -24)
+%% @animate mark focus at render.center shape=ring size=22 stroke=#652f6c
+%% @animate mark note at render-callout shape=label text=render fill=#ffffff stroke=#652f6c
+%% @animate at 0ms reveal sections mode=sequence gap=180ms effect=pop name=reveal-sections
+%% @animate at reveal-sections.end reveal leaves mode=sequence gap=120ms effect=pop name=reveal-leaves
+%% @animate at reveal-leaves.end show focus effect=fade duration=180ms
+%% @animate at reveal-leaves.end+120ms color render fill=#eadcff stroke=#652f6c duration=320ms
+%% @animate at reveal-leaves.end+180ms show note effect=slide-up duration=260ms
+%% @animate at reveal-leaves.end+260ms pulse render scale=1.035 stroke=#652f6c duration=420ms

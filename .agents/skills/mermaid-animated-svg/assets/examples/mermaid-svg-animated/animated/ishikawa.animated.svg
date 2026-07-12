@@ -1,0 +1,154 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" id="my-svg" width="100%" style="max-width: 453.418px; background-color: white;" viewBox="-361.41827392578125 -41.3795166015625 453.41827392578125 580.134033203125" role="graphics-document document" aria-roledescription="ishikawa" data-animated-mermaid="true" data-animation="ishikawa" data-element-count="26"><style>#my-svg{font-size:16px;fill:#333E48;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#my-svg .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#my-svg .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#my-svg .error-icon{fill:#f9ccff;}#my-svg .error-text{fill:#063300;stroke:#063300;}#my-svg .edge-thickness-normal{stroke-width:1px;}#my-svg .edge-thickness-thick{stroke-width:3.5px;}#my-svg .edge-pattern-solid{stroke-dasharray:0;}#my-svg .edge-thickness-invisible{stroke-width:0;fill:none;}#my-svg .edge-pattern-dashed{stroke-dasharray:3;}#my-svg .edge-pattern-dotted{stroke-dasharray:2;}#my-svg .marker{fill:#45842a;stroke:#45842a;}#my-svg .marker.cross{stroke:#45842a;}#my-svg svg{font-size:16px;}#my-svg p{margin:0;}#my-svg .ishikawa .ishikawa-spine,#my-svg .ishikawa .ishikawa-branch,#my-svg .ishikawa .ishikawa-sub-branch{stroke:#45842a;stroke-width:2;fill:none;}#my-svg .ishikawa .ishikawa-sub-branch{stroke-width:1;}#my-svg .ishikawa .ishikawa-arrow{fill:#45842a;}#my-svg .ishikawa .ishikawa-head{fill:#cdf3ff;stroke:#45842a;stroke-width:2;}#my-svg .ishikawa .ishikawa-label-box{fill:#cdf3ff;stroke:#45842a;stroke-width:2;}#my-svg .ishikawa text{font-size:16px;fill:#333E48;}#my-svg .ishikawa .ishikawa-head-label{font-weight:600;text-anchor:middle;dominant-baseline:middle;font-size:14px;}#my-svg .ishikawa .ishikawa-label{text-anchor:end;}#my-svg .ishikawa .ishikawa-label.cause{text-anchor:middle;dominant-baseline:middle;}#my-svg .ishikawa .ishikawa-label.align{text-anchor:end;dominant-baseline:middle;}#my-svg .ishikawa .ishikawa-label.up{dominant-baseline:baseline;}#my-svg .ishikawa .ishikawa-label.down{dominant-baseline:hanging;}#my-svg .node .neo-node{stroke:#007298;}#my-svg [data-look="neo"].node rect,#my-svg [data-look="neo"].cluster rect,#my-svg [data-look="neo"].node polygon{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node path{stroke:url(#my-svg-gradient);stroke-width:1px;}#my-svg [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node .neo-line path{stroke:#007298;filter:none;}#my-svg [data-look="neo"].node circle{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node circle .state-start{fill:#000000;}#my-svg [data-look="neo"].icon-shape .icon{fill:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].icon-shape .icon-neo path{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><style id="animated-mermaid-style" type="text/css">
+.am-step {
+  animation-delay: var(--am-delay, 0ms);
+  animation-duration: var(--am-duration, 650ms);
+  animation-fill-mode: backwards;
+  animation-timing-function: var(--am-easing, cubic-bezier(.2, .8, .2, 1));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.am-effect-fade { animation-name: am-fade; }
+.am-effect-pop { animation-name: am-pop; }
+.am-effect-slide-up { animation-name: am-slide-up; }
+.am-effect-slide-left { animation-name: am-slide-left; }
+.am-effect-zoom { animation-name: am-zoom; }
+.am-effect-draw { animation-name: am-draw; }
+.am-effect-radial-arrow,
+.am-effect-grow-arrow {
+  animation-name: am-grow-arrow;
+  animation-timing-function: cubic-bezier(.16, .84, .28, 1);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.am-effect-radial-arrow { animation-name: am-radial-arrow; }
+@keyframes am-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes am-pop {
+  0% { opacity: 0; transform: scale(.92); }
+  70% { opacity: 1; transform: scale(1.025); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes am-slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-slide-left {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-zoom {
+  from { opacity: 0; transform: scale(.86); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-draw {
+  from {
+    opacity: 0;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  12% { opacity: 1; }
+  to {
+    opacity: 1;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes am-grow-arrow {
+  0% {
+    opacity: 0;
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  8% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+  }
+  34% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-grow-distance-a, 6600);
+  }
+  62% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: var(--am-grow-distance-b, 2400);
+  }
+  84% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: var(--am-grow-distance-c, 360);
+  }
+  100% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes am-radial-arrow {
+  0% {
+    opacity: 0;
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  10% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+  }
+  38% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: 1;
+    stroke-dashoffset: .66;
+  }
+  66% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: .24;
+  }
+  86% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: .05;
+  }
+  100% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .am-step {
+    animation: none !important;
+    opacity: initial !important;
+    transform: none !important;
+    stroke-dasharray: initial !important;
+    stroke-dashoffset: initial !important;
+  }
+}
+</style><g /><g class="ishikawa"><defs><marker id="ishikawa-arrow-my-svg" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 10 0 L 0 5 L 10 10 Z" class="ishikawa-arrow" /></marker></defs><line class="ishikawa-spine am-step am-role-edge am-effect-grow-arrow" x1="-341.41827392578125" y1="250" x2="0" y2="250" style="--am-delay: 0.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000;" data-am-stage="0" /><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 0.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="0"><g class="ishikawa-head-group" transform="translate(0,250)"><path class="ishikawa-head" d="M 0 -69.5999984741211 L 0 69.5999984741211 Q 144 0 0 -69.5999984741211 Z" /><text class="ishikawa-head-label" text-anchor="start" x="0" y="-16.8" transform="translate(33,1.34375)"><tspan x="0" dy="0">Missing</tspan><tspan x="0" dy="16.8">diagram</tspan><tspan x="0" dy="16.8">polish</tspan></text></g></g><g class="ishikawa-pair"><line class="ishikawa-branch am-step am-role-edge am-effect-grow-arrow" x1="-20" y1="250" x2="-54.79327524001642" y2="2.432982814607442" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 650.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="1" data-am-branch="0" data-am-branch-step="0" /><g class="ishikawa-label-group am-step am-role-label am-effect-fade" style="--am-delay: 650.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="1" data-am-branch="0" data-am-branch-step="0"><rect class="ishikawa-label-box" x="-133.37921142578125" y="-21.3795166015625" width="157.4375" height="23" /><text class="ishikawa-label cause" text-anchor="middle" x="-54.79327524001642" y="-8.567017185392558"><tspan x="-54.79327524001642" dy="0">Source coverage</tspan></text></g><g class="ishikawa-sub-group"><line class="ishikawa-sub-branch am-step am-role-edge am-effect-grow-arrow" x1="-31.597758413338806" y1="167.4776609382025" x2="-61.59775841333881" y2="167.4776609382025" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 1420.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="2" data-am-branch="0" data-am-branch-step="1" /><text class="ishikawa-label align am-step am-role-label am-effect-fade" text-anchor="end" x="-61.59775841333881" y="159.07766093820248" style="--am-delay: 1420.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="2" data-am-branch="0" data-am-branch-step="1"><tspan x="-61.59775841333881" dy="0">No Markdown</tspan><tspan x="-61.59775841333881" dy="16.8">wrapper</tspan></text></g><g class="ishikawa-sub-group"><line class="ishikawa-sub-branch am-step am-role-edge am-effect-grow-arrow" x1="-43.19551682667761" y1="84.95532187640498" x2="-73.19551682667762" y2="84.95532187640498" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 2190.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="3" data-am-branch="0" data-am-branch-step="2" /><text class="ishikawa-label align am-step am-role-label am-effect-fade" text-anchor="end" x="-73.19551682667762" y="76.55532187640497" style="--am-delay: 2190.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="3" data-am-branch="0" data-am-branch-step="2"><tspan x="-73.19551682667762" dy="0">No paired .mmd</tspan><tspan x="-73.19551682667762" dy="16.8">file</tspan></text></g><line class="ishikawa-branch am-step am-role-edge am-effect-grow-arrow" x1="-20" y1="250" x2="-54.79327524001642" y2="497.56701718539256" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 2960.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="4" data-am-branch="1" data-am-branch-step="0" /><g class="ishikawa-label-group am-step am-role-label am-effect-fade" style="--am-delay: 2960.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="4" data-am-branch="1" data-am-branch-step="0"><rect class="ishikawa-label-box" x="-98.78546142578125" y="495.7545166015625" width="87.984375" height="23" /><text class="ishikawa-label cause" text-anchor="middle" x="-54.79327524001642" y="508.56701718539256"><tspan x="-54.79327524001642" dy="0">Styling</tspan></text></g><g class="ishikawa-sub-group"><line class="ishikawa-sub-branch am-step am-role-edge am-effect-grow-arrow" x1="-31.59775841333881" y1="332.52233906179754" x2="-61.59775841333881" y2="332.52233906179754" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 3730.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="5" data-am-branch="1" data-am-branch-step="1" /><text class="ishikawa-label align am-step am-role-label am-effect-fade" text-anchor="end" x="-61.59775841333881" y="324.12233906179756" style="--am-delay: 3730.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="5" data-am-branch="1" data-am-branch-step="1"><tspan x="-61.59775841333881" dy="0">Default colors</tspan><tspan x="-61.59775841333881" dy="16.8">only</tspan></text></g><g class="ishikawa-sub-group"><line class="ishikawa-sub-branch am-step am-role-edge am-effect-grow-arrow" x1="-43.19551682667761" y1="415.044678123595" x2="-73.19551682667762" y2="415.044678123595" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 4500.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="6" data-am-branch="1" data-am-branch-step="2" /><text class="ishikawa-label align am-step am-role-label am-effect-fade" text-anchor="end" x="-73.19551682667762" y="406.64467812359504" style="--am-delay: 4500.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="6" data-am-branch="1" data-am-branch-step="2"><tspan x="-73.19551682667762" dy="0">Shape choices</tspan><tspan x="-73.19551682667762" dy="16.8">not shown</tspan></text></g></g><g class="ishikawa-pair"><line class="ishikawa-branch am-step am-role-edge am-effect-grow-arrow" x1="-188.72677612304688" y1="250" x2="-223.5200513630633" y2="2.432982814607442" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 5270.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="7" data-am-branch="2" data-am-branch-step="0" /><g class="ishikawa-label-group am-step am-role-label am-effect-fade" style="--am-delay: 5270.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="7" data-am-branch="2" data-am-branch-step="0"><rect class="ishikawa-label-box" x="-280.2153625488281" y="-21.3795166015625" width="112.640625" height="23" /><text class="ishikawa-label cause" text-anchor="middle" x="-223.5200513630633" y="-8.567017185392558"><tspan x="-223.5200513630633" dy="0">Validation</tspan></text></g><g class="ishikawa-sub-group"><line class="ishikawa-sub-branch am-step am-role-edge am-effect-grow-arrow" x1="-200.32453453638567" y1="167.4776609382025" x2="-230.32453453638567" y2="167.4776609382025" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 6040.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="8" data-am-branch="2" data-am-branch-step="1" /><text class="ishikawa-label align am-step am-role-label am-effect-fade" text-anchor="end" x="-230.32453453638567" y="142.27766093820247" style="--am-delay: 6040.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="8" data-am-branch="2" data-am-branch-step="1"><tspan x="-230.32453453638567" dy="0">Repository</tspan><tspan x="-230.32453453638567" dy="16.8">validator</tspan><tspan x="-230.32453453638567" dy="16.8">ignores</tspan><tspan x="-230.32453453638567" dy="16.8">examples</tspan></text></g><g class="ishikawa-sub-group"><line class="ishikawa-sub-branch am-step am-role-edge am-effect-grow-arrow" x1="-211.9222929497245" y1="84.95532187640498" x2="-241.9222929497245" y2="84.95532187640498" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 6810.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="9" data-am-branch="2" data-am-branch-step="2" /><text class="ishikawa-label align am-step am-role-label am-effect-fade" text-anchor="end" x="-241.9222929497245" y="76.55532187640497" style="--am-delay: 6810.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="9" data-am-branch="2" data-am-branch-step="2"><tspan x="-241.9222929497245" dy="0">Parser not</tspan><tspan x="-241.9222929497245" dy="16.8">exercised</tspan></text></g><line class="ishikawa-branch am-step am-role-edge am-effect-grow-arrow" x1="-188.72677612304688" y1="250" x2="-223.5200513630633" y2="497.56701718539256" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 7580.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="10" data-am-branch="3" data-am-branch-step="0" /><g class="ishikawa-label-group am-step am-role-label am-effect-fade" style="--am-delay: 7580.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="10" data-am-branch="3" data-am-branch-step="0"><rect class="ishikawa-label-box" x="-297.9184875488281" y="495.7545166015625" width="149.0546875" height="23" /><text class="ishikawa-label cause" text-anchor="middle" x="-223.5200513630633" y="508.56701718539256"><tspan x="-223.5200513630633" dy="0">Documentation</tspan></text></g><g class="ishikawa-sub-group"><line class="ishikawa-sub-branch am-step am-role-edge am-effect-grow-arrow" x1="-200.32453453638567" y1="332.52233906179754" x2="-230.32453453638567" y2="332.52233906179754" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 8350.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="11" data-am-branch="3" data-am-branch-step="1" /><text class="ishikawa-label align am-step am-role-label am-effect-fade" text-anchor="end" x="-230.32453453638567" y="324.12233906179756" style="--am-delay: 8350.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="11" data-am-branch="3" data-am-branch-step="1"><tspan x="-230.32453453638567" dy="0">Example names</tspan><tspan x="-230.32453453638567" dy="16.8">unclear</tspan></text></g><g class="ishikawa-sub-group"><line class="ishikawa-sub-branch am-step am-role-edge am-effect-grow-arrow" x1="-211.9222929497245" y1="415.044678123595" x2="-241.9222929497245" y2="415.044678123595" marker-start="url(#ishikawa-arrow-my-svg)" style="--am-delay: 9120.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-start: url(#ishikawa-arrow-my-svg);" data-am-stage="12" data-am-branch="3" data-am-branch-step="2" /><text class="ishikawa-label align am-step am-role-label am-effect-fade" text-anchor="end" x="-241.9222929497245" y="406.64467812359504" style="--am-delay: 9120.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="12" data-am-branch="3" data-am-branch-step="2"><tspan x="-241.9222929497245" dy="0">Frontmatter</tspan><tspan x="-241.9222929497245" dy="16.8">omitted</tspan></text></g></g></g></svg>

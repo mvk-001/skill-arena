@@ -1,0 +1,43 @@
+---
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#f9ccff'
+---
+ishikawa-beta
+  Missing diagram polish
+    Source coverage
+      No paired .mmd file
+      No Markdown wrapper
+    Styling
+      Default colors only
+      Shape choices not shown
+    Validation
+      Parser not exercised
+      Repository validator ignores examples
+    Documentation
+      Example names unclear
+      Frontmatter omitted
+
+%% Directive critique: Branch labels are easy to select by text, but exact per-branch line selection still needs future cause/branch syntax.
+%% @animate v1 duration=6.5s default-duration=320ms
+%% @animate target problem = text:"Missing diagram polish"
+%% @animate target source = text:"Source coverage"
+%% @animate target styling = text:"Styling"
+%% @animate target validation = text:"Validation"
+%% @animate target docs = text:"Documentation"
+%% @animate target fish-lines = role:edge
+%% @animate group main-causes = source, styling, validation, docs
+%% @animate point source-note = offset(source.top, 0, -24)
+%% @animate mark root-cause at source-note shape=label text=root-cause fill=#fff3bf stroke=#f08c00
+%% @animate at 0ms reveal problem effect=pop duration=360ms
+%% @animate at 360ms trace fish-lines duration=900ms name=draw-fish
+%% @animate at draw-fish.end reveal main-causes mode=sequence gap=320ms effect=fade duration=260ms name=reveal-causes
+%% @animate at reveal-causes.end show root-cause effect=pop duration=260ms name=show-root-cause
+%% @animate at show-root-cause.end pulse source scale=1.04 stroke=#f08c00 duration=420ms restore=true

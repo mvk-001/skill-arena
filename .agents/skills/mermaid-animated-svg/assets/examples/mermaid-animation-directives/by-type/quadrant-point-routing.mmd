@@ -1,0 +1,47 @@
+---
+config:
+  theme: base
+  quadrantChart:
+    chartWidth: 560
+    chartHeight: 420
+    pointRadius: 8
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    quadrant1Fill: '#dbffcc'
+    quadrant2Fill: '#cdf3ff'
+    quadrant3Fill: '#ffccd5'
+    quadrant4Fill: '#fff4cc'
+    quadrantPointFill: '#652f6c'
+    quadrantPointTextFill: '#333E48'
+    quadrantTitleFill: '#333E48'
+---
+quadrantChart
+  title Diagram example priority
+  x-axis Low complexity --> High complexity
+  y-axis Low reuse --> High reuse
+  quadrant-1 Schedule carefully
+  quadrant-2 Reuse first
+  quadrant-3 Skip
+  quadrant-4 Keep simple
+  Flowchart: [0.34, 0.82] radius: 10, color: #00ace6
+  C4: [0.78, 0.70] radius: 9, color: #36b300
+  Pie: [0.28, 0.32] radius: 7, color: #ffd332
+  Wardley: [0.83, 0.44] radius: 8, color: #ffccd5
+
+%% Directive critique: Uses text labels for exact point selection; plot-space selectors remain future syntax.
+%% @animate v1 duration=4s default-duration=360ms
+%% @animate target flowchart = text:"Flowchart"
+%% @animate target c4 = text:"C4"
+%% @animate target pie = text:"Pie"
+%% @animate target wardley = text:"Wardley"
+%% @animate group candidates = flowchart, c4, pie, wardley
+%% @animate point start = pie.center
+%% @animate point candidate = c4.center
+%% @animate point selected = flowchart.center
+%% @animate mark decision at start shape=ring size=18 stroke=#f08c00
+%% @animate at 0ms reveal candidates mode=sequence gap=220ms effect=pop duration=420ms name=reveal-points
+%% @animate at reveal-points.end show decision effect=fade duration=180ms name=show-decision
+%% @animate at show-decision.end move decision to candidate duration=650ms ease=out name=to-candidate
+%% @animate at to-candidate.end move decision to selected duration=850ms ease=in-out name=to-selected
+%% @animate at to-selected.end color flowchart fill=#d3f9d8 stroke=#2b8a3e text=#1b4332 duration=350ms
+%% @animate at to-selected.end pulse flowchart scale=1.06 stroke=#2b8a3e duration=500ms

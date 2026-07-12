@@ -1,0 +1,208 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" id="my-svg" width="100%" viewBox="-0.5 0 227.109375 261" style="max-width: 227.109px; background-color: white;" role="graphics-document document" aria-roledescription="treeView" data-animated-mermaid="true" data-animation="directives" data-element-count="6" data-animation-directives="true" data-directive-total-ms="4460"><style>#my-svg{font-size:16px;fill:#333E48;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#my-svg .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#my-svg .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#my-svg .error-icon{fill:#dbffcc;}#my-svg .error-text{fill:#240033;stroke:#240033;}#my-svg .edge-thickness-normal{stroke-width:1px;}#my-svg .edge-thickness-thick{stroke-width:3.5px;}#my-svg .edge-pattern-solid{stroke-dasharray:0;}#my-svg .edge-thickness-invisible{stroke-width:0;fill:none;}#my-svg .edge-pattern-dashed{stroke-dasharray:3;}#my-svg .edge-pattern-dotted{stroke-dasharray:2;}#my-svg .marker{fill:#45842a;stroke:#45842a;}#my-svg .marker.cross{stroke:#45842a;}#my-svg svg{font-size:16px;}#my-svg p{margin:0;}#my-svg .treeView-node-label{font-size:16px;fill:black;}#my-svg .treeView-node-line{stroke:black;}#my-svg .node .neo-node{stroke:#007298;}#my-svg [data-look="neo"].node rect,#my-svg [data-look="neo"].cluster rect,#my-svg [data-look="neo"].node polygon{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node path{stroke:url(#my-svg-gradient);stroke-width:1px;}#my-svg [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node .neo-line path{stroke:#007298;filter:none;}#my-svg [data-look="neo"].node circle{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node circle .state-start{fill:#000000;}#my-svg [data-look="neo"].icon-shape .icon{fill:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].icon-shape .icon-neo path{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><style id="animated-mermaid-style" type="text/css">
+.am-step {
+  animation-delay: var(--am-delay, 0ms);
+  animation-duration: var(--am-duration, 650ms);
+  animation-fill-mode: backwards;
+  animation-timing-function: var(--am-easing, cubic-bezier(.2, .8, .2, 1));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.am-effect-fade { animation-name: am-fade; }
+.am-effect-pop { animation-name: am-pop; }
+.am-effect-slide-up { animation-name: am-slide-up; }
+.am-effect-slide-left { animation-name: am-slide-left; }
+.am-effect-zoom { animation-name: am-zoom; }
+.am-effect-draw { animation-name: am-draw; }
+.am-effect-radial-arrow,
+.am-effect-grow-arrow {
+  animation-name: am-grow-arrow;
+  animation-timing-function: cubic-bezier(.16, .84, .28, 1);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.am-effect-radial-arrow { animation-name: am-radial-arrow; }
+@keyframes am-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes am-pop {
+  0% { opacity: 0; transform: scale(.92); }
+  70% { opacity: 1; transform: scale(1.025); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes am-slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-slide-left {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-zoom {
+  from { opacity: 0; transform: scale(.86); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-draw {
+  from {
+    opacity: 0;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  12% { opacity: 1; }
+  to {
+    opacity: 1;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes am-grow-arrow {
+  0% {
+    opacity: 0;
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  8% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+  }
+  34% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-grow-distance-a, 6600);
+  }
+  62% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: var(--am-grow-distance-b, 2400);
+  }
+  84% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: var(--am-grow-distance-c, 360);
+  }
+  100% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes am-radial-arrow {
+  0% {
+    opacity: 0;
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  10% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+  }
+  38% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: 1;
+    stroke-dashoffset: .66;
+  }
+  66% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: .24;
+  }
+  86% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: .05;
+  }
+  100% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .am-step {
+    animation: none !important;
+    opacity: initial !important;
+    transform: none !important;
+    stroke-dasharray: initial !important;
+    stroke-dashoffset: initial !important;
+  }
+}
+</style><g /><g class="tree-view"><text dominant-baseline="middle" class="treeView-node-label" x="5" y="14.5">/</text><line x1="-10" y1="14.5" x2="0" y2="14.5" stroke-width="1" class="treeView-node-line" /><g class="am-wrapper am-step am-role-label am-effect-slide-left" style="--am-delay: 0.000ms; --am-duration: 450.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><text dominant-baseline="middle" class="treeView-node-label" x="20" y="43.5">examples/</text></g><line x1="5" y1="43.5" x2="15" y2="43.5" stroke-width="1" class="treeView-node-line" /><g class="am-wrapper am-step am-role-label am-effect-slide-left" style="--am-delay: 220.000ms; --am-duration: 450.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><text dominant-baseline="middle" class="treeView-node-label" x="35" y="72.5">mermaid/</text></g><line x1="20" y1="72.5" x2="30" y2="72.5" stroke-width="1" class="treeView-node-line" /><text dominant-baseline="middle" class="treeView-node-label am-step am-role-label am-effect-fade" x="50" y="101.5" style="--am-delay: 890.000ms; --am-duration: 450.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;">flowchart.mmd</text><line x1="35" y1="101.5" x2="45" y2="101.5" stroke-width="1" class="treeView-node-line" /><text dominant-baseline="middle" class="treeView-node-label" x="50" y="130.5">flowchart.md</text><line x1="35" y1="130.5" x2="45" y2="130.5" stroke-width="1" class="treeView-node-line" /><text dominant-baseline="middle" class="treeView-node-label am-step am-role-label am-effect-fade" x="50" y="159.5" style="--am-delay: 1150.000ms; --am-duration: 450.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;">sequence-diagram.mmd</text><line x1="35" y1="159.5" x2="45" y2="159.5" stroke-width="1" class="treeView-node-line" /><text dominant-baseline="middle" class="treeView-node-label" x="50" y="188.5">sequence-diagram.md</text><line x1="35" y1="188.5" x2="45" y2="188.5" stroke-width="1" class="treeView-node-line" /><line x1="35" y1="87" x2="35" y2="189" stroke-width="1" class="treeView-node-line" /><g class="am-wrapper am-step am-role-label am-effect-slide-left" style="--am-delay: 440.000ms; --am-duration: 450.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><text dominant-baseline="middle" class="treeView-node-label" x="35" y="217.5">scripts/</text></g><line x1="20" y1="217.5" x2="30" y2="217.5" stroke-width="1" class="treeView-node-line" /><text dominant-baseline="middle" class="treeView-node-label am-directive-pulse-5-0 am-step am-role-label am-effect-fade" x="50" y="246.5" style="--am-delay: 1410.000ms; --am-duration: 450.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; animation: am-directive-pulse-kf-5-0 450.000ms cubic-bezier(.2, .8, .2, 1) 4010.000ms 1;">validate-skills.py</text><line x1="35" y1="246.5" x2="45" y2="246.5" stroke-width="1" class="treeView-node-line" /><line x1="35" y1="232" x2="35" y2="247" stroke-width="1" class="treeView-node-line" /><line x1="20" y1="58" x2="20" y2="218" stroke-width="1" class="treeView-node-line" /><line x1="5" y1="29" x2="5" y2="44" stroke-width="1" class="treeView-node-line" /></g><g id="am-directive-overlays" class="am-directive-overlays"><g id="am-mark-scan" class="am-directive-mark am-directive-mark-ring am-directive-move-2 am-directive-move-3 am-directive-move-4" transform="translate(34.000 43.500)" style="animation: am-directive-move-kf-2 650.000ms cubic-bezier(0, 0, .2, 1) 1860.000ms forwards, am-directive-move-kf-3 650.000ms cubic-bezier(0, 0, .2, 1) 2510.000ms forwards, am-directive-move-kf-4 850.000ms cubic-bezier(0, 0, .2, 1) 3160.000ms forwards; opacity: 0;"><circle cx="0" cy="0" r="6.000" fill="none" stroke="#1f6feb" stroke-width="2" /></g></g><style id="animated-mermaid-directives-style" type="text/css">
+.am-directive-overlays {
+  pointer-events: none;
+}
+.am-directive-mark {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="am-directive-move-"],
+  [class*="am-directive-color-"],
+  [class*="am-directive-pulse-"],
+  [class*="am-directive-hide-"] {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+.am-directive-move-2 {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+@keyframes am-directive-move-kf-2 {
+  0% { opacity: 0; transform: translate(34.000px, 43.500px); }
+  8% { opacity: 1; transform: translate(34.000px, 43.500px); }
+  100.000% { opacity: 1; transform: translate(62.000px, 101.500px); }
+}
+
+.am-directive-move-3 {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+@keyframes am-directive-move-kf-3 {
+  0.000% { opacity: 1; transform: translate(62.000px, 101.500px); }
+  100.000% { opacity: 1; transform: translate(62.000px, 159.500px); }
+}
+
+.am-directive-move-4 {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+@keyframes am-directive-move-kf-4 {
+  0.000% { opacity: 1; transform: translate(62.000px, 159.500px); }
+  100.000% { opacity: 1; transform: translate(62.000px, 246.500px); }
+}
+
+.am-directive-pulse-5-0 {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes am-directive-pulse-kf-5-0 {
+  0%, 100% { transform: none; }
+  50% { transform: scale(1.060); stroke: #2b8a3e; }
+}
+</style></svg>

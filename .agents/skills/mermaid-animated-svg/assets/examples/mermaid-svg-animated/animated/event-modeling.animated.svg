@@ -1,0 +1,154 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:html="http://www.w3.org/1999/xhtml" id="my-svg" width="100%" style="max-width: 1536px; background-color: white;" viewBox="-30 -30 1536 470" role="graphics-document document" aria-roledescription="eventmodeling" data-animated-mermaid="true" data-animation="organic" data-element-count="16"><style>#my-svg{font-size:16px;fill:#333E48;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#my-svg .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#my-svg .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#my-svg .error-icon{fill:#f9ccff;}#my-svg .error-text{fill:#063300;stroke:#063300;}#my-svg .edge-thickness-normal{stroke-width:1px;}#my-svg .edge-thickness-thick{stroke-width:3.5px;}#my-svg .edge-pattern-solid{stroke-dasharray:0;}#my-svg .edge-thickness-invisible{stroke-width:0;fill:none;}#my-svg .edge-pattern-dashed{stroke-dasharray:3;}#my-svg .edge-pattern-dotted{stroke-dasharray:2;}#my-svg .marker{fill:#45842a;stroke:#45842a;}#my-svg .marker.cross{stroke:#45842a;}#my-svg svg{font-size:16px;}#my-svg p{margin:0;}#my-svg .node .neo-node{stroke:#007298;}#my-svg [data-look="neo"].node rect,#my-svg [data-look="neo"].cluster rect,#my-svg [data-look="neo"].node polygon{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node path{stroke:url(#my-svg-gradient);stroke-width:1px;}#my-svg [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node .neo-line path{stroke:#007298;filter:none;}#my-svg [data-look="neo"].node circle{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node circle .state-start{fill:#000000;}#my-svg [data-look="neo"].icon-shape .icon{fill:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].icon-shape .icon-neo path{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g /><g class="em-swimlane"><rect x="0" y="0" rx="3" width="1476" height="130" fill="rgb(250,250,250)" stroke="rgb(240,240,240)" /><text font-weight="bold" x="30" y="30">UI/Automation</text></g><g class="em-swimlane"><rect x="0" y="140" rx="3" width="1476" height="130" fill="rgb(250,250,250)" stroke="rgb(240,240,240)" /><text font-weight="bold" x="30" y="170">Command/Read Model</text></g><g class="em-swimlane"><rect x="0" y="280" rx="3" width="1476" height="130" fill="rgb(250,250,250)" stroke="rgb(240,240,240)" /><text font-weight="bold" x="30" y="310">Events</text></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 0.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="1"><g class="em-box"><rect x="250" y="15" rx="3" width="207" height="100" stroke="#dbdada" fill="white" /><foreignObject x="260" y="25" width="187" height="80"><html:div style="display: table; height: 100%; width: 100%;"><html:span style="display: table-cell; text-align: center; vertical-align: middle;"><html:b>ExamplesPage</html:b></html:span></html:div></foreignObject></g></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 425.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="3"><g class="em-box"><rect x="387" y="155" rx="3" width="245" height="100" stroke="#679ac3" fill="#bcd6fe" /><foreignObject x="397" y="165" width="225" height="80"><html:div style="display: table; height: 100%; width: 100%;"><html:span style="display: table-cell; text-align: center; vertical-align: middle;"><html:b>CreateMermaidPair</html:b></html:span></html:div></foreignObject></g></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 850.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="5" data-am-branch="0"><g class="em-box"><rect x="562" y="295" rx="3" width="255" height="100" stroke="#c19a0f" fill="#ffb778" /><foreignObject x="572" y="305" width="235" height="80"><html:div style="display: table; height: 100%; width: 100%;"><html:span style="display: table-cell; text-align: center; vertical-align: middle;"><html:b>MermaidPairCreated</html:b></html:span></html:div></foreignObject></g></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 1275.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="7"><g class="em-box"><rect x="747" y="155" rx="3" width="208" height="100" stroke="#a3b732" fill="#d3f1a2" /><foreignObject x="757" y="165" width="188" height="80"><html:div style="display: table; height: 100%; width: 100%;"><html:span style="display: table-cell; text-align: center; vertical-align: middle;"><html:b>MermaidIndex</html:b></html:span></html:div></foreignObject></g></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 1700.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="9"><g class="em-box"><rect x="885" y="15" rx="3" width="231" height="100" stroke="#b88cbf" fill="#edb3f6" /><foreignObject x="895" y="25" width="211" height="80"><html:div style="display: table; height: 100%; width: 100%;"><html:span style="display: table-cell; text-align: center; vertical-align: middle;"><html:b>ValidationRunner</html:b></html:span></html:div></foreignObject></g></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 2125.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="11"><g class="em-box"><rect x="1046" y="155" rx="3" width="233" height="100" stroke="#679ac3" fill="#bcd6fe" /><foreignObject x="1056" y="165" width="213" height="80"><html:div style="display: table; height: 100%; width: 100%;"><html:span style="display: table-cell; text-align: center; vertical-align: middle;"><html:b>ValidateExamples</html:b></html:span></html:div></foreignObject></g></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 2550.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-stage="13" data-am-branch="1"><g class="em-box"><rect x="1209" y="295" rx="3" width="242" height="100" stroke="#c19a0f" fill="#ffb778" /><foreignObject x="1219" y="305" width="222" height="80"><html:div style="display: table; height: 100%; width: 100%;"><html:span style="display: table-cell; text-align: center; vertical-align: middle;"><html:b>ExamplesValidated</html:b></html:span></html:div></foreignObject></g></g><path class="em-relation am-step am-role-edge am-effect-grow-arrow" fill="none" stroke="#45842a" stroke-width="1" marker-end="url(#em-arrowhead-my-svg)" d="M388 115 L468.6666666666667 155" style="--am-delay: 212.500ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-end: url(#em-arrowhead-my-svg);" data-am-stage="2" data-am-branch="0" /><path class="em-relation am-step am-role-edge am-effect-grow-arrow" fill="none" stroke="#45842a" stroke-width="1" marker-end="url(#em-arrowhead-my-svg)" d="M550.3333333333334 255 L647 295" style="--am-delay: 637.500ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-end: url(#em-arrowhead-my-svg);" data-am-stage="4" data-am-branch="0" /><path class="em-relation am-step am-role-edge am-effect-grow-arrow" fill="none" stroke="#45842a" stroke-width="1" marker-end="url(#em-arrowhead-my-svg)" d="M732 295 L816.3333333333334 255" style="--am-delay: 1062.500ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-end: url(#em-arrowhead-my-svg);" data-am-stage="6" data-am-branch="1" /><path class="em-relation am-step am-role-edge am-effect-grow-arrow" fill="none" stroke="#45842a" stroke-width="1" marker-end="url(#em-arrowhead-my-svg)" d="M885.6666666666666 155 L962 115" style="--am-delay: 1487.500ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-end: url(#em-arrowhead-my-svg);" data-am-stage="8" data-am-branch="1" /><path class="em-relation am-step am-role-edge am-effect-grow-arrow" fill="none" stroke="#45842a" stroke-width="1" marker-end="url(#em-arrowhead-my-svg)" d="M1039 115 L1123.6666666666667 155" style="--am-delay: 1912.500ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-end: url(#em-arrowhead-my-svg);" data-am-stage="10" data-am-branch="1" /><path class="em-relation am-step am-role-edge am-effect-grow-arrow" fill="none" stroke="#45842a" stroke-width="1" marker-end="url(#em-arrowhead-my-svg)" d="M1201.3333333333333 255 L1289.6666666666667 295" style="--am-delay: 2337.500ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000; --am-marker-end: url(#em-arrowhead-my-svg);" data-am-stage="12" data-am-branch="1" /><defs><marker id="em-arrowhead-my-svg" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#45842a" /></marker></defs><style id="animated-mermaid-style" type="text/css">
+.am-step {
+  animation-delay: var(--am-delay, 0ms);
+  animation-duration: var(--am-duration, 650ms);
+  animation-fill-mode: backwards;
+  animation-timing-function: var(--am-easing, cubic-bezier(.2, .8, .2, 1));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.am-effect-fade { animation-name: am-fade; }
+.am-effect-pop { animation-name: am-pop; }
+.am-effect-slide-up { animation-name: am-slide-up; }
+.am-effect-slide-left { animation-name: am-slide-left; }
+.am-effect-zoom { animation-name: am-zoom; }
+.am-effect-draw { animation-name: am-draw; }
+.am-effect-radial-arrow,
+.am-effect-grow-arrow {
+  animation-name: am-grow-arrow;
+  animation-timing-function: cubic-bezier(.16, .84, .28, 1);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.am-effect-radial-arrow { animation-name: am-radial-arrow; }
+@keyframes am-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes am-pop {
+  0% { opacity: 0; transform: scale(.92); }
+  70% { opacity: 1; transform: scale(1.025); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes am-slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-slide-left {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-zoom {
+  from { opacity: 0; transform: scale(.86); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-draw {
+  from {
+    opacity: 0;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  12% { opacity: 1; }
+  to {
+    opacity: 1;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes am-grow-arrow {
+  0% {
+    opacity: 0;
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  8% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+  }
+  34% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-grow-distance-a, 6600);
+  }
+  62% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: var(--am-grow-distance-b, 2400);
+  }
+  84% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: var(--am-grow-distance-c, 360);
+  }
+  100% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes am-radial-arrow {
+  0% {
+    opacity: 0;
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  10% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+  }
+  38% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: 1;
+    stroke-dashoffset: .66;
+  }
+  66% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: .24;
+  }
+  86% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: .05;
+  }
+  100% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .am-step {
+    animation: none !important;
+    opacity: initial !important;
+    transform: none !important;
+    stroke-dasharray: initial !important;
+    stroke-dashoffset: initial !important;
+  }
+}
+</style></svg>

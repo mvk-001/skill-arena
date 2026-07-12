@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mermaid Animated SVG"
+  short_description: "Animate Mermaid diagrams as faithful SVGs"
+  default_prompt: "Use $mermaid-animated-svg to render this Mermaid diagram as a faithful animated SVG."

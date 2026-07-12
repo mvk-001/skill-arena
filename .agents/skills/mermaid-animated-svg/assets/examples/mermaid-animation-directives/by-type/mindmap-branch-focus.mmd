@@ -1,0 +1,42 @@
+---
+config:
+  theme: base
+  layout: tidy-tree
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#f9ccff'
+---
+mindmap
+  root((Mermaid examples))
+    Sources
+      mmd[Standalone .mmd]
+      md(Markdown wrapper)
+    Styling
+      colors{{Theme variables}}
+      shapes)Node shapes(
+      classes[Class marker]
+    Validation
+      syntax((Render check))
+      repo[Repository validator]
+
+%% Directive critique: Combines readable node text with explicit generated edge IDs, which is the safest current branch-level pattern.
+%% @animate v1 duration=5s default-duration=300ms
+%% @animate target root = text:"Mermaid examples"
+%% @animate target sources = text:"Sources"
+%% @animate target styling = text:"Styling"
+%% @animate target validation = text:"Validation"
+%% @animate target style-edge = #my-svg-edge_0_4
+%% @animate group branches = sources, styling, validation
+%% @animate point root-out = root.center
+%% @animate point style-mid = style-edge:path(0.5)
+%% @animate mark focus at root-out shape=ring size=18 stroke=#007298
+%% @animate at 0ms reveal root effect=pop duration=350ms name=show-root
+%% @animate at show-root.end move focus to style-mid duration=650ms name=scan-style
+%% @animate at scan-style.end trace style-edge duration=450ms name=trace-style
+%% @animate at trace-style.end reveal branches mode=sequence gap=220ms effect=pop name=show-branches
+%% @animate at show-branches.end pulse styling scale=1.04 stroke=#007298 duration=500ms

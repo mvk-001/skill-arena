@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "d3-animated-svg": {
+      "source": "C:\\Users\\villa\\dev\\skills",
+      "sourceType": "local",
+      "computedHash": "da0cf3458d7b837b63aa63da3fe51168cb671a2c546be716ec8dc116f4cb6912"
+    },
+    "know": {
+      "source": "C:\\Users\\villa\\dev\\knowledge",
+      "sourceType": "local",
+      "computedHash": "96b20b42a900f742bb7f7e0317bef41b2f2ff2ebb8d46acdc7dae65ecc9d06ac"
+    },
+    "mermaid-animated-svg": {
+      "source": "C:\\Users\\villa\\dev\\skills",
+      "sourceType": "local",
+      "computedHash": "c913c960301aab8c70dd6c03860cafa95cc1ae4b0600f543a9cde238c9e82735"
+    },
+    "mermaid-colorset-styler": {
+      "source": "C:\\Users\\villa\\dev\\skills",
+      "sourceType": "local",
+      "computedHash": "96b2142e8495f2a4bc92617142ee5984a57a3d00faedbbb1bdd13dd1cf70c296"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+# Gantt
+
+```mermaid
+---
+config:
+  theme: base
+  gantt:
+    barHeight: 22
+    barGap: 6
+    topPadding: 48
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#f9ccff'
+---
+gantt
+  title Mermaid example rollout
+  dateFormat YYYY-MM-DD
+  axisFormat %b %d
+  todayMarker stroke-width:3px,stroke:#45842a,opacity:0.7
+
+  section Build
+  Draft sources          :active, src, 2026-06-19, 2d
+  Add Markdown wrappers  :wrap, after src, 1d
+  Validate diagrams      :crit, valid, after wrap, 1d
+
+  section Release
+  Review palette         :review, after valid, 1d
+  Publish examples       :milestone, ship, after review, 0d
+```

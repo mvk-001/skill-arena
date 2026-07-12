@@ -1,0 +1,50 @@
+---
+config:
+  theme: base
+  packet:
+    bitsPerRow: 32
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#ffccd5'
+---
+packet
+  title Example metadata packet
+  +4: "Type"
+  +4: "Version"
+  +8: "Palette id"
+  +8: "Shape id"
+  +8: "Flags"
+  +32: "Diagram source length"
+  +64: "Content hash"
+
+%% Directive critique: Uses full row text plus absolute field centers because packet fields have no semantic IDs yet.
+%% @animate v1 duration=5s default-duration=280ms
+%% @animate target title = text:"Example metadata packet"
+%% @animate target header-row = text:"Type 0 3 Version 4 7 Palette id 8 15 Shape id 16 23 Flags 24 31"
+%% @animate target length-row = text:"Diagram source length 32 63"
+%% @animate target hash-a = text:"Content hash 64 95"
+%% @animate target hash-b = text:"Content hash 96 127"
+%% @animate group rows = header-row, length-row, hash-a, hash-b
+%% @animate point type-center = xy(62.5,31)
+%% @animate point version-center = xy(190.5,31)
+%% @animate point palette-center = xy(382.5,31)
+%% @animate point flags-center = xy(894.5,31)
+%% @animate point length-center = xy(510.5,78)
+%% @animate point hash-center = xy(510.5,125)
+%% @animate mark scanner at type-center shape=ring size=18 stroke=#1c7ed6
+%% @animate mark note at xy(62.5,3) shape=label text=bits-0-3 size=10 fill=#e7f5ff stroke=#1c7ed6
+%% @animate at 0ms reveal title effect=fade duration=220ms name=show-title
+%% @animate at show-title.end reveal rows mode=sequence gap=180ms effect=fade duration=260ms name=show-rows
+%% @animate at show-rows.end show scanner effect=fade duration=160ms name=scan-start
+%% @animate at scan-start.end move scanner to version-center duration=380ms name=scan-version
+%% @animate at scan-version.end move scanner to palette-center duration=480ms name=scan-palette
+%% @animate at scan-palette.end move scanner to flags-center duration=650ms name=scan-flags
+%% @animate at scan-flags.end color header-row fill=#fff3bf stroke=#f08c00 duration=280ms restore=true
+%% @animate at scan-flags.end+120ms move scanner to length-center duration=520ms name=scan-length
+%% @animate at scan-length.end move scanner to hash-center duration=520ms name=scan-hash
+%% @animate at scan-hash.end pulse hash-a scale=1.02 stroke=#2b8a3e duration=450ms

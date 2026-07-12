@@ -1,0 +1,31 @@
+# Radar Circle Graticule
+
+```mermaid
+---
+config:
+  theme: base
+  radar:
+    axisScaleFactor: 0.72
+    curveTension: 0.28
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    cScale0: '#007298'
+    cScale1: '#45842a'
+    cScale2: '#e77204'
+    radar:
+      axisColor: '#333E48'
+      graticuleColor: '#696969'
+      curveOpacity: 0.45
+      curveStrokeWidth: 2
+---
+radar-beta
+  title Animation strategy fit
+  axis fallback["Fallback"], semantic["Semantic"], ordering["Ordering"], timing["Timing"], browser["Browser"]
+  curve organic["Organic fallback"]{5, 2, 2, 3, 4}
+  curve typed["Typed planner"]{3, 5, 5, 5, 4}
+  curve visual["Visual QA"]{2, 2, 3, 4, 5}
+  max 5
+  min 1
+  graticule circle
+  ticks 4
+```

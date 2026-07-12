@@ -1,0 +1,23 @@
+---
+config:
+  theme: base
+  xyChart:
+    width: 720
+    height: 420
+    showDataLabel: true
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    xyChart:
+      backgroundColor: '#ffffff'
+      titleColor: '#333E48'
+      xAxisLabelColor: '#007298'
+      yAxisLabelColor: '#45842a'
+      plotColorPalette: '#cdf3ff, #652f6c, #e77204'
+---
+xychart-beta
+  title "Coverage deltas by diagram family"
+  x-axis [Flow, State, Class, ER, Charts, Timeline]
+  y-axis "Target delta" -10 --> 25
+  bar "new targets" [18, 20, 12, 10, 16, 9]
+  line "manual fixes" [-2, -4, -1, 0, -3, -1]
+  line "unmatched tokens" [0, -1, 0, 0, -2, 0]

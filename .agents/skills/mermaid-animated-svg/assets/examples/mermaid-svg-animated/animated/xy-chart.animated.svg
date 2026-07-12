@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" id="my-svg" width="100%" style="max-width: 700px; background-color: white;" viewBox="0 0 700 420" role="graphics-document document" aria-roledescription="xychart" data-animated-mermaid="true" data-animation="organic" data-element-count="7"><style>#my-svg{font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#my-svg .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#my-svg .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#my-svg .error-icon{fill:hsl(220.5882352941, 100%, 98.3333333333%);}#my-svg .error-text{fill:rgb(8.5000000002, 5.7500000001, 0);stroke:rgb(8.5000000002, 5.7500000001, 0);}#my-svg .edge-thickness-normal{stroke-width:1px;}#my-svg .edge-thickness-thick{stroke-width:3.5px;}#my-svg .edge-pattern-solid{stroke-dasharray:0;}#my-svg .edge-thickness-invisible{stroke-width:0;fill:none;}#my-svg .edge-pattern-dashed{stroke-dasharray:3;}#my-svg .edge-pattern-dotted{stroke-dasharray:2;}#my-svg .marker{fill:#0b0b0b;stroke:#0b0b0b;}#my-svg .marker.cross{stroke:#0b0b0b;}#my-svg svg{font-size:16px;}#my-svg p{margin:0;}#my-svg .node .neo-node{stroke:hsl(40.5882352941, 60%, 83.3333333333%);}#my-svg [data-look="neo"].node rect,#my-svg [data-look="neo"].cluster rect,#my-svg [data-look="neo"].node polygon{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node path{stroke:url(#my-svg-gradient);stroke-width:1px;}#my-svg [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node .neo-line path{stroke:hsl(40.5882352941, 60%, 83.3333333333%);filter:none;}#my-svg [data-look="neo"].node circle{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].node circle .state-start{fill:#000000;}#my-svg [data-look="neo"].icon-shape .icon{fill:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg [data-look="neo"].icon-shape .icon-neo path{stroke:url(#my-svg-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#my-svg :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><style id="animated-mermaid-style" type="text/css">
+.am-step {
+  animation-delay: var(--am-delay, 0ms);
+  animation-duration: var(--am-duration, 650ms);
+  animation-fill-mode: backwards;
+  animation-timing-function: var(--am-easing, cubic-bezier(.2, .8, .2, 1));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.am-effect-fade { animation-name: am-fade; }
+.am-effect-pop { animation-name: am-pop; }
+.am-effect-slide-up { animation-name: am-slide-up; }
+.am-effect-slide-left { animation-name: am-slide-left; }
+.am-effect-zoom { animation-name: am-zoom; }
+.am-effect-draw { animation-name: am-draw; }
+.am-effect-grow-arrow {
+  animation-name: am-grow-arrow;
+  animation-timing-function: cubic-bezier(.16, .84, .28, 1);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@keyframes am-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes am-pop {
+  0% { opacity: 0; transform: scale(.92); }
+  70% { opacity: 1; transform: scale(1.025); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes am-slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-slide-left {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-zoom {
+  from { opacity: 0; transform: scale(.86); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-draw {
+  from {
+    opacity: 0;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  12% { opacity: 1; }
+  to {
+    opacity: 1;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes am-grow-arrow {
+  0% {
+    opacity: 0;
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  8% { opacity: 1; }
+  34% {
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-grow-distance-a, 6600);
+  }
+  62% {
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dashoffset: var(--am-grow-distance-b, 2400);
+  }
+  84% {
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dashoffset: var(--am-grow-distance-c, 360);
+  }
+  92% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+  }
+  100% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .am-step {
+    animation: none !important;
+    opacity: initial !important;
+    transform: none !important;
+    stroke-dasharray: initial !important;
+    stroke-dashoffset: initial !important;
+  }
+}
+</style><g /><g class="main"><rect width="700" height="420" class="background" fill="#ffffff" /><g class="chart-title"><text x="0" y="0" fill="#333E48" font-size="20" dominant-baseline="middle" text-anchor="middle" transform="translate(350, 21.5) rotate(0)">Examples by validation stage</text></g><g class="plot"><g class="bar-plot-0"><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 0.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><rect x="63.84179878234863" y="291.53333333333336" width="95" height="95.46666666666664" fill="#cdf3ff" stroke="#cdf3ff" stroke-width="0" /></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 425.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><rect x="243.3945325215658" y="204.06666666666666" width="95" height="182.93333333333334" fill="#cdf3ff" stroke="#cdf3ff" stroke-width="0" /></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 850.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><rect x="422.9472662607829" y="116.6" width="95" height="270.4" fill="#cdf3ff" stroke="#cdf3ff" stroke-width="0" /></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 1275.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><rect x="602.5" y="72.86666666666666" width="95" height="314.1333333333333" fill="#cdf3ff" stroke="#cdf3ff" stroke-width="0" /></g><text x="111.34179878234863" y="301.53333333333336" text-anchor="middle" dominant-baseline="hanging" fill="#131300" font-size="67px">8</text><text x="290.8945325215658" y="214.06666666666666" text-anchor="middle" dominant-baseline="hanging" fill="#131300" font-size="67px">16</text><text x="470.4472662607829" y="126.6" text-anchor="middle" dominant-baseline="hanging" fill="#131300" font-size="67px">24</text><text x="650" y="82.86666666666666" text-anchor="middle" dominant-baseline="hanging" fill="#131300" font-size="67px">28</text></g><g class="line-plot-1"><path d="M111.342,379L290.895,291.533L470.447,182.2L650,72.867" fill="none" stroke="#dbffcc" stroke-width="2" class="am-step am-role-edge am-effect-grow-arrow" style="--am-delay: 1700.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0; --am-grow-distance-a: 6600.000; --am-grow-distance-b: 2400.000; --am-grow-distance-c: 360.000;" /></g></g><g class="bottom-axis"><g class="axis-line"><path d="M 61.34179878234863,388 L 700,388" fill="none" stroke="#131300" stroke-width="2" /></g><g class="label am-step am-role-label am-effect-fade" style="--am-delay: 2125.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><text x="0" y="0" fill="#007298" font-size="14" dominant-baseline="text-before-edge" text-anchor="middle" transform="translate(111.34179878234863, 399) rotate(0)">Draft</text><text x="0" y="0" fill="#007298" font-size="14" dominant-baseline="text-before-edge" text-anchor="middle" transform="translate(290.8945325215658, 399) rotate(0)">Styled</text><text x="0" y="0" fill="#007298" font-size="14" dominant-baseline="text-before-edge" text-anchor="middle" transform="translate(470.4472662607829, 399) rotate(0)">Wrapped</text><text x="0" y="0" fill="#007298" font-size="14" dominant-baseline="text-before-edge" text-anchor="middle" transform="translate(650, 399) rotate(0)">Checked</text></g><g class="ticks"><path d="M 111.34179878234863,389 L 111.34179878234863,394" fill="none" stroke="#131300" stroke-width="2" /><path d="M 290.8945325215658,389 L 290.8945325215658,394" fill="none" stroke="#131300" stroke-width="2" /><path d="M 470.4472662607829,389 L 470.4472662607829,394" fill="none" stroke="#131300" stroke-width="2" /><path d="M 650,389 L 650,394" fill="none" stroke="#131300" stroke-width="2" /></g></g><g class="left-axis"><g class="axisl-line"><path d="M 60.34179878234863,43 L 60.34179878234863,387" fill="none" stroke="#131300" stroke-width="2" /></g><g class="label am-step am-role-label am-effect-fade" style="--am-delay: 2550.000ms; --am-duration: 650.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;"><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 51) rotate(0)">30</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 72.86666666666666) rotate(0)">28</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 94.73333333333332) rotate(0)">26</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 116.6) rotate(0)">24</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 138.4666666666667) rotate(0)">22</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 160.33333333333334) rotate(0)">20</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 182.2) rotate(0)">18</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 204.06666666666666) rotate(0)">16</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 225.93333333333334) rotate(0)">14</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 247.8) rotate(0)">12</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 269.6666666666667) rotate(0)">10</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 291.53333333333336) rotate(0)">8</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 313.4) rotate(0)">6</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 335.2666666666667) rotate(0)">4</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 357.1333333333333) rotate(0)">2</text><text x="0" y="0" fill="#45842a" font-size="14" dominant-baseline="middle" text-anchor="end" transform="translate(49.34179878234863, 379) rotate(0)">0</text></g><g class="ticks"><path d="M 59.34179878234863,51 L 54.34179878234863,51" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,72.86666666666666 L 54.34179878234863,72.86666666666666" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,94.73333333333332 L 54.34179878234863,94.73333333333332" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,116.6 L 54.34179878234863,116.6" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,138.4666666666667 L 54.34179878234863,138.4666666666667" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,160.33333333333334 L 54.34179878234863,160.33333333333334" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,182.2 L 54.34179878234863,182.2" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,204.06666666666666 L 54.34179878234863,204.06666666666666" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,225.93333333333334 L 54.34179878234863,225.93333333333334" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,247.8 L 54.34179878234863,247.8" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,269.6666666666667 L 54.34179878234863,269.6666666666667" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,291.53333333333336 L 54.34179878234863,291.53333333333336" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,313.4 L 54.34179878234863,313.4" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,335.2666666666667 L 54.34179878234863,335.2666666666667" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,357.1333333333333 L 54.34179878234863,357.1333333333333" fill="none" stroke="#131300" stroke-width="2" /><path d="M 59.34179878234863,379 L 54.34179878234863,379" fill="none" stroke="#131300" stroke-width="2" /></g><g class="title"><text x="0" y="0" fill="#131300" font-size="16" dominant-baseline="text-before-edge" text-anchor="middle" transform="translate(5, 215) rotate(270)">Diagram count</text></g></g></g><g class="mermaid-tmp-group" /></svg>

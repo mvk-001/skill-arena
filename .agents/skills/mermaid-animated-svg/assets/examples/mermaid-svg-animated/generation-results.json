@@ -1,0 +1,248 @@
+[
+  {
+    "name": "architecture",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\architecture.animated.svg with 6 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "block-diagram",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\block-diagram.animated.svg with 12 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "c4-diagram",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\c4-diagram.animated.svg with 7 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "class-diagram",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\class-diagram.animated.svg with 15 animated element(s); sequence completes at 6810ms."
+  },
+  {
+    "name": "entity-relationship-diagram",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\entity-relationship-diagram.animated.svg with 10 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "event-modeling",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\event-modeling.animated.svg with 16 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "flowchart",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\flowchart.animated.svg with 21 animated element(s); sequence completes at 10660ms."
+  },
+  {
+    "name": "gantt",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\gantt.animated.svg with 17 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "gitgraph-diagram",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\gitgraph-diagram.animated.svg with 22 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "ishikawa",
+    "exit": 0,
+    "animation": "ishikawa",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\ishikawa.animated.svg with 26 animated element(s); sequence completes at 9770ms."
+  },
+  {
+    "name": "kanban",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\kanban.animated.svg with 7 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "mindmap",
+    "exit": 0,
+    "animation": "mindmap-level",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\mindmap.animated.svg with 21 animated element(s); sequence completes at 4200ms."
+  },
+  {
+    "name": "mindmap-branch",
+    "exit": 0,
+    "animation": "mindmap-branch",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\mindmap-branch.animated.svg with 21 animated element(s); sequence completes at 13820ms."
+  },
+  {
+    "name": "packet-diagram",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\packet-diagram.animated.svg with 6 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "pie-chart",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\pie-chart.animated.svg with 8 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "quadrant-chart",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\quadrant-chart.animated.svg with 4 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "radar",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\radar.animated.svg with 15 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "requirement-diagram",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\requirement-diagram.animated.svg with 7 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "sankey",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\sankey.animated.svg with 20 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "sequence-diagram",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\sequence-diagram.animated.svg with 20 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "state-diagram",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\state-diagram.animated.svg with 32 animated element(s); sequence completes at 16050ms."
+  },
+  {
+    "name": "timeline",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\timeline.animated.svg with 17 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "treemap",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\treemap.animated.svg with 11 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "treeview",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\treeview.animated.svg with 22 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "user-journey",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\user-journey.animated.svg with 9 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "venn",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\venn.animated.svg with 7 animated element(s); sequence completes at 5270ms."
+  },
+  {
+    "name": "wardley",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\wardley.animated.svg with 23 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "xy-chart",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\xy-chart.animated.svg with 7 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "zenuml",
+    "exit": 0,
+    "animation": "organic",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\zenuml.animated.svg with 5 animated element(s); sequence completes at 3200ms."
+  },
+  {
+    "name": "flowchart-subgraphs",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\flowchart-subgraphs.animated.svg with 29 animated element(s); sequence completes at 13740ms."
+  },
+  {
+    "name": "sequence-control-blocks",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\sequence-control-blocks.animated.svg with 60 animated element(s); sequence completes at 12200ms."
+  },
+  {
+    "name": "state-composite-regions",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\state-composite-regions.animated.svg with 47 animated element(s); sequence completes at 23750ms."
+  },
+  {
+    "name": "class-namespace-generics",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\class-namespace-generics.animated.svg with 15 animated element(s); sequence completes at 6810ms."
+  },
+  {
+    "name": "er-identifying-relationships",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\er-identifying-relationships.animated.svg with 13 animated element(s); sequence completes at 6040ms."
+  },
+  {
+    "name": "requirement-traceability-matrix",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\requirement-traceability-matrix.animated.svg with 16 animated element(s); sequence completes at 6810ms."
+  },
+  {
+    "name": "gantt-calendar-exclusions",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\gantt-calendar-exclusions.animated.svg with 24 animated element(s); sequence completes at 5270ms."
+  },
+  {
+    "name": "xy-chart-negative-series",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\xy-chart-negative-series.animated.svg with 17 animated element(s); sequence completes at 6810ms."
+  },
+  {
+    "name": "quadrant-boundary-cases",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\quadrant-boundary-cases.animated.svg with 5 animated element(s); sequence completes at 1130ms."
+  },
+  {
+    "name": "sankey-wide-labels",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\sankey-wide-labels.animated.svg with 25 animated element(s); sequence completes at 6810ms."
+  },
+  {
+    "name": "radar-circle-graticule",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\radar-circle-graticule.animated.svg with 21 animated element(s); sequence completes at 4500ms."
+  },
+  {
+    "name": "timeline-dense-groups",
+    "exit": 0,
+    "animation": "auto",
+    "output": "Wrote examples\\mermaid-svg-animated\\animated\\timeline-dense-groups.animated.svg with 29 animated element(s); sequence completes at 3890ms."
+  }
+]

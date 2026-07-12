@@ -124,7 +124,9 @@ async function buildWindowsPowerShellCommand({
 
   const resolvedCommandPath = resolveWindowsScriptPath(command, env);
   const script = [
-    `$skillArenaPrompt = ((Get-Content -Raw ${toPowerShellLiteral(promptPath)}) -replace '\\s+', ' ').Trim()`,
+    `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)`,
+    `$OutputEncoding = [Console]::OutputEncoding`,
+    `$skillArenaPrompt = ((Get-Content -Raw -Encoding UTF8 ${toPowerShellLiteral(promptPath)}) -replace '\\s+', ' ').Trim()`,
     `$skillArenaArgs = @(${args.map((arg) =>
       arg.promptPlaceholder ? "$skillArenaPrompt" : toPowerShellLiteral(arg.value)
     ).join(", ")})`,

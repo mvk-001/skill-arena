@@ -1,0 +1,59 @@
+---
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#dbffcc'
+---
+swimlane-beta LR
+  subgraph author [Author]
+    draft[Draft source]
+    review{Review?}
+  end
+  subgraph automation [Automation]
+    render[Render SVG]
+    validate[Validate output]
+    publish([Publish])
+  end
+  draft --> review
+  review -->|approved| render --> validate --> publish
+  review -->|revise| draft
+
+  classDef focus fill:#fff4cc,stroke:#994a00,color:#333E48,stroke-width:2px;
+  class review,validate focus;
+
+%% Directive critique: Swimlane exposes flowchart-compatible node and edge IDs; keep lane geometry visible and animate the cross-lane handoff through exact IDs.
+%% @animate v1 duration=5.2s default-duration=300ms
+%% @animate target draft = id:my-svg-flowchart-draft-0
+%% @animate target review = id:my-svg-flowchart-review-1
+%% @animate target render = id:my-svg-flowchart-render-2
+%% @animate target validate = id:my-svg-flowchart-validate-3
+%% @animate target publish = id:my-svg-flowchart-publish-4
+%% @animate target draft-review = id:my-svg-L_draft_review_0
+%% @animate target review-render = id:my-svg-L_review_render_0
+%% @animate target render-validate = id:my-svg-L_render_validate_0
+%% @animate target validate-publish = id:my-svg-L_validate_publish_0
+%% @animate target approved-label = id:edge-label-review-render-L_review_render_0
+%% @animate group workflow = draft, review, render, validate, publish
+%% @animate point draft-out = draft.right
+%% @animate point review-in = review.left
+%% @animate point render-in = render.left
+%% @animate point validate-in = validate.left
+%% @animate point publish-in = publish.left
+%% @animate mark handoff at draft-out shape=dot size=8 fill=#007298
+%% @animate at 0ms reveal workflow mode=sequence gap=180ms effect=pop name=show-workflow
+%% @animate at show-workflow.end trace draft-review duration=380ms name=trace-review
+%% @animate at trace-review.end move handoff to review-in duration=420ms ease=out name=to-review
+%% @animate at to-review.end trace review-render duration=420ms name=trace-approved
+%% @animate at trace-approved.end reveal approved-label effect=fade duration=180ms
+%% @animate at trace-approved.end move handoff to render-in duration=480ms ease=out name=to-render
+%% @animate at to-render.end trace render-validate duration=380ms name=trace-validate
+%% @animate at trace-validate.end move handoff to validate-in duration=420ms ease=out name=to-validate
+%% @animate at to-validate.end trace validate-publish duration=380ms name=trace-publish
+%% @animate at trace-publish.end move handoff to publish-in duration=420ms ease=out name=to-publish
+%% @animate at to-publish.end pulse publish scale=1.05 stroke=#45842a duration=320ms

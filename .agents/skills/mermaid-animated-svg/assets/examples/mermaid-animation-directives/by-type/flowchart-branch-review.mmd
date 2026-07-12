@@ -1,0 +1,45 @@
+---
+config:
+  theme: base
+  layout: elk
+  look: handDrawn
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#dbffcc'
+---
+flowchart LR
+  start(("Start")) --> collect[/Collect request/]
+  collect --> validate{"Valid payload?"}
+  validate -->|yes| persist[("Store event")]
+  validate -->|no| repair["Repair input"]
+  repair --> collect
+  persist --> notify(["Notify subscriber"])
+  notify --> done((("Done")))
+
+  classDef focus fill:#fff4cc,stroke:#994a00,color:#333E48,stroke-width:2px;
+  class validate,persist focus;
+
+%% Directive critique: Readable node selectors work well; broad edge tracing remains the main limitation until edge:A->B exists.
+%% @animate v1 duration=5s default-duration=300ms
+%% @animate target start = text:"Start"
+%% @animate target collect = text:"Collect request"
+%% @animate target valid = text:"Valid payload?"
+%% @animate target store = text:"Store event"
+%% @animate target notify = text:"Notify subscriber"
+%% @animate target edges = role:edge
+%% @animate group main = start, collect, valid, store, notify
+%% @animate point send = start.right
+%% @animate point check = valid.left
+%% @animate point done = notify.left
+%% @animate mark request at send shape=dot size=8 fill=#1971c2
+%% @animate at 0ms reveal main mode=sequence gap=150ms effect=pop name=show-main
+%% @animate at show-main.end trace edges duration=650ms name=trace-flow
+%% @animate at trace-flow.end move request to check duration=600ms ease=in-out name=to-check
+%% @animate at to-check.end color valid fill=#fff3bf stroke=#f08c00 duration=260ms restore=true
+%% @animate at to-check.end move request to done duration=750ms ease=out name=to-done
+%% @animate at to-done.end pulse notify scale=1.04 stroke=#45842a duration=360ms

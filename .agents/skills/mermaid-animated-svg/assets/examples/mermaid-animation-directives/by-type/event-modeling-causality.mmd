@@ -1,0 +1,41 @@
+---
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#f9ccff'
+---
+eventmodeling
+  tf 01 ui ExamplesPage
+  tf 02 cmd CreateMermaidPair
+  tf 03 evt MermaidPairCreated
+  tf 04 rmo MermaidIndex
+  tf 05 pcr ValidationRunner
+  tf 06 cmd ValidateExamples
+  tf 07 evt ExamplesValidated
+
+%% Directive critique: Shows the right workaround for missing per-edge selectors: keep swimlanes static and animate causality with marks.
+%% @animate v1 duration=4.2s default-duration=350ms
+%% @animate target examples = text:"ExamplesPage"
+%% @animate target create = text:"CreateMermaidPair"
+%% @animate target created = text:"MermaidPairCreated"
+%% @animate target index = text:"MermaidIndex"
+%% @animate target runner = text:"ValidationRunner"
+%% @animate target validated = text:"ExamplesValidated"
+%% @animate group flow = examples, create, created, index, runner, validated
+%% @animate point request-start = examples.bottom
+%% @animate point request-end = create.top
+%% @animate point event-end = created.top
+%% @animate mark token at request-start shape=dot size=9 fill=#1971c2
+%% @animate mark event-ring at created.center shape=ring size=34 stroke=#c19a0f
+%% @animate at 0ms reveal flow mode=sequence gap=220ms effect=pop duration=300ms name=reveal-flow
+%% @animate at 380ms move token to request-end duration=650ms ease=out name=to-command
+%% @animate at to-command.end move token to event-end duration=650ms ease=out name=to-event
+%% @animate at to-event.end pulse created scale=1.05 stroke=#c19a0f duration=320ms
+%% @animate at to-event.end+120ms show event-ring effect=pop duration=240ms
+%% @animate at reveal-flow.end pulse validated scale=1.05 stroke=#c19a0f duration=320ms

@@ -1,0 +1,240 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" id="my-svg" width="100%" style="max-width: 500px; background-color: white;" viewBox="0 0 500 500" role="graphics-document document" aria-roledescription="quadrantChart" data-animated-mermaid="true" data-animation="directives" data-element-count="4" data-animation-directives="true" data-directive-total-ms="3410"><style>#my-svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#my-svg .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#my-svg .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#my-svg .error-icon{fill:#552222;}#my-svg .error-text{fill:#552222;stroke:#552222;}#my-svg .edge-thickness-normal{stroke-width:1px;}#my-svg .edge-thickness-thick{stroke-width:3.5px;}#my-svg .edge-pattern-solid{stroke-dasharray:0;}#my-svg .edge-thickness-invisible{stroke-width:0;fill:none;}#my-svg .edge-pattern-dashed{stroke-dasharray:3;}#my-svg .edge-pattern-dotted{stroke-dasharray:2;}#my-svg .marker{fill:#333333;stroke:#333333;}#my-svg .marker.cross{stroke:#333333;}#my-svg svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#my-svg p{margin:0;}#my-svg .node .neo-node{stroke:#9370DB;}#my-svg [data-look="neo"].node rect,#my-svg [data-look="neo"].cluster rect,#my-svg [data-look="neo"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#my-svg [data-look="neo"].node path{stroke:#9370DB;stroke-width:1px;}#my-svg [data-look="neo"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#my-svg [data-look="neo"].node .neo-line path{stroke:#9370DB;filter:none;}#my-svg [data-look="neo"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#my-svg [data-look="neo"].node circle .state-start{fill:#000000;}#my-svg [data-look="neo"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#my-svg [data-look="neo"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#my-svg :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><style id="animated-mermaid-style" type="text/css">
+.am-step {
+  animation-delay: var(--am-delay, 0ms);
+  animation-duration: var(--am-duration, 650ms);
+  animation-fill-mode: backwards;
+  animation-timing-function: var(--am-easing, cubic-bezier(.2, .8, .2, 1));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.am-effect-fade { animation-name: am-fade; }
+.am-effect-pop { animation-name: am-pop; }
+.am-effect-slide-up { animation-name: am-slide-up; }
+.am-effect-slide-left { animation-name: am-slide-left; }
+.am-effect-zoom { animation-name: am-zoom; }
+.am-effect-draw { animation-name: am-draw; }
+.am-effect-radial-arrow,
+.am-effect-grow-arrow {
+  animation-name: am-grow-arrow;
+  animation-timing-function: cubic-bezier(.16, .84, .28, 1);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.am-effect-radial-arrow { animation-name: am-radial-arrow; }
+@keyframes am-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes am-pop {
+  0% { opacity: 0; transform: scale(.92); }
+  70% { opacity: 1; transform: scale(1.025); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes am-slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-slide-left {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-zoom {
+  from { opacity: 0; transform: scale(.86); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes am-draw {
+  from {
+    opacity: 0;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  12% { opacity: 1; }
+  to {
+    opacity: 1;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes am-grow-arrow {
+  0% {
+    opacity: 0;
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-draw-distance, 10000);
+  }
+  8% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+  }
+  34% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: var(--am-grow-distance-a, 6600);
+  }
+  62% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: var(--am-grow-distance-b, 2400);
+  }
+  84% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: var(--am-grow-distance-c, 360);
+  }
+  100% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: var(--am-draw-distance, 10000);
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes am-radial-arrow {
+  0% {
+    opacity: 0;
+    marker-start: none;
+    marker-mid: none;
+    marker-end: none;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  10% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+  }
+  38% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: 1;
+    stroke-dashoffset: .66;
+  }
+  66% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: .24;
+  }
+  86% {
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dashoffset: .05;
+  }
+  100% {
+    opacity: 1;
+    marker-start: var(--am-marker-start, none);
+    marker-mid: var(--am-marker-mid, none);
+    marker-end: var(--am-marker-end, none);
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .am-step {
+    animation: none !important;
+    opacity: initial !important;
+    transform: none !important;
+    stroke-dasharray: initial !important;
+    stroke-dashoffset: initial !important;
+  }
+}
+</style><g /><g class="main"><g class="quadrants"><g class="quadrant"><rect x="263" y="45" width="232" height="212" fill="#ECECFF" /><text x="0" y="0" fill="#131300" font-size="16" dominant-baseline="hanging" text-anchor="middle" transform="translate(379, 50) rotate(0)">Invest</text></g><g class="quadrant"><rect x="31" y="45" width="232" height="212" fill="#f1f1ff" /><text x="0" y="0" fill="#0e0e00" font-size="16" dominant-baseline="hanging" text-anchor="middle" transform="translate(147, 50) rotate(0)">Validate</text></g><g class="quadrant"><rect x="31" y="257" width="232" height="212" fill="#f6f6ff" /><text x="0" y="0" fill="#090900" font-size="16" dominant-baseline="hanging" text-anchor="middle" transform="translate(147, 262) rotate(0)">Park</text></g><g class="quadrant"><rect x="263" y="257" width="232" height="212" fill="#fbfbff" /><text x="0" y="0" fill="#040400" font-size="16" dominant-baseline="hanging" text-anchor="middle" transform="translate(379, 262) rotate(0)">Automate</text></g></g><g class="border"><line x1="30" y1="45" x2="496" y2="45" style="stroke: rgb(199, 199, 241); stroke-width: 2;" /><line x1="495" y1="46" x2="495" y2="468" style="stroke: rgb(199, 199, 241); stroke-width: 2;" /><line x1="30" y1="469" x2="496" y2="469" style="stroke: rgb(199, 199, 241); stroke-width: 2;" /><line x1="31" y1="46" x2="31" y2="468" style="stroke: rgb(199, 199, 241); stroke-width: 2;" /><line x1="263" y1="46" x2="263" y2="468" style="stroke: rgb(199, 199, 241); stroke-width: 1;" /><line x1="32" y1="257" x2="494" y2="257" style="stroke: rgb(199, 199, 241); stroke-width: 1;" /></g><g class="data-points"><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 660.000ms; --am-duration: 420.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-branch="0"><g class="data-point am-directive-color-5-0 am-directive-pulse-6-0" style="animation: am-directive-color-kf-5-0-0 350.000ms cubic-bezier(.2, .8, .2, 1) 2910.000ms forwards, am-directive-pulse-kf-6-0 500.000ms cubic-bezier(.2, .8, .2, 1) 2910.000ms 1;"><circle cx="411.47999999999996" cy="146.76" r="10" fill="#2b8a3e" stroke="hsl(240, 100%, NaN%)" stroke-width="0px" class="am-directive-color-5-0" style="animation: am-directive-color-kf-5-0-1 350.000ms cubic-bezier(.2, .8, .2, 1) 2910.000ms forwards;" /><text x="0" y="0" fill="#131300" font-size="12" dominant-baseline="hanging" text-anchor="middle" transform="translate(411.47999999999996, 151.76) rotate(0)" class="am-directive-color-5-0" style="animation: am-directive-color-kf-5-0-2 350.000ms cubic-bezier(.2, .8, .2, 1) 2910.000ms forwards;">Assisted routing</text></g></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 440.000ms; --am-duration: 420.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-branch="3"><g class="data-point"><circle cx="392.92" cy="324.84" r="8" fill="#868e96" stroke="hsl(240, 100%, NaN%)" stroke-width="0px" /><text x="0" y="0" fill="#131300" font-size="12" dominant-baseline="hanging" text-anchor="middle" transform="translate(392.92, 329.84) rotate(0)">Billing cleanup</text></g></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 220.000ms; --am-duration: 420.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-branch="1"><g class="data-point am-directive-color-3-0" style="animation: am-directive-color-kf-3-0-0 300.000ms cubic-bezier(.2, .8, .2, 1) 2060.000ms none;"><circle cx="235.16000000000003" cy="223.08" r="8" fill="#f08c00" stroke="hsl(240, 100%, NaN%)" stroke-width="0px" class="am-directive-color-3-0" style="animation: am-directive-color-kf-3-0-1 300.000ms cubic-bezier(.2, .8, .2, 1) 2060.000ms none;" /><text x="0" y="0" fill="#131300" font-size="12" dominant-baseline="hanging" text-anchor="middle" transform="translate(235.16000000000003, 228.08) rotate(0)" class="am-directive-color-3-0" style="animation: am-directive-color-kf-3-0-2 300.000ms cubic-bezier(.2, .8, .2, 1) 2060.000ms none;">Pilot bot</text></g></g><g class="am-wrapper am-step am-role-node am-effect-pop" style="--am-delay: 0.000ms; --am-duration: 420.000ms; --am-easing: cubic-bezier(.2, .8, .2, 1); --am-draw-distance: 10000.0;" data-am-branch="1"><g class="data-point"><circle cx="142.35999999999999" cy="163.72000000000003" r="8" fill="#4c6ef5" stroke="hsl(240, 100%, NaN%)" stroke-width="0px" /><text x="0" y="0" fill="#131300" font-size="12" dominant-baseline="hanging" text-anchor="middle" transform="translate(142.35999999999999, 168.72000000000003) rotate(0)">Manual triage</text></g></g></g><g class="labels"><g class="label"><text x="0" y="0" fill="#131300" font-size="16" dominant-baseline="hanging" text-anchor="middle" transform="translate(147, 479) rotate(0)">Low certainty</text></g><g class="label"><text x="0" y="0" fill="#131300" font-size="16" dominant-baseline="hanging" text-anchor="middle" transform="translate(379, 479) rotate(0)">High certainty</text></g><g class="label"><text x="0" y="0" fill="#131300" font-size="16" dominant-baseline="hanging" text-anchor="middle" transform="translate(5, 363) rotate(-90)">Low impact</text></g><g class="label"><text x="0" y="0" fill="#131300" font-size="16" dominant-baseline="hanging" text-anchor="middle" transform="translate(5, 151) rotate(-90)">High impact</text></g></g><g class="title"><text x="0" y="0" fill="#131300" font-size="20" dominant-baseline="hanging" text-anchor="middle" transform="translate(250, 10) rotate(0)">Opportunity migration</text></g></g><g id="am-directive-overlays" class="am-directive-overlays"><g id="am-mark-decision" class="am-directive-mark am-directive-mark-ring am-directive-mark-show-1 am-directive-move-2 am-directive-move-4" transform="translate(142.360 163.720)" style="animation: am-directive-mark-show-1-kf 180.000ms cubic-bezier(.2, .8, .2, 1) 1080.000ms forwards, am-directive-move-kf-2 650.000ms cubic-bezier(0, 0, .2, 1) 1410.000ms forwards, am-directive-move-kf-4 850.000ms cubic-bezier(.42, 0, .2, 1) 2060.000ms forwards; opacity: 0;"><circle cx="0" cy="0" r="9.000" fill="none" stroke="#f08c00" stroke-width="2" /></g></g><style id="animated-mermaid-directives-style" type="text/css">
+.am-directive-overlays {
+  pointer-events: none;
+}
+.am-directive-mark {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="am-directive-move-"],
+  [class*="am-directive-color-"],
+  [class*="am-directive-pulse-"],
+  [class*="am-directive-hide-"] {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+.am-directive-mark-show-1 {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+@keyframes am-directive-mark-show-1-kf {
+  from { opacity: 0; } to { opacity: 1; }
+}
+
+.am-directive-move-2 {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+@keyframes am-directive-move-kf-2 {
+  0% { opacity: 0; transform: translate(142.360px, 163.720px); }
+  8% { opacity: 1; transform: translate(142.360px, 163.720px); }
+  100.000% { opacity: 1; transform: translate(235.160px, 223.080px); }
+}
+
+@keyframes am-directive-color-kf-3-0-0 {
+  50% { fill: #fff3bf; stroke: #f08c00; }
+}
+
+@keyframes am-directive-color-kf-3-0-1 {
+  50% { fill: #fff3bf; stroke: #f08c00; }
+}
+
+@keyframes am-directive-color-kf-3-0-2 {
+  50% { fill: #fff3bf; color: #fff3bf; }
+}
+
+.am-directive-color-3-0 {
+  animation-composition: replace;
+}
+
+.am-directive-move-4 {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+@keyframes am-directive-move-kf-4 {
+  0.000% { opacity: 1; transform: translate(235.160px, 223.080px); }
+  50.000% { opacity: 1; transform: translate(392.920px, 288.840px); }
+  100.000% { opacity: 1; transform: translate(411.480px, 146.760px); }
+}
+
+@keyframes am-directive-color-kf-5-0-0 {
+  to { fill: #d3f9d8; stroke: #2b8a3e; }
+}
+
+@keyframes am-directive-color-kf-5-0-1 {
+  to { fill: #d3f9d8; stroke: #2b8a3e; }
+}
+
+@keyframes am-directive-color-kf-5-0-2 {
+  to { fill: #1b4332; color: #1b4332; }
+}
+
+.am-directive-color-5-0 {
+  animation-composition: replace;
+}
+
+.am-directive-pulse-6-0 {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes am-directive-pulse-kf-6-0 {
+  0%, 100% { transform: none; }
+  50% { transform: scale(1.060); stroke: #2b8a3e; }
+}
+</style></svg>

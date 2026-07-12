@@ -1,0 +1,55 @@
+---
+config:
+  theme: base
+  architecture:
+    nodeSeparation: 95
+    idealEdgeLengthMultiplier: 2
+    seed: 7
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#ffccd5'
+---
+architecture-beta
+  group docs(cloud)[Documentation]
+  service source(disk)[MMD files] in docs
+  service markdown(disk)[Markdown files] in docs
+  service renderer(server)[Mermaid renderer] in docs
+  service browser(internet)[Browser]
+  service validator(server)[Repo validator]
+
+  source:R --> L:renderer
+  markdown:R --> L:renderer
+  renderer:R --> L:browser
+  source:B --> T:validator
+  markdown:B --> T:validator
+
+%% Directive critique: Strong example because architecture aliases produce stable service and edge IDs; grouped source/markdown reveal avoids overlapping fixtures.
+%% @animate v1 duration=5.2s default-duration=320ms
+%% @animate target docs = id:my-svg-group-docs
+%% @animate target source = id:my-svg-service-source
+%% @animate target markdown = id:my-svg-service-markdown
+%% @animate target renderer = id:my-svg-service-renderer
+%% @animate target browser = id:my-svg-service-browser
+%% @animate target validator = id:my-svg-service-validator
+%% @animate target links = role:edge
+%% @animate group inputs = source, markdown
+%% @animate point send = source.right
+%% @animate point render-in = renderer.left
+%% @animate point browser-in = browser.left
+%% @animate point validate-in = validator.top
+%% @animate mark artifact at send shape=dot size=8 fill=#1c7ed6
+%% @animate at 0ms reveal docs effect=fade duration=240ms
+%% @animate at 180ms reveal inputs mode=together effect=pop duration=300ms name=show-inputs
+%% @animate at show-inputs.end reveal renderer effect=pop duration=300ms name=show-renderer
+%% @animate at show-renderer.end trace links duration=620ms name=trace-links
+%% @animate at show-renderer.end move artifact to render-in duration=620ms ease=in-out name=to-renderer
+%% @animate at to-renderer.end reveal browser effect=pop duration=280ms name=show-browser
+%% @animate at show-browser.end move artifact to browser-in duration=520ms ease=out name=to-browser
+%% @animate at trace-links.end reveal validator effect=pop duration=280ms name=show-validator
+%% @animate at show-validator.end move artifact to validate-in duration=520ms ease=out name=to-validator
+%% @animate at to-validator.end color validator fill=#d3f9d8 stroke=#45842a duration=260ms

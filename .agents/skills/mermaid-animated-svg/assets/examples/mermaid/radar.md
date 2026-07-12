@@ -1,0 +1,30 @@
+# Radar
+
+```mermaid
+---
+config:
+  theme: base
+  radar:
+    axisScaleFactor: 0.8
+    curveTension: 0.12
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    cScale0: '#007298'
+    cScale1: '#45842a'
+    cScale2: '#e77204'
+    radar:
+      axisColor: '#333E48'
+      graticuleColor: '#696969'
+      curveOpacity: 0.55
+      curveStrokeWidth: 2
+---
+radar-beta
+  title Diagram example coverage
+  axis colors["Colors"], shapes["Shapes"], source["MMD"], markdown["Markdown"], validation["Validation"]
+  curve target["Target"]{5, 5, 5, 5, 5}
+  curve current["Current"]{4, 5, 5, 5, 4}
+  max 5
+  min 0
+  graticule polygon
+  ticks 5
+```

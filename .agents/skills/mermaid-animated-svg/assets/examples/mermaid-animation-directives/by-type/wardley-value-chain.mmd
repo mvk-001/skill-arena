@@ -1,0 +1,60 @@
+---
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#f9ccff'
+---
+wardley-beta
+  title Mermaid Examples Value Chain
+  size [1000, 600]
+  evolution Novel -> Emerging -> Reusable -> Standard
+  anchor Reader [0.90, 0.95]
+  component Markdown wrapper [0.78, 0.78] (build)
+  component MMD source [0.70, 0.82] (build)
+  component Frontmatter config [0.58, 0.62] (buy)
+  component Shape vocabulary [0.45, 0.48] (buy)
+  component Mermaid renderer [0.30, 0.88] (market)
+  component Repository validator [0.42, 0.74] (build) (inertia)
+
+  Reader -> Markdown wrapper
+  Markdown wrapper -> MMD source
+  MMD source -> Frontmatter config
+  MMD source -> Shape vocabulary
+  Markdown wrapper -> Mermaid renderer
+  Repository validator -> MMD source
+  evolve Frontmatter config 0.82
+  evolve Shape vocabulary 0.76
+  note "Frontmatter drives the palette while syntax demonstrates shapes" [0.55, 0.58]
+
+%% Directive critique: Uses text labels for components and xy points for precise symbols because component IDs are absent.
+%% @animate v1 duration=4.2s default-duration=300ms
+%% @animate target reader = text:"Reader"
+%% @animate target wrapper = text:"Markdown wrapper"
+%% @animate target source = text:"MMD source"
+%% @animate target frontmatter = text:"Frontmatter config"
+%% @animate target vocabulary = text:"Shape vocabulary"
+%% @animate target renderer = text:"Mermaid renderer"
+%% @animate target validator = text:"Repository validator"
+%% @animate target links = css:".wardley-link"
+%% @animate target trends = css:".wardley-trend"
+%% @animate group chain = reader, wrapper, source, frontmatter, vocabulary, renderer, validator
+%% @animate point reader-pos = xy(906.8, 95.4)
+%% @animate point source-pos = xy(789.28, 199.2)
+%% @animate point frontmatter-pos = xy(608.48, 259.68)
+%% @animate point vocabulary-pos = xy(481.92, 325.2)
+%% @animate point renderer-pos = xy(843.52, 400.8)
+%% @animate mark value at reader-pos shape=dot size=8 fill=#1971c2
+%% @animate mark evolved at frontmatter-pos shape=ring size=22 stroke=#dc3545
+%% @animate at 0ms reveal chain mode=sequence gap=130ms effect=pop duration=260ms name=reveal-map
+%% @animate at reveal-map.end trace links duration=650ms name=trace-dependencies
+%% @animate at trace-dependencies.end move value to source-pos duration=520ms ease=in-out name=to-source
+%% @animate at to-source.end move value to renderer-pos via=frontmatter-pos|vocabulary-pos duration=900ms ease=in-out name=to-renderer
+%% @animate at to-renderer.end trace trends duration=500ms name=show-evolution
+%% @animate at show-evolution.end show evolved effect=fade duration=180ms
+%% @animate at show-evolution.end color frontmatter stroke=#dc3545 text=#7a1f1f duration=300ms restore=true

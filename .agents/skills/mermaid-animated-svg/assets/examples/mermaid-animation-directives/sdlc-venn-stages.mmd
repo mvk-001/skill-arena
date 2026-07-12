@@ -1,0 +1,60 @@
+---
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#f9ccff'
+---
+venn-beta
+  title "Linear SDLC Overlaps"
+  set Discover["Discover"]:26
+  set Design["Design"]:26
+  set Build["Build"]:26
+  set Verify["Verify"]:26
+  set Operate["Operate"]:26
+  union Discover,Design["Scope"]:12
+  union Design,Build["Blueprint"]:12
+  union Build,Verify["Test Loop"]:12
+  union Verify,Operate["Release"]:12
+  style Discover fill:#cdf3ff,stroke:#007298,color:#333E48,fill-opacity:0.66
+  style Design fill:#dbffcc,stroke:#45842a,color:#333E48,fill-opacity:0.66
+  style Build fill:#fff4cc,stroke:#994a00,color:#333E48,fill-opacity:0.7
+  style Verify fill:#ffd8e8,stroke:#b02564,color:#333E48,fill-opacity:0.66
+  style Operate fill:#e6dcff,stroke:#6648a8,color:#333E48,fill-opacity:0.66
+
+%% Directive critique: A five-set Venn can express SDLC as a chain of adjacent overlaps, but it should avoid non-neighbor intersections so the reader sees a linear handoff model.
+%% @animate v1 duration=5.2s default-duration=460ms
+%% @animate target discover = .venn-sets-discover
+%% @animate target design = .venn-sets-design
+%% @animate target build = .venn-sets-build
+%% @animate target verify = .venn-sets-verify
+%% @animate target operate = .venn-sets-operate
+%% @animate target scope = .venn-sets-design-discover
+%% @animate target blueprint = .venn-sets-build-design
+%% @animate target test-loop = .venn-sets-build-verify
+%% @animate target release = .venn-sets-operate-verify
+%% @animate group phases = discover, design, build, verify, operate
+%% @animate group overlaps = scope, blueprint, test-loop, release
+%% @animate point discover-center = discover.center
+%% @animate point design-center = design.center
+%% @animate point build-center = build.center
+%% @animate point verify-center = verify.center
+%% @animate point operate-center = operate.center
+%% @animate point release-callout = offset(release.top, 0, -28)
+%% @animate mark baton at discover-center shape=dot size=9 fill=#007298
+%% @animate mark focus at release.center shape=ring size=54 stroke=#6648a8
+%% @animate mark note at release-callout shape=label text="release" fill=#ffffff stroke=#6648a8
+%% @animate at 0ms reveal phases mode=sequence gap=230ms effect=fade name=show-phases
+%% @animate at show-phases.end reveal overlaps mode=sequence gap=180ms effect=fade name=show-overlaps
+%% @animate at show-phases.end move baton to design-center duration=420ms name=to-design
+%% @animate at to-design.end move baton to build-center duration=420ms name=to-build
+%% @animate at to-build.end move baton to verify-center duration=420ms name=to-verify
+%% @animate at to-verify.end move baton to operate-center duration=420ms name=to-operate
+%% @animate at show-overlaps.end show focus effect=pop duration=240ms
+%% @animate at show-overlaps.end+100ms pulse release scale=1.05 stroke=#6648a8 duration=500ms
+%% @animate at show-overlaps.end+240ms show note effect=slide-up duration=280ms

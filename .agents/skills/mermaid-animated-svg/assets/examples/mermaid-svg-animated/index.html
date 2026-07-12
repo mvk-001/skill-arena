@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Animated Mermaid SVG Examples</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #e7e7e7;
+      --panel: #ffffff;
+      --text: #333E48;
+      --muted: #696969;
+      --line: #cfcfcf;
+      --accent: #9e1b32;
+      --accent-soft: #ffccd5;
+      --accent-blue: #007298;
+      --grid: rgba(0, 114, 152, .10);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.45 "Open Sans", arial, sans-serif;
+    }
+
+    header {
+      padding: 28px clamp(16px, 4vw, 48px) 18px;
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--accent);
+      font-size: 26px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      color: var(--muted);
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: #ffffff;
+      white-space: nowrap;
+    }
+
+    main {
+      padding: 24px clamp(16px, 4vw, 48px) 44px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+      gap: 18px;
+    }
+
+    article {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .frame {
+      display: grid;
+      min-height: 260px;
+      padding: 16px;
+      place-items: center;
+      background:
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        linear-gradient(0deg, var(--grid) 1px, transparent 1px),
+        #ffffff;
+      background-size: 24px 24px;
+    }
+
+    img {
+      width: 100%;
+      height: 230px;
+      display: block;
+      object-fit: contain;
+    }
+
+    .meta {
+      display: grid;
+      gap: 10px;
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .meta h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .pattern-id {
+      width: max-content;
+      max-width: 100%;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f8fafc;
+      color: var(--muted);
+      padding: 3px 6px;
+      font: 700 12px/1.2 Consolas, "Liberation Mono", "Courier New", monospace;
+      overflow-wrap: anywhere;
+    }
+
+    .details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .details span {
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--text);
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    @media (max-width: 520px) {
+      h1 {
+        font-size: 22px;
+      }
+
+      .frame {
+        min-height: 210px;
+        padding: 10px;
+      }
+
+      img {
+        height: 190px;
+      }
+    }
+  </style>
+</head>
+<body data-example-id="mermaid-svg-animated" data-pattern-id="mermaid-svg-animated" data-pattern-page="true">
+  <header>
+    <h1>Animated Mermaid SVG Examples</h1>
+    <div class="summary">
+      <span class="pill">41 animated SVGs</span>
+      <span class="pill">40 static references</span>
+      <span class="pill">EFX palette</span>
+    </div>
+  </header>
+  <main>
+    <section class="grid" id="gallery"></section>
+  </main>
+  <script>
+    const examples = [
+      ["architecture", "organic", 6],
+      ["block-diagram", "organic", 12],
+      ["c4-diagram", "organic", 7],
+      ["class-diagram", "organic", 16],
+      ["entity-relationship-diagram", "organic", 10],
+      ["event-modeling", "organic", 16],
+      ["flowchart", "auto", 21],
+      ["gantt", "organic", 17],
+      ["gitgraph-diagram", "organic", 22],
+      ["ishikawa", "ishikawa", 26],
+      ["kanban", "organic", 7],
+      ["mindmap", "mindmap-level", 21],
+      ["mindmap-branch", "mindmap-branch", 21, "mindmap"],
+      ["packet-diagram", "organic", 6],
+      ["pie-chart", "organic", 8],
+      ["quadrant-chart", "organic", 4],
+      ["radar", "organic", 15],
+      ["requirement-diagram", "organic", 7],
+      ["sankey", "organic", 20],
+      ["sequence-diagram", "organic", 20],
+      ["state-diagram", "auto", 32],
+      ["timeline", "organic", 17],
+      ["treemap", "organic", 11],
+      ["treeview", "organic", 22],
+      ["user-journey", "organic", 9],
+      ["venn", "organic", 7],
+      ["wardley", "organic", 23],
+      ["xy-chart", "organic", 7],
+      ["zenuml", "organic", 5],
+      ["flowchart-subgraphs", "auto", 29],
+      ["sequence-control-blocks", "auto", 60],
+      ["state-composite-regions", "auto", 47],
+      ["class-namespace-generics", "auto", 15],
+      ["er-identifying-relationships", "auto", 13],
+      ["requirement-traceability-matrix", "auto", 16],
+      ["gantt-calendar-exclusions", "auto", 24],
+      ["xy-chart-negative-series", "auto", 17],
+      ["quadrant-boundary-cases", "auto", 5],
+      ["sankey-wide-labels", "auto", 25],
+      ["radar-circle-graticule", "auto", 21],
+      ["timeline-dense-groups", "auto", 29]
+    ];
+
+    const gallery = document.getElementById("gallery");
+    const patternSlugs = new Map([
+      ["block-diagram", "block"],
+      ["c4-diagram", "c4"],
+      ["class-diagram", "class"],
+      ["entity-relationship-diagram", "er"],
+      ["gitgraph-diagram", "gitgraph"],
+      ["packet-diagram", "packet"],
+      ["pie-chart", "pie"],
+      ["quadrant-chart", "quadrant"],
+      ["requirement-diagram", "requirement"],
+      ["sequence-diagram", "sequence"],
+      ["state-diagram", "state"]
+    ]);
+    const titleCase = (value) => value
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+
+    for (const [name, animation, elements, staticName = name] of examples) {
+      const article = document.createElement("article");
+      const patternId = `mermaid-${patternSlugs.get(name) || name}`;
+      const legacyPatternId = `mermaid-pattern-${name}`;
+      article.className = "gallery-card";
+      article.id = patternId;
+      article.dataset.exampleId = name;
+      article.dataset.patternId = patternId;
+      article.dataset.legacyPatternId = legacyPatternId;
+      article.dataset.diagramType = staticName;
+      article.dataset.animationProfile = animation;
+      article.innerHTML = `
+        <div class="frame">
+          <img src="animated/${name}.animated.svg" data-example-id="${name}" data-pattern-id="${patternId}" data-legacy-pattern-id="${legacyPatternId}" alt="${titleCase(name)} animated SVG">
+        </div>
+        <div class="meta">
+          <h2>${titleCase(name)}</h2>
+          <p class="pattern-id">${patternId}</p>
+          <div class="details">
+            <span>${animation}</span>
+            <span>${elements} targets</span>
+          </div>
+          <div class="links">
+            <a href="animated/${name}.animated.svg">animated SVG</a>
+            <a href="static/${staticName}.static.svg">static SVG</a>
+          </div>
+        </div>
+      `;
+      gallery.appendChild(article);
+    }
+
+    function redirectLegacyPatternHash() {
+      const hash = decodeURIComponent(window.location.hash.slice(1));
+      if (!hash) return;
+      const card = [...gallery.querySelectorAll(".gallery-card")].find((item) => item.dataset.legacyPatternId === hash);
+      if (!card) return;
+      history.replaceState(null, "", location.pathname + location.search + "#" + card.dataset.patternId);
+      card.scrollIntoView({ block: "start" });
+    }
+
+    redirectLegacyPatternHash();
+    window.addEventListener("hashchange", redirectLegacyPatternHash);
+  </script>
+</body>
+</html>

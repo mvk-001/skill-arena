@@ -1,0 +1,40 @@
+---
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#45842a'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#f9ccff'
+---
+cynefin-beta
+  title Diagram Coverage Decisions
+  complex
+    "Probe beta syntax"
+  complicated
+    "Inspect rendered selectors"
+  clear
+    "Render known fixture"
+  chaotic
+    "Stop on error SVG"
+  confusion
+    "Classify new family"
+  complex --> complicated : "Pattern found"
+
+%% Directive critique: Cynefin currently exposes stable family-level classes rather than per-item IDs, so reveal the framework in layers and reserve precise item semantics for future selectors.
+%% @animate v1 duration=4.8s default-duration=320ms
+%% @animate target backgrounds = css:.cynefin-backgrounds
+%% @animate target boundaries = css:.cynefin-boundaries
+%% @animate target labels = css:.cynefin-labels
+%% @animate target items = css:.cynefin-items
+%% @animate target arrows = css:.cynefin-arrows
+%% @animate target confusion = css:.cynefinConfusion
+%% @animate group framework = backgrounds, boundaries
+%% @animate at 0ms reveal framework mode=together effect=fade duration=420ms name=show-framework
+%% @animate at show-framework.end reveal labels effect=fade duration=320ms name=show-labels
+%% @animate at show-labels.end reveal items effect=pop duration=520ms name=show-items
+%% @animate at show-items.end trace arrows duration=720ms name=trace-response
+%% @animate at trace-response.end pulse confusion scale=1.025 stroke=#9e1b32 duration=420ms restore=true

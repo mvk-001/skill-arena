@@ -1,0 +1,51 @@
+---
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    primaryColor: '#cdf3ff'
+    primaryTextColor: '#333E48'
+    primaryBorderColor: '#007298'
+    lineColor: '#652f6c'
+    secondaryColor: '#fff4cc'
+    tertiaryColor: '#dbffcc'
+---
+erDiagram
+  CUSTOMER ||--o{ ORDER : places
+  CUSTOMER {
+    string customer_id PK
+    string email
+    string status
+  }
+  ORDER ||--|{ LINE_ITEM : contains
+  ORDER {
+    string order_id PK
+    date created_at
+    string state
+  }
+  LINE_ITEM }o--|| PRODUCT : references
+  LINE_ITEM {
+    string line_id PK
+    int quantity
+  }
+  PRODUCT {
+    string sku PK
+    string name
+    decimal price
+  }
+
+%% Directive critique: Strong current-language example: exact entity and relationship IDs give stable anchors and path tracing.
+%% @animate v1 duration=4.8s default-duration=650ms
+%% @animate target customer = id:my-svg-entity-CUSTOMER-0
+%% @animate target order = id:my-svg-entity-ORDER-1
+%% @animate target places = id:my-svg-id_entity-CUSTOMER-0_entity-ORDER-1_0
+%% @animate target places-label = text:"places"
+%% @animate point order-start = customer.bottom
+%% @animate point order-end = order.top
+%% @animate mark order-token at order-start shape=dot size=8 fill=#652f6c
+%% @animate at 0ms reveal customer effect=pop duration=350ms
+%% @animate at 450ms reveal order effect=pop duration=350ms name=show-order
+%% @animate at show-order.end trace places duration=650ms name=places-edge
+%% @animate at show-order.end move order-token to order-end duration=650ms ease=out name=move-order
+%% @animate at places-edge.end reveal places-label effect=fade duration=250ms
+%% @animate at move-order.end pulse order scale=1.04 duration=300ms

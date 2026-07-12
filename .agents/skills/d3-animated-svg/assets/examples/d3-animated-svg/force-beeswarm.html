@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>D3 Animated SVG Beeswarm Fixture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-primary: "Open Sans", Arial, sans-serif;
+      --brand-primary: #9e1b32;
+      --brand-neutral: #333e48;
+      --page: #f7f7f7;
+      --line: #cfcfcf;
+      --muted: #696969;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: var(--page);
+      color: var(--brand-neutral);
+      font-family: var(--font-primary);
+    }
+
+    svg {
+      width: min(960px, 96vw);
+      height: auto;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(51, 62, 72, .10);
+    }
+  </style>
+</head>
+<body>
+  <svg id="viz" aria-labelledby="viz-title viz-desc"></svg>
+
+  <script src="./node_modules/d3/dist/d3.min.js"></script>
+  <script>
+    const data = [
+      { id: "a01", group: "Baseline", score: 34 }, { id: "a02", group: "Baseline", score: 41 },
+      { id: "a03", group: "Baseline", score: 46 }, { id: "a04", group: "Baseline", score: 52 },
+      { id: "a05", group: "Baseline", score: 57 }, { id: "a06", group: "Baseline", score: 63 },
+      { id: "a07", group: "Baseline", score: 69 }, { id: "a08", group: "Baseline", score: 74 },
+      { id: "b01", group: "Pilot", score: 39 }, { id: "b02", group: "Pilot", score: 48 },
+      { id: "b03", group: "Pilot", score: 54 }, { id: "b04", group: "Pilot", score: 59 },
+      { id: "b05", group: "Pilot", score: 67 }, { id: "b06", group: "Pilot", score: 73 },
+      { id: "b07", group: "Pilot", score: 81 }, { id: "b08", group: "Pilot", score: 86 },
+      { id: "c01", group: "Scaled", score: 45 }, { id: "c02", group: "Scaled", score: 53 },
+      { id: "c03", group: "Scaled", score: 61 }, { id: "c04", group: "Scaled", score: 68 },
+      { id: "c05", group: "Scaled", score: 76 }, { id: "c06", group: "Scaled", score: 83 },
+      { id: "c07", group: "Scaled", score: 88 }, { id: "c08", group: "Scaled", score: 92 }
+    ];
+
+    const width = 920;
+    const height = 520;
+    const margin = { top: 82, right: 56, bottom: 72, left: 112 };
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
+    const groups = Array.from(new Set(data.map(d => d.group)));
+    const colors = new Map([
+      ["Baseline", "#007298"],
+      ["Pilot", "#e77204"],
+      ["Scaled", "#45842a"]
+    ]);
+
+    const svg = d3.select("#viz")
+      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("role", "img");
+
+    svg.append("title")
+      .attr("id", "viz-title")
+      .text("Beeswarm distribution generated with D3");
+
+    svg.append("desc")
+      .attr("id", "viz-desc")
+      .text("Dots settle into three categorical swarms by score, using D3 force simulation and portable SVG animation styles.");
+
+    const style = svg.append("style");
+    style.text(`
+      .dot {
+        opacity: .92;
+      }
+      text { font-family: "Open Sans", Arial, sans-serif; }
+      .axis path, .axis line { stroke: #9c9c9c; }
+      .axis text, .group-label { fill: #696969; font-size: 13px; }
+      .grid line { stroke: #e7e7e7; stroke-dasharray: 3 5; }
+      .title { fill: #9e1b32; font-size: 24px; font-weight: 700; }
+      .subtitle { fill: #696969; font-size: 14px; }
+    `);
+
+    svg.append("text")
+      .attr("class", "title")
+      .attr("x", margin.left)
+      .attr("y", 38)
+      .text("Program score distribution");
+
+    svg.append("text")
+      .attr("class", "subtitle")
+      .attr("x", margin.left)
+      .attr("y", 62)
+      .text("A D3 force simulation exposes individual observations without collapsing them into bars.");
+
+    const x = d3.scaleLinear()
+      .domain([30, 95])
+      .range([margin.left, margin.left + innerWidth])
+      .nice();
+
+    const y = d3.scalePoint()
+      .domain(groups)
+      .range([margin.top + 42, margin.top + innerHeight - 30])
+      .padding(.5);
+
+    const nodes = data.map(d => ({ ...d, x: x(d.score), y: y(d.group) }));
+    const simulation = d3.forceSimulation(nodes)
+      .randomSource(d3.randomLcg(0.42))
+      .force("x", d3.forceX(d => x(d.score)).strength(.95))
+      .force("y", d3.forceY(d => y(d.group)).strength(.25))
+      .force("collide", d3.forceCollide(13))
+      .stop();
+
+    for (let i = 0; i < 180; i += 1) simulation.tick();
+
+    const plot = svg.append("g").attr("class", "plot");
+
+    plot.append("g")
+      .attr("class", "grid")
+      .attr("transform", `translate(0,${margin.top + innerHeight})`)
+      .call(d3.axisBottom(x).ticks(7).tickSize(-innerHeight).tickFormat(""));
+
+    plot.append("g")
+      .attr("class", "axis")
+      .attr("transform", `translate(0,${margin.top + innerHeight})`)
+      .call(d3.axisBottom(x).ticks(7));
+
+    plot.append("text")
+      .attr("x", margin.left + innerWidth)
+      .attr("y", margin.top + innerHeight + 48)
+      .attr("text-anchor", "end")
+      .attr("fill", "#696969")
+      .attr("font-size", 13)
+      .text("Score");
+
+    plot.selectAll(".group-label")
+      .data(groups)
+      .join("text")
+      .attr("class", "group-label")
+      .attr("x", margin.left - 20)
+      .attr("y", d => y(d))
+      .attr("dy", "0.35em")
+      .attr("text-anchor", "end")
+      .text(d => d);
+
+    const dots = plot.selectAll(".dot")
+      .data(nodes, d => d.id)
+      .join("circle")
+      .attr("class", "dot")
+      .attr("cx", d => d.x)
+      .attr("cy", d => d.y)
+      .attr("r", 10)
+      .attr("fill", d => colors.get(d.group))
+      .attr("stroke", "#ffffff")
+      .attr("stroke-width", 1.5);
+
+    dots.each(function(d, i) {
+      const delay = (120 + i * 34) / 1000;
+      d3.select(this).append("animate")
+        .attr("attributeName", "opacity")
+        .attr("from", "0")
+        .attr("to", ".92")
+        .attr("dur", ".72s")
+        .attr("begin", `${delay}s`)
+        .attr("fill", "freeze");
+      d3.select(this).append("animate")
+        .attr("attributeName", "r")
+        .attr("from", "2")
+        .attr("to", "10")
+        .attr("dur", ".72s")
+        .attr("begin", `${delay}s`)
+        .attr("fill", "freeze");
+    });
+
+    dots.append("title")
+      .text(d => `${d.group}: ${d.score}`);
+  </script>
+</body>
+</html>

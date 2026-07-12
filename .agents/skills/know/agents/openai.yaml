@@ -1,0 +1,4 @@
+interface:
+  display_name: "Know CLI"
+  short_description: "Operate the know knowledge CLI"
+  default_prompt: "Use $know to set up or operate the know CLI knowledge base workflow."

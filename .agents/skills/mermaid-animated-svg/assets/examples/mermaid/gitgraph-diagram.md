@@ -1,0 +1,30 @@
+# GitGraph Diagram
+
+```mermaid
+---
+config:
+  theme: base
+  gitGraph:
+    showBranches: true
+    showCommitLabel: true
+    rotateCommitLabel: false
+    mainBranchName: main
+  themeVariables:
+    fontFamily: "'Open Sans', arial, sans-serif"
+    git0: '#cdf3ff'
+    git1: '#dbffcc'
+    git2: '#fff4cc'
+    git3: '#ffccd5'
+    primaryTextColor: '#333E48'
+---
+gitGraph
+  commit id: "init"
+  branch examples
+  checkout examples
+  commit id: "mmd" type: HIGHLIGHT
+  commit id: "md"
+  checkout main
+  commit id: "validator"
+  merge examples tag: "examples/mermaid"
+  commit id: "verify" type: REVERSE
+```
