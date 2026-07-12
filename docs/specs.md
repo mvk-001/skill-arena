@@ -1,6 +1,10 @@
 # Specs
 
-Read this after [README.md](../README.md). Use [Usage Guide](./usage.md) for examples, [Architecture](./architecture.md) for flow, and [Testing](./testing.md) for the recommended validation sequence.
+Read this after [README.md](../README.md), or return to the
+[documentation index](./README.md). This document is the canonical contract for
+configuration fields, normalization, and result shapes. Use the
+[Usage Guide](./usage.md) for examples, [Architecture](./architecture.md) for
+flow, and [Testing](./testing.md) for the recommended validation sequence.
 
 ## Goals
 
@@ -260,8 +264,6 @@ Supported skill source types in V1:
 Supported install strategies in V1:
 
 - `none`
-
-When a scenario or compare profile enables declared skills, the runtime may prepend a narrow adapter-specific activation preamble that only selects the declared skill path and then preserves the exact benchmark task under a `Task:` header.
 - `workspace-overlay`
 - `system-installed`
 
@@ -271,6 +273,10 @@ Required skill behavior:
 - `skillMode: enabled` must resolve to a concrete skill source and install strategy.
 - For `workspace-overlay`, the harness copies or writes skill files into the materialized workspace.
 - For `system-installed`, the harness does not inject skill files into the workspace and relies on the local agent runtime environment.
+- When a scenario or compare profile enables declared skills, the runtime may
+  prepend a narrow adapter-specific activation preamble that selects only the
+  declared skill path and preserves the exact benchmark task under a `Task:`
+  header.
 - Skill materialization for `enabled` runs must not leak into `disabled` runs.
 - Skill definitions may include root instructions and bundled skill folders, for example `AGENTS.md` plus `skills/<skill-id>/SKILL.md`.
 - Skill bundles may also include sibling support files such as `skills/<skill-id>/references/*` and `skills/<skill-id>/scripts/*`.

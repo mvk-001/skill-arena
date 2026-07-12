@@ -31,6 +31,7 @@ test("skill-arena CLI prints command-specific help", async () => {
 
   assert.match(output, /skill-arena evaluate <benchmark-config-path>/);
   assert.match(output, /Run one benchmark manifest or matrix evaluation config/);
+  assert.match(output, /skill-arena evaluate \.\/evaluations\/skill-arena-config-author\/evaluation\.yaml --dry-run/);
 });
 
 test("skill-arena `help` prints top-level output when no subcommand is provided", async () => {
@@ -55,6 +56,7 @@ test("val-conf command shows inline help", async () => {
 
   assert.match(output, /skill-arena val-conf <benchmark-config-path>/);
   assert.match(output, /Validate a manifest or matrix evaluation config and print a normalized summary/);
+  assert.match(output, /skill-arena val-conf \.\/evaluations\/skill-arena-config-author\/evaluation\.yaml/);
 });
 
 test("val-gen is no longer a supported command", async () => {
@@ -71,6 +73,28 @@ test("gen-conf command shows inline help", async () => {
   assert.match(output, /skill-arena gen-conf \[--output <path>\] \[--prompt <text>\] \[options\]/);
   assert.match(output, /Generate a commented evaluation config template with TODO placeholders/);
   assert.match(output, /--skill-type <type>/);
+  assert.match(output, /codex, copilot-cli, pi, opencode, claude-code, gemini-cli/);
+  assert.match(output, /skill-arena gen-conf --prompt "summarize file A"/);
+});
+
+test("gen-conf uses OpenCode defaults when that adapter is selected", async () => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "skill-arena-gen-conf-opencode-"));
+  const outputPath = path.join(outputDirectory, "evaluation.yaml");
+
+  await execFileAsync(process.execPath, [
+    binPath,
+    "gen-conf",
+    "--output",
+    outputPath,
+    "--adapter",
+    "opencode",
+  ]);
+
+  const generated = fs.readFileSync(outputPath, "utf8");
+  assert.match(generated, /id: "opencode-mini"/);
+  assert.match(generated, /adapter: "opencode"/);
+  assert.match(generated, /model: "openai\/gpt-5\.4-mini"/);
+  assert.match(generated, /commandPath: "opencode"/);
 });
 
 test("gen-conf writes a commented compare template with requested options", async () => {

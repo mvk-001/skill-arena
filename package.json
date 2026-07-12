@@ -24,6 +24,7 @@
     "node": ">=24.0.0"
   },
   "scripts": {
+    "docs:check": "node scripts/check-docs.js",
     "test": "node --test test/*.test.js",
     "test:coverage": "c8 --reporter=text --all --include=src/**/*.js --exclude=src/cli/** --exclude=src/runner.js --exclude=src/providers/codex-system-provider.js --exclude=src/providers/pi-system-provider.js --check-coverage --statements 95 --branches 85 --functions 95 --lines 95 node --test test/*.test.js",
     "validate:manifest": "node ./src/cli/validate-manifest.js",

@@ -1,0 +1,36 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Open Sans, Arial, sans-serif","primaryColor":"#cdf3ff","primaryTextColor":"#333e48","primaryBorderColor":"#007298","secondaryColor":"#fff4cc","secondaryTextColor":"#333e48","secondaryBorderColor":"#e77204","tertiaryColor":"#f9ccff","tertiaryTextColor":"#333e48","tertiaryBorderColor":"#652f6c","lineColor":"#696969","textColor":"#333e48","mainBkg":"#ffffff","clusterBkg":"#f7f7f7","clusterBorder":"#cfcfcf","edgeLabelBackground":"#ffffff"},"flowchart":{"curve":"basis","nodeSpacing":30,"rankSpacing":42,"htmlLabels":true}}}%%
+flowchart TB
+    author["Config Author<br/><small>define a valid fixed benchmark</small>"]
+    runner["Run Results<br/><small>execute, normalize, report</small>"]
+    benchmark["Trusted benchmark + evidence"]
+    choice{"Choose the evidence strategy"}
+
+    author --> benchmark
+    runner --> benchmark
+    benchmark --> choice
+
+    choice -->|"repeatable candidate scores"| p1["Population evolution<br/><small>seed 10 candidates</small>"]
+    p1 --> p2["Score every candidate"]
+    p2 --> p3["Keep top 2"]
+    p3 --> p4["Mutate + crossover"]
+    p4 --> p5["Promote only validated wins"]
+    p5 -. "repeat until plateau" .-> p2
+
+    choice -->|"diverse labeled trajectories"| t1["Traced evolution<br/><small>label success + failure</small>"]
+    t1 --> t2["Analyze independently"]
+    t2 --> t3["Consolidate by prevalence"]
+    t3 --> t4["Filter conflicts + scope"]
+    t4 --> t5["Validate on holdout"]
+    p5 --> winner["Validated skill improvement"]
+    t5 --> winner
+
+    classDef support fill:#cdf3ff,stroke:#007298,color:#333e48,stroke-width:2px;
+    classDef decision fill:#fff4cc,stroke:#e77204,color:#333e48,stroke-width:2px;
+    classDef genetic fill:#ffccd5,stroke:#9e1b32,color:#333e48,stroke-width:2px;
+    classDef traced fill:#f9ccff,stroke:#652f6c,color:#333e48,stroke-width:2px;
+    classDef result fill:#dbffcc,stroke:#45842a,color:#333e48,stroke-width:3px;
+    class author,runner,benchmark support;
+    class choice decision;
+    class p1,p2,p3,p4,p5 genetic;
+    class t1,t2,t3,t4,t5 traced;
+    class winner result;

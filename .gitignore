@@ -8,6 +8,8 @@ reports/
 .tmp/
 tmp/
 deliverables/
+# Browser screenshots generated during visual documentation checks.
+output/playwright/
 bin/
 !bin/
 !bin/skill-arena.js

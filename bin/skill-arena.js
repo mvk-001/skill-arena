@@ -74,7 +74,7 @@ const commandDetails = {
       "--variant-id <id>: variant id override",
       "--variant-description <text>: variant description override",
       "--variant-display-name <text>: variant row label",
-      "--adapter <id>: variant agent adapter (codex, copilot-cli, pi)",
+      "--adapter <id>: variant agent adapter (codex, copilot-cli, pi, opencode, claude-code, gemini-cli)",
       "--model <id>: variant model",
       "--execution-method <id>: variant execution method",
       "--command-path <path>: variant command path",
@@ -205,7 +205,7 @@ function printCommandHelp(commandName) {
   }
   console.error("Examples:");
   for (const example of exampleFor(commandName)) {
-    console.error(`  skill-arena ${example}`);
+    console.error(`  skill-arena ${commandName} ${example}`);
   }
   console.error("");
   return { exitCode: 0 };

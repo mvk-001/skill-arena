@@ -1,10 +1,18 @@
 # Usage Guide
 
-Read this after [README.md](../README.md). This guide explains the normal `skill-arena` workflow from authoring a config to inspecting the final compare report. Use [Specs](./specs.md) for field-level rules, [Architecture](./architecture.md) for internals, and [Testing](./testing.md) for the validation loop.
+Read this after [README.md](../README.md), or return to the
+[documentation index](./README.md). This guide explains the normal
+`skill-arena` workflow from authoring a config to inspecting the final compare
+report. Use [Specs](./specs.md) for field-level rules, [CLI reference](./cli-reference.md)
+for complete command options, [Architecture](./architecture.md) for internals,
+and [Testing](./testing.md) for the validation loop.
 
 ## The Normal Workflow
 
-Most users should think in terms of one `compare.yaml` file and one repeated loop:
+Most users should think in terms of one compare evaluation config and one
+repeated loop. In this repository, use
+`evaluations/<benchmark-id>/evaluation.yaml`; `compare.yaml` is also accepted
+when a standalone workflow requires that name.
 
 1. Author or update the benchmark config.
 2. Validate it with `skill-arena val-conf`.
@@ -38,7 +46,8 @@ skill-arena val-conf --help
 
 ## Understand The Config Shape
 
-Skill Arena is compare-first. The most important authoring file is `compare.yaml`.
+Skill Arena is compare-first. The most important authoring artifact is the
+compare evaluation config.
 
 That file answers five questions:
 
@@ -344,3 +353,12 @@ New authoring should use the compare-first declarative shape, but V1 still norma
 - `comparison.skillModes`
 
 Those fields still parse, but new configs should prefer `workspace.sources`, `task.prompts`, and `comparison.profiles`.
+
+## Next Steps
+
+- Use the [CLI reference](./cli-reference.md) when you need an option that is not
+  part of the normal workflow.
+- Use the [configuration specs](./specs.md) before introducing a new source,
+  assertion, or capability shape.
+- Use the [testing guide](./testing.md) before checking in config or runtime
+  changes.

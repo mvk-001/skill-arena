@@ -1,18 +1,25 @@
 # Testing
 
-Read this after [Usage Guide](./usage.md). This page is the validation playbook for Skill Arena itself: runtime code, compare config generation, workspace materialization, and live evaluation checks. Use [Specs](./specs.md) for canonical fields and [Architecture](./architecture.md) when a failure looks like a runner or adapter problem.
+Read this after [Usage Guide](./usage.md), or return to the
+[documentation index](./README.md). This page is the validation playbook for
+Skill Arena itself: documentation, runtime code, compare config generation,
+workspace materialization, and live evaluation checks. Use [Specs](./specs.md)
+for canonical fields and [Architecture](./architecture.md) when a failure looks
+like a runner or adapter problem.
 
 ## What To Verify
 
-When you change Skill Arena, the goal is usually to verify three layers in order:
+When you change Skill Arena, verify the affected layers in order:
 
-1. Unit-tested runtime behavior under `src/`
-2. Config validation and Promptfoo generation
-3. Optional live agent execution against a maintained compare benchmark
+1. Documentation navigation and local links
+2. Unit-tested runtime behavior under `src/`
+3. Config validation and Promptfoo generation
+4. Optional live agent execution against a maintained compare benchmark
 
 The default loop is:
 
 ```bash
+npm run docs:check
 npm test
 skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
 skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
@@ -30,10 +37,24 @@ skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml
 - `npm install` or `pnpm install`
 - local Codex CLI available on `PATH` as `codex`
 - local GitHub Copilot CLI available on `PATH` as `copilot` when testing `copilot-cli` scenarios
+- local Pi CLI available on `PATH` as `pi` when testing `pi` scenarios
 - local OpenCode CLI available on `PATH` as `opencode` when testing `opencode` scenarios
 - local Claude Code CLI available on `PATH` as `claude` when testing `claude-code` scenarios
 - local Gemini CLI available on `PATH` as `gemini` when testing `gemini-cli` scenarios
 - Codex authenticated on the machine before running live evaluations
+
+## 0. Check Documentation
+
+Run the local-link and heading-fragment check after moving documentation,
+renaming headings, or changing navigation:
+
+```bash
+npm run docs:check
+```
+
+The checker scans `README.md` and every Markdown file under `docs/`. It fails on
+missing relative paths and missing Markdown heading fragments. External URLs
+remain outside this offline check.
 
 ## 1. Run Unit Tests
 
@@ -246,6 +267,7 @@ Pass `--strict` when the loop must fail if the binary is unavailable.
 Use this short sequence when you change the runner, Promptfoo integration, workspace materialization, or assertion translation:
 
 ```bash
+npm run docs:check
 npm test
 skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
 skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
@@ -253,6 +275,7 @@ skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --d
 
 What this covers:
 
+- `npm run docs:check` catches stale local navigation
 - `npm test` catches unit-level regressions
 - `val-conf` confirms the maintained config still parses cleanly
 - `evaluate --dry-run` confirms workspace materialization and Promptfoo config generation still work

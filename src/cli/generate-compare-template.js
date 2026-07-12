@@ -412,6 +412,9 @@ function defaultVariantIdForAdapter(adapter) {
   if (adapter === "pi") {
     return "pi-gpt5mini";
   }
+  if (adapter === "opencode") {
+    return "opencode-mini";
+  }
   if (adapter === "claude-code") {
     return "claude-code-sonnet";
   }
@@ -428,6 +431,9 @@ function defaultModelForAdapter(adapter) {
   if (adapter === "pi") {
     return "github-copilot/gpt-5-mini";
   }
+  if (adapter === "opencode") {
+    return "openai/gpt-5.4-mini";
+  }
   if (adapter === "claude-code") {
     return "claude-sonnet-4-20250514";
   }
@@ -443,6 +449,9 @@ function defaultCommandPathForAdapter(adapter) {
   }
   if (adapter === "pi") {
     return "pi";
+  }
+  if (adapter === "opencode") {
+    return "opencode";
   }
   if (adapter === "claude-code") {
     return "claude";

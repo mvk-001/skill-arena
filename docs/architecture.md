@@ -1,8 +1,44 @@
 # Architecture
 
-Read this after [README.md](../README.md) and [Usage Guide](./usage.md). This page explains the runtime model and execution flow. Use [Specs](./specs.md) for field-level rules.
+Read this after [README.md](../README.md) and [Usage Guide](./usage.md), or
+return to the [documentation index](./README.md). This page explains the runtime
+model, execution flow, and source-module boundaries. Use [Specs](./specs.md) for
+field-level rules.
 
 Skill Arena evaluates coding agents on repeatable repository tasks under constrained execution settings. It keeps benchmark authoring declarative and pushes agent-specific behavior into adapters.
+
+## System overview
+
+```mermaid
+flowchart LR
+    Config["Manifest or compare YAML"] --> Load["Load, validate, normalize"]
+    Load --> Matrix["Expand scenarios or compare matrix"]
+    Matrix --> Workspace["Materialize isolated workspaces"]
+    Workspace --> Adapter["Map through agent adapters"]
+    Adapter --> Promptfoo["Generate and run Promptfoo config"]
+    Promptfoo --> Normalize["Normalize results"]
+    Normalize --> Artifacts["summary.json and merged report"]
+```
+
+The configuration and declared sources are inputs. Generated workspaces and
+results are outputs. Adapter-specific behavior stays between those boundaries
+so benchmark schemas do not depend on a particular CLI.
+
+## Runtime module map
+
+| Area | Primary modules | Responsibility |
+| --- | --- | --- |
+| CLI orchestration | `bin/skill-arena.js`, `src/cli/` | Parse commands and dispatch validation, generation, dry-runs, and live runs. |
+| Config contracts | `src/manifest-schema.js`, `src/compare-schema.js`, `src/manifest.js` | Parse, validate, and normalize authoring formats. |
+| Matrix expansion | `src/compare.js`, `src/compare-matrix.js`, `src/compare-reuse.js` | Build compare units and decide whether prior outputs are reusable. |
+| Workspace isolation | `src/workspace.js`, `src/runtime-isolation.js`, `src/normalize-workspace.js` | Materialize declared inputs and isolate local CLI state. |
+| Adapter boundary | `src/adapters.js`, `src/providers/` | Translate normalized scenarios into local agent executions. |
+| Promptfoo integration | `src/promptfoo-config.js`, `src/runner.js`, `src/judge-provider.js` | Build configs, execute Promptfoo, and support local judges. |
+| Result normalization | `src/results.js`, `src/normalize*.js`, `src/code-metrics.js` | Produce stable summaries, matrices, reports, and optional code metrics. |
+
+The installed npm package contains only `bin/skill-arena.js`, `src/**/*.js`,
+and `README.md`. Documentation, tests, skills, and maintained evaluations are
+repository development assets rather than runtime package files.
 
 ## Core components
 
@@ -192,17 +228,17 @@ Compare profiles are capability-oriented on purpose. Similar names across tools 
 - `No`: not documented as a supported capability
 - `Planned`: relevant for future adapter support in Skill Arena
 
-| Capability | Codex | Copilot CLI | OpenCode | Pi | Claude Code |
-| --- | --- | --- | --- | --- | --- |
-| Project instruction file | Native (`AGENTS.md`) | Native | Native (`AGENTS.md`) | Native (`AGENTS.md`) | Native (`CLAUDE.md`) |
-| Skills | Native | Native | Native | Native | Native (`.claude/skills`) |
-| Skill groups / multiple skills | Native | Native | Native | Native | Native |
-| Hooks / event hooks | No | Native | Analogous via plugins | Analogous via extensions | Native |
-| Custom agents | Native | Native | Native | No | Native |
-| Subagents / delegation | Native | Native | Native | Analogous via extensions/packages | Native |
-| MCP servers | Native | Native | Native | Analogous via extensions | Native |
-| Runtime plugin / extension API | No | No | Native plugins | Native extensions/packages | Native plugins |
-| IDE plugin / IDE extension | No | No | IDE-only | No | Native IDE integration |
+| Capability | Codex | Copilot CLI | OpenCode | Pi | Claude Code | Gemini CLI |
+| --- | --- | --- | --- | --- | --- | --- |
+| Project instruction file | Native (`AGENTS.md`) | Native | Native (`AGENTS.md`) | Native (`AGENTS.md`) | Native (`CLAUDE.md`) | Native (`GEMINI.md`) |
+| Skills | Native | Native | Native | Native | Native (`.claude/skills`) | Native (`.gemini/skills`) |
+| Skill groups / multiple skills | Native | Native | Native | Native | Native | Native |
+| Hooks / event hooks | No | Native | Analogous via plugins | Analogous via extensions | Native | No V1 mapping |
+| Custom agents | Native | Native | Native | No | Native | No V1 mapping |
+| Subagents / delegation | Native | Native | Native | Analogous via extensions/packages | Native | No V1 mapping |
+| MCP servers | Native | Native | Native | Analogous via extensions | Native | No V1 mapping |
+| Runtime plugin / extension API | No | No | Native plugins | Native extensions/packages | Native plugins | No V1 mapping |
+| IDE plugin / IDE extension | No | No | IDE-only | No | Native IDE integration | No V1 mapping |
 
 Notes:
 
@@ -210,6 +246,8 @@ Notes:
 - Pi extensions and packages are closer to runtime extensibility than to a benchmark-stable plugin marketplace.
 - Copilot CLI hooks are native. OpenCode plugin hooks and Pi extension handlers are analogous, not equivalent.
 - Codex should remain `No` for hooks unless OpenAI documents a stable runtime hook surface suitable for deterministic benchmarking.
+- `No V1 mapping` means Skill Arena does not currently expose that capability
+  for Gemini CLI; it is not a claim about every Gemini product surface.
 
 ## Design constraints
 
