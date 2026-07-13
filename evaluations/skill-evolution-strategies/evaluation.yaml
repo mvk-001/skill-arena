@@ -1,0 +1,154 @@
+schemaVersion: 1
+benchmark:
+  id: skill-evolution-strategies
+  description: Compare four skill-improvement workflows on identical corpus-derived evidence tasks.
+  tags:
+    - compare
+    - skill-evolution
+    - strategy
+task:
+  prompts:
+    - id: scalar-converter
+      description: Stable scalar-fitness converter case.
+      prompt: >-
+        Review subjects/animated-svg-to-gif/SKILL.md and evidence/stable-scalar-converter.json.
+        Use the improvement method available to you. Write output/scalar-converter.json with
+        strategy, selectedCandidateId, evidence, rejectedAlternative, developmentDecision,
+        holdoutRule, and promotionDecision. Return the same JSON as your response.
+      evaluation:
+        assertions:
+          - type: file-contains
+            path: output/scalar-converter.json
+            value: '"selectedCandidateId"'
+          - type: file-contains
+            path: output/scalar-converter.json
+            value: '"promotionDecision"'
+    - id: heterogeneous-orchestrator
+      description: Heterogeneous multi-case orchestration case.
+      prompt: >-
+        Review subjects/compose-synchronized-svg/SKILL.md and evidence/heterogeneous-svg-orchestration.json.
+        Use the improvement method available to you. Write output/heterogeneous-orchestrator.json
+        with strategy, selectedCandidateId, evidence, rejectedAlternative, developmentDecision,
+        holdoutRule, and promotionDecision. Return the same JSON as your response.
+      evaluation:
+        assertions:
+          - type: file-contains
+            path: output/heterogeneous-orchestrator.json
+            value: '"selectedCandidateId"'
+          - type: file-contains
+            path: output/heterogeneous-orchestrator.json
+            value: '"promotionDecision"'
+    - id: recurring-findings
+      description: Recurrent labeled trace evidence case.
+      prompt: >-
+        Review subjects/d3-composition-evaluator/SKILL.md and evidence/recurring-composition-findings.json.
+        Use the improvement method available to you. Write output/recurring-findings.json with
+        strategy, selectedCandidateId, evidence, rejectedAlternative, developmentDecision,
+        holdoutRule, and promotionDecision. Return the same JSON as your response.
+      evaluation:
+        assertions:
+          - type: file-contains
+            path: output/recurring-findings.json
+            value: '"selectedCandidateId"'
+          - type: file-contains
+            path: output/recurring-findings.json
+            value: '"promotionDecision"'
+    - id: operator-plateau
+      description: Repeated-generation operator plateau case.
+      prompt: >-
+        Review subjects/html-d3-anime-video-workflow/SKILL.md and evidence/plateaued-video-mutations.json.
+        Use the improvement method available to you. Write output/operator-plateau.json with
+        strategy, selectedCandidateId, evidence, rejectedAlternative, developmentDecision,
+        holdoutRule, and promotionDecision. Return the same JSON as your response.
+      evaluation:
+        assertions:
+          - type: file-contains
+            path: output/operator-plateau.json
+            value: '"selectedCandidateId"'
+          - type: file-contains
+            path: output/operator-plateau.json
+            value: '"promotionDecision"'
+workspace:
+  sources:
+    - id: corpus-snapshot
+      type: local-path
+      path: evaluations/skill-evolution-strategies/fixtures/workspaces/base
+      target: /
+  setup:
+    initializeGit: true
+evaluation:
+  assertions:
+    - type: llm-rubric
+      provider: skill-arena:judge:codex
+      value: >-
+        Score 1.0 only when the JSON response names the applied strategy and selected candidate,
+        cites concrete development evidence, identifies one rejected alternative, separates the
+        development decision from a holdout promotion rule, and does not misrepresent fixture
+        replay scores as a completed live validation.
+  requests: 1
+  timeoutMs: 240000
+  maxConcurrency: 4
+  tracing: false
+  noCache: true
+comparison:
+  profiles:
+    - id: population-search
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: skills/skill-arena-population-search
+              skillId: skill-arena-population-search
+            install:
+              strategy: workspace-overlay
+    - id: trace-distillation
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: skills/skill-arena-trace-distillation
+              skillId: skill-arena-trace-distillation
+            install:
+              strategy: workspace-overlay
+    - id: reflective-pareto-search
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: skills/skill-arena-reflective-pareto-search
+              skillId: skill-arena-reflective-pareto-search
+            install:
+              strategy: workspace-overlay
+    - id: operator-coevolution
+      isolation:
+        inheritSystem: false
+      capabilities:
+        skills:
+          - source:
+              type: local-path
+              path: skills/skill-arena-operator-coevolution
+              skillId: skill-arena-operator-coevolution
+            install:
+              strategy: workspace-overlay
+  variants:
+    - id: codex-mini
+      agent:
+        adapter: codex
+        model: gpt-5.1-codex-mini
+        executionMethod: command
+        commandPath: codex
+        sandboxMode: workspace-write
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        envPassthrough: []
+        config: {}

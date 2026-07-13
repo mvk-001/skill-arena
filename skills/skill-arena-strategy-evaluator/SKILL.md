@@ -1,85 +1,89 @@
 ---
 name: skill-arena-strategy-evaluator
-description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
+description: Build and run reproducible comparisons of skill-improvement strategies over a real skill corpus. Use when Codex must catalog skills, replay population search, trace distillation, reflective Pareto search, and operator coevolution on shared evidence, aggregate holdout quality, reliability, cost, complexity, and diversity, or publish a decision guide without claiming one universal winner.
 ---
 
 # Skill Arena Strategy Evaluator
 
-## Overview
+Compare skill-improvement strategies in two separate evidence layers:
 
-[TODO: 1-2 sentences explaining what this skill enables]
+1. deterministic mechanism replay, which tests selection behavior on frozen
+   candidate, trace, and operator evidence; and
+2. optional live Skill Arena evaluation, which tests whether an agent can use
+   each strategy skill on identical tasks and workspaces.
 
-## Structuring This Skill
+Never mix replay scores with live agent pass rates in one headline number.
 
-[TODO: Choose the structure that best fits this skill's purpose. Common patterns:
+## Workflow
 
-**1. Workflow-Based** (best for sequential processes)
-- Works well when there are clear step-by-step procedures
-- Example: DOCX skill with "Workflow Decision Tree" -> "Reading" -> "Creating" -> "Editing"
-- Structure: ## Overview -> ## Workflow Decision Tree -> ## Step 1 -> ## Step 2...
+1. Freeze the source skill corpus and record its path, revision when available,
+   and catalog digest.
+2. Run `scripts/catalog-skills.js` to capture skill names, descriptions, line
+   counts, and resource counts. Treat the source corpus as read-only.
+3. Define representative subjects across size and resource shape. Do not select
+   only one easy skill family.
+4. Author replay scenarios with development evidence and hidden holdout scores
+   using [references/evaluation-protocol.md](references/evaluation-protocol.md).
+5. Run `scripts/evaluate-strategies.js`. Inspect per-scenario selections before
+   using aggregate rankings.
+6. If live evaluation is practical, author one compare config with identical
+   prompts across profiles. Use one profile per strategy skill, at least four
+   prompts across three task families, and prompt-specific observable
+   assertions.
+7. Validate the compare config and prompt coverage, dry-run it, then execute it.
+   Keep replay and live artifacts side by side but labeled separately.
+8. Publish the methodology, corpus snapshot, raw inputs, report, limitations,
+   and exact rerun commands.
 
-**2. Task-Based** (best for tool collections)
-- Works well when the skill offers different operations/capabilities
-- Example: PDF skill with "Quick Start" -> "Merge PDFs" -> "Split PDFs" -> "Extract Text"
-- Structure: ## Overview -> ## Quick Start -> ## Task Category 1 -> ## Task Category 2...
+## Metrics
 
-**3. Reference/Guidelines** (best for standards or specifications)
-- Works well for brand guidelines, coding standards, or requirements
-- Example: Brand styling with "Brand Guidelines" -> "Colors" -> "Typography" -> "Features"
-- Structure: ## Overview -> ## Guidelines -> ## Specifications -> ## Usage...
+Aggregate at least:
 
-**4. Capabilities-Based** (best for integrated systems)
-- Works well when the skill provides multiple interrelated features
-- Example: Product Management with "Core Capabilities" -> numbered capability list
-- Structure: ## Overview -> ## Core Capabilities -> ### 1. Feature -> ### 2. Feature...
+- holdout quality and gain over baseline
+- regression-free reliability
+- generalization gap between development and holdout
+- evaluation cost or candidate count
+- selected complexity delta
+- archive or operator diversity when the strategy produces it
 
-Patterns can be mixed and matched as needed. Most skills combine patterns (e.g., start with task-based, add workflow for complex operations).
+Use explicit weights only for a named decision profile. Always preserve the
+unweighted metrics so another user can choose different tradeoffs.
 
-Delete this entire "Structuring This Skill" section when done - it's just guidance.]
+## Commands
 
-## [TODO: Replace with the first main section based on chosen structure]
+```powershell
+node skills/skill-arena-strategy-evaluator/scripts/catalog-skills.js `
+  --root C:\path\to\skills\.agents\skills `
+  --output evaluations/skill-evolution-strategies/corpus-catalog.json
 
-[TODO: Add content here. See examples in existing skills:
-- Code samples for technical skills
-- Decision trees for complex workflows
-- Concrete examples with realistic user requests
-- References to scripts/templates/references as needed]
+node skills/skill-arena-strategy-evaluator/scripts/evaluate-strategies.js `
+  --input evaluations/skill-evolution-strategies/replay-scenarios.json `
+  --output evaluations/skill-evolution-strategies/replay-results.json `
+  --markdown evaluations/skill-evolution-strategies/replay-report.md
+```
 
-## Resources (optional)
+## Decision Rules
 
-Create only the resource directories this skill actually needs. Delete this section if no resources are required.
+- Prefer population search for a stable scalar objective and affordable broad
+  evaluation.
+- Prefer trace distillation when a diverse labeled trace pool already exists
+  and recurring lessons matter more than exploration.
+- Prefer reflective Pareto search when case-level feedback is rich and task
+  families trade off against one another.
+- Prefer operator coevolution after repeated generations show that a fixed
+  mutation library has plateaued and operator credit is observable.
+- Compose strategies only with an explicit boundary: for example, distill a
+  baseline, search refinements, then use reflective Pareto selection. Do not
+  change benchmark and skill simultaneously.
 
-### scripts/
-Executable code (Python/Bash/etc.) that can be run directly to perform specific operations.
+## Reporting Guardrails
 
-**Examples from other skills:**
-- PDF skill: `fill_fillable_fields.py`, `extract_form_field_info.py` - utilities for PDF manipulation
-- DOCX skill: `document.py`, `utilities.py` - Python modules for document processing
+- Call deterministic results `replay`, not empirical agent quality.
+- Call validation or dry-run results by those names; do not call them live
+  benchmark passes.
+- State corpus revision, subject coverage, request count, model, runtime,
+  failures, and unsupported cells for live runs.
+- Do not name a universal winner when rankings change by subject or metric.
+- Make every generated JSON and Markdown artifact available with rerun
+  commands.
 
-**Appropriate for:** Python scripts, shell scripts, or any executable code that performs automation, data processing, or specific operations.
-
-**Note:** Scripts may be executed without loading into context, but can still be read by Codex for patching or environment adjustments.
-
-### references/
-Documentation and reference material intended to be loaded into context to inform Codex's process and thinking.
-
-**Examples from other skills:**
-- Product management: `communication.md`, `context_building.md` - detailed workflow guides
-- BigQuery: API reference documentation and query examples
-- Finance: Schema documentation, company policies
-
-**Appropriate for:** In-depth documentation, API references, database schemas, comprehensive guides, or any detailed information that Codex should reference while working.
-
-### assets/
-Files not intended to be loaded into context, but rather used within the output Codex produces.
-
-**Examples from other skills:**
-- Brand styling: PowerPoint template files (.pptx), logo files
-- Frontend builder: HTML/React boilerplate project directories
-- Typography: Font files (.ttf, .woff2)
-
-**Appropriate for:** Templates, boilerplate code, document templates, images, icons, fonts, or any files meant to be copied or used in the final output.
-
----
-
-**Not every skill requires all three types of resources.**

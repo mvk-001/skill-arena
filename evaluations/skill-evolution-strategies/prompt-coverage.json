@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "prompts": [
+    { "id": "scalar-converter", "caseKind": "naturalistic", "taskFamily": "scalar-selection" },
+    { "id": "heterogeneous-orchestrator", "caseKind": "generalization", "taskFamily": "multi-case-selection" },
+    { "id": "recurring-findings", "caseKind": "naturalistic", "taskFamily": "trace-evidence" },
+    { "id": "operator-plateau", "caseKind": "boundary", "taskFamily": "plateau-recovery" }
+  ]
+}
+

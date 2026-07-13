@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "corpus": "$HOME/dev/skills/.agents/skills",
+    "corpusDigest": "generated-by-catalog-skills",
+    "claim": "Controlled mechanism replay over subjects sampled from the real corpus; candidate scores are fixtures, not historical live measurements."
+  },
+  "scenarios": [
+    {
+      "scenarioId": "stable-scalar-converter",
+      "subjectId": "animated-svg-to-gif",
+      "baselineCandidateId": "baseline",
+      "minTraceSupport": 2,
+      "traces": [
+        { "traceId": "converter-t1", "tags": ["exact-output"] },
+        { "traceId": "converter-t2", "tags": ["exact-output"] }
+      ],
+      "candidates": [
+        { "candidateId": "baseline", "devScore": 0.65, "holdoutScore": 0.65, "caseScores": { "natural": 0.65, "boundary": 0.65 }, "operatorId": "control", "parentFitness": 0.65, "patchTags": [], "complexityDelta": 0, "evaluationCost": 2 },
+        { "candidateId": "scalar-contract", "devScore": 0.90, "holdoutScore": 0.90, "caseScores": { "natural": 0.95, "boundary": 0.75 }, "operatorId": "broad", "parentFitness": 0.65, "patchTags": [], "complexityDelta": 3, "evaluationCost": 2 },
+        { "candidateId": "pareto-balanced", "devScore": 0.84, "holdoutScore": 0.82, "caseScores": { "natural": 0.84, "boundary": 0.84 }, "operatorId": "balanced", "parentFitness": 0.55, "patchTags": [], "complexityDelta": 2, "evaluationCost": 2 },
+        { "candidateId": "trace-exact-output", "devScore": 0.82, "holdoutScore": 0.80, "caseScores": { "natural": 0.81, "boundary": 0.80 }, "operatorId": "trace", "parentFitness": 0.60, "patchTags": ["exact-output"], "complexityDelta": 4, "evaluationCost": 2 },
+        { "candidateId": "operator-child", "devScore": 0.83, "holdoutScore": 0.81, "caseScores": { "natural": 0.82, "boundary": 0.82 }, "operatorId": "evolved", "parentFitness": 0.30, "patchTags": [], "complexityDelta": 5, "evaluationCost": 2 }
+      ]
+    },
+    {
+      "scenarioId": "heterogeneous-svg-orchestration",
+      "subjectId": "compose-synchronized-svg",
+      "baselineCandidateId": "baseline",
+      "minTraceSupport": 2,
+      "traces": [
+        { "traceId": "svg-t1", "tags": ["brief-validation"] },
+        { "traceId": "svg-t2", "tags": ["brief-validation"] }
+      ],
+      "candidates": [
+        { "candidateId": "baseline", "devScore": 0.68, "holdoutScore": 0.68, "caseScores": { "compact": 0.70, "world": 0.62, "recovery": 0.60 }, "operatorId": "control", "parentFitness": 0.68, "patchTags": [], "complexityDelta": 0, "evaluationCost": 3 },
+        { "candidateId": "scalar-overfit", "devScore": 0.94, "holdoutScore": 0.65, "caseScores": { "compact": 0.99, "world": 0.45, "recovery": 0.40 }, "operatorId": "broad", "parentFitness": 0.68, "patchTags": [], "complexityDelta": 18, "evaluationCost": 3 },
+        { "candidateId": "pareto-balanced", "devScore": 0.87, "holdoutScore": 0.92, "caseScores": { "compact": 0.88, "world": 0.86, "recovery": 0.87 }, "operatorId": "balanced", "parentFitness": 0.72, "patchTags": [], "complexityDelta": 6, "evaluationCost": 3 },
+        { "candidateId": "trace-brief-gate", "devScore": 0.83, "holdoutScore": 0.82, "caseScores": { "compact": 0.84, "world": 0.78, "recovery": 0.80 }, "operatorId": "trace", "parentFitness": 0.70, "patchTags": ["brief-validation"], "complexityDelta": 4, "evaluationCost": 3 },
+        { "candidateId": "operator-child", "devScore": 0.85, "holdoutScore": 0.84, "caseScores": { "compact": 0.86, "world": 0.82, "recovery": 0.81 }, "operatorId": "evolved", "parentFitness": 0.35, "patchTags": [], "complexityDelta": 8, "evaluationCost": 3 }
+      ]
+    },
+    {
+      "scenarioId": "recurring-composition-findings",
+      "subjectId": "d3-composition-evaluator",
+      "baselineCandidateId": "baseline",
+      "minTraceSupport": 2,
+      "traces": [
+        { "traceId": "composition-t1", "tags": ["score-reconciliation", "visible-evidence"] },
+        { "traceId": "composition-t2", "tags": ["score-reconciliation"] },
+        { "traceId": "composition-t3", "tags": ["score-reconciliation", "visible-evidence"] }
+      ],
+      "candidates": [
+        { "candidateId": "baseline", "devScore": 0.66, "holdoutScore": 0.66, "caseScores": { "audit": 0.66, "comparison": 0.64, "boundary": 0.60 }, "operatorId": "control", "parentFitness": 0.66, "patchTags": [], "complexityDelta": 0, "evaluationCost": 3 },
+        { "candidateId": "scalar-overfit", "devScore": 0.91, "holdoutScore": 0.70, "caseScores": { "audit": 0.96, "comparison": 0.55, "boundary": 0.45 }, "operatorId": "broad", "parentFitness": 0.66, "patchTags": [], "complexityDelta": 10, "evaluationCost": 3 },
+        { "candidateId": "pareto-balanced", "devScore": 0.84, "holdoutScore": 0.85, "caseScores": { "audit": 0.84, "comparison": 0.83, "boundary": 0.82 }, "operatorId": "balanced", "parentFitness": 0.58, "patchTags": [], "complexityDelta": 3, "evaluationCost": 3 },
+        { "candidateId": "trace-reconciled-score", "devScore": 0.83, "holdoutScore": 0.94, "caseScores": { "audit": 0.82, "comparison": 0.81, "boundary": 0.80 }, "operatorId": "trace", "parentFitness": 0.62, "patchTags": ["score-reconciliation", "visible-evidence"], "complexityDelta": 2, "evaluationCost": 3 },
+        { "candidateId": "operator-child", "devScore": 0.86, "holdoutScore": 0.83, "caseScores": { "audit": 0.85, "comparison": 0.80, "boundary": 0.78 }, "operatorId": "evolved", "parentFitness": 0.40, "patchTags": [], "complexityDelta": 5, "evaluationCost": 3 }
+      ]
+    },
+    {
+      "scenarioId": "plateaued-video-mutations",
+      "subjectId": "html-d3-anime-video-workflow",
+      "baselineCandidateId": "baseline",
+      "minTraceSupport": 2,
+      "traces": [
+        { "traceId": "video-t1", "tags": ["render-gate"] },
+        { "traceId": "video-t2", "tags": ["render-gate"] }
+      ],
+      "candidates": [
+        { "candidateId": "baseline", "devScore": 0.67, "holdoutScore": 0.67, "caseScores": { "brief": 0.68, "render": 0.65, "recovery": 0.62 }, "operatorId": "control", "parentFitness": 0.67, "patchTags": [], "complexityDelta": 0, "evaluationCost": 3 },
+        { "candidateId": "scalar-overfit", "devScore": 0.93, "holdoutScore": 0.72, "caseScores": { "brief": 0.98, "render": 0.50, "recovery": 0.42 }, "operatorId": "broad", "parentFitness": 0.67, "patchTags": [], "complexityDelta": 14, "evaluationCost": 3 },
+        { "candidateId": "pareto-balanced", "devScore": 0.87, "holdoutScore": 0.88, "caseScores": { "brief": 0.87, "render": 0.86, "recovery": 0.85 }, "operatorId": "balanced", "parentFitness": 0.70, "patchTags": [], "complexityDelta": 5, "evaluationCost": 3 },
+        { "candidateId": "trace-render-gate", "devScore": 0.84, "holdoutScore": 0.84, "caseScores": { "brief": 0.83, "render": 0.82, "recovery": 0.80 }, "operatorId": "trace", "parentFitness": 0.62, "patchTags": ["render-gate"], "complexityDelta": 3, "evaluationCost": 3 },
+        { "candidateId": "operator-child-a", "devScore": 0.89, "holdoutScore": 0.95, "caseScores": { "brief": 0.89, "render": 0.88, "recovery": 0.87 }, "operatorId": "evolved", "parentFitness": 0.35, "patchTags": [], "complexityDelta": 6, "evaluationCost": 3 },
+        { "candidateId": "operator-child-b", "devScore": 0.86, "holdoutScore": 0.91, "caseScores": { "brief": 0.86, "render": 0.84, "recovery": 0.85 }, "operatorId": "evolved", "parentFitness": 0.40, "patchTags": [], "complexityDelta": 4, "evaluationCost": 3 }
+      ]
+    }
+  ]
+}
+

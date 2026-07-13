@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { spawn } from "node:child_process";
 
 import { buildPromptfooProvider, getAdapter } from "../adapters.js";
 import { expandCompareConfigToManifest, loadCompareConfig } from "../compare.js";
@@ -22,6 +21,7 @@ import {
 import { mapWithConcurrency, resolveEvaluationConcurrency } from "../concurrency.js";
 import { ensureCompareScenarioLocalPaths } from "../compare-bootstrap.js";
 import { fromPackageRoot } from "../project-paths.js";
+import { runPromptfooEval } from "../promptfoo-runner.js";
 import {
   clearGitSourceCache,
   materializeWorkspace,
@@ -210,7 +210,7 @@ async function main() {
     const hasFreshRuns = freshRuns.length > 0;
     if (hasFreshRuns) {
       const promptfooStartMs = Date.now();
-      await executePromptfoo({
+      await runPromptfooEval({
         promptfooConfigPath,
         promptfooResultsPath,
         timeoutMs: effectiveEvalTimeoutMs,
@@ -753,133 +753,6 @@ function groupOutputsByScenario(outputs, routeMap) {
   }
 
   return map;
-}
-
-// ── Promptfoo execution ────────────────────────────────────────────
-
-async function executePromptfoo({
-  promptfooConfigPath,
-  promptfooResultsPath,
-  timeoutMs,
-  maxConcurrency,
-  noCache,
-  requests,
-  verbose,
-  executionLogPath,
-}) {
-  const promptfooArgs = buildPromptfooEvalArgs({
-    promptfooConfigPath,
-    promptfooResultsPath,
-    requests,
-    maxConcurrency,
-    noCache,
-  });
-
-  const { executable, executableArgs } = await buildPromptfooCommand(promptfooArgs);
-
-  await new Promise((resolve, reject) => {
-    let timedOut = false;
-    const childProcess = spawn(executable, executableArgs, {
-      cwd: path.dirname(promptfooConfigPath),
-      env: {
-        ...process.env,
-        PROMPTFOO_DISABLE_TELEMETRY: "1",
-        PROMPTFOO_DISABLE_UPDATE: "1",
-      },
-      stdio: ["ignore", "pipe", "pipe"],
-      windowsHide: true,
-    });
-
-    const killTimer = setTimeout(() => {
-      timedOut = true;
-      childProcess.kill("SIGTERM");
-    }, timeoutMs);
-
-    childProcess.on("error", (error) => {
-      clearTimeout(killTimer);
-      reject(error);
-    });
-
-    attachExecutionStream({ stream: childProcess.stdout, executionLogPath, verbose, outputWriter: process.stdout });
-    attachExecutionStream({ stream: childProcess.stderr, executionLogPath, verbose, outputWriter: process.stderr });
-
-    childProcess.on("exit", (code, signal) => {
-      clearTimeout(killTimer);
-
-      if (code === 0 || code === 100) {
-        resolve();
-        return;
-      }
-
-      reject(buildPromptfooExitError({ code, signal, timedOut, timeoutMs }));
-    });
-  });
-}
-
-function buildPromptfooEvalArgs({
-  promptfooConfigPath,
-  promptfooResultsPath,
-  requests,
-  maxConcurrency,
-  noCache,
-}) {
-  const args = [
-    "promptfoo", "eval",
-    "-c", promptfooConfigPath,
-    "--output", promptfooResultsPath,
-    "--repeat", String(requests),
-    "-j", String(maxConcurrency),
-    "--no-progress-bar",
-  ];
-
-  if (noCache) {
-    args.push("--no-cache");
-  }
-
-  return args;
-}
-
-function attachExecutionStream({ stream, executionLogPath, verbose, outputWriter }) {
-  stream.on("data", (chunk) => {
-    void fs.appendFile(executionLogPath, chunk);
-    if (verbose) {
-      outputWriter.write(chunk);
-    }
-  });
-}
-
-function buildPromptfooExitError({ code, signal, timedOut, timeoutMs }) {
-  if (timedOut) {
-    return new Error(
-      `promptfoo eval timed out after ${timeoutMs} ms and was terminated with signal ${signal ?? "unknown"}.`,
-    );
-  }
-
-  if (signal) {
-    return new Error(`promptfoo eval was terminated with signal ${signal}.`);
-  }
-
-  return new Error(`promptfoo eval exited with code ${code}.`);
-}
-
-async function buildPromptfooCommand(args) {
-  const promptfooEntrypoint = fromPackageRoot(
-    "node_modules", "promptfoo", "dist", "src", "entrypoint.js",
-  );
-
-  try {
-    await fs.access(promptfooEntrypoint);
-    return {
-      executable: process.execPath,
-      executableArgs: [promptfooEntrypoint, ...args.slice(1)],
-    };
-  } catch {
-    if (process.platform !== "win32") {
-      return { executable: "npx", executableArgs: args };
-    }
-
-    return { executable: "cmd.exe", executableArgs: ["/d", "/s", "/c", "npx.cmd", ...args] };
-  }
 }
 
 // ── Config overrides ───────────────────────────────────────────────

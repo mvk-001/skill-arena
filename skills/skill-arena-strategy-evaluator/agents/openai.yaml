@@ -1,4 +1,4 @@
 interface:
   display_name: "Strategy Evaluator"
   short_description: "Compare skill-improvement strategies fairly"
-  default_prompt: "Use -arena-strategy-evaluator to compare skill-improvement strategies on a shared corpus and produce a decision report."
+  default_prompt: "Use $skill-arena-strategy-evaluator to compare skill-improvement strategies on a shared corpus and produce a decision report."
