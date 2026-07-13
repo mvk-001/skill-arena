@@ -27,6 +27,8 @@ as the primary compare example.
    configs, and live evaluations.
 3. [Decision records](../.specs/adr/) — durable technical and workflow
    decisions.
+4. [Implementation plans](../.specs/plans/) — active task lists and their
+   verification evidence; plans are not canonical design contracts.
 
 Read [`AGENTS.md`](../AGENTS.md) before changing the repository.
 
@@ -41,6 +43,7 @@ Read [`AGENTS.md`](../AGENTS.md) before changing the repository.
 | Validation workflow | [Testing](./testing.md) |
 | Improvement-workflow research provenance | [Research foundations](./research-foundations.md) |
 | Historical decisions | [ADRs](../.specs/adr/) |
+| Active implementation plans | [`.specs/plans/`](../.specs/plans/) |
 
 When prose and executable behavior disagree, treat the implementation and its
 tests as evidence of current behavior, then update the relevant canonical

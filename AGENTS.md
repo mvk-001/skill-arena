@@ -8,6 +8,19 @@ if there is another step to improve your progress, another stage, a validation t
 - Record durable technical or workflow decisions as ADRs under `.specs/adr/*.md`.
 - Read existing ADRs before changing a previously chosen technical direction.
 
+## Design Information
+
+- Keep the canonical current runtime design and module boundaries in
+  `docs/architecture.md`.
+- Keep configuration, adapter, workspace, and result contracts in
+  `docs/specs.md`; do not duplicate field-level contracts in design notes.
+- Record durable design decisions and their consequences in `.specs/adr/*.md`.
+- Keep active, verification-backed implementation plans in
+  `.specs/plans/*.md`. Plans may describe work in progress, but they do not
+  override the canonical architecture, specs, or accepted ADRs.
+- Update the relevant canonical document in the same change whenever an
+  implementation change makes it inaccurate.
+
 
 ## Project goal
 

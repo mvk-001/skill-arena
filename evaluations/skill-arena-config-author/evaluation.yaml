@@ -9,21 +9,12 @@ benchmark:
 task:
   prompts:
     - id: sunday-brainstorming-compare-file
-      description: Generate a compare.yaml for Sunday-only product brainstorming.
+      description: Naturalistic Git-skill comparison for an open-ended ideation task.
       prompt: >-
-        I want a compare benchmark in `deliverables/compare.yaml` to check whether the
-        remote brainstorming skill from
-        https://github.com/obra/superpowers/tree/main/skills/brainstorming actually helps.
-        The benchmark task should ask for ideas for a product that can only be sold on Sundays.
-        Use the local fixture at `fixtures/brainstorming/base` as the workspace root and
-        initialize git in the workspace.
-        Compare a plain `no-skill` setup against a `skill` setup that pulls the skill from
-        `https://github.com/obra/superpowers.git` on `main`, using `skills/brainstorming`
-        as the selected skill with id `brainstorming`, installed as a workspace overlay.
-        Run it with one `codex-mini` variant on Codex using model `gpt-5.1-codex-mini`,
-        `codex` on PATH, danger-full-access sandboxing, no approvals, web search off,
-        network on, low reasoning, and label it `codex mini`.
-        Return only the YAML.
+        Create `deliverables/compare.yaml` to test whether the brainstorming skill at
+        https://github.com/obra/superpowers/tree/main/skills/brainstorming improves ideas
+        for a product that can only be sold on Sundays. Use `fixtures/brainstorming/base`
+        as the workspace. Return only YAML.
       evaluation:
         assertions:
           - type: javascript
@@ -52,9 +43,9 @@ task:
               return /^\s+- id:\s+codex-mini\s*$/m.test(normalized)
                 && /^\s+adapter:\s+codex\s*$/m.test(normalized)
                 && /^\s+model:\s+gpt-5\.1-codex-mini\s*$/m.test(normalized)
-                && /^\s+sandboxMode:\s+danger-full-access\s*$/m.test(normalized)
+                && /^\s+sandboxMode:\s+(read-only|workspace-write)\s*$/m.test(normalized)
                 && /^\s+webSearchEnabled:\s+false\s*$/m.test(normalized)
-                && /^\s+networkAccessEnabled:\s+true\s*$/m.test(normalized)
+                && /^\s+networkAccessEnabled:\s+false\s*$/m.test(normalized)
                 && /^\s+executionMethod:\s+command\s*$/m.test(normalized)
                 && /^\s+commandPath:\s+codex\s*$/m.test(normalized)
                 && /^\s+variantDisplayName:\s+codex mini\s*$/m.test(normalized)
@@ -66,48 +57,12 @@ task:
                 && /^\s+- id:\s+skill\s*$/m.test(comparisonSection)
                 && /^\s+skills:\s*$/m.test(comparisonSection)
                 && !/^\s+(agents|extensions|hooks|mcp|plugins):\s*$/m.test(comparisonSection);
-    - id: sunday-brainstorming-compare-jurisdiction
-      description: Generate a complete compare.yaml with isolated profiles.
+    - id: data-extractor-multi-prompt
+      description: Generalization across two data-extraction inputs and response formats.
       prompt: >-
-        Please draft `deliverables/compare.yaml` for the remote brainstorming skill at
-        https://github.com/obra/superpowers/tree/main/skills/brainstorming.
-        I only need a clean side-by-side comparison between an isolated `no-skill` profile
-        and an isolated `skill` profile, with the skill coming from git and being mounted
-        into the workspace rather than treated as system-installed.
-        Return only valid YAML.
-      evaluation:
-        assertions:
-          - type: javascript
-            value: |
-              const normalized = output.replace(/\r\n/g, "\n");
-              const comparisonSection = normalized.match(/^comparison:\n([\s\S]*)$/m)?.[1] ?? "";
-              const profileIds = Array.from(
-                comparisonSection.matchAll(/^\s+- id:\s+([A-Za-z0-9-]+)\s*$/gm),
-                (match) => match[1],
-              );
-              return /^\s+profiles:\s*$/m.test(normalized)
-                && profileIds.includes("no-skill")
-                && profileIds.includes("skill")
-                && profileIds.length === 2
-                && /^\s+inheritSystem:\s+false\s*$/m.test(comparisonSection)
-                && /^\s+capabilities:\s+\{\}\s*$/m.test(comparisonSection)
-                && /^\s+skills:\s*$/m.test(comparisonSection)
-                && /^\s+type:\s+git\s*$/m.test(comparisonSection)
-                && /^\s+repo:\s+https:\/\/github\.com\/obra\/superpowers(?:\.git)?\s*$/m.test(comparisonSection)
-                && /^\s+ref:\s+main\s*$/m.test(comparisonSection)
-                && /^\s+skillPath:\s+skills\/brainstorming\s*$/m.test(comparisonSection)
-                && /^\s+skillId:\s+brainstorming\s*$/m.test(comparisonSection)
-                && /^\s+strategy:\s+workspace-overlay\s*$/m.test(comparisonSection);
-    - id: sunday-brainstorming-compare-multi-prompt
-      description: Generate a compare.yaml that exercises prompt matrices and prompt-specific assertions.
-      prompt: >-
-        I need `deliverables/compare.yaml` for the brainstorming skill at
-        https://github.com/obra/superpowers/tree/main/skills/brainstorming.
-        Make this benchmark realistic by checking two user requests about Sunday-only product ideas:
-        one should expect a Markdown answer and the other a JSON answer.
-        Keep them as two separate prompt rows and use row-specific assertions so the config
-        can tell the two output formats apart.
-        Return only valid YAML.
+        Create `deliverables/compare.yaml` for a system-installed data-extractor skill.
+        Test invoice extraction as JSON and team-directory extraction as Markdown using
+        separate user requests over `fixtures/data-extractor/base`. Return only YAML.
       evaluation:
         assertions:
           - type: javascript
@@ -126,19 +81,13 @@ task:
                 && hasMarkdownPrompt
                 && !/type:\s+is-json\b[\s\S]*?\bmarkdown\b/i.test(promptSection);
     - id: local-skill-with-env
-      description: Generate a compare.yaml with a local-path skill, two variants, and workspace env using $WORKSPACE.
+      description: Boundary case for a local skill with portable environment paths and two runtimes.
       prompt: >-
-        Build `deliverables/compare.yaml` for a benchmark called `local-env-bench`.
-        I want to compare a local skill bundle stored at `fixtures/my-skill/overlay`
-        with skill id `my-skill` against a no-skill control, using `fixtures/my-skill/base`
-        as the workspace.
-        The benchmark should also model environment-dependent tools: set
-        `workspace.setup.env.TOOL_CONFIG` to `$WORKSPACE/config/tool.json`, and for the
-        Codex variant also set `cliEnv.DATA_DIR` to `$WORKSPACE/data`.
-        Use one prompt asking for a repository summary.
-        Include two variants, `codex-mini` on Codex with `gpt-5.1-codex-mini`
-        and `pi-mini` on Pi with `github-copilot/gpt-5-mini`.
-        Return only valid YAML.
+        Build `deliverables/compare.yaml` to evaluate the local `my-skill` bundle at
+        `fixtures/my-skill/overlay` on repository summaries from `fixtures/my-skill/base`.
+        Compare Codex mini and Pi mini. Expose `TOOL_CONFIG` as
+        `$WORKSPACE/config/tool.json` to every run and `DATA_DIR` as `$WORKSPACE/data`
+        only to Codex. Return only YAML.
       evaluation:
         assertions:
           - type: javascript
@@ -182,19 +131,12 @@ task:
                 && hasAdapterPi
                 && hasAdapterCodex;
     - id: inline-skill-copilot-judge
-      description: Generate a compare.yaml with an inline-files skill, a copilot-cli variant, and llm-rubric with local judge.
+      description: Naturalistic inline-skill benchmark with a local Copilot judge.
       prompt: >-
-        Put together `deliverables/compare.yaml` for a small benchmark called
-        `inline-copilot-bench`.
-        I want the skill embedded directly in the config as a tiny greeter bundle that creates
-        `skills/greeter/SKILL.md`, uses skill id `greeter`, and tells the agent to greet warmly.
-        Use `fixtures/inline-copilot/base` as the workspace and a single prompt where the user
-        asks for a greeting.
-        Judge it with a shared local `llm-rubric` using `skill-arena:judge:copilot-cli`,
-        plus a simple shared check that the output contains `hello`.
-        Run it with one `copilot-mini` variant on `copilot`, model `gpt-5.4-mini`,
-        command execution, workspace-write sandboxing, and network disabled.
-        Return only valid YAML.
+        Create `deliverables/compare.yaml` to test an embedded `greeter` skill that tells
+        the agent to greet warmly. Use `fixtures/inline-copilot/base`, run Copilot mini,
+        and grade greetings with the local Copilot judge plus a case-sensitive check for
+        `hello`. Return only YAML.
       evaluation:
         assertions:
           - type: javascript
@@ -211,8 +153,7 @@ task:
                 (comparisonSection.match(/^\s+variants:\s*$/m) ? comparisonSection.split(/^\s+variants:\s*$/m)[1] ?? "" : "").matchAll(/^\s+- id:\s+([A-Za-z0-9-]+)\s*$/gm),
                 (match) => match[1],
               );
-              const hasInlineFiles = /type:\s+inline-files\b/.test(comparisonSection);
-              const hasSkillMd = /skills\/greeter\/SKILL\.md/.test(comparisonSection);
+              const hasInlineSkill = /type:\s+inline(?:-files)?\b/.test(comparisonSection);
               const hasGreeterSkillId = /skillId:\s+greeter\b/.test(comparisonSection)
                 || /skills\/greeter/.test(comparisonSection);
               const hasOverlay = /strategy:\s+workspace-overlay\b/.test(comparisonSection);
@@ -241,8 +182,7 @@ task:
               );
               const hasExpectedSharedAssertions = sharedAssertionTypes.includes("llm-rubric")
                 && sharedAssertionTypes.includes("contains");
-              return hasInlineFiles
-                && hasSkillMd
+              return hasInlineSkill
                 && hasGreeterSkillId
                 && hasOverlay
                 && hasCopilotAdapter
@@ -257,18 +197,12 @@ task:
                 && hasExpectedWorkspace
                 && hasExpectedSharedAssertions;
     - id: multi-profile-file-contains
-      description: Generate a compare.yaml with three profiles and a file-contains assertion.
+      description: Generalization across two local skill alternatives that produce a file artifact.
       prompt: >-
-        Please create `deliverables/compare.yaml` for a benchmark called `three-profile-bench`.
-        The workspace should come from `fixtures/three-profile/base`.
-        The task should ask the agent to write a summary into `output/summary.txt`, and the
-        shared evaluation should verify that file contains the word `complete`.
-        I want three profiles: a plain `baseline`, one using the local analyzer skill from
-        `fixtures/skills/analyzer`, and another using the local reporter skill from
-        `fixtures/skills/reporter`. Use skill ids `analyzer` and `reporter`.
-        Run everything with a single `codex-mini` variant on `gpt-5.1-codex-mini`
-        and workspace-write sandboxing.
-        Return only valid YAML.
+        Create `deliverables/compare.yaml` to compare no skill, the local analyzer at
+        `fixtures/skills/analyzer`, and the local reporter at `fixtures/skills/reporter`.
+        From `fixtures/three-profile/base`, each run should write `output/summary.txt`;
+        pass only when it contains `complete`. Use Codex mini. Return only YAML.
       evaluation:
         assertions:
           - type: javascript
@@ -285,10 +219,7 @@ task:
                 (comparisonSection.match(/^\s+variants:\s*$/m) ? comparisonSection.split(/^\s+variants:\s*$/m)[1] ?? "" : "").matchAll(/^\s+- id:\s+([A-Za-z0-9-]+)\s*$/gm),
                 (match) => match[1],
               );
-              const hasThreeProfiles = profileIds.includes("baseline")
-                && profileIds.includes("skill-a")
-                && profileIds.includes("skill-b")
-                && profileIds.length === 3;
+              const hasThreeProfiles = profileIds.length === 3;
               const hasFileContains = /type:\s+file-contains\b/.test(evaluationSection);
               const hasOutputPath = /path:\s+output\/summary\.txt\b/.test(evaluationSection)
                 || /output\/summary\.txt/.test(evaluationSection);
@@ -299,7 +230,7 @@ task:
                 && /fixtures\/skills\/reporter/.test(comparisonSection);
               const hasWorkspaceWrite = /sandboxMode:\s+workspace-write\b/.test(comparisonSection);
               const hasBothOverlays = (comparisonSection.match(/strategy:\s+workspace-overlay\b/g) ?? []).length >= 2;
-              const hasBaselineEmpty = /- id:\s+baseline[\s\S]*?capabilities:\s+\{\}/m.test(comparisonSection);
+              const hasBaselineEmpty = /capabilities:\s+\{\}/m.test(comparisonSection);
               const workspaceSourceTypes = Array.from(
                 workspaceSection.matchAll(/^\s+- (?:id:\s+[^\n]+\n\s+)?type:\s+([A-Za-z0-9-]+)\s*$/gm),
                 (match) => match[1],
@@ -320,20 +251,14 @@ task:
                 && hasExpectedWorkspace
                 && hasExpectedVariant;
     - id: copilot-inline-skill-with-capability-bundles
-      description: Generate a compare.yaml with an inline skill plus copilot instructions, agents, hooks, and deterministic assertions.
+      description: Boundary case combining several Copilot capability families.
       prompt: >-
-        I need `deliverables/compare.yaml` for a benchmark called `copilot-capability-bench`.
-        Think of it as a realistic repo setup where the Copilot profile gets more than just a skill:
-        it should also receive project instructions from `fixtures/copilot-capability/instructions`,
-        custom hooks from `fixtures/copilot-capability/hooks`, and one inline custom agent with id
-        `triage-helper` placed under `/.github/agents`.
-        The same profile should also include a tiny inline skill with id `formatter` whose guidance is
-        `Always answer DONE.`.
-        Use `fixtures/copilot-capability/base` as the workspace, one prompt asking for exactly `DONE`,
-        and shared checks for exact match `DONE` plus a case-insensitive `done`.
-        Use a single `copilot-mini` variant on `copilot`, model `gpt-5.4-mini`,
-        workspace-write sandboxing, no approvals, no web, no network, and label it `copilot mini`.
-        Return only valid YAML.
+        Build `deliverables/compare.yaml` for Copilot mini using
+        `fixtures/copilot-capability/base`. Compare no capabilities with a bundle containing
+        instructions from `fixtures/copilot-capability/instructions`, hooks from
+        `fixtures/copilot-capability/hooks`, an inline `triage-helper` agent, and an inline
+        `formatter` skill that always answers `DONE`. Check both exact and case-insensitive
+        completion. Return only YAML.
       evaluation:
         assertions:
           - type: javascript
@@ -373,20 +298,12 @@ task:
                 && hasExpectedProfiles
                 && hasExpectedVariants;
     - id: opencode-git-workspace-with-empty-source
-      description: Generate a compare.yaml with git and empty workspace sources plus opencode agent capabilities.
+      description: Generalization to layered Git and empty workspace inputs with an OpenCode agent.
       prompt: >-
-        Draft `deliverables/compare.yaml` for a benchmark named `opencode-git-bench`.
-        I want this one to look like a repo pulled from git, so the workspace should start from
-        `https://github.com/example/repo.git` on `main`, narrowed to `fixtures/base`, mounted at `/`.
-        Also include an explicit empty source mounted at `/scratch` so the config shows that area starts blank.
-        The user task should ask for a Markdown architecture summary.
-        Compare a plain `no-skill` profile against an `opencode-agent` profile that receives project
-        instructions from `fixtures/opencode/instructions` and a custom agent with id `reviewer`
-        from `fixtures/opencode/agents` mounted under `/.opencode/agents`.
-        Run it with one `opencode-mini` variant on the `opencode` CLI, model `gpt-5-mini`,
-        command execution, workspace-write sandboxing, no approvals, no web, no network,
-        low reasoning, and label it `opencode mini`.
-        Return only valid YAML.
+        Draft `deliverables/compare.yaml` to test Markdown architecture summaries with
+        OpenCode mini. Start from `https://github.com/example/repo.git` at `main`, limited
+        to `fixtures/base`, plus a blank `/scratch`. Compare no capabilities with the local
+        OpenCode instructions and `reviewer` agent under `fixtures/opencode`. Return only YAML.
       evaluation:
         assertions:
           - type: javascript
@@ -427,22 +344,13 @@ task:
                 && hasExpectedProfiles
                 && hasExpectedVariants;
     - id: system-installed-and-unsupported-capability-families
-      description: Generate a compare.yaml that preserves system-installed skills and unsupported capability families explicitly.
+      description: Boundary case that must preserve unsupported capability families visibly.
       prompt: >-
-        Please prepare `deliverables/compare.yaml` for a benchmark called `system-installed-bench`.
-        Use `fixtures/system-installed/base` as the workspace and make the task ask which capability
-        families are active in the environment.
-        I want to compare five profiles: a plain `no-skill` control, one profile that relies on a
-        system-installed skill, one that injects MCP files, one that injects extensions, and one that
-        injects plugins.
-        Model the system skill explicitly as system-installed, put the MCP bundle under `/.codex/mcp`
-        from inline files, load extensions from `fixtures/system-installed/extensions` into
-        `/.pi/extensions`, and load plugins from `https://github.com/example/plugins.git` on `main`,
-        narrowed to `plugins/bundle`, into `/.opencode/plugins`.
-        Use one `codex-mini` variant on Codex with `gpt-5.1-codex-mini`, command execution,
-        read-only sandboxing, no approvals, no web, no network, low reasoning, and label it
-        `codex mini`.
-        Return only valid YAML.
+        Prepare `deliverables/compare.yaml` to ask which capabilities are active in
+        `fixtures/system-installed/base`. Compare no capability, a system-installed skill,
+        inline MCP files, local extensions from `fixtures/system-installed/extensions`, and
+        plugins from `https://github.com/example/plugins.git` under `plugins/bundle`.
+        Keep unsupported Codex combinations visible. Return only YAML.
       evaluation:
         assertions:
           - type: javascript
@@ -453,22 +361,16 @@ task:
                 comparisonSection.matchAll(/^\s+- id:\s+([A-Za-z0-9-]+)\s*$/gm),
                 (match) => match[1],
               );
-              const hasSystemInstalled = /- id:\s+system-skill[\s\S]*?skills:\s*[\s\S]*?type:\s+system-installed\b[\s\S]*?strategy:\s+system-installed\b/m.test(comparisonSection);
-              const hasMcp = /- id:\s+mcp-bundle[\s\S]*?mcp:\s*[\s\S]*?type:\s+inline-files\b[\s\S]*?target:\s+\/\.codex\/mcp\b/m.test(comparisonSection);
-              const hasExtensions = /- id:\s+extension-bundle[\s\S]*?extensions:\s*[\s\S]*?type:\s+local-path\b[\s\S]*?fixtures\/system-installed\/extensions[\s\S]*?target:\s+\/\.pi\/extensions\b/m.test(comparisonSection);
-              const hasPlugins = /- id:\s+plugin-bundle[\s\S]*?plugins:\s*[\s\S]*?type:\s+git\b[\s\S]*?repo:\s+https:\/\/github\.com\/example\/plugins\.git\b[\s\S]*?subpath:\s+plugins\/bundle\b[\s\S]*?target:\s+\/\.opencode\/plugins\b/m.test(comparisonSection);
+              const hasSystemInstalled = /skills:\s*[\s\S]*?type:\s+system-installed\b[\s\S]*?strategy:\s+system-installed\b/m.test(comparisonSection);
+              const hasMcp = /mcp:\s*[\s\S]*?type:\s+inline-files\b/m.test(comparisonSection);
+              const hasExtensions = /extensions:\s*[\s\S]*?type:\s+local-path\b[\s\S]*?fixtures\/system-installed\/extensions/m.test(comparisonSection);
+              const hasPlugins = /plugins:\s*[\s\S]*?type:\s+git\b[\s\S]*?repo:\s+https:\/\/github\.com\/example\/plugins\.git\b[\s\S]*?subpath:\s+plugins\/bundle\b/m.test(comparisonSection);
               const hasVariant = /adapter:\s+codex\b/.test(comparisonSection)
                 && /model:\s+gpt-5\.1-codex-mini\b/.test(comparisonSection)
                 && /commandPath:\s+codex\b/.test(comparisonSection)
-                && /sandboxMode:\s+read-only\b/.test(comparisonSection)
+                && /sandboxMode:\s+(?:read-only|workspace-write)\b/.test(comparisonSection)
                 && /variantDisplayName:\s+codex mini\b/.test(comparisonSection);
-              const hasExpectedProfiles = [
-                "no-skill",
-                "system-skill",
-                "mcp-bundle",
-                "extension-bundle",
-                "plugin-bundle",
-              ].every((id) => profileIds.includes(id)) && profileIds.length === 5;
+              const hasExpectedProfiles = profileIds.length === 5;
               return hasSystemInstalled
                 && hasExpectedProfiles
                 && hasMcp

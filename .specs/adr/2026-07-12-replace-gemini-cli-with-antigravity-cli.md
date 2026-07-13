@@ -47,10 +47,10 @@ The Antigravity provider will:
   of copying credential files
 - capture plain print output and command metadata in execution-event artifacts
 
-V1 compare capability support remains intentionally limited to `instructions`
-and `skills`. Antigravity hooks, MCP servers, plugins, custom agents, and
-subagents are native product features, but Skill Arena will not claim support
-until each surface has deterministic materialization, isolation, and tests.
+The initial compare capability support was limited to `instructions` and
+`skills`. The follow-up decision in
+[Complete Antigravity CLI option and capability mapping](./2026-07-13-complete-antigravity-cli-mapping.md)
+adds deterministic custom-agent, hook, MCP, and plugin materialization.
 
 The adapter replacement is intentionally breaking: V1 configs that name
 `gemini-cli` or `skill-arena:judge:gemini-cli` must migrate to

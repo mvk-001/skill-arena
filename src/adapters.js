@@ -252,7 +252,10 @@ const adapterRegistry = {
             workspaceDirectory,
           ),
           env_passthrough: environmentPassthrough,
-          antigravity_cli_config: scenario.agent.config ?? {},
+          antigravity_cli_config: buildAntigravityConfig({
+            scenario,
+            baseConfig: scenario.agent.config,
+          }),
           strict_runtime_isolation: true,
           prompt_preamble: buildSkillActivationPrompt({
             adapter: "antigravity-cli",
@@ -387,6 +390,31 @@ function getClaudeCodeAgentId(scenario) {
   }
 
   return agentId;
+}
+
+function buildAntigravityConfig({ scenario, baseConfig }) {
+  const profileAgents = getProfileCapabilities(scenario, "agents");
+  if (profileAgents.length === 0) {
+    return baseConfig ?? {};
+  }
+
+  if (profileAgents.length > 1) {
+    throw new Error(
+      `Adapter "antigravity-cli" supports at most one compare profile agent, received ${profileAgents.length}.`,
+    );
+  }
+
+  const agentId = profileAgents[0]?.agentId;
+  if (typeof agentId !== "string" || agentId.trim() === "") {
+    throw new Error(
+      "Adapter \"antigravity-cli\" requires profile.capabilities.agents[*].agentId to be a non-empty string.",
+    );
+  }
+
+  return {
+    ...(baseConfig ?? {}),
+    agent: agentId,
+  };
 }
 
 function mergeCodexSkillConfig({

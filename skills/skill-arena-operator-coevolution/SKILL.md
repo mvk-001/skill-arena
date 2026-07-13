@@ -1,0 +1,93 @@
+---
+name: skill-arena-operator-coevolution
+description: Coevolve skill candidates and the mutation instructions that produce them. Use when Codex runs repeated skill-improvement generations, fixed mutation operators have plateaued, and operator success can be credited from parent-to-child fitness changes under a frozen benchmark.
+---
+
+# Skill Arena Operator Coevolution
+
+Search two linked populations: skill candidates and mutation operators. Reward
+an operator only when its children improve over their parents, then retain,
+mutate, or cross over the strongest operator instructions for the next
+generation.
+
+This workflow adapts Promptbreeder's self-referential idea that mutation
+prompts can evolve alongside task prompts. Skill Arena applies it to complete
+skill bundles and records deterministic credit assignment. It does not
+reproduce Promptbreeder's model stack, datasets, or empirical claims.
+
+## Inputs
+
+Collect:
+
+- one frozen baseline skill and benchmark
+- candidate results with parent fitness and operator ID
+- the exact mutation instruction used for every child
+- hard-gate outcomes, evaluation cost, and complexity delta
+- a holdout set that operators never see
+
+Do not use this strategy for a single edit. Use population search when the
+operator library is still productive and fixed; operator coevolution pays off
+only across repeated generations.
+
+## Workflow
+
+1. Freeze benchmark, fitness, hard gates, and holdout.
+2. Seed a small, diverse operator population using
+   [references/operator-genome-schema.md](references/operator-genome-schema.md).
+3. Assign every candidate exactly one operator and record its parent fitness.
+4. Evaluate every child on the same development benchmark. A failed hard gate
+   receives fitness `0` before operator credit is computed.
+5. Run `scripts/rank-coevolution.js`. Rank candidates by fitness and operators
+   by mean parent-to-child improvement, success rate, best improvement, then
+   deterministic ID.
+6. Keep the top two candidates and top two operators by default. Do not infer
+   operator quality from the absolute fitness of a strong parent.
+7. Run `scripts/breed-operators.js` to retain the operator elites and create
+   explicit mutation/crossover plans for the remaining operator slots.
+8. Ask an editing agent to realize each operator plan as one concise mutation
+   instruction. Keep operator edits separate from skill edits.
+9. Generate the next skill candidates with the evolved operator set, evaluate,
+   and repeat until improvement plateaus or operator rankings remain stable.
+10. Choose the final skill by development evidence, then apply the unchanged
+    holdout promotion gate. Operator fitness never bypasses skill validation.
+
+Read [references/credit-and-selection-policy.md](references/credit-and-selection-policy.md)
+before changing survivor counts or credit rules.
+
+## Operating Rules
+
+- Record the exact operator genome that produced every child.
+- Attribute reward as `childFitness - parentFitness`; never use child fitness
+  alone for operator ranking.
+- Give failed hard gates zero child fitness and negative improvement when the
+  parent was valid.
+- Require at least two trials before calling an operator established. Treat a
+  one-trial leader as exploratory.
+- Preserve operator elites unchanged and make child operator hypotheses
+  legible.
+- Reject operator text that leaks benchmark answers, holdout facts, or task
+  instances into the skill.
+- Keep one unchanged skill baseline and one unchanged operator baseline in the
+  run record.
+
+## Commands
+
+```powershell
+node skills/skill-arena-operator-coevolution/scripts/rank-coevolution.js `
+  --input run/generation.json `
+  --output run/ranking.json
+
+node skills/skill-arena-operator-coevolution/scripts/breed-operators.js `
+  --input run/generation.json `
+  --ranking run/ranking.json `
+  --output run/next-operators.json `
+  --operator-count 6
+```
+
+## Final Output
+
+Report the winning skill, surviving operators, per-operator trials and mean
+improvement, discarded operators, total evaluations, holdout result, and why
+coevolution stopped. Distinguish an exploratory operator from one supported by
+repeated trials.
+

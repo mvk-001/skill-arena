@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   ensureKnownLongOptions,
   parsePositiveIntegerOption,
+  readStringOption,
 } from "../src/cli/cli-options.js";
 
 test("parsePositiveIntegerOption returns null when the option is absent", () => {
@@ -23,6 +24,12 @@ test("parsePositiveIntegerOption parses a positive integer and rejects invalid v
     () => parsePositiveIntegerOption(["node", "cli", "--requests", "0"], "--requests"),
     /requires a positive integer/,
   );
+});
+
+test("readStringOption returns option values or null", () => {
+  assert.equal(readStringOption(["node", "cli", "--output", "report.md"], "--output"), "report.md");
+  assert.equal(readStringOption(["node", "cli"], "--output"), null);
+  assert.equal(readStringOption(["node", "cli", "--output"], "--output"), null);
 });
 
 test("ensureKnownLongOptions accepts declared flags and value options", () => {

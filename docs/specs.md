@@ -555,7 +555,7 @@ Effective isolation by adapter:
 | `opencode` | strong | isolated config dir plus `--pure` and generated config content |
 | `claude-code` | medium | project-scoped materialization is strong, but the runtime remains externally managed |
 | `copilot-cli` | partial | isolated config and disabled built-in surfaces help, but the CLI remains comparatively opaque |
-| `antigravity-cli` | medium | isolated home plus generated Antigravity settings and mirrored `.agents/skills/*` project skills |
+| `antigravity-cli` | medium | isolated home, generated policy settings, explicit sandbox state, and declared `.agents/*` project capabilities |
 
 Adapter-specific V1 rules:
 
@@ -575,6 +575,14 @@ Adapter-specific V1 rules:
 - `instructions` for `claude-code` should usually materialize `CLAUDE.md` at the workspace root.
 - Repository-level `antigravity-cli` skills should usually materialize under `.agents/skills/`. Skill Arena mirrors declared generic `skills/*` bundles there during isolated execution.
 - `instructions` for `antigravity-cli` should usually materialize `AGENTS.md`, `GEMINI.md`, or always-on rules under `.agents/rules/` at the workspace root.
+- `antigravity-cli` custom-agent profiles support at most one `capabilities.agents[*]` entry and require `agentId`.
+- A workspace Antigravity agent should materialize `.agents/agents/<agentId>/agent.md`; Skill Arena selects it with `--agent <agentId>`.
+- Antigravity hooks should materialize `.agents/hooks.json`, MCP servers should materialize `.agents/mcp_config.json`, and plugins should materialize below `.agents/plugins/<plugin-name>/`.
+- Antigravity `extensions` are not a supported capability family; use native `plugins` instead.
+- `agent.config` supports `agent`, `mode`, `logFile`, `printTimeout`, `project`, `newProject`, `settings`, and `extraArgs`. `mode` is `default`, `accept-edits`, or `plan`; workspace-relative log paths may not escape the run workspace.
+- `extraArgs` is reserved for forward-compatible, non-stateful options. It must not override managed flags or enable `--continue`, `--conversation`, or interactive prompting.
+- Antigravity approval policies map to `always-proceed`, `proceed-in-sandbox`, `request-review`, and `strict`; web policy maps through fine-grained URL permissions; sandbox and network policy map through generated settings plus an explicit `--sandbox=<boolean>` override.
+- `reasoningEffort` remains reported as unsupported because `agy` exposes reasoning levels through model names rather than a separate launch option. `read-only` remains best-effort for terminal commands.
 
 Preferred explicit compare skill definitions use these source modes:
 

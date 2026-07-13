@@ -2,7 +2,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 import { fromPackageRoot } from "../project-paths.js";
-import { detectConfigKind, parseConfigFile } from "./config-file.js";
+import { detectConfigKind, parseConfigFile } from "../config-file.js";
 import { ensureKnownLongOptions } from "./cli-options.js";
 
 const runBenchmarkScript = fromPackageRoot("src", "cli", "run-benchmark.js");

@@ -13,7 +13,14 @@ const ADAPTER_CAPABILITY_FAMILIES = {
   "pi": new Set(["skills"]),
   "opencode": new Set(["instructions", "skills", "agents"]),
   "claude-code": new Set(["instructions", "skills", "agents", "hooks"]),
-  "antigravity-cli": new Set(["instructions", "skills"]),
+  "antigravity-cli": new Set([
+    "instructions",
+    "skills",
+    "agents",
+    "hooks",
+    "mcp",
+    "plugins",
+  ]),
 };
 
 const DEFAULT_CAPABILITY_FAMILIES = new Set(["skills"]);
@@ -86,10 +93,32 @@ export function validateScenarioCapabilities(scenario) {
     return validateClaudeCodeCapabilities(scenario.profile?.capabilities ?? {});
   }
 
+  if (scenario.agent.adapter === "antigravity-cli") {
+    return validateAntigravityCapabilities(scenario.profile?.capabilities ?? {});
+  }
+
   return validateMaterializedCapabilities(
     scenario.profile?.capabilities ?? {},
     ["instructions"],
   );
+}
+
+function validateAntigravityCapabilities(capabilities) {
+  const agentError = validateSingleAgentCapability(
+    capabilities.agents ?? [],
+    "antigravity-cli",
+  );
+  if (agentError) {
+    return agentError;
+  }
+
+  return validateMaterializedCapabilities(capabilities, [
+    "instructions",
+    "agents",
+    "hooks",
+    "mcp",
+    "plugins",
+  ]);
 }
 
 function validateCopilotCapabilities(capabilities) {
@@ -130,18 +159,18 @@ function validateClaudeCodeCapabilities(capabilities) {
   ]);
 }
 
-function validateSingleAgentCapability(agents) {
+function validateSingleAgentCapability(agents, adapterId = "copilot-cli") {
   if (!Array.isArray(agents) || agents.length === 0) {
     return null;
   }
 
   if (agents.length > 1) {
-    return 'Adapter "copilot-cli" supports at most one compare profile agent.';
+    return `Adapter "${adapterId}" supports at most one compare profile agent.`;
   }
 
   const agentId = agents[0]?.agentId;
   if (typeof agentId !== "string" || agentId.trim() === "") {
-    return 'Adapter "copilot-cli" requires profile.capabilities.agents[*].agentId.';
+    return `Adapter "${adapterId}" requires profile.capabilities.agents[*].agentId.`;
   }
 
   return null;

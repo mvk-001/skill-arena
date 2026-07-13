@@ -1,52 +1,22 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
-import YAML from "yaml";
-import { ZodError } from "zod";
-
+import { loadValidatedConfig } from "./config-file.js";
 import { benchmarkManifestSchema } from "./manifest-schema.js";
 import { findWorkspaceRoot, PROJECT_ROOT } from "./project-paths.js";
 
 export async function loadBenchmarkManifest(manifestPath, options = {}) {
-  const resolutionDirectory = options.cwd ?? process.cwd();
-  const absoluteManifestPath = path.resolve(resolutionDirectory, manifestPath);
-  const manifestContents = await fs.readFile(absoluteManifestPath, "utf8");
-  const parsedManifest = parseManifestContents({
-    manifestContents,
+  const { config: manifest, configPath: absoluteManifestPath } = await loadValidatedConfig(
+    manifestPath,
+    benchmarkManifestSchema,
+    options,
+  );
+
+  return {
+    manifest,
     manifestPath: absoluteManifestPath,
-  });
-
-  try {
-    const manifest = benchmarkManifestSchema.parse(parsedManifest);
-    return {
-      manifest,
-      manifestPath: absoluteManifestPath,
-      manifestDirectory: path.dirname(absoluteManifestPath),
-      workspaceRootDirectory: findWorkspaceRoot(path.dirname(absoluteManifestPath)),
-    };
-  } catch (error) {
-    if (error instanceof ZodError) {
-      throw new Error(formatManifestErrors(error));
-    }
-
-    throw error;
-  }
-}
-
-function parseManifestContents({ manifestContents, manifestPath }) {
-  const extension = path.extname(manifestPath).toLowerCase();
-
-  try {
-    if (extension === ".yaml" || extension === ".yml") {
-      return YAML.parse(manifestContents);
-    }
-
-    return JSON.parse(manifestContents);
-  } catch (error) {
-    throw new Error(
-      `Failed to parse manifest "${manifestPath}". Expected valid ${extension === ".yaml" || extension === ".yml" ? "YAML" : "JSON"}. ${error.message}`,
-    );
-  }
+    manifestDirectory: path.dirname(absoluteManifestPath),
+    workspaceRootDirectory: findWorkspaceRoot(path.dirname(absoluteManifestPath)),
+  };
 }
 
 export function resolveManifestPath(repositoryRelativePath, options = {}) {
@@ -67,13 +37,4 @@ export function findScenario(manifest, scenarioId) {
   }
 
   return scenario;
-}
-
-function formatManifestErrors(error) {
-  return error.issues
-    .map((issue) => {
-      const pathLabel = issue.path.length > 0 ? issue.path.join(".") : "<root>";
-      return `${pathLabel}: ${issue.message}`;
-    })
-    .join("\n");
 }

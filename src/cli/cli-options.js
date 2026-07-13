@@ -24,6 +24,11 @@ export function parsePositiveIntegerOption(argv, optionNames) {
   return parsedValue;
 }
 
+export function readStringOption(argv, optionName) {
+  const optionIndex = argv.indexOf(optionName);
+  return optionIndex === -1 ? null : argv[optionIndex + 1] ?? null;
+}
+
 /**
  * @param {string[]} argv Parsed CLI arguments (typically process.argv).
  * @param {Record<string, boolean>} optionSchema Option map where value means "expects a value".

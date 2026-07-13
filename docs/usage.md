@@ -324,7 +324,62 @@ Profiles can compare more than just skills. V1 support is intentionally narrow:
 - `pi`: `skills`
 - `opencode`: `instructions`, `skills`, `agents`
 - `claude-code`: `instructions`, `skills`, `agents`, `hooks`
-- `antigravity-cli`: `instructions`, `skills`
+- `antigravity-cli`: `instructions`, `skills`, `agents`, `hooks`, `mcp`, `plugins`
+
+### Antigravity CLI options
+
+Antigravity-specific launch controls belong under `agent.config`:
+
+```yaml
+agent:
+  adapter: antigravity-cli
+  model: Gemini 3.5 Flash (Low)
+  sandboxMode: workspace-write
+  approvalPolicy: never
+  webSearchEnabled: false
+  networkAccessEnabled: false
+  config:
+    agent: reviewer
+    mode: accept-edits
+    logFile: .skill-arena/agy.log
+    printTimeout: 2m
+    project: benchmark-project
+    newProject: true
+    settings:
+      verbosity: low
+    extraArgs:
+      - --notifications=false
+```
+
+`mode` accepts `default`, `accept-edits`, or `plan`. `logFile` is resolved
+inside the isolated run workspace. Managed launch flags and stateful options
+such as `--continue`, `--conversation`, and `--prompt-interactive` cannot be
+passed through `extraArgs`, because they would override benchmark policy or
+reuse conversation state.
+
+For a profile-selected agent, prefer the declarative capability form. It
+materializes the definition and sets `agent.config.agent` automatically:
+
+```yaml
+capabilities:
+  agents:
+    - agentId: reviewer
+      source:
+        type: inline-files
+        target: /.agents/agents/reviewer
+        files:
+          - path: agent.md
+            content: |
+              ---
+              name: reviewer
+              description: Reviews code for correctness.
+              ---
+              Review carefully and report concrete evidence.
+```
+
+Use `.agents/hooks.json` for hooks, `.agents/mcp_config.json` for MCP servers,
+and `.agents/plugins/<name>/plugin.json` for native plugins. Antigravity
+extensions should be converted to plugins.
 
 Minimal `copilot-cli` example:
 

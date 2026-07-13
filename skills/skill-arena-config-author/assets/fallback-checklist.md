@@ -4,14 +4,11 @@ Use this when shell access is blocked, flaky, or not worth trusting.
 
 ## Fixed fallback order
 
-1. Start from one source only.
-   - Repository `skill-arena-compare` benchmark:
-     `node skills/skill-arena-config-author/scripts/scaffold-skill-arena-compare-benchmark.js`
-   - Everything else:
-     `assets/compare-template.yaml`
-2. If shell execution is not available, copy `assets/gws-calendar-agenda-copy-card.yaml`.
-3. Replace only the values the brief changes.
-4. Check enabled skill shape and prompt assertions.
+1. Start from `assets/compare-template.yaml`.
+2. Replace only values supported by the request and declared inputs.
+3. Check enabled skill shape and prompt assertions.
+4. If prompts were authored, check them against
+   `references/evaluation-design.md` and their coverage JSON.
 5. Delete any commentary around the YAML.
 6. Return the YAML.
 
@@ -70,14 +67,3 @@ Keep that exact order when the benchmark expects exact top-level keys.
 - `type: is-markdown`
 - Commentary before the YAML
 - Shell-blocker prose instead of a best-effort compare config
-
-## Repository benchmark shortcut
-
-For the repository `skill-arena-compare` benchmark:
-
-1. Copy `assets/gws-calendar-agenda-copy-card.yaml`.
-2. Or run `scripts/scaffold-skill-arena-compare-benchmark.js` to write `deliverables/compare.yaml`.
-3. Check `assets/gws-calendar-agenda-benchmark-reference.md`.
-4. Check `assets/git-workspace-overlay-reference.md`.
-5. Check `assets/prompt-assertions-reference.md`.
-6. Run `scripts/validate-compare-output.js <path> --benchmark skill-arena-compare`.

@@ -16,6 +16,9 @@ When you change Skill Arena, verify the affected layers in order:
 3. Config validation and Promptfoo generation
 4. Optional live agent execution against a maintained compare benchmark
 
+When a change designs or rewrites evaluation prompts, also verify prompt
+minimality and coverage diversity before running the benchmark.
+
 The default loop is:
 
 ```bash
@@ -24,6 +27,19 @@ npm test
 skill-arena val-conf ./evaluations/skill-arena-config-author/evaluation.yaml
 skill-arena evaluate ./evaluations/skill-arena-config-author/evaluation.yaml --dry-run
 ```
+
+For maintained prompt corpora with coverage metadata, run:
+
+```bash
+node skills/skill-arena-config-author/scripts/validate-evaluation-design.js \
+  evaluations/skill-arena-config-author/evaluation.yaml \
+  --coverage evaluations/skill-arena-config-author/prompt-coverage.json
+```
+
+The sidecar `prompt-coverage.json` is a development and review artifact, not a
+runtime config field. It records each prompt's case kind and task family. The
+audit checks that naturalistic prompts stay concise and free of common workflow
+or evaluator hints, and that the corpus is not concentrated on one question.
 
 Run the live evaluation only when that loop is clean:
 
@@ -149,6 +165,28 @@ Scaffold a config when you need a new benchmark:
 ```bash
 skill-arena gen-conf --output ./evaluations/<evaluation-id>/evaluation.yaml --prompt "Describe the task." --skill-type local-path
 ```
+
+### Antigravity CLI adapter smoke
+
+After installing and authenticating `agy`, run the maintained live smoke test:
+
+```bash
+skill-arena val-conf ./evaluations/antigravity-cli-smoke/evaluation.yaml
+skill-arena evaluate ./evaluations/antigravity-cli-smoke/evaluation.yaml
+skill-arena val-conf ./evaluations/antigravity-cli-smoke/agent-evaluation.yaml
+skill-arena evaluate ./evaluations/antigravity-cli-smoke/agent-evaluation.yaml
+```
+
+The first benchmark proves skill discovery plus typed mode and log options.
+The second proves compare-profile agent materialization and `--agent`
+selection. Unit coverage separately checks permission-policy mapping, explicit
+sandbox overrides, MCP/plugin/hook materialization, path containment, and
+rejection of conversation-resume flags.
+
+The expected token exists only inside an inline workspace skill. A passing run
+therefore verifies the `agy --print` provider path, isolated execution,
+`.agents/skills/` mirroring, explicit skill activation, response capture, and
+assertion normalization together.
 
 ## What A Compare Run Does
 

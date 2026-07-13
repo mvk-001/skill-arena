@@ -1,0 +1,63 @@
+schemaVersion: 1
+benchmark:
+  id: antigravity-cli-agent-live
+  description: Prove that Antigravity CLI discovers and selects a compare-profile custom agent.
+  tags:
+    - antigravity-cli
+    - live-smoke
+task:
+  prompt: Return the verification token supplied by the active custom agent exactly, with no additional text.
+workspace:
+  sources: []
+  setup:
+    initializeGit: true
+evaluation:
+  assertions:
+    - type: equals
+      value: ANTIGRAVITY_AGENT_OK
+  requests: 1
+  timeoutMs: 180000
+  tracing: false
+  maxConcurrency: 1
+  noCache: true
+comparison:
+  profiles:
+    - id: marker-agent
+      description: One isolated Antigravity custom agent.
+      isolation:
+        inheritSystem: false
+      capabilities:
+        agents:
+          - agentId: marker-agent
+            source:
+              type: inline-files
+              target: /.agents/agents/marker-agent
+              files:
+                - path: agent.md
+                  content: |
+                    ---
+                    name: marker-agent
+                    description: Supplies the Antigravity custom-agent verification token.
+                    ---
+
+                    Reply with exactly `ANTIGRAVITY_AGENT_OK` and no other text.
+  variants:
+    - id: antigravity
+      description: Antigravity CLI with a profile-selected custom agent.
+      agent:
+        adapter: antigravity-cli
+        model: Gemini 3.5 Flash (Low)
+        executionMethod: command
+        commandPath: agy
+        sandboxMode: read-only
+        approvalPolicy: never
+        webSearchEnabled: false
+        networkAccessEnabled: false
+        reasoningEffort: low
+        additionalDirectories: []
+        cliEnv: {}
+        envPassthrough: []
+        config:
+          mode: default
+          logFile: .skill-arena/agy-agent-smoke.log
+          printTimeout: 2m

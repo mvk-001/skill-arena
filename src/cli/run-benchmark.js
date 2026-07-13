@@ -8,7 +8,11 @@ import {
 import { getDefaultParallelism, mapWithConcurrency } from "../concurrency.js";
 import { runScenario } from "../runner.js";
 import path from "node:path";
-import { ensureKnownLongOptions, parsePositiveIntegerOption } from "./cli-options.js";
+import {
+  ensureKnownLongOptions,
+  parsePositiveIntegerOption,
+  readStringOption,
+} from "./cli-options.js";
 
 async function main() {
   const manifestPath = process.argv[2];
@@ -107,15 +111,6 @@ async function main() {
   }
 
   console.log(JSON.stringify({ results, mergedArtifacts }, null, 2));
-}
-
-function readStringOption(argv, optionName) {
-  const index = argv.indexOf(optionName);
-  if (index === -1) {
-    return null;
-  }
-
-  return argv[index + 1] ?? null;
 }
 
 function applyRuntimeOverrides({

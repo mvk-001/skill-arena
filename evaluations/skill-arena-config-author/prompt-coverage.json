@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "policy": {
+    "minimumPrompts": 8,
+    "minimumTaskFamilies": 6,
+    "minimumNaturalisticCases": 3,
+    "requiredCaseKinds": [
+      "naturalistic-forward",
+      "generalization",
+      "boundary-recovery"
+    ],
+    "maximumPromptWords": 60,
+    "maximumPairwiseJaccard": 0.45,
+    "maximumSingleFamilyShare": 0.25
+  },
+  "cases": [
+    {
+      "promptId": "sunday-brainstorming-compare-file",
+      "caseKind": "naturalistic-forward",
+      "taskFamily": "git-skill-ideation"
+    },
+    {
+      "promptId": "data-extractor-multi-prompt",
+      "caseKind": "generalization",
+      "taskFamily": "multi-prompt-data-extraction"
+    },
+    {
+      "promptId": "local-skill-with-env",
+      "caseKind": "boundary-recovery",
+      "taskFamily": "portable-environment"
+    },
+    {
+      "promptId": "inline-skill-copilot-judge",
+      "caseKind": "naturalistic-forward",
+      "taskFamily": "inline-skill-judging"
+    },
+    {
+      "promptId": "multi-profile-file-contains",
+      "caseKind": "generalization",
+      "taskFamily": "multi-alternative-artifact"
+    },
+    {
+      "promptId": "copilot-inline-skill-with-capability-bundles",
+      "caseKind": "boundary-recovery",
+      "taskFamily": "capability-bundle"
+    },
+    {
+      "promptId": "opencode-git-workspace-with-empty-source",
+      "caseKind": "naturalistic-forward",
+      "taskFamily": "layered-workspace"
+    },
+    {
+      "promptId": "system-installed-and-unsupported-capability-families",
+      "caseKind": "boundary-recovery",
+      "taskFamily": "unsupported-capabilities"
+    }
+  ]
+}

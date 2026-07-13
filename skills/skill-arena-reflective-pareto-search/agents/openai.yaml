@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reflective Pareto Search"
+  short_description: "Evolve skills with feedback and Pareto selection"
+  default_prompt: "Use $skill-arena-reflective-pareto-search to improve a skill from per-case feedback and preserve complementary candidates."

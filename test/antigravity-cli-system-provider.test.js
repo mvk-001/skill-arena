@@ -16,10 +16,13 @@ test("antigravity-cli provider builds print-mode arguments and supported control
       sandbox_mode: "workspace-write",
       additional_directories: ["fixtures", "skills"],
       antigravity_cli_config: {
+        agent: "reviewer",
+        mode: "accept-edits",
+        logFile: "logs/agy.log",
         printTimeout: "10m",
         project: "demo-project",
         newProject: true,
-        extraArgs: ["--log-file", "agy.log"],
+        extraArgs: ["--notifications=false"],
       },
     },
   });
@@ -29,8 +32,14 @@ test("antigravity-cli provider builds print-mode arguments and supported control
     "Return HELLO.",
     "--model",
     "Gemini 3.5 Flash (Low)",
-    "--sandbox",
+    "--sandbox=true",
     "--dangerously-skip-permissions",
+    "--agent",
+    "reviewer",
+    "--mode",
+    "accept-edits",
+    "--log-file",
+    "C:\\temp\\workspace\\logs\\agy.log",
     "--print-timeout",
     "10m",
     "--project",
@@ -40,24 +49,24 @@ test("antigravity-cli provider builds print-mode arguments and supported control
     "C:\\temp\\workspace\\fixtures",
     "--add-dir",
     "C:\\temp\\workspace\\skills",
-    "--log-file",
-    "agy.log",
+    "--notifications=false",
   ]);
 });
 
-test("antigravity-cli provider omits autonomous and sandbox flags when not requested", () => {
+test("antigravity-cli provider explicitly disables sandbox and omits autonomous mode", () => {
   const provider = new AntigravityCliSystemProvider({
     config: {
       working_dir: "C:/temp/workspace",
       approval_policy: "on-request",
       sandbox_mode: "danger-full-access",
-      antigravity_cli_config: { extraArgs: [null, ""] },
+      antigravity_cli_config: { mode: "default" },
     },
   });
 
   assert.deepEqual(provider.buildCommandArguments("Return HELLO."), [
     "--print",
     "Return HELLO.",
+    "--sandbox=false",
   ]);
 });
 
@@ -76,7 +85,16 @@ test("antigravity-cli provider mirrors generic skills and writes isolated settin
       working_dir: workingDirectory,
       cli_env: { HOME: isolatedHome },
       antigravity_cli_config: {
-        settings: { colorScheme: "light", enableTelemetry: true },
+        settings: {
+          colorScheme: "light",
+          enableTelemetry: true,
+          allowNonWorkspaceAccess: true,
+          permissions: {
+            allow: ["command(git)"],
+            deny: ["command(sudo)"],
+            ask: ["mcp(*)"],
+          },
+        },
       },
     },
   });
@@ -93,6 +111,16 @@ test("antigravity-cli provider mirrors generic skills and writes isolated settin
   assert.equal(runtimeLayout.settingsPath, path.join(isolatedHome, ".gemini", "antigravity-cli", "settings.json"));
   assert.equal(settings.colorScheme, "light");
   assert.equal(settings.enableTelemetry, false);
+  assert.equal(settings.allowNonWorkspaceAccess, false);
+  assert.equal(settings.enableTerminalSandbox, true);
+  assert.equal(settings.sandboxAllowNetwork, false);
+  assert.equal(settings.toolPermission, "request-review");
+  assert.equal(settings.artifactReviewPolicy, "asks-for-review");
+  assert.deepEqual(settings.permissions, {
+    allow: ["command(git)"],
+    deny: ["command(sudo)", "read_url(*)", "execute_url(*)"],
+    ask: ["mcp(*)"],
+  });
   assert.deepEqual(settings.trustedWorkspaces, [workingDirectory]);
 });
 
@@ -163,7 +191,7 @@ test("antigravity-cli provider prepends the skill activation preamble", async ()
   assert.equal(response.output, "DONE");
 });
 
-test("antigravity-cli provider reports failures and coarse policy mappings", async () => {
+test("antigravity-cli provider reports only policy distinctions it cannot enforce", async () => {
   const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-antigravity-failure-"));
   const provider = new AntigravityCliSystemProvider({
     id: "fallback",
@@ -183,12 +211,10 @@ test("antigravity-cli provider reports failures and coarse policy mappings", asy
   assert.equal(provider.id(), "fallback");
   assert.equal(response.error, "failed");
   assert.deepEqual(response.metadata.unsupportedSettings, [
-    "approvalPolicy",
     "sandboxMode",
-    "webSearchEnabled",
-    "networkAccessEnabled",
     "reasoningEffort",
   ]);
+  assert.equal(response.metadata.appliedSettings.toolPermission, "strict");
   assert.equal(
     response.metadata.appliedSettings.settingsPath,
     path.join(workingDirectory, ".skill-arena", "antigravity-cli", "home", ".gemini", "antigravity-cli", "settings.json"),
@@ -207,7 +233,89 @@ test("antigravity-cli provider uses the default command transport", async () => 
   });
 
   const response = await provider.callApi("1+1");
-  assert.equal(response.output, "2");
+  assert.match(response.error, /sandbox|option/i);
+});
+
+test("antigravity-cli provider maps approval and web policies into isolated settings", async () => {
+  const cases = [
+    ["never", "always-proceed", "always-proceed"],
+    ["on-failure", "proceed-in-sandbox", "always-proceed"],
+    ["on-request", "request-review", "asks-for-review"],
+    ["untrusted", "strict", "asks-for-review"],
+  ];
+
+  for (const [approvalPolicy, toolPermission, artifactReviewPolicy] of cases) {
+    const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-antigravity-policy-"));
+    const provider = new AntigravityCliSystemProvider({
+      config: {
+        working_dir: workingDirectory,
+        approval_policy: approvalPolicy,
+        sandbox_mode: "workspace-write",
+        web_search_enabled: true,
+        network_access_enabled: true,
+      },
+    });
+
+    const { settings } = await provider.prepareRuntimeLayout();
+    assert.equal(settings.toolPermission, toolPermission);
+    assert.equal(settings.artifactReviewPolicy, artifactReviewPolicy);
+    assert.equal(settings.sandboxAllowNetwork, true);
+    assert.deepEqual(settings.permissions, {
+      allow: ["read_url(*)"],
+      deny: ["execute_url(*)"],
+      ask: [],
+    });
+  }
+});
+
+test("antigravity-cli provider validates adapter-specific options before execution", () => {
+  const makeProvider = (antigravityConfig) => new AntigravityCliSystemProvider({
+    config: {
+      working_dir: "C:/temp/workspace",
+      antigravity_cli_config: antigravityConfig,
+    },
+  });
+
+  assert.throws(
+    () => makeProvider({ mode: "automatic" }).buildCommandArguments("prompt"),
+    /mode must be one of/,
+  );
+  assert.throws(
+    () => makeProvider({ agent: "" }).buildCommandArguments("prompt"),
+    /agent must be a non-empty string/,
+  );
+  assert.throws(
+    () => makeProvider({ logFile: "../outside.log" }).buildCommandArguments("prompt"),
+    /escapes the workspace root/,
+  );
+  assert.throws(
+    () => makeProvider({ extraArgs: "--notifications=false" }).buildCommandArguments("prompt"),
+    /must be an array/,
+  );
+  assert.throws(
+    () => makeProvider({ extraArgs: ["--continue"] }).buildCommandArguments("prompt"),
+    /managed or stateful option/,
+  );
+  assert.throws(
+    () => makeProvider({ extraArgs: ["--sandbox=false"] }).buildCommandArguments("prompt"),
+    /managed or stateful option/,
+  );
+});
+
+test("antigravity-cli provider reports unenforceable network combinations", async () => {
+  const workingDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-antigravity-network-"));
+  const provider = new AntigravityCliSystemProvider({
+    config: {
+      working_dir: workingDirectory,
+      sandbox_mode: "danger-full-access",
+      web_search_enabled: true,
+      network_access_enabled: false,
+    },
+    spawnProcess: async () => ({ stdout: "OK", stderr: "", exitCode: 0 }),
+  });
+
+  const response = await provider.callApi("Return OK.");
+  assert.deepEqual(response.metadata.unsupportedSettings, ["networkAccessEnabled"]);
 });
 
 test("antigravity-cli provider falls back to an exit-code error", async () => {

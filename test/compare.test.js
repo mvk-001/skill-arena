@@ -1256,9 +1256,9 @@ test("skill-arena-compare plan scales eval timeout by batched compare workload",
   );
 
   assert.match(stdout, /\| Unsupported cells \| 0 \|/);
-  assert.match(stdout, /\| Total requests \| 144 \|/);
+  assert.match(stdout, /\| Total requests \| 128 \|/);
   assert.match(stdout, /\| Parallel requests \| 8 \|/);
-  assert.match(stdout, /\| Effective timeout \| 21600000 ms \|/);
+  assert.match(stdout, /\| Effective timeout \| 19200000 ms \|/);
 });
 
 test("compare dry-run rewrites local judge shorthand into a packaged Promptfoo provider", async () => {
@@ -1881,7 +1881,7 @@ test("compare dry-run reports invalid capability source types as unsupported cel
   assert.match(stdout, /\| Unsupported cells \| 1 \|/);
 });
 
-test("skill-arena-compare benchmark uses the remote skill and prompt-specific evaluations", async () => {
+test("skill-arena-compare benchmark uses varied prompts and prompt-specific evaluations", async () => {
   const compareConfigPath = fromProjectRoot(
     "evaluations",
     "skill-arena-config-author",
@@ -1898,16 +1898,15 @@ test("skill-arena-compare benchmark uses the remote skill and prompt-specific ev
     compareConfig.comparison.profiles.map((profile) => profile.id),
     ["no-skill", "skill"],
   );
-  assert.equal(compareConfig.task.prompts.length, 9);
+  assert.equal(compareConfig.task.prompts.length, 8);
   assert.equal(compareConfig.task.prompts[0].evaluation.assertions.length > 0, true);
-  assert.equal(compareConfig.task.prompts[1].id, "sunday-brainstorming-compare-jurisdiction");
-  assert.equal(compareConfig.task.prompts[2].id, "sunday-brainstorming-compare-multi-prompt");
-  assert.equal(compareConfig.task.prompts[3].id, "local-skill-with-env");
-  assert.equal(compareConfig.task.prompts[4].id, "inline-skill-copilot-judge");
-  assert.equal(compareConfig.task.prompts[5].id, "multi-profile-file-contains");
-  assert.equal(compareConfig.task.prompts[6].id, "copilot-inline-skill-with-capability-bundles");
-  assert.equal(compareConfig.task.prompts[7].id, "opencode-git-workspace-with-empty-source");
-  assert.equal(compareConfig.task.prompts[8].id, "system-installed-and-unsupported-capability-families");
+  assert.equal(compareConfig.task.prompts[1].id, "data-extractor-multi-prompt");
+  assert.equal(compareConfig.task.prompts[2].id, "local-skill-with-env");
+  assert.equal(compareConfig.task.prompts[3].id, "inline-skill-copilot-judge");
+  assert.equal(compareConfig.task.prompts[4].id, "multi-profile-file-contains");
+  assert.equal(compareConfig.task.prompts[5].id, "copilot-inline-skill-with-capability-bundles");
+  assert.equal(compareConfig.task.prompts[6].id, "opencode-git-workspace-with-empty-source");
+  assert.equal(compareConfig.task.prompts[7].id, "system-installed-and-unsupported-capability-families");
   assert.equal(compareConfig.evaluation.requests, 8);
   assert.equal(
     compareConfig.evaluation.assertions.some((assertion) =>
@@ -1949,8 +1948,8 @@ test("skill-arena-compare benchmark uses the remote skill and prompt-specific ev
       prompt.evaluation?.assertions?.some((assertion) =>
         assertion.type === "javascript"
         && assertion.value.includes("type:\\s+system-installed")
-        && assertion.value.includes("mcp-bundle")
-        && assertion.value.includes("plugin-bundle")),
+        && assertion.value.includes("mcp:\\s*")
+        && assertion.value.includes("plugins:\\s*")),
     ),
     true,
   );

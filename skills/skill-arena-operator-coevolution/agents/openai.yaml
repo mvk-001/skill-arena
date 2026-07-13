@@ -1,0 +1,4 @@
+interface:
+  display_name: "Operator Coevolution"
+  short_description: "Coevolve skill variants and mutation operators"
+  default_prompt: "Use $skill-arena-operator-coevolution to evolve a skill and the mutation operators that improve it."

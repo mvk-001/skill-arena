@@ -115,6 +115,8 @@ const MATERIALIZABLE_PROFILE_CAPABILITY_FAMILIES = [
   "instructions",
   "agents",
   "hooks",
+  "mcp",
+  "plugins",
 ];
 
 export async function materializeWorkspace({

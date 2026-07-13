@@ -41,14 +41,17 @@ test("listUnsupportedCapabilityFamilies returns unsupported hooks for opencode",
   assert.deepEqual(result, ["hooks"]);
 });
 
-test("listUnsupportedCapabilityFamilies returns unsupported agents and hooks for antigravity-cli", () => {
+test("listUnsupportedCapabilityFamilies exposes Antigravity native profile capabilities", () => {
   const result = listUnsupportedCapabilityFamilies("antigravity-cli", {
     instructions: [{ source: { type: "local-path" } }],
     skills: [{ source: { type: "local-path" } }],
     agents: [{ agentId: "agent-1" }],
     hooks: [{ source: { type: "local-path" } }],
+    mcp: [{ source: { type: "local-path" } }],
+    plugins: [{ source: { type: "local-path" } }],
+    extensions: [{ source: { type: "local-path" } }],
   });
-  assert.deepEqual(result, ["agents", "hooks"]);
+  assert.deepEqual(result, ["extensions"]);
 });
 
 test("listUnsupportedCapabilityFamilies ignores empty arrays", () => {
@@ -180,6 +183,34 @@ test("validateScenarioCapabilities validates opencode agents", () => {
     },
   });
   assert.ok(tooManyAgents.includes("at most one"));
+});
+
+test("validateScenarioCapabilities validates Antigravity agents and native bundles", () => {
+  const valid = validateScenarioCapabilities({
+    agent: { adapter: "antigravity-cli" },
+    profile: {
+      capabilities: {
+        agents: [{
+          agentId: "reviewer",
+          source: { type: "inline-files", target: "/.agents/agents/reviewer" },
+        }],
+        hooks: [{ source: { type: "inline-files", target: "/.agents" } }],
+        mcp: [{ source: { type: "inline-files", target: "/.agents" } }],
+        plugins: [{ source: { type: "inline-files", target: "/.agents/plugins/demo" } }],
+      },
+    },
+  });
+  assert.equal(valid, null);
+
+  const missingAgentId = validateScenarioCapabilities({
+    agent: { adapter: "antigravity-cli" },
+    profile: {
+      capabilities: {
+        agents: [{ source: { type: "inline-files", target: "/.agents/agents/reviewer" } }],
+      },
+    },
+  });
+  assert.match(missingAgentId, /antigravity-cli.*agentId/);
 });
 
 test("validateMaterializedCapabilities validates source requirements", () => {

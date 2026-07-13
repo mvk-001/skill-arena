@@ -1,36 +1,19 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
-import YAML from "yaml";
-import { ZodError } from "zod";
-
 import { compareConfigSchema } from "./compare-schema.js";
+import { loadValidatedConfig } from "./config-file.js";
 import { findWorkspaceRoot } from "./project-paths.js";
 
 export async function loadCompareConfig(compareConfigPath, options = {}) {
-  const resolutionDirectory = options.cwd ?? process.cwd();
-  const absoluteCompareConfigPath = path.resolve(resolutionDirectory, compareConfigPath);
-  const compareConfigContents = await fs.readFile(absoluteCompareConfigPath, "utf8");
-  const parsedCompareConfig = parseConfigContents({
-    configContents: compareConfigContents,
-    configPath: absoluteCompareConfigPath,
-  });
+  const { config: compareConfig, configPath: absoluteCompareConfigPath } =
+    await loadValidatedConfig(compareConfigPath, compareConfigSchema, options);
 
-  try {
-    const compareConfig = compareConfigSchema.parse(parsedCompareConfig);
-    return {
-      compareConfig,
-      compareConfigPath: absoluteCompareConfigPath,
-      compareConfigDirectory: path.dirname(absoluteCompareConfigPath),
-      workspaceRootDirectory: findWorkspaceRoot(path.dirname(absoluteCompareConfigPath)),
-    };
-  } catch (error) {
-    if (error instanceof ZodError) {
-      throw new Error(formatConfigErrors(error));
-    }
-
-    throw error;
-  }
+  return {
+    compareConfig,
+    compareConfigPath: absoluteCompareConfigPath,
+    compareConfigDirectory: path.dirname(absoluteCompareConfigPath),
+    workspaceRootDirectory: findWorkspaceRoot(path.dirname(absoluteCompareConfigPath)),
+  };
 }
 
 export function expandCompareConfigToManifest(compareConfig) {
@@ -95,29 +78,4 @@ function buildScenario(compareConfig, variant, profile) {
       },
     },
   };
-}
-
-function parseConfigContents({ configContents, configPath }) {
-  const extension = path.extname(configPath).toLowerCase();
-
-  try {
-    if (extension === ".yaml" || extension === ".yml") {
-      return YAML.parse(configContents);
-    }
-
-    return JSON.parse(configContents);
-  } catch (error) {
-    throw new Error(
-      `Failed to parse compare config "${configPath}". Expected valid ${extension === ".yaml" || extension === ".yml" ? "YAML" : "JSON"}. ${error.message}`,
-    );
-  }
-}
-
-function formatConfigErrors(error) {
-  return error.issues
-    .map((issue) => {
-      const pathLabel = issue.path.length > 0 ? issue.path.join(".") : "<root>";
-      return `${pathLabel}: ${issue.message}`;
-    })
-    .join("\n");
 }

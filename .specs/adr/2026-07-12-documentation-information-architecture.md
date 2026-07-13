@@ -31,6 +31,9 @@ Skill Arena documentation will use these boundaries:
 - `docs/testing.md` owns validation workflows.
 - `docs/research-foundations.md` owns research provenance and adaptation
   boundaries for skill-improvement workflows.
+- `.specs/adr/` records durable decisions and their consequences.
+- `.specs/plans/` stores active, verification-backed implementation plans;
+  plans do not override architecture, specs, or accepted ADRs.
 - maintained executable YAML examples live under `evaluations/`, not `docs/`.
 
 The repository will run `npm run docs:check` to validate local links and heading
@@ -42,5 +45,7 @@ fragments in the root README and `docs/` tree.
 - Command documentation is shorter and less likely to drift from the CLI.
 - Maintained examples stay executable and are not copied into prose folders.
 - File moves and heading changes can be checked locally before review.
+- Contributors have one non-canonical place for task breakdowns without
+  turning temporary implementation details into permanent architecture.
 - Documentation changes that alter these ownership boundaries should update
   this ADR or supersede it with a new decision record.

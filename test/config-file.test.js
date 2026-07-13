@@ -4,7 +4,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { detectConfigKind, parseConfigFile } from "../src/cli/config-file.js";
+import {
+  detectConfigKind,
+  loadValidatedConfig,
+  parseConfigFile,
+} from "../src/config-file.js";
+import { z } from "zod";
 
 function writeTempFile(filename, contents) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "skill-arena-config-file-"));
@@ -38,6 +43,20 @@ test("parseConfigFile reports invalid JSON with file context", async () => {
       assert.equal(error.message.includes("Expected valid JSON."), true);
       return true;
     },
+  );
+});
+
+test("loadValidatedConfig resolves paths and formats schema errors", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "skill-arena-config-schema-"));
+  fs.writeFileSync(path.join(directory, "config.yaml"), "count: 0\n", "utf8");
+
+  await assert.rejects(
+    () => loadValidatedConfig(
+      "config.yaml",
+      z.object({ count: z.number().int().positive() }),
+      { cwd: directory },
+    ),
+    /count:/,
   );
 });
 

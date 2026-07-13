@@ -2,7 +2,7 @@ import path from "node:path";
 
 import { loadBenchmarkManifest } from "../manifest.js";
 import { loadCompareConfig } from "../compare.js";
-import { detectConfigKind, parseConfigFile } from "./config-file.js";
+import { detectConfigKind, parseConfigFile } from "../config-file.js";
 import { mergeEnvironmentPassthrough } from "../environment.js";
 
 const TODO_MARKER = /TODO:/i;

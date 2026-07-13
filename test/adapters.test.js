@@ -188,6 +188,11 @@ test("buildPromptfooProvider builds provider configs for all supported adapters"
   const antigravityProvider = buildPromptfooProvider({
     ...context,
     scenario: {
+      profile: {
+        capabilities: {
+          agents: [{ agentId: "reviewer" }],
+        },
+      },
       agent: {
         adapter: "antigravity-cli",
         commandPath: "agy",
@@ -246,7 +251,37 @@ test("buildPromptfooProvider builds provider configs for all supported adapters"
   assert.equal(antigravityProvider.config.command_path, "agy");
   assert.equal(antigravityProvider.config.cli_env.ANTIGRAVITY_FLAG, "1");
   assert.equal(antigravityProvider.config.cli_env.HOME, "C:/temp/home");
+  assert.equal(antigravityProvider.config.antigravity_cli_config.agent, "reviewer");
+  assert.equal(antigravityProvider.config.antigravity_cli_config.printTimeout, "10m");
   assert.match(antigravityProvider.config.prompt_preamble, /\/marker-guide/);
+});
+
+test("buildPromptfooProvider rejects invalid Antigravity compare profile agents", () => {
+  const base = {
+    workspaceDirectory: "C:/temp/workspace",
+    workspaceEnvironment: {},
+    environmentPassthrough: [],
+    isolatedEnvironment: { HOME: "C:/temp/home" },
+    gitReady: true,
+  };
+
+  assert.throws(() => buildPromptfooProvider({
+    ...base,
+    scenario: {
+      profile: { capabilities: { agents: [{ agentId: "one" }, { agentId: "two" }] } },
+      agent: { adapter: "antigravity-cli", additionalDirectories: [], cliEnv: {}, config: {} },
+      evaluation: { tracing: false },
+    },
+  }), /at most one/);
+
+  assert.throws(() => buildPromptfooProvider({
+    ...base,
+    scenario: {
+      profile: { capabilities: { agents: [{}] } },
+      agent: { adapter: "antigravity-cli", additionalDirectories: [], cliEnv: {}, config: {} },
+      evaluation: { tracing: false },
+    },
+  }), /agentId/);
 });
 
 test("buildPromptfooProvider rejects additional directories outside the workspace", () => {

@@ -341,8 +341,8 @@ function resolvePrompts(options) {
     return [
       {
         id: "prompt-1",
-        description: "TODO: describe what this prompt is checking.",
-        prompt: "TODO: replace with the exact task prompt sent to the agent.",
+        description: "TODO: identify the case kind and task family this prompt covers.",
+        prompt: "TODO: replace with the smallest plausible user request for this task.",
       },
     ];
   }
@@ -351,7 +351,7 @@ function resolvePrompts(options) {
     id: `prompt-${index + 1}`,
     description:
       options.promptDescriptions[index]
-      ?? `TODO: describe why prompt ${index + 1} exists and how it differs from the others.`,
+      ?? `TODO: describe the case kind, task family, and why prompt ${index + 1} differs.`,
     prompt,
   }));
 }
@@ -513,7 +513,7 @@ function renderCompareTemplate(options) {
     ...tags.map((tag) => `    - ${yamlString(tag)}`),
     "task:",
     "  prompts:",
-    "    # TODO: add one prompt entry per row you want in the compare matrix. Split prompts only when you want separate row-level reporting or prompt-specific assertions.",
+    "    # TODO: use minimal user-like requests. For broad skills, cover at least four prompts across naturalistic, generalization, and boundary cases instead of repeating one question.",
   ];
   lines.push(...renderPromptBlocks(prompts));
   lines.push(...renderWorkspaceSection(options));
@@ -530,7 +530,7 @@ function renderPromptBlocks(prompts) {
     `      description: ${yamlString(prompt.description)}`,
     "      # TODO: description is free text. Explain what this row is checking and how it differs from the other prompts.",
     `      prompt: ${yamlString(prompt.prompt)}`,
-    "      # TODO: prompt is the exact task sent to the agent. Keep it benchmark-specific. Add output-format constraints only when the benchmark truly depends on them.",
+    "      # TODO: prompt is the exact task sent to the agent. Keep evaluator knowledge and skill workflow instructions out of naturalistic prompts.",
     "      # TODO: if this row needs checks that differ from the shared evaluation.assertions, add task.prompts[*].evaluation.assertions under this prompt.",
   ]);
 }

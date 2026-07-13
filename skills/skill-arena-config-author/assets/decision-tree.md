@@ -2,22 +2,24 @@
 
 Use the shortest path that fits the task.
 
-## Repository benchmark
-
-Use this route when the task matches `evaluations/skill-arena-config-author/evaluation.yaml`.
-
-1. Preferred: run `scripts/scaffold-skill-arena-compare-benchmark.js <path> --validate`
-2. No shell or flaky shell: copy `assets/gws-calendar-agenda-copy-card.yaml`
-3. Need exact values: open `assets/gws-calendar-agenda-benchmark-reference.md`
-
 ## Generic compare task
 
-1. Start from `assets/compare-template.yaml`
-2. Replace placeholders with task-specific values
-3. Validate with `scripts/validate-compare-output.js <path>` when possible
-   - For quicker prompt-driven scaffolding, use:
-     `node skills/skill-arena-config-author/scripts/scaffold-compare-from-prompts.js`.
-  - Full command reference: `assets/scaffold-compare-from-prompts.md`.
+1. Use `skill-arena gen-conf --output <path> --prompt <text>` when the CLI is
+   available; repeat `--prompt` for multiple rows.
+2. Otherwise start from `assets/compare-template.yaml` and replace its
+   placeholders.
+3. Validate with `skill-arena val-conf <path>`.
+
+## Skill evaluation prompt design
+
+Use this route when prompts are not supplied and the skill promise must define
+the test surface.
+
+1. Open `references/evaluation-design.md`.
+2. Draft the smallest naturalistic task request for each case.
+3. Add generalization and boundary cases across distinct task families.
+4. Record cases in `prompt-coverage.json`.
+5. Run `scripts/validate-evaluation-design.js` before compare validation.
 
 ## Final gate
 

@@ -140,11 +140,20 @@ For `antigravity-cli`, the generated provider is also a file-based custom script
 
 - `command`: shell out to the local `agy` CLI with `--print`
 
-`antigravity-cli` uses Antigravity's project instruction discovery and mirrors
-generic benchmark skills into `.agents/skills/*` inside the isolated execution
-workspace. It writes settings under an isolated
-`~/.gemini/antigravity-cli/settings.json` and maps model, sandbox, approval, and
-additional-directory controls through `agy` flags on a best-effort basis.
+`antigravity-cli` uses Antigravity's project discovery layout. Generic benchmark
+skills are mirrored into `.agents/skills/*`; compare profiles may materialize
+custom agents, hooks, MCP configuration, and plugins under `.agents/agents/*`,
+`.agents/hooks.json`, `.agents/mcp_config.json`, and `.agents/plugins/*`.
+Selecting a profile agent adds the documented `--agent` launch option.
+
+The provider writes `~/.gemini/antigravity-cli/settings.json` under an isolated
+home and explicitly maps sandbox, network, web, approval, artifact-review, and
+non-workspace access policy. Launch options cover model, agent, mode, log file,
+print timeout, project selection or creation, and additional directories. The
+sandbox option is always emitted as `--sandbox=true` or `--sandbox=false` so a
+host default cannot override the benchmark. Conversation continuation and
+interactive prompt flags are rejected because every evaluation request must
+start from fresh benchmark state.
 
 For `pi`, the generated provider runs with strict skill isolation by default:
 
@@ -186,7 +195,7 @@ Adapter-specific isolation is intentionally uneven because external CLIs do not 
 | `opencode` | `auth.json` only | isolated config dir, generated config content, `--pure`, workspace-only agents and skills | provider semantics still depend on the local OpenCode CLI |
 | `claude-code` | no host config by default beyond explicit env/auth passed in | isolated project workspace, `CLAUDE.md` and `.claude/*` mirrored from the workspace, `--setting-sources project` by default | runtime-specific hidden orchestration remains outside Skill Arena control |
 | `copilot-cli` | no host config by default beyond explicit env/auth passed in | isolated config dir, `--config-dir`, `--disable-builtin-mcps`, `--disallow-temp-dir`, `--no-auto-update`, `--no-experimental`, `COPILOT_CUSTOM_INSTRUCTIONS_DIRS=` | isolation is partial because the CLI remains more opaque than Codex, Pi, or OpenCode |
-| `antigravity-cli` | authentication remains in the operating-system secure keyring; no host settings are copied | isolated home, generated Antigravity settings, project instructions, mirrored `.agents/skills/*` | Antigravity exposes one sandbox toggle and one full auto-approval flag, so exact policy parity is best-effort |
+| `antigravity-cli` | authentication remains in the operating-system secure keyring; no host settings are copied | isolated home, generated settings and permissions, explicit sandbox state, workspace-native `.agents/*` capabilities | `read-only` cannot prevent every terminal command from writing, and web access cannot be separated perfectly from sandbox network allowlists |
 
 ### Result outputs
 

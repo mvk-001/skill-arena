@@ -7,9 +7,11 @@ benchmark:
 task:
   prompts:
     - id: prompt-id
-      prompt: Exact task prompt sent to every provider.
+      prompt: Minimal user-like task request sent to every provider.
       # Keep prompts in this list. Do not rewrite `task.prompts` into a mapping.
       # Put row-only checks here. Shared checks stay under top-level `evaluation`.
+      # For broad skills, add naturalistic, generalization, and boundary rows
+      # across multiple task families; do not repeat one question by format alone.
 workspace:
   sources:
     - id: base

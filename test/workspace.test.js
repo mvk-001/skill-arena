@@ -422,6 +422,80 @@ test("profile capability materialization rejects entries without a source", asyn
   }), /profile\.capabilities\.instructions\[0\] must declare a materializable source/);
 });
 
+test("Antigravity profile materializes agents, hooks, MCP, and plugins under .agents", async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "skill-arena-antigravity-capabilities-"));
+  const filesByFamily = {
+    agents: [{
+      agentId: "reviewer",
+      source: {
+        type: "inline-files",
+        target: "/.agents/agents/reviewer",
+        files: [{ path: "agent.md", content: "---\nname: reviewer\ndescription: Reviews code.\n---\n" }],
+      },
+    }],
+    hooks: [{
+      source: {
+        type: "inline-files",
+        target: "/.agents",
+        files: [{ path: "hooks.json", content: "{\"hooks\":{}}\n" }],
+      },
+    }],
+    mcp: [{
+      source: {
+        type: "inline-files",
+        target: "/.agents",
+        files: [{ path: "mcp_config.json", content: "{\"mcpServers\":{}}\n" }],
+      },
+    }],
+    plugins: [{
+      source: {
+        type: "inline-files",
+        target: "/.agents/plugins/demo",
+        files: [{ path: "plugin.json", content: "{\"name\":\"demo\"}\n" }],
+      },
+    }],
+  };
+  const scenario = {
+    id: "antigravity-capabilities",
+    description: "Antigravity native capability materialization",
+    skillMode: "disabled",
+    profile: { id: "native", capabilities: filesByFamily },
+    agent: { adapter: "antigravity-cli" },
+    evaluation: { assertions: [{ type: "equals", value: "OK" }] },
+  };
+  const manifest = {
+    schemaVersion: 1,
+    benchmark: { id: "antigravity-capabilities", description: "test", tags: [] },
+    task: { prompt: "Return OK." },
+    workspace: { sources: [], setup: { initializeGit: false, env: {} } },
+    scenarios: [scenario],
+  };
+
+  const workspace = await materializeWorkspace({
+    manifest,
+    scenario,
+    outputRootDirectory: tempDirectory,
+    sourceBaseDirectory: tempDirectory,
+  });
+
+  assert.match(
+    await fs.readFile(path.join(workspace.workspaceDirectory, ".agents", "agents", "reviewer", "agent.md"), "utf8"),
+    /name: reviewer/,
+  );
+  assert.match(
+    await fs.readFile(path.join(workspace.workspaceDirectory, ".agents", "hooks.json"), "utf8"),
+    /hooks/,
+  );
+  assert.match(
+    await fs.readFile(path.join(workspace.workspaceDirectory, ".agents", "mcp_config.json"), "utf8"),
+    /mcpServers/,
+  );
+  assert.match(
+    await fs.readFile(path.join(workspace.workspaceDirectory, ".agents", "plugins", "demo", "plugin.json"), "utf8"),
+    /demo/,
+  );
+});
+
 test("strict isolation rejects system-installed skills and mounts multiple declared skills", async () => {
   const singleBaseManifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,

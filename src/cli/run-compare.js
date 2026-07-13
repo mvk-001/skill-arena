@@ -27,7 +27,11 @@ import {
   materializeWorkspace,
   syncExecutionWorkspaceToArtifacts,
 } from "../workspace.js";
-import { ensureKnownLongOptions, parsePositiveIntegerOption } from "./cli-options.js";
+import {
+  ensureKnownLongOptions,
+  parsePositiveIntegerOption,
+  readStringOption,
+} from "./cli-options.js";
 import { resolveScenarioSupport } from "../capability-validation.js";
 import { mergeEnvironmentPassthrough } from "../environment.js";
 import {
@@ -364,15 +368,6 @@ function parseCompareRuntimeOptions(argv) {
     outputRootDirectory: process.cwd(),
     markdownOutputPath: readStringOption(argv, "--markdown-output"),
   };
-}
-
-function readStringOption(argv, optionName) {
-  const index = argv.indexOf(optionName);
-  if (index === -1) {
-    return null;
-  }
-
-  return argv[index + 1] ?? null;
 }
 
 // ── Scenario classification ────────────────────────────────────────

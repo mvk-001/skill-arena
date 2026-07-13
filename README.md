@@ -129,7 +129,6 @@ them, and improving other skills.
 | Skill | Use it when |
 | --- | --- |
 | [`skill-arena-config-author`](./skills/skill-arena-config-author/SKILL.md) | You need to generate, repair, or validate a declarative compare config. |
-| [`skill-arena-compare-batch`](./skills/skill-arena-compare-batch/SKILL.md) | You want a scripted, benchmark-specific, low-error authoring path. |
 | [`skill-arena-run-results`](./skills/skill-arena-run-results/SKILL.md) | You need to validate, dry-run, execute, inspect, and summarize a comparison. |
 | [`skill-arena-population-search`](./skills/skill-arena-population-search/SKILL.md) | You can score candidate skill variants repeatedly against a fixed benchmark. |
 | [`skill-arena-trace-distillation`](./skills/skill-arena-trace-distillation/SKILL.md) | You have labeled success and failure traces and want one transferable update. |
@@ -161,7 +160,7 @@ for the papers, adopted mechanisms, and adaptation boundaries behind both workfl
 | `pi` | `pi` | skills |
 | `opencode` | `opencode` | instructions, skills, agents |
 | `claude-code` | `claude` | instructions, skills, agents, hooks |
-| `antigravity-cli` | `agy` | instructions, skills |
+| `antigravity-cli` | `agy` | instructions, skills, agents, hooks, MCP, plugins |
 
 Adapters expose different native control surfaces. Skill Arena reports
 unsupported capability cells explicitly instead of pretending that every
