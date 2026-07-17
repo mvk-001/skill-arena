@@ -85,6 +85,7 @@ test("antigravity-cli provider mirrors generic skills and writes isolated settin
       working_dir: workingDirectory,
       cli_env: { HOME: isolatedHome },
       antigravity_cli_config: {
+        logFile: "logs/agy.log",
         settings: {
           colorScheme: "light",
           enableTelemetry: true,
@@ -116,6 +117,8 @@ test("antigravity-cli provider mirrors generic skills and writes isolated settin
   assert.equal(settings.sandboxAllowNetwork, false);
   assert.equal(settings.toolPermission, "request-review");
   assert.equal(settings.artifactReviewPolicy, "asks-for-review");
+  assert.equal(runtimeLayout.logFile, path.join(workingDirectory, "logs", "agy.log"));
+  assert.equal((await fs.stat(path.join(workingDirectory, "logs"))).isDirectory(), true);
   assert.deepEqual(settings.permissions, {
     allow: ["command(git)"],
     deny: ["command(sudo)", "read_url(*)", "execute_url(*)"],
@@ -291,6 +294,10 @@ test("antigravity-cli provider validates adapter-specific options before executi
   assert.throws(
     () => makeProvider({ extraArgs: "--notifications=false" }).buildCommandArguments("prompt"),
     /must be an array/,
+  );
+  assert.throws(
+    () => makeProvider({ extraArgs: [""] }).buildCommandArguments("prompt"),
+    /only non-empty strings/,
   );
   assert.throws(
     () => makeProvider({ extraArgs: ["--continue"] }).buildCommandArguments("prompt"),

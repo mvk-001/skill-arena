@@ -13,8 +13,9 @@ When you change Skill Arena, verify the affected layers in order:
 
 1. Documentation navigation and local links
 2. Unit-tested runtime behavior under `src/`
-3. Config validation and Promptfoo generation
-4. Optional live agent execution against a maintained compare benchmark
+3. Skill artifact independence or declared composition boundaries
+4. Config validation and Promptfoo generation
+5. Optional live agent execution against a maintained compare benchmark
 
 When a change designs or rewrites evaluation prompts, also verify prompt
 minimality and coverage diversity before running the benchmark.
@@ -111,6 +112,59 @@ Coverage scope includes `src/**/*.js` and excludes:
 - `src/providers/pi-system-provider.js`
 
 Those exclusions keep the threshold focused on the stable unit-testable runtime surface while live evaluations exercise command-oriented entrypoints separately.
+
+### Skill independence and composition checks
+
+Run the repository gate for every skill change:
+
+```bash
+npm run skills:check
+```
+
+The checker copies each bundle to a temporary directory, validates helper
+syntax, and rejects missing or escaping links, imports, undeclared packages,
+symlinks, sibling-skill invocations, and repository-root command paths.
+
+When an atomic skill changes, validate it from an isolated temporary copy that
+contains only that skill directory. The check should:
+
+- resolve every relative link from `SKILL.md` inside the copied directory
+- run deterministic scripts or fixtures from the copied directory rather than
+  the repository root
+- reject relative resources or imports that escape the skill directory or
+  resolve through sibling skill directories
+- permit documented platform dependencies such as the public Skill Arena CLI
+  or another executable, and produce a clear failure when one is unavailable
+- confirm that no undeclared host personalization is required
+
+For a composite or orchestrator skill, verify that it labels itself accordingly,
+declares every required skill, capability bundle, and external input, and fails
+clearly when a required dependency is missing. Its tests may stage those
+declared dependencies explicitly; they should not discover them accidentally
+from the repository or host environment.
+
+The Harbor-native skills pin their Python dependencies through uv inline script
+metadata. Validate their no-model execution surfaces with:
+
+~~~powershell
+node --test test/harbor-run-results.test.js test/harbor-evolve-skill.test.js test/harbor-population-search.test.js test/harbor-trace-distillation.test.js test/harbor-reflective-pareto-search.test.js test/harbor-operator-coevolution.test.js
+~~~
+
+These tests exercise native Harbor result validation, comparison drift,
+incomplete-job rejection, evolution planning, split-leakage rejection,
+candidate ranking, trace support, Pareto preservation, and mutation-operator
+credit. They do not launch agents or spend model tokens.
+
+When a repository-integrated orchestrator cannot avoid internal modules, add a
+local `skill-dependencies.json` with `classification`, `repositoryModules`,
+`packages`, and `siblingSkills`. Keep each list minimal; the independence check
+permits only the named exceptions.
+
+When a benchmark claims individual skill impact, include a deny-all control and
+a treatment whose only capability difference is one atomic skill. Treat any
+profile containing multiple skills or mixed capability families as a
+composition test. Add isolated or factorial profiles before attributing a
+composition result to one member.
 
 ## 2. Validate The Config
 
@@ -293,7 +347,7 @@ Useful follow-up checks:
 Before closing an autonomous improvement loop in this repository, run:
 
 ```bash
-node skills/skill-arena-config-author/scripts/run-rust-analyzer-hook.js
+node scripts/run-rust-analyzer-hook.js
 ```
 
 This is the required repository closeout guardrail for autonomous loops. It writes JSON artifacts under `.tmp/rust-code-analysis-loop/`.

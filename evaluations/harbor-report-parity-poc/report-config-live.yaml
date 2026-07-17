@@ -1,0 +1,36 @@
+schemaVersion: 1
+benchmark:
+  id: harbor-report-parity-poc-live
+  description: Compare live Codex Harbor trials with and without the marker skill.
+evaluation:
+  requests: 2
+  rewardKey: reward
+  passThreshold: 1
+task:
+  prompts:
+    - id: marker-write
+      harborTaskName: skill-arena/marker-write
+      description: Write the skill-only canonical marker to the required artifact.
+      prompt: Use the installed harbor-marker-guide skill and write its canonical marker to /app/answer.txt.
+comparison:
+  variants:
+    - id: codex-mini
+      displayName: Codex / GPT-5.6 Sol
+      agent: codex
+      model: openai/gpt-5.6-sol
+  profiles:
+    - id: no-skill
+      displayName: no-skill
+      description: Harbor job without an installed skill.
+      skillMode: disabled
+      skillSource: none
+      expectedSkills: []
+      jobDirectory: ../../.tmp/harbor-report-parity-poc/jobs/harbor-report-poc-no-skill
+    - id: skill
+      displayName: skill
+      description: Harbor job with only harbor-marker-guide installed.
+      skillMode: enabled
+      skillSource: workspace-overlay
+      expectedSkills:
+        - harbor-marker-guide
+      jobDirectory: ../../.tmp/harbor-report-parity-poc/jobs/harbor-report-poc-skill

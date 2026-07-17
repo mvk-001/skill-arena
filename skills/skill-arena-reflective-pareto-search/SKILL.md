@@ -9,6 +9,10 @@ Improve one skill through feedback-guided candidate updates and a deterministic
 Pareto archive. Keep the benchmark fixed and preserve candidates that are best
 on different cases instead of selecting only the highest mean score.
 
+Runtime: execute bundled ESM helpers with Node.js 24 or newer. In commands,
+`<skill-root>` means this installed skill directory. The bundle runs without
+any sibling skill installed.
+
 This workflow adapts the high-level mechanisms in
 [GEPA](https://arxiv.org/abs/2507.19457): reflect on execution feedback, retain
 case-complementary candidates, and plan merges from the archive. The bundled
@@ -25,8 +29,9 @@ Collect:
 - case-local feedback with evidence and a diagnosis
 - a separate holdout set for final promotion when possible
 
-Use population search when only one reliable scalar fitness exists. Use trace
-distillation when there is a large labeled trace pool but no candidate archive.
+Use a scalar population loop when only one reliable fitness exists. Use a
+trace-consolidation workflow when there is a large labeled trace pool but no
+candidate archive; neither alternative is required by this bundle.
 
 ## Workflow
 
@@ -69,11 +74,11 @@ distillation when there is a large labeled trace pool but no candidate archive.
 ## Commands
 
 ```powershell
-node skills/skill-arena-reflective-pareto-search/scripts/rank-pareto.js `
+node <skill-root>/scripts/rank-pareto.js `
   --input run/candidates.json `
   --output run/pareto-archive.json
 
-node skills/skill-arena-reflective-pareto-search/scripts/plan-reflection.js `
+node <skill-root>/scripts/plan-reflection.js `
   --input run/candidates.json `
   --output run/reflection-plan.json
 ```

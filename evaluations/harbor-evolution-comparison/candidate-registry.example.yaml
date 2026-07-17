@@ -1,0 +1,64 @@
+schema_version: "1"
+study_id: harbor-evolver-comparison-20260716
+
+# Paths are relative to this registry file. Copy this file to
+# candidate-registry.yaml and replace every placeholder after all development
+# jobs finish. `selection` is `child` only when the child wins the frozen
+# development rule; otherwise use `baseline`.
+baseline_development_jobs:
+  openapi-integrator: ../../.tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/REPLACE_WITH_FROZEN_BASELINE_JOB
+  deepfake-detector: ../../.tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/REPLACE_WITH_FROZEN_BASELINE_JOB
+  scene-script-planner: ../../.tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/REPLACE_WITH_FROZEN_BASELINE_JOB
+
+candidates:
+  openapi-integrator:
+    population_search:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/population-search
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/population-search-development
+      selection: REPLACE_WITH_child_OR_baseline
+    trace_distillation:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/trace-distillation
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/trace-distillation-development
+      selection: REPLACE_WITH_child_OR_baseline
+    reflective_pareto_search:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/reflective-pareto-search
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/reflective-pareto-search-development
+      selection: REPLACE_WITH_child_OR_baseline
+    operator_coevolution:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/operator-coevolution
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/operator-coevolution-development
+      selection: REPLACE_WITH_child_OR_baseline
+  deepfake-detector:
+    population_search:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/population-search
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/population-search-development
+      selection: REPLACE_WITH_child_OR_baseline
+    trace_distillation:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/trace-distillation
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/trace-distillation-development
+      selection: REPLACE_WITH_child_OR_baseline
+    reflective_pareto_search:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/reflective-pareto-search
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/reflective-pareto-search-development
+      selection: REPLACE_WITH_child_OR_baseline
+    operator_coevolution:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/operator-coevolution
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/operator-coevolution-development
+      selection: REPLACE_WITH_child_OR_baseline
+  scene-script-planner:
+    population_search:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/population-search
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/population-search-development
+      selection: REPLACE_WITH_child_OR_baseline
+    trace_distillation:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/trace-distillation
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/trace-distillation-development
+      selection: REPLACE_WITH_child_OR_baseline
+    reflective_pareto_search:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/reflective-pareto-search
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/reflective-pareto-search-development
+      selection: REPLACE_WITH_child_OR_baseline
+    operator_coevolution:
+      path: ../../.tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/operator-coevolution
+      development_job: ../../.tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/operator-coevolution-development
+      selection: REPLACE_WITH_child_OR_baseline

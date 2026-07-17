@@ -1,0 +1,105 @@
+{
+  "scenarioId": "recurring-composition-findings",
+  "promptId": "recurring-findings",
+  "subjectId": "d3-composition-evaluator",
+  "baselineCandidateId": "baseline",
+  "minTraceSupport": 2,
+  "traces": [
+    {
+      "traceId": "composition-t1",
+      "tags": [
+        "score-reconciliation",
+        "visible-evidence"
+      ]
+    },
+    {
+      "traceId": "composition-t2",
+      "tags": [
+        "score-reconciliation"
+      ]
+    },
+    {
+      "traceId": "composition-t3",
+      "tags": [
+        "score-reconciliation",
+        "visible-evidence"
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "candidateId": "baseline",
+      "devScore": 0.66,
+      "caseScores": {
+        "audit": 0.66,
+        "comparison": 0.64,
+        "boundary": 0.6
+      },
+      "operatorId": "control",
+      "parentFitness": 0.66,
+      "patchTags": [],
+      "complexityDelta": 0,
+      "evaluationCost": 3
+    },
+    {
+      "candidateId": "scalar-overfit",
+      "devScore": 0.91,
+      "caseScores": {
+        "audit": 0.96,
+        "comparison": 0.55,
+        "boundary": 0.45
+      },
+      "operatorId": "broad",
+      "parentFitness": 0.66,
+      "patchTags": [],
+      "complexityDelta": 10,
+      "evaluationCost": 3
+    },
+    {
+      "candidateId": "pareto-balanced",
+      "devScore": 0.84,
+      "caseScores": {
+        "audit": 0.84,
+        "comparison": 0.83,
+        "boundary": 0.82
+      },
+      "operatorId": "balanced",
+      "parentFitness": 0.58,
+      "patchTags": [],
+      "complexityDelta": 3,
+      "evaluationCost": 3
+    },
+    {
+      "candidateId": "trace-reconciled-score",
+      "devScore": 0.83,
+      "caseScores": {
+        "audit": 0.82,
+        "comparison": 0.81,
+        "boundary": 0.8
+      },
+      "operatorId": "trace",
+      "parentFitness": 0.62,
+      "patchTags": [
+        "score-reconciliation",
+        "visible-evidence"
+      ],
+      "complexityDelta": 2,
+      "evaluationCost": 3
+    },
+    {
+      "candidateId": "operator-child",
+      "devScore": 0.86,
+      "caseScores": {
+        "audit": 0.85,
+        "comparison": 0.8,
+        "boundary": 0.78
+      },
+      "operatorId": "evolved",
+      "parentFitness": 0.4,
+      "patchTags": [],
+      "complexityDelta": 5,
+      "evaluationCost": 3
+    }
+  ],
+  "holdoutScoresWithheld": true
+}

@@ -14,6 +14,14 @@ Compare skill-improvement strategies in two separate evidence layers:
 
 Never mix replay scores with live agent pass rates in one headline number.
 
+This skill is intentionally composite: its bundled replay scripts encode the
+four named selection policies and run without those sibling skills installed.
+Sibling strategy skills are needed only for the optional live-agent layer; if
+they are unavailable, complete and report the deterministic replay alone.
+
+Runtime: execute bundled ESM helpers with Node.js 24 or newer. In commands,
+`<skill-root>` means this installed skill directory.
+
 ## Workflow
 
 1. Freeze the source skill corpus and record its path, revision when available,
@@ -26,10 +34,11 @@ Never mix replay scores with live agent pass rates in one headline number.
    using [references/evaluation-protocol.md](references/evaluation-protocol.md).
 5. Run `scripts/evaluate-strategies.js`. Inspect per-scenario selections before
    using aggregate rankings.
-6. If live evaluation is practical, author one compare config with identical
-   prompts across profiles. Use one profile per strategy skill, at least four
-   prompts across three task families, and prompt-specific observable
-   assertions.
+6. If live evaluation is practical and the strategy skills are installed,
+   author one compare config with identical prompts across profiles. Use one
+   profile per available strategy skill, at least four prompts across three
+   task families, and prompt-specific observable assertions. Otherwise stop at
+   replay and label the result accordingly.
 7. Validate the compare config and prompt coverage, dry-run it, then execute it.
    Keep replay and live artifacts side by side but labeled separately.
 8. Publish the methodology, corpus snapshot, raw inputs, report, limitations,
@@ -52,14 +61,20 @@ unweighted metrics so another user can choose different tradeoffs.
 ## Commands
 
 ```powershell
-node skills/skill-arena-strategy-evaluator/scripts/catalog-skills.js `
-  --root C:\path\to\skills\.agents\skills `
+node <skill-root>/scripts/catalog-skills.js `
+  --root <skills-root> `
   --output evaluations/skill-evolution-strategies/corpus-catalog.json
 
-node skills/skill-arena-strategy-evaluator/scripts/evaluate-strategies.js `
+node <skill-root>/scripts/evaluate-strategies.js `
   --input evaluations/skill-evolution-strategies/replay-scenarios.json `
   --output evaluations/skill-evolution-strategies/replay-results.json `
   --markdown evaluations/skill-evolution-strategies/replay-report.md
+
+node <skill-root>/scripts/analyze-live-results.js `
+  --results results/<run>/promptfoo-results.json `
+  --replay evaluations/skill-evolution-strategies/replay-scenarios.json `
+  --output evaluations/skill-evolution-strategies/live-analysis.json `
+  --markdown evaluations/skill-evolution-strategies/live-analysis.md
 ```
 
 ## Decision Rules
@@ -86,4 +101,3 @@ node skills/skill-arena-strategy-evaluator/scripts/evaluate-strategies.js `
 - Do not name a universal winner when rankings change by subject or metric.
 - Make every generated JSON and Markdown artifact available with rerun
   commands.
-

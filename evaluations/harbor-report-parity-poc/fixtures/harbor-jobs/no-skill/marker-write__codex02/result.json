@@ -1,0 +1,34 @@
+{
+  "id": "12000000-0000-0000-0000-000000000002",
+  "task_name": "skill-arena/marker-write",
+  "trial_name": "marker-write__codex02",
+  "trial_uri": "file:///fixture/no-skill/marker-write__codex02",
+  "task_id": { "path": "C:/fixture/marker-write" },
+  "source": "harbor-report-parity-poc",
+  "task_checksum": "sha256:marker-write-v1",
+  "config": {
+    "task": { "path": "C:/fixture/marker-write" },
+    "trial_name": "marker-write__codex02",
+    "agent": { "name": "codex", "model_name": "openai/gpt-5.1-codex-mini", "skills": [] }
+  },
+  "agent_info": {
+    "name": "codex",
+    "version": "0.144.0",
+    "model_info": { "name": "gpt-5.1-codex-mini", "provider": "openai" }
+  },
+  "agent_result": {
+    "n_input_tokens": 140,
+    "n_cache_tokens": 20,
+    "n_output_tokens": 30,
+    "cost_usd": 0.015,
+    "metadata": { "final_output": "UNKNOWN" }
+  },
+  "verifier_result": { "rewards": { "reward": 0 } },
+  "exception_info": null,
+  "started_at": "2026-07-13T00:00:12Z",
+  "finished_at": "2026-07-13T00:00:18Z",
+  "agent_execution": {
+    "started_at": "2026-07-13T00:00:13Z",
+    "finished_at": "2026-07-13T00:00:17Z"
+  }
+}

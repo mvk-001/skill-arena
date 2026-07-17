@@ -13,6 +13,10 @@ method. These links point to primary sources.
 | Population search | [Promptbreeder: *Self-Referential Self-Improvement Via Prompt Evolution*](https://arxiv.org/abs/2309.16797) | Closest published precedent for populations and diverse linguistic mutation operators. Added as research context during the naming review; Skill Arena does not implement self-referential mutation-prompt evolution. |
 | Population search | [Karpathy's `autoresearch`](https://github.com/karpathy/autoresearch) | Directly recorded operational inspiration for a fixed experiment target, one measurable result, and an explicit keep-or-discard loop. This is a software repository, not a paper. |
 | Trace distillation | [Trace2Skill: *Distill Trajectory-Local Lessons into Transferable Agent Skills*](https://arxiv.org/abs/2603.25158) | Directly recorded paper inspiration for independent trajectory-local analysis followed by conflict-aware consolidation into one transferable skill. |
+| Reflective Pareto search | [GEPA: *Reflective Prompt Evolution Can Outperform Reinforcement Learning*](https://arxiv.org/abs/2507.19457) | Direct inspiration for natural-language reflection over execution feedback and retaining complementary candidates through Pareto selection. |
+| Harbor-guided skill evolution | [Harbor + GEPA cookbook](https://github.com/harbor-framework/harbor-cookbook/tree/main/harbor_cookbook/gepa) and [GEPA](https://arxiv.org/abs/2507.19457) | Direct implementation precedent for using Harbor trials, rewards, verifier output, and agent trajectories as GEPA evaluation feedback. The repository adapts the prompt-template example to evolve SKILL.md and adds an untouched holdout gate. |
+| Operator coevolution | [Promptbreeder: *Self-Referential Self-Improvement Via Prompt Evolution*](https://arxiv.org/abs/2309.16797) | Direct inspiration for evolving mutation instructions as well as the artifacts those instructions modify. |
+| Pareto and diversity context | [NSGA-II](https://doi.org/10.1109/4235.996017) and [Quality Diversity: A New Frontier for Evolutionary Computation](https://doi.org/10.3389/frobt.2016.00040) | Related foundations for non-dominated selection and preserving diverse high-quality stepping stones; Skill Arena implements narrower deterministic policies. |
 
 Repository history is part of the provenance check: Trace2Skill and
 `autoresearch` were explicit citations before this review; EvoPrompt and
@@ -89,13 +93,121 @@ The descriptive name **trace distillation** reflects the evidence transformation
 performed by the workflow and its relationship to Trace2Skill without using the
 paper title as a product name.
 
+## Reflective Pareto Search
+
+The `skill-arena-reflective-pareto-search` workflow keeps case scores separate,
+reflects on verified per-case feedback, preserves candidates that are
+non-dominated across the frozen case set, and plans attributable merges between
+archive members with complementary case ownership.
+
+### Mechanisms adapted from GEPA
+
+- Use execution feedback and natural-language diagnoses instead of relying only
+  on a sparse scalar reward.
+- Preserve complementary candidates on a Pareto archive.
+- Select the weakest covered case for the next reflection step.
+- Merge at most two complementary candidates and reevaluate the result.
+
+### Adaptation boundaries
+
+- The local scripts rank declared scores and produce reflection or merge plans;
+  they do not invoke GEPA's proposer, evaluator, or model stack.
+- Skill Arena evolves complete skill bundles rather than one prompt string.
+- Identical score vectors use complexity, evaluation cost, and candidate ID as
+  deterministic tie-breakers.
+- The repository's replay fixtures are mechanism tests, not reproductions of
+  GEPA's experiments or performance claims.
+
+## Harbor-Guided Skill Evolution
+
+The harbor-evolve-skill workflow invokes GEPA's optimizer over real Harbor
+trials. Each textual candidate replaces SKILL.md inside a copied skill bundle;
+Harbor supplies isolated execution, scalar reward, verifier diagnostics,
+exceptions, and bounded trajectory evidence for reflection.
+
+### Mechanisms adopted
+
+- Use Harbor tasks as reproducible containerized evaluation cases.
+- Give GEPA scalar rewards plus textual execution feedback.
+- Use optimizer-visible training and validation splits for reflective,
+  Pareto-aware candidate search.
+- Evaluate the unchanged baseline and selected candidate on a third holdout
+  split before promotion.
+- Preserve all trial artifacts and exact Harbor, GEPA, skill, and task
+  provenance.
+
+### Adaptation boundaries
+
+- The official cookbook evolves a prompt template for MedAgentBench; this
+  workflow evolves the complete SKILL.md text for an arbitrary frozen Harbor
+  task corpus.
+- Scripts, references, and assets remain unchanged during one run.
+- Validation participates in candidate selection and is not described as
+  holdout evidence.
+- The runner never installs the candidate or overwrites the source skill.
+- Local reports demonstrate only the declared tasks, agent, model, attempts,
+  versions, and budget; they do not inherit GEPA paper or cookbook performance
+  claims.
+
+### Four native-artifact strategy variants
+
+The Harbor-native strategy family applies the same four evidence regimes to
+standard Harbor job output rather than declared Skill Arena scores:
+
+- harbor-population-search ranks complete skill candidates by Harbor reward and
+  error evidence before mutation and crossover.
+- harbor-trace-distillation normalizes native trial results, trajectories, and
+  verifier files before support- and conflict-aware consolidation.
+- harbor-reflective-pareto-search builds per-case score vectors from Harbor
+  tasks, agents, and models, then preserves non-dominated candidates and emits
+  bounded reflection evidence.
+- harbor-operator-coevolution credits mutation instructions from measured
+  parent-to-child Harbor fitness changes.
+
+All four use one candidate skill per Harbor job, preserve native job and trial
+artifacts, and reveal disjoint holdout results only after selection. The
+strategy logic is an adaptation of the corresponding research mechanism; it is
+not a reproduction of any paper's optimizer or empirical result.
+
+## Operator Coevolution
+
+The `skill-arena-operator-coevolution` workflow treats mutation instructions as
+an explicit second population. It credits an operator from the improvement of
+its children over their parents, preserves operator elites, and emits
+attributable mutation or crossover plans for the next generation.
+
+### Mechanisms adapted from Promptbreeder
+
+- Improve mutation instructions as well as the artifacts they mutate.
+- Keep operator lineage explicit across generations.
+- Use measured downstream candidate outcomes to select operator genomes.
+
+### Adaptation boundaries
+
+- The implementation does not autonomously call an LLM to rewrite operators;
+  it emits deterministic plans for an editing agent to realize and validate.
+- Operator credit is mean parent-to-child fitness delta with hard-gate failures
+  forced to zero child fitness.
+- Operator ranking chooses future exploration; it never promotes a skill
+  without development and holdout evaluation.
+
 ## Choosing A Workflow
 
 Use population search when you have a repeatable scalar or ordered fitness
 signal and can afford to evaluate multiple candidates. Use trace distillation
 when you already have diverse labeled trajectories and need to consolidate
-recurring lessons. They can be composed: distill a strong evidence-grounded
-baseline first, then search a population of measured refinements.
+recurring lessons. Use reflective Pareto search when task families trade off
+and case-local diagnoses are available. Use operator coevolution only after
+multiple generations make parent-to-child operator credit meaningful. They can
+be composed with explicit phase boundaries: distill a baseline, search measured
+refinements, then use reflective Pareto selection without changing the
+benchmark or exposing holdout evidence.
+
+Use the matching harbor-* strategy when a native Harbor task corpus already
+exists and its artifacts should drive the same evidence regime. Use
+harbor-evolve-skill when the desired loop is specifically an integrated
+Harbor+GEPA optimizer over SKILL.md. Keep the final holdout separate even when
+an earlier Skill Arena strategy replay helped choose the method.
 
 ## Name Migration
 

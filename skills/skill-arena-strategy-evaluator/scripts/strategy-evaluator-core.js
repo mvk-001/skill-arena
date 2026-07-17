@@ -153,7 +153,7 @@ function selectTraceDistillation(scenario) {
   })[0];
 }
 
-function selectOperatorCoevolution(scenario) {
+function selectOperator(scenario) {
   const groups = new Map();
   for (const candidate of scenario.candidates) {
     const operatorId = String(candidate.operatorId ?? "unassigned");
@@ -161,7 +161,7 @@ function selectOperatorCoevolution(scenario) {
     values.push(candidate.devScore - candidate.parentFitness);
     groups.set(operatorId, values);
   }
-  const bestOperatorId = [...groups].map(([operatorId, improvements]) => ({
+  return [...groups].map(([operatorId, improvements]) => ({
     operatorId,
     meanImprovement: mean(improvements),
     successRate: improvements.filter((value) => value > 0).length / improvements.length,
@@ -172,8 +172,12 @@ function selectOperatorCoevolution(scenario) {
     || right.trials - left.trials
     || left.operatorId.localeCompare(right.operatorId)
   ))[0].operatorId;
-  return scenario.candidates.filter((entry) => String(entry.operatorId ?? "unassigned") === bestOperatorId)
-    .sort(candidateTieBreak)[0];
+}
+
+function selectOperatorCoevolution(scenario) {
+  // Skill and operator populations have separate survivor rankings. The final
+  // skill uses hard-gated absolute fitness; parent deltas select future operators.
+  return [...scenario.candidates].sort(candidateTieBreak)[0];
 }
 
 function selectCandidate(strategyId, scenario) {
@@ -198,6 +202,7 @@ export function replayStrategies(input) {
         scenarioId: scenario.scenarioId,
         subjectId: scenario.subjectId,
         selectedCandidateId: selected.candidateId,
+        selectedOperatorId: strategyId === "operator-coevolution" ? selectOperator(scenario) : null,
         devScore: selected.devScore,
         holdoutScore: selected.holdoutScore,
         baselineHoldoutScore: baseline.holdoutScore,
@@ -275,11 +280,11 @@ export function renderReplayReport(replay, metadata = {}) {
     "",
     "## Scenario selections",
     "",
-    "| Scenario | Subject | Strategy | Selected | Holdout | Gain |",
-    "| --- | --- | --- | --- | ---: | ---: |",
+    "| Scenario | Subject | Strategy | Selected | Operator elite | Holdout | Gain |",
+    "| --- | --- | --- | --- | --- | ---: | ---: |",
   );
   for (const row of replay.results) {
-    lines.push(`| ${row.scenarioId} | ${row.subjectId} | ${row.strategyId} | ${row.selectedCandidateId} | ${percent(row.holdoutScore)} | ${percent(row.holdoutGain)} |`);
+    lines.push(`| ${row.scenarioId} | ${row.subjectId} | ${row.strategyId} | ${row.selectedCandidateId} | ${row.selectedOperatorId ?? "n/a"} | ${percent(row.holdoutScore)} | ${percent(row.holdoutGain)} |`);
   }
   lines.push(
     "",
@@ -295,6 +300,120 @@ export function renderReplayReport(replay, metadata = {}) {
     ...replay.limitations.map((entry) => `- ${entry}`),
     "",
   );
+  return lines.join("\n");
+}
+
+function parseResponseJson(output) {
+  const text = String(output ?? "").trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+  return JSON.parse(text);
+}
+
+export function analyzeLiveResults(promptfooResults, replayInput) {
+  const replay = replayStrategies(replayInput);
+  const scenariosByPrompt = new Map(
+    replayInput.scenarios.map((scenario) => [scenario.promptId, scenario]),
+  );
+  const expectedByCell = new Map(replay.results.map((entry) => [
+    `${entry.strategyId}:${entry.scenarioId}`,
+    entry.selectedCandidateId,
+  ]));
+  const rawRows = promptfooResults?.results?.results;
+  if (!Array.isArray(rawRows)) throw new Error("Promptfoo results must contain results.results.");
+
+  const rows = rawRows.map((entry) => {
+    const profileId = entry?.metadata?.profileId ?? entry?.provider?.label;
+    const promptId = entry?.testCase?.metadata?.promptId;
+    const scenario = scenariosByPrompt.get(promptId);
+    if (!scenario) throw new Error(`No replay scenario maps prompt ${String(promptId)}.`);
+    let selectedCandidateId = null;
+    let parseError = null;
+    try {
+      selectedCandidateId = parseResponseJson(entry?.response?.output).selectedCandidateId ?? null;
+    } catch (error) {
+      parseError = error.message;
+    }
+    const selected = scenario.candidates.find((candidate) => candidate.candidateId === selectedCandidateId);
+    const baseline = scenario.candidates.find((candidate) => candidate.candidateId === scenario.baselineCandidateId);
+    const expectedCandidateId = expectedByCell.get(`${profileId}:${scenario.scenarioId}`) ?? null;
+    return {
+      profileId,
+      promptId,
+      scenarioId: scenario.scenarioId,
+      subjectId: scenario.subjectId,
+      selectedCandidateId,
+      expectedCandidateId,
+      methodFidelity: selectedCandidateId === expectedCandidateId,
+      assertionPass: entry.success === true,
+      holdoutScore: selected?.holdoutScore ?? null,
+      baselineHoldoutScore: baseline?.holdoutScore ?? null,
+      holdoutGain: selected && baseline ? selected.holdoutScore - baseline.holdoutScore : null,
+      totalTokens: entry?.response?.tokenUsage?.total ?? null,
+      latencyMs: entry?.latencyMs ?? null,
+      parseError,
+    };
+  }).sort((left, right) => (
+    left.promptId.localeCompare(right.promptId)
+    || left.profileId.localeCompare(right.profileId)
+  ));
+
+  const aggregates = STRATEGY_IDS.map((profileId) => {
+    const profileRows = rows.filter((entry) => entry.profileId === profileId);
+    const withHoldout = profileRows.filter((entry) => entry.holdoutScore !== null);
+    const tokenRows = profileRows.filter((entry) => entry.totalTokens !== null);
+    const latencyRows = profileRows.filter((entry) => entry.latencyMs !== null);
+    return {
+      profileId,
+      cells: profileRows.length,
+      assertionPassRate: mean(profileRows.map((entry) => entry.assertionPass ? 1 : 0)),
+      methodFidelityRate: mean(profileRows.map((entry) => entry.methodFidelity ? 1 : 0)),
+      meanPostSelectionHoldout: mean(withHoldout.map((entry) => entry.holdoutScore)),
+      meanPostSelectionGain: mean(withHoldout.map((entry) => entry.holdoutGain)),
+      meanTotalTokens: mean(tokenRows.map((entry) => entry.totalTokens)),
+      meanLatencyMs: mean(latencyRows.map((entry) => entry.latencyMs)),
+      parsedCells: withHoldout.length,
+    };
+  });
+
+  return {
+    schemaVersion: 1,
+    evidenceLayer: "live-agent-selection-with-post-selection-holdout",
+    rows,
+    aggregates,
+    limitations: [
+      "One request per cell is a smoke and does not estimate variance.",
+      "Method fidelity and post-selection holdout answer different questions and must not be merged into one score.",
+      "Holdout is joined from the replay fixture only after the live response selects a candidate.",
+    ],
+  };
+}
+
+export function renderLiveAnalysisReport(analysis) {
+  const lines = [
+    "# Live Skill Evolution Strategy Analysis",
+    "",
+    `Evidence layer: \`${analysis.evidenceLayer}\``,
+    "",
+    "## Aggregate metrics",
+    "",
+    "| Profile | Assertion pass | Method fidelity | Post-selection holdout | Holdout gain | Tokens avg | Latency avg |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+  ];
+  for (const row of analysis.aggregates) {
+    lines.push(`| ${row.profileId} | ${percent(row.assertionPassRate)} | ${percent(row.methodFidelityRate)} | ${percent(row.meanPostSelectionHoldout)} | ${percent(row.meanPostSelectionGain)} | ${row.meanTotalTokens.toFixed(0)} | ${row.meanLatencyMs.toFixed(0)} ms |`);
+  }
+  lines.push(
+    "",
+    "## Cell selections",
+    "",
+    "| Prompt | Profile | Selected | Expected mechanism | Fidelity | Holdout | Gain |",
+    "| --- | --- | --- | --- | ---: | ---: | ---: |",
+  );
+  for (const row of analysis.rows) {
+    lines.push(`| ${row.promptId} | ${row.profileId} | ${row.selectedCandidateId ?? "parse-error"} | ${row.expectedCandidateId ?? "n/a"} | ${row.methodFidelity ? "yes" : "no"} | ${row.holdoutScore === null ? "n/a" : percent(row.holdoutScore)} | ${row.holdoutGain === null ? "n/a" : percent(row.holdoutGain)} |`);
+  }
+  lines.push("", "## Limitations", "", ...analysis.limitations.map((entry) => `- ${entry}`), "");
   return lines.join("\n");
 }
 
@@ -315,4 +434,3 @@ export function requireFlag(flags, name) {
   if (typeof value !== "string" || !value) throw new Error(`Missing required flag --${name}`);
   return value;
 }
-

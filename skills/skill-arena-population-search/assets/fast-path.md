@@ -14,7 +14,7 @@ Confirm the dry run produces a valid `promptfooconfig.yaml` and workspace.
 ## 2. Seed the first generation
 
 ```bash
-node skills/skill-arena-population-search/scripts/create-population.js \
+node <skill-root>/scripts/create-population.js \
   --skill <path-to-skill> \
   --out <population-search-run-dir>
 ```
@@ -25,12 +25,15 @@ Output: `generation-000/` with 10 candidate folders, each containing a copy of t
 
 For each candidate, run the benchmark against `candidate-##/skill/` and write the result to `candidate-##/result.json`.
 
-Use `$skill-arena-run-results` for structured execution and reporting.
+Run the frozen Skill Arena evaluation directly for every candidate. Read the
+generated `merged/report.md` first and use `summary.json` when structured data
+is needed. A reporting skill may automate this optional step, but the loop does
+not depend on one.
 
 ## 4. Rank and select survivors
 
 ```bash
-node skills/skill-arena-population-search/scripts/rank-results.js \
+node <skill-root>/scripts/rank-results.js \
   --generation-dir <population-search-run-dir>/generation-000
 ```
 
@@ -39,7 +42,7 @@ Output: `ranking.json` with sorted candidates and top-2 survivors.
 ## 5. Breed the next generation
 
 ```bash
-node skills/skill-arena-population-search/scripts/breed-generation.js \
+node <skill-root>/scripts/breed-generation.js \
   --out <population-search-run-dir> \
   --previous-generation-dir <population-search-run-dir>/generation-000 \
   --next-generation 1
@@ -54,7 +57,7 @@ Continue until fitness plateaus or the success criteria are met.
 ## 7. Record the final winner
 
 ```bash
-node skills/skill-arena-population-search/scripts/write-generation-log.js \
+node <skill-root>/scripts/write-generation-log.js \
   --root <population-search-run-dir> \
   --generation-dir <population-search-run-dir>/generation-NNN \
   --accepted-winner candidate-XX

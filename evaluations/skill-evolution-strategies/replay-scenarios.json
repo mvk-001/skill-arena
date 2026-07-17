@@ -2,12 +2,13 @@
   "schemaVersion": 1,
   "metadata": {
     "corpus": "$HOME/dev/skills/.agents/skills",
-    "corpusDigest": "generated-by-catalog-skills",
+    "corpusDigest": "9cde0bbd894fea88176a652a053bd1cc475ae20913a5a6a83a25928f3c0ba21a",
     "claim": "Controlled mechanism replay over subjects sampled from the real corpus; candidate scores are fixtures, not historical live measurements."
   },
   "scenarios": [
     {
       "scenarioId": "stable-scalar-converter",
+      "promptId": "scalar-converter",
       "subjectId": "animated-svg-to-gif",
       "baselineCandidateId": "baseline",
       "minTraceSupport": 2,
@@ -25,6 +26,7 @@
     },
     {
       "scenarioId": "heterogeneous-svg-orchestration",
+      "promptId": "heterogeneous-orchestrator",
       "subjectId": "compose-synchronized-svg",
       "baselineCandidateId": "baseline",
       "minTraceSupport": 2,
@@ -42,6 +44,7 @@
     },
     {
       "scenarioId": "recurring-composition-findings",
+      "promptId": "recurring-findings",
       "subjectId": "d3-composition-evaluator",
       "baselineCandidateId": "baseline",
       "minTraceSupport": 2,
@@ -60,6 +63,7 @@
     },
     {
       "scenarioId": "plateaued-video-mutations",
+      "promptId": "operator-plateau",
       "subjectId": "html-d3-anime-video-workflow",
       "baselineCandidateId": "baseline",
       "minTraceSupport": 2,
@@ -78,4 +82,3 @@
     }
   ]
 }
-

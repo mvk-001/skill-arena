@@ -1,7 +1,9 @@
 node_modules/
 .tools/
 # Generated benchmark run artifacts and manual reuse validation runs.
-results/
+/results/
+# Native Harbor jobs can contain local agent sessions and machine metadata.
+/jobs/
 coverage/
 reports/
 # Temporary local experiments and scratch compare configs.

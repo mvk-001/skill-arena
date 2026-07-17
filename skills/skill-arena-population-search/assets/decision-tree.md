@@ -7,15 +7,18 @@ Use the shortest path that fits the population-search task.
 Use this route when the evaluation config, workspace, and scoring are already validated.
 
 1. Freeze the benchmark: confirm evaluation config passes `skill-arena val-conf`.
-2. Seed the population: `node scripts/create-population.js --skill <path> --out <dir>`.
+2. Seed the population: `node <skill-root>/scripts/create-population.js --skill <path> --out <dir>`.
 3. Evaluate all candidates with the frozen benchmark.
-4. Rank candidates: `node scripts/rank-results.js --generation-dir <dir>`.
-5. Breed next generation: `node scripts/breed-generation.js --out <dir> --previous-generation-dir <dir> --next-generation 1`.
-6. Log results: `node scripts/write-generation-log.js --root <dir> --generation-dir <dir>`.
+4. Rank candidates: `node <skill-root>/scripts/rank-results.js --generation-dir <dir>`.
+5. Breed next generation: `node <skill-root>/scripts/breed-generation.js --out <dir> --previous-generation-dir <dir> --next-generation 1`.
+6. Log results: `node <skill-root>/scripts/write-generation-log.js --root <dir> --generation-dir <dir>`.
 
 ## New benchmark or unstable setup
 
-1. Author or validate the compare config first using `$skill-arena-config-author`.
+1. Author or repair the compare config from the declared schema or available
+   template, then run `skill-arena val-conf <evaluation.yaml>` and
+   `skill-arena evaluate <evaluation.yaml> --dry-run`. A config-authoring skill
+   may help when installed, but is not required.
 2. Run the benchmark once to confirm it produces meaningful fitness variance.
 3. If the fitness range is too narrow (all candidates score similarly), tighten the rubric.
 4. Once stable, follow the known benchmark path above.

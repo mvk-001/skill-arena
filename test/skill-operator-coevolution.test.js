@@ -50,3 +50,21 @@ test("operator coevolution rejects candidates referencing unknown operators", ()
   input.candidates[0].operatorId = "missing";
   assert.throws(() => rankCoevolution(input), /declared operatorId/);
 });
+
+test("operator coevolution does not penalize the highest-fitness child for a weak parent", () => {
+  const input = {
+    generationId: "generation-plateau",
+    operators: [
+      { operatorId: "balanced", instruction: "Preserve case balance." },
+      { operatorId: "evolved", instruction: "Apply the evolved mutation." },
+    ],
+    candidates: [
+      { candidateId: "pareto-balanced", operatorId: "balanced", parentFitness: 0.70, fitness: 0.87, complexityDelta: 5 },
+      { candidateId: "operator-child-a", operatorId: "evolved", parentFitness: 0.35, fitness: 0.89, complexityDelta: 6 },
+      { candidateId: "operator-child-b", operatorId: "evolved", parentFitness: 0.40, fitness: 0.86, complexityDelta: 4 },
+    ],
+  };
+  const ranking = rankCoevolution(input);
+  assert.equal(ranking.candidateRanking[0].candidateId, "operator-child-a");
+  assert.equal(ranking.operatorRanking[0].operatorId, "evolved");
+});

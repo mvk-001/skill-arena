@@ -643,6 +643,82 @@ test("strict isolation rejects system-installed skills and mounts multiple decla
   assert.deepEqual(new Set(workspace.isolation.mountedSkillIds), new Set(["one", "two"]));
 });
 
+test("single-skill profiles cannot observe a sibling profile's skill", async () => {
+  const manifest = benchmarkManifestSchema.parse({
+    schemaVersion: 1,
+    benchmark: {
+      id: "workspace-independent-single-skills",
+      description: "Keep atomic skill profiles independent",
+      tags: [],
+    },
+    task: {
+      prompt: "Return HELLO.",
+    },
+    workspace: {
+      sources: [],
+      setup: {
+        initializeGit: false,
+        env: {},
+      },
+    },
+    scenarios: [
+      createSingleSkillScenario("alpha"),
+      createSingleSkillScenario("beta"),
+    ],
+  });
+
+  const alphaWorkspace = await materializeWorkspace({ manifest, scenario: manifest.scenarios[0] });
+  const betaWorkspace = await materializeWorkspace({ manifest, scenario: manifest.scenarios[1] });
+
+  await fs.access(path.join(alphaWorkspace.workspaceDirectory, "skills", "alpha", "SKILL.md"));
+  await fs.access(path.join(betaWorkspace.workspaceDirectory, "skills", "beta", "SKILL.md"));
+  assert.equal(
+    await fs.stat(path.join(alphaWorkspace.workspaceDirectory, "skills", "beta")).catch(() => null),
+    null,
+  );
+  assert.equal(
+    await fs.stat(path.join(betaWorkspace.workspaceDirectory, "skills", "alpha")).catch(() => null),
+    null,
+  );
+  assert.deepEqual(alphaWorkspace.isolation.mountedSkillIds, ["alpha"]);
+  assert.deepEqual(betaWorkspace.isolation.mountedSkillIds, ["beta"]);
+});
+
+function createSingleSkillScenario(skillId) {
+  const skill = {
+    source: {
+      type: "inline",
+      skillId,
+      content: `---\nname: ${skillId}\ndescription: Test ${skillId}.\n---\n`,
+    },
+    install: {
+      strategy: "workspace-overlay",
+    },
+  };
+
+  return {
+    id: `${skillId}-only`,
+    description: `${skillId} only`,
+    skillMode: "enabled",
+    skill,
+    profile: {
+      id: `${skillId}-only`,
+      isolation: {
+        inheritSystem: false,
+      },
+      capabilities: {
+        skills: [skill],
+      },
+    },
+    agent: {
+      adapter: "codex",
+    },
+    evaluation: {
+      assertions: [{ type: "equals", value: "HELLO" }],
+    },
+  };
+}
+
 test("workspace sources are applied in declaration order", async () => {
   const manifest = benchmarkManifestSchema.parse({
     schemaVersion: 1,

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Trace Distillation"
+  short_description: "Distill Harbor traces into cited skill patches"
+  default_prompt: "Use $harbor-trace-distillation to improve a skill from native Harbor artifacts and gate the candidate on isolated holdout evidence."

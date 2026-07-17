@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Population Search"
+  short_description: "Search skill populations with Harbor evidence"
+  default_prompt: "Use $harbor-population-search to rank skill candidates with native Harbor jobs and gate the winner on holdout tasks."

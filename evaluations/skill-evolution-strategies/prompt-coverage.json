@@ -1,10 +1,18 @@
 {
   "schemaVersion": 1,
-  "prompts": [
-    { "id": "scalar-converter", "caseKind": "naturalistic", "taskFamily": "scalar-selection" },
-    { "id": "heterogeneous-orchestrator", "caseKind": "generalization", "taskFamily": "multi-case-selection" },
-    { "id": "recurring-findings", "caseKind": "naturalistic", "taskFamily": "trace-evidence" },
-    { "id": "operator-plateau", "caseKind": "boundary", "taskFamily": "plateau-recovery" }
+  "policy": {
+    "minimumPrompts": 4,
+    "minimumTaskFamilies": 3,
+    "minimumNaturalisticCases": 2,
+    "requiredCaseKinds": ["naturalistic-forward", "generalization", "boundary-recovery"],
+    "maximumPromptWords": 80,
+    "maximumPairwiseJaccard": 0.55,
+    "maximumSingleFamilyShare": 0.5
+  },
+  "cases": [
+    { "promptId": "scalar-converter", "caseKind": "naturalistic-forward", "taskFamily": "scalar-selection" },
+    { "promptId": "heterogeneous-orchestrator", "caseKind": "generalization", "taskFamily": "multi-case-selection" },
+    { "promptId": "recurring-findings", "caseKind": "naturalistic-forward", "taskFamily": "trace-evidence" },
+    { "promptId": "operator-plateau", "caseKind": "boundary-recovery", "taskFamily": "plateau-recovery" }
   ]
 }
-

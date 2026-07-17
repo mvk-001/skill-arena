@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Operator Coevolution"
+  short_description: "Coevolve mutations from Harbor evidence"
+  default_prompt: "Use $harbor-operator-coevolution to rank skill candidates and evolve mutation operators from native Harbor jobs."

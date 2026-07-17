@@ -29,16 +29,20 @@ so benchmark schemas do not depend on a particular CLI.
 | Area | Primary modules | Responsibility |
 | --- | --- | --- |
 | CLI orchestration | `bin/skill-arena.js`, `src/cli/` | Parse commands and dispatch validation, generation, dry-runs, and live runs. |
-| Config contracts | `src/manifest-schema.js`, `src/compare-schema.js`, `src/manifest.js` | Parse, validate, and normalize authoring formats. |
+| Config contracts | `src/config-file.js`, `src/manifest-schema.js`, `src/compare-schema.js`, `src/manifest.js` | Parse, validate, and normalize authoring formats. |
 | Matrix expansion | `src/compare.js`, `src/compare-matrix.js`, `src/compare-reuse.js` | Build compare units and decide whether prior outputs are reusable. |
 | Workspace isolation | `src/workspace.js`, `src/runtime-isolation.js`, `src/normalize-workspace.js` | Materialize declared inputs and isolate local CLI state. |
 | Adapter boundary | `src/adapters.js`, `src/providers/` | Translate normalized scenarios into local agent executions. |
-| Promptfoo integration | `src/promptfoo-config.js`, `src/runner.js`, `src/judge-provider.js` | Build configs, execute Promptfoo, and support local judges. |
+| Promptfoo integration | `src/promptfoo-config.js`, `src/promptfoo-runner.js`, `src/runner.js`, `src/judge-provider.js` | Build configs, execute Promptfoo, and support local judges. |
 | Result normalization | `src/results.js`, `src/normalize*.js`, `src/code-metrics.js` | Produce stable summaries, matrices, reports, and optional code metrics. |
 
 The installed npm package contains only `bin/skill-arena.js`, `src/**/*.js`,
 and `README.md`. Documentation, tests, skills, and maintained evaluations are
 repository development assets rather than runtime package files.
+
+The installed CLI intentionally exposes only `evaluate`, `gen-conf`, and
+`val-conf`. Files under `src/cli/` are internal command implementations, not a
+second supported command surface or a set of public npm-script aliases.
 
 ## Core components
 
@@ -102,6 +106,52 @@ For explicit skill declarations, the preferred contract is to declare one benchm
 Some benchmarks use system-installed skills instead of workspace overlays. In those cases the harness does not inject skill files into the workspace; the benchmark relies on skills already installed in the local agent environment.
 
 Legacy `workspace.fixture`, `workspace.skillOverlay`, and `skillSource` fields are still accepted in V1, but the runtime normalizes them into the declarative workspace and skill model before execution.
+
+### Skill artifact and composition boundaries
+
+An atomic skill is an independently copyable directory. Its `SKILL.md`, bundled
+references, scripts, assets, and relative imports stay within that directory,
+so installing or testing the skill does not require sibling skills or
+repository-root helpers. An atomic skill may still declare a platform
+dependency such as the public Skill Arena CLI, another executable, an API, or a
+credential. Shared runtime behavior belongs behind those stable interfaces
+instead of being duplicated inside each skill.
+
+Some capabilities are intentionally compositions. A workspace-overlay bundle
+that combines root instructions with a skill, a profile containing multiple
+skills or capability families, and an orchestrator that invokes other skills
+must identify that composition and its dependencies. These artifacts can be
+isolated and compared like any other profile, but their results describe the
+combined capability bundle.
+
+Individual-skill attribution requires a control and a treatment whose only
+capability difference is the one atomic skill. Multi-skill or mixed-capability
+profiles require additional isolated or factorial cells before the result can
+be attributed to one member of the composition.
+
+### Harbor-native evolution boundary
+
+The four Harbor evolution bundles are repository development assets outside the
+npm runtime. Each is an independently copyable skill that depends on the
+version-pinned Harbor Python package rather than on Skill Arena:
+
+- harbor-population-search
+- harbor-trace-distillation
+- harbor-reflective-pareto-search
+- harbor-operator-coevolution
+
+They materialize one candidate skill per native Harbor job and preserve
+Harbor's config.json, lock.json, result.json, per-trial result.json,
+trajectories, verifier output, and collected artifacts. Strategy scripts derive
+fitness, trace support, case vectors, or parent-to-child operator credit from
+those artifacts. They do not import repository runtime modules, invoke the
+skill-arena CLI, or translate results into Skill Arena schemas.
+
+Development evidence drives mutation and selection. A separate baseline versus
+selected-candidate Harbor job pair supplies the final holdout gate. Task
+checksums and resolved job or lock provenance enforce that the holdout did not
+enter development and that candidate comparisons changed only skill
+provenance.
 
 ### Agent adapters
 

@@ -8,14 +8,17 @@ description: Distill success and failure traces gathered under a fixed benchmark
 Improve a skill by distilling many traces into one consolidated update.
 Use this skill when the benchmark is fixed, traces can be labeled as successes or failures, and the goal is to promote recurring lessons instead of chasing isolated wins.
 
+Runtime: execute bundled ESM helpers with Node.js 24 or newer. In commands,
+`<skill-root>` means this installed skill directory. The bundle runs without
+any sibling skill installed.
+
 This workflow adapts [Trace2Skill](https://arxiv.org/abs/2603.25158): instead of
 reacting sequentially to individual trajectories, it analyzes a diverse pool
 of executions independently, extracts trajectory-local lessons, and
 consolidates them into one conflict-filtered skill update. The local scripts
 implement Skill Arena's deterministic orchestration contract; they are not a
-reproduction of the paper's prompts, models, or evaluation suite. See
-[Research foundations](../../docs/research-foundations.md) for the provenance
-and adaptation boundaries.
+reproduction of the paper's prompts, models, or evaluation suite; those
+explicit differences define the local adaptation boundary.
 
 ## Distillation Modes
 

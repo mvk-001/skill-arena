@@ -1,0 +1,13 @@
+{
+  "classification": "orchestrator",
+  "repositoryRoot": true,
+  "repositoryModules": [
+    "src/compare-matrix.js",
+    "src/config-file.js",
+    "src/results.js"
+  ],
+  "packages": [
+    "zod"
+  ],
+  "siblingSkills": []
+}

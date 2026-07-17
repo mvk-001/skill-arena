@@ -1,0 +1,40 @@
+schemaVersion: 1
+benchmark:
+  id: harbor-report-parity-poc
+  description: Prove that Harbor trial artifacts can reproduce the Skill Arena comparison report contract.
+evaluation:
+  requests: 2
+  rewardKey: reward
+  passThreshold: 1
+task:
+  prompts:
+    - id: marker-write
+      harborTaskName: skill-arena/marker-write
+      description: Write the skill-only canonical marker to the required artifact.
+      prompt: Use the installed harbor-marker-guide skill and write its canonical marker to /app/answer.txt.
+comparison:
+  variants:
+    - id: claude-haiku
+      displayName: Claude Code / Haiku
+      agent: claude-code
+      model: anthropic/claude-haiku-4-5
+    - id: codex-mini
+      displayName: Codex / GPT-5.1 Mini
+      agent: codex
+      model: openai/gpt-5.1-codex-mini
+  profiles:
+    - id: no-skill
+      displayName: no-skill
+      description: Harbor job without an installed skill.
+      skillMode: disabled
+      skillSource: none
+      expectedSkills: []
+      jobDirectory: fixtures/harbor-jobs/no-skill
+    - id: skill
+      displayName: skill
+      description: Harbor job with only harbor-marker-guide installed.
+      skillMode: enabled
+      skillSource: workspace-overlay
+      expectedSkills:
+        - harbor-marker-guide
+      jobDirectory: fixtures/harbor-jobs/skill

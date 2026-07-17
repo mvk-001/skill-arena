@@ -1,0 +1,135 @@
+schema_version: "1"
+kind: harbor-evolver-comparison-protocol
+study_id: harbor-evolver-comparison-20260716
+
+runtime:
+  harbor_version: 0.18.0
+  environment: docker
+  base_image: harbor-evolver-base:20260716
+  base_image_id: sha256:842f112b5555b65527c772e533aed30ab73d023e5d4e7cd58c74598e9f919c3d
+  docker_buildx_version: 0.30.1
+  agent:
+    name: codex
+    model_name: openai/gpt-5.4-mini
+    kwargs:
+      reasoning_effort: low
+      web_search: disabled
+  attempts_per_task: 2
+  max_retries: 0
+  repetitions: 2
+  verifier: deterministic-task-local
+
+budget:
+  development_tasks_per_subject: 2
+  holdout_tasks_per_subject: 1
+  shared_baseline_development_trials_per_subject: 4
+  shared_baseline_holdout_trials_per_subject: 2
+  submitted_children_per_strategy_per_subject: 1
+  development_trials_per_submitted_child: 4
+  holdout_trials_per_selected_winner: 2
+  harbor_scored_children_per_strategy_per_subject: 1
+  replacement_children_after_scoring: 0
+
+selection:
+  eligibility:
+    - The baseline must have no agent, environment, or verifier errors.
+    - A submitted child with any agent, environment, or verifier error is ineligible and selects the baseline; it still consumes the child budget.
+    - The submitted bundle must retain the baseline skill frontmatter name.
+    - Only development artifacts may inform mutation and selection.
+  order:
+    - higher development mean reward
+    - higher development worst-case reward
+    - baseline on an exact tie
+  report_only_metrics:
+    - holdout reward and delta from the shared baseline
+    - development reward and delta from the shared baseline
+    - execution duration and token usage when Harbor records them
+    - bundle byte and file-count delta
+    - diagnostic specificity and failure coverage
+
+holdout_release:
+  isolation: procedural
+  gate: all submitted children, development jobs, and selection decisions must be digest-locked
+  pre_release_prohibitions:
+    - Do not pass holdout task paths, instructions, fixtures, solutions, tests, or job artifacts to candidate authors.
+    - Do not execute or inspect a holdout JobConfig before the candidate lock is written.
+    - Do not use holdout reward to select, repair, or regenerate a child.
+  post_release_rule: evaluate each selected winner for two attempts; reuse the shared baseline holdout job when baseline was selected
+  release_script: scripts/protocol_gate.py
+
+hashing:
+  algorithm: sha256-tree-v1
+  definition: sorted relative UTF-8 path, NUL, decimal byte length, NUL, raw bytes, NUL
+  corpus_lock: locks/corpus-lock.json
+  candidate_lock: locks/candidate-lock.json
+
+strategies:
+  - id: population_search
+    skill: harbor-population-search
+  - id: trace_distillation
+    skill: harbor-trace-distillation
+  - id: reflective_pareto_search
+    skill: harbor-reflective-pareto-search
+  - id: operator_coevolution
+    skill: harbor-operator-coevolution
+
+subjects:
+  openapi-integrator:
+    source_skill: ../../../archie-evolution/skills/openapi-integrator
+    expected_harbor_skill_digest: sha256:7b3f7dd5018acfbe63e837e6103d2f552468fad8c262bac42fb3d14f1f98e0c4
+    development:
+      dataset: subjects/openapi-integrator/development
+      config: subjects/openapi-integrator/development.yaml
+    holdout:
+      dataset: subjects/openapi-integrator/holdout
+      config: subjects/openapi-integrator/holdout.yaml
+    task_network_mode: public-with-codex-web-search-disabled
+  deepfake-detector:
+    source_skill: ../../../archie-evolution/skills/deepfake-detector
+    expected_harbor_skill_digest: sha256:f422193894749bb3a41aaa521dc2aac5550845eb7958f9613704d771ebb0c7c9
+    development:
+      dataset: subjects/deepfake-detector/development
+      config: subjects/deepfake-detector/development.yaml
+    holdout:
+      dataset: subjects/deepfake-detector/holdout
+      config: subjects/deepfake-detector/holdout.yaml
+    task_network_mode: public-with-codex-web-search-disabled
+  scene-script-planner:
+    source_skill: ../../../manim/skills/scene-script-planner
+    expected_harbor_skill_digest: sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57
+    development:
+      dataset: subjects/scene-script-planner/development
+      config: subjects/scene-script-planner/development.yaml
+    holdout:
+      dataset: subjects/scene-script-planner/holdout
+      config: subjects/scene-script-planner/holdout.yaml
+    task_network_mode: public-with-codex-web-search-disabled
+
+exclusions:
+  - id: deepfake-population-pre-audit
+    job: .tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-population-search-development
+    reason: The bundle was evaluated before routing metadata was restored byte-for-byte and a trust-or-sandbox guard was added; the audited rerun is the only eligible evidence.
+  - id: deepfake-trace-pre-audit
+    job: .tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-trace-distillation-development
+    reason: The bundle was evaluated before the task-selected-executable instruction gained its trust-or-sandbox guard; the audited rerun is the only eligible evidence.
+  - id: deepfake-pareto-pre-audit
+    job: .tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-reflective-pareto-search-development
+    reason: The bundle was evaluated before routing metadata was restored byte-for-byte and a trust-or-sandbox guard was added; the audited rerun is the only eligible evidence.
+  - id: openapi-no-network-buildx-missing
+    job: .tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-baseline-development-frozen
+    reason: Harbor could not build its egress-control sidecar because Docker Buildx was absent; all four trials failed before agent setup.
+  - id: openapi-no-network-wsl-kernel-unsupported
+    job: .tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-baseline-development-frozen-r1
+    reason: After Buildx installation, the Harbor sidecar still could not start because this WSL kernel lacks the nftables fib expressions it requires; all four trials failed before agent setup.
+  - id: openapi-gpt-5.6-sol-high-calibration
+    job: .tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-baseline-development
+    reason: The two-task development baseline saturated at mean reward 1.0 under high reasoning and was used only to select a non-saturated runtime.
+  - id: openapi-gpt-5.1-codex-mini-unsupported
+    job: .tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-baseline-development-mini
+    reason: Codex ChatGPT authentication rejected this model; both trials ended with NonZeroAgentExitCodeError.
+  - id: canonical-solution-validation
+    job: all oracle and direct verifier calibration runs
+    reason: These runs validate task construction and are not agent or strategy fitness evidence.
+  - id: dry-run-and-schema-validation
+    job: all Harbor dry runs and local schema checks
+    reason: These checks execute no comparable candidate trajectory.

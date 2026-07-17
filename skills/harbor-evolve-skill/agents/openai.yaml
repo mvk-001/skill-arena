@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Evolve Skill"
+  short_description: "Evolve skills with Harbor and GEPA evidence"
+  default_prompt: "Use $harbor-evolve-skill to evolve a skill with Harbor trials and a holdout promotion gate."

@@ -1,0 +1,17 @@
+schema_version = "1.3"
+
+[task]
+name = "harbor-evolution/openapi3-cookie-refs"
+description = "Generate an OpenAPI 3 skill with cookie auth and referenced parameter and request-body definitions."
+authors = [{ name = "Skill Arena" }]
+keywords = ["openapi", "holdout", "cookie-auth", "references"]
+
+[agent]
+timeout_sec = 300.0
+user = "agent"
+
+[verifier]
+timeout_sec = 60.0
+
+[environment]
+network_mode = "public"

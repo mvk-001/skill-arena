@@ -1,0 +1,17 @@
+schema_version = "1.3"
+
+[task]
+name = "harbor-evolution/scene-plan-source-grounded-binary-search"
+description = "Plan a concise technical scene from a brief and a supplied source registry."
+authors = [{ name = "Skill Arena" }]
+keywords = ["scene-planning", "research", "timeline", "manim"]
+
+[agent]
+timeout_sec = 300.0
+user = "agent"
+
+[verifier]
+timeout_sec = 60.0
+
+[environment]
+network_mode = "public"

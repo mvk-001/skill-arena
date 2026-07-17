@@ -1,0 +1,2579 @@
+{
+  "baseline_aggregates": {
+    "development_mean": 0.8143255,
+    "holdout_mean": 0.8481151666666666
+  },
+  "kind": "harbor-evolver-comparison-results",
+  "locks": {
+    "candidate_lock_sha256": "6cde004ddc8cf37ca0cc7d40a994f23be77f87c504fcc0dd8405099fbab84a8c",
+    "corpus_lock_sha256": "d2de1855b48850c8d38735db80650c3cc5b29e810544e990abd6384207dffd82",
+    "protocol_sha256": "c1bf7ac88f3f0edd52c34f4b4d4e7ccff659a0607f75d8e0c121a188f44ad5e8",
+    "release_lock_sha256": "e2c2cd92ba26e434c4899f34df676f065ff849606e13451c1732ee9b32e28ea1"
+  },
+  "physical_evidence": {
+    "development": {
+      "cache_tokens": 4676608,
+      "cost_usd": 1.32094935,
+      "duration_seconds": 2420.977109,
+      "input_tokens": 5280687,
+      "jobs": 15,
+      "output_tokens": 114921,
+      "trials": 60
+    },
+    "holdout": {
+      "cache_tokens": 1455616,
+      "cost_usd": 0.3955902,
+      "duration_seconds": 763.947455,
+      "input_tokens": 1618652,
+      "jobs": 9,
+      "output_tokens": 36476,
+      "trials": 18
+    },
+    "total": {
+      "cache_tokens": 6132224,
+      "cost_usd": 1.71653955,
+      "duration_seconds": 3184.924564,
+      "input_tokens": 6899339,
+      "jobs": 24,
+      "output_tokens": 151397,
+      "trials": 78
+    }
+  },
+  "runtime_declared": {
+    "agent": {
+      "kwargs": {
+        "reasoning_effort": "low",
+        "web_search": "disabled"
+      },
+      "model_name": "openai/gpt-5.4-mini",
+      "name": "codex"
+    },
+    "attempts_per_task": 2,
+    "base_image": "harbor-evolver-base:20260716",
+    "base_image_id": "sha256:842f112b5555b65527c772e533aed30ab73d023e5d4e7cd58c74598e9f919c3d",
+    "docker_buildx_version": "0.30.1",
+    "environment": "docker",
+    "harbor_version": "0.18.0",
+    "max_retries": 0,
+    "repetitions": 2,
+    "verifier": "deterministic-task-local"
+  },
+  "runtime_validated_from_jobs": {
+    "agent": {
+      "kwargs": {
+        "reasoning_effort": "low",
+        "web_search": "disabled"
+      },
+      "model_name": "openai/gpt-5.4-mini",
+      "name": "codex"
+    },
+    "attempts_per_task": 2,
+    "environment": "docker",
+    "harbor_version": "0.18.0",
+    "max_retries": 0,
+    "task_network_modes": {
+      "deepfake-detector": "public",
+      "openapi-integrator": "public",
+      "scene-script-planner": "public"
+    }
+  },
+  "schema_version": "1",
+  "strategy_aggregates": {
+    "operator_coevolution": {
+      "candidate_development_mean": 0.8942003333333334,
+      "candidate_development_usage": {
+        "cache_tokens": 1301504,
+        "cost_usd": 0.3171393,
+        "duration_seconds": 500.36731499999996,
+        "input_tokens": 1437012,
+        "jobs": 3,
+        "output_tokens": 26199,
+        "trials": 12
+      },
+      "development_improved_subjects": 1,
+      "development_regressed_subjects": 2,
+      "development_tied_subjects": 0,
+      "holdout_improved_subjects": 0,
+      "holdout_regressed_subjects": 0,
+      "holdout_tied_subjects": 3,
+      "mean_candidate_bundle_byte_delta": 994.6666666666666,
+      "selected_children": 1,
+      "selected_development_delta_mean": 0.11666666666666659,
+      "selected_development_mean": 0.9309921666666666,
+      "selected_holdout_delta_mean": 0.0,
+      "selected_holdout_mean": 0.8481151666666666,
+      "selected_holdout_result_usage": {
+        "cache_tokens": 426496,
+        "cost_usd": 0.1236447,
+        "duration_seconds": 243.857257,
+        "input_tokens": 468852,
+        "jobs": 3,
+        "output_tokens": 13309,
+        "trials": 6
+      }
+    },
+    "population_search": {
+      "candidate_development_mean": 0.8542920833333334,
+      "candidate_development_usage": {
+        "cache_tokens": 839680,
+        "cost_usd": 0.2364705,
+        "duration_seconds": 491.911558,
+        "input_tokens": 943776,
+        "jobs": 3,
+        "output_tokens": 21205,
+        "trials": 12
+      },
+      "development_improved_subjects": 1,
+      "development_regressed_subjects": 1,
+      "development_tied_subjects": 1,
+      "holdout_improved_subjects": 0,
+      "holdout_regressed_subjects": 0,
+      "holdout_tied_subjects": 3,
+      "mean_candidate_bundle_byte_delta": 1125.3333333333333,
+      "selected_children": 1,
+      "selected_development_delta_mean": 0.04999999999999993,
+      "selected_development_mean": 0.8643255,
+      "selected_holdout_delta_mean": 0.0,
+      "selected_holdout_mean": 0.8481151666666666,
+      "selected_holdout_result_usage": {
+        "cache_tokens": 416768,
+        "cost_usd": 0.12528735,
+        "duration_seconds": 249.355821,
+        "input_tokens": 468455,
+        "jobs": 3,
+        "output_tokens": 12281,
+        "trials": 6
+      }
+    },
+    "reflective_pareto_search": {
+      "candidate_development_mean": 0.92336575,
+      "candidate_development_usage": {
+        "cache_tokens": 774144,
+        "cost_usd": 0.24088005,
+        "duration_seconds": 453.100341,
+        "input_tokens": 905475,
+        "jobs": 3,
+        "output_tokens": 18738,
+        "trials": 12
+      },
+      "development_improved_subjects": 2,
+      "development_regressed_subjects": 1,
+      "development_tied_subjects": 0,
+      "holdout_improved_subjects": 1,
+      "holdout_regressed_subjects": 0,
+      "holdout_tied_subjects": 2,
+      "mean_candidate_bundle_byte_delta": 1289.3333333333333,
+      "selected_children": 2,
+      "selected_development_delta_mean": 0.13484849999999993,
+      "selected_development_mean": 0.949174,
+      "selected_holdout_delta_mean": 0.09090916666666671,
+      "selected_holdout_mean": 0.9390243333333333,
+      "selected_holdout_result_usage": {
+        "cache_tokens": 392704,
+        "cost_usd": 0.1152918,
+        "duration_seconds": 235.807049,
+        "input_tokens": 442410,
+        "jobs": 3,
+        "output_tokens": 10791,
+        "trials": 6
+      }
+    },
+    "trace_distillation": {
+      "candidate_development_mean": 0.97374575,
+      "candidate_development_usage": {
+        "cache_tokens": 993280,
+        "cost_usd": 0.266967,
+        "duration_seconds": 513.624606,
+        "input_tokens": 1094484,
+        "jobs": 3,
+        "output_tokens": 25904,
+        "trials": 12
+      },
+      "development_improved_subjects": 2,
+      "development_regressed_subjects": 1,
+      "development_tied_subjects": 0,
+      "holdout_improved_subjects": 1,
+      "holdout_regressed_subjects": 0,
+      "holdout_tied_subjects": 2,
+      "mean_candidate_bundle_byte_delta": 2021,
+      "selected_children": 2,
+      "selected_development_delta_mean": 0.16666666666666663,
+      "selected_development_mean": 0.9809921666666667,
+      "selected_holdout_delta_mean": 0.09090916666666671,
+      "selected_holdout_mean": 0.9390243333333333,
+      "selected_holdout_result_usage": {
+        "cache_tokens": 580608,
+        "cost_usd": 0.1459386,
+        "duration_seconds": 274.899629,
+        "input_tokens": 634356,
+        "jobs": 3,
+        "output_tokens": 13796,
+        "trials": 6
+      }
+    }
+  },
+  "study_id": "harbor-evolver-comparison-20260716",
+  "subjects": {
+    "deepfake-detector": {
+      "baseline": {
+        "bundle": {
+          "file_count": 18,
+          "kind": "directory",
+          "path": "../../../archie-evolution/skills/deepfake-detector",
+          "sha256": "3a6b7cbba3a657edc27b94cb372f13d57ae901a29909f9a72d888c6b7800f166",
+          "total_bytes": 1923702
+        },
+        "development": {
+          "cache_tokens": 204800,
+          "cost_usd": 0.05767725,
+          "duration_seconds": 120.787028,
+          "errors": 0,
+          "harbor_skill": {
+            "digest": "sha256:f422193894749bb3a41aaa521dc2aac5550845eb7958f9613704d771ebb0c7c9",
+            "name": "deepfake-detector",
+            "source": ".tmp/harbor-evolution-comparison/20260716/baselines/deepfake-detector"
+          },
+          "input_tokens": 237919,
+          "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-baseline-development-study",
+          "job_digest": {
+            "file_count": 48,
+            "kind": "directory",
+            "sha256": "d20c8ca311fec3dbfac18e8150654642b8621e15c456985d1fc0964575898b19",
+            "total_bytes": 447454
+          },
+          "locked_task_cells": [
+            {
+              "attempts": 2,
+              "task_digest": "sha256:d70f52b83c1120529ccd5914cdab6c7c74dbefbd4b2c7c9d9c262ef9cc176163",
+              "task_name": "batch-default-triage",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+            },
+            {
+              "attempts": 2,
+              "task_digest": "sha256:37ebda51f81b3c9472971a8577b1e944ba890e71354412468590974b11d986c3",
+              "task_name": "partial-error-policy",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+            }
+          ],
+          "mean_reward": 0.65,
+          "output_tokens": 3884,
+          "retries": 0,
+          "rewards": [
+            1.0,
+            1.0,
+            0.3,
+            0.3
+          ],
+          "task_cells": [
+            {
+              "attempts": 2,
+              "task_checksum": "a8e75381deaa6fe944a10ad6c81d1940dd13060ded0a4115b155105b69798207",
+              "task_name": "skill-evolution/deepfake-detector-dev-batch-default",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+            },
+            {
+              "attempts": 2,
+              "task_checksum": "439bf17ad146a43fc40951961ff2d175d10d4680d424bb4d3b1e770127b882a9",
+              "task_name": "skill-evolution/deepfake-detector-dev-partial-error",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+            }
+          ],
+          "trials": 4,
+          "worst_case_reward": 0.3
+        },
+        "holdout": {
+          "cache_tokens": 103424,
+          "cost_usd": 0.02627805,
+          "duration_seconds": 72.109889,
+          "errors": 0,
+          "harbor_skill": {
+            "digest": "sha256:f422193894749bb3a41aaa521dc2aac5550845eb7958f9613704d771ebb0c7c9",
+            "name": "deepfake-detector",
+            "source": ".tmp/harbor-evolution-comparison/20260716/baselines/deepfake-detector"
+          },
+          "input_tokens": 115807,
+          "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/holdout/20260716-deepfake-detector-baseline-holdout",
+          "job_digest": {
+            "file_count": 26,
+            "kind": "directory",
+            "sha256": "bfebae0382368190e600c41e96e1b23e988e7e6bd91c02acad712da05b63bf0e",
+            "total_bytes": 234512
+          },
+          "locked_task_cells": [
+            {
+              "attempts": 2,
+              "task_digest": "sha256:7e7da4da18a66c7c296e57c69d424e744d98de44bc16507ace2bceb377ab86f4",
+              "task_name": "policy-markers-caveat",
+              "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/deepfake-detector/dataset/policy-markers-caveat"
+            }
+          ],
+          "mean_reward": 1.0,
+          "output_tokens": 2052,
+          "retries": 0,
+          "rewards": [
+            1.0,
+            1.0
+          ],
+          "task_cells": [
+            {
+              "attempts": 2,
+              "task_checksum": "60d2f314b544cca60a621c6facc1371fdf050509db30fe381ffc10e2b23c432b",
+              "task_name": "skill-evolution/deepfake-detector-holdout-policy-markers",
+              "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/deepfake-detector/dataset/policy-markers-caveat"
+            }
+          ],
+          "trials": 2,
+          "worst_case_reward": 1.0
+        }
+      },
+      "strategies": {
+        "operator_coevolution": {
+          "candidate_bundle_byte_delta": 973,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 218624,
+            "cost_usd": 0.0635598,
+            "duration_seconds": 133.684352,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:8666a0d9ecf06e8501ddbb8ca9fde0f97f90b1d7093d76ab6fe33ac0b743f1a7",
+              "name": "operator-coevolution",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/operator-coevolution"
+            },
+            "input_tokens": 255180,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-operator-coevolution-development",
+            "job_digest": {
+              "file_count": 48,
+              "kind": "directory",
+              "sha256": "5aa049f94ac34ece6c58780476ab06124c814fa918c3b9ae05ae3ca40fdb2743",
+              "total_bytes": 486759
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:d70f52b83c1120529ccd5914cdab6c7c74dbefbd4b2c7c9d9c262ef9cc176163",
+                "task_name": "batch-default-triage",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:37ebda51f81b3c9472971a8577b1e944ba890e71354412468590974b11d986c3",
+                "task_name": "partial-error-policy",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 4388,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "a8e75381deaa6fe944a10ad6c81d1940dd13060ded0a4115b155105b69798207",
+                "task_name": "skill-evolution/deepfake-detector-dev-batch-default",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "439bf17ad146a43fc40951961ff2d175d10d4680d424bb4d3b1e770127b882a9",
+                "task_name": "skill-evolution/deepfake-detector-dev-partial-error",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 1.0
+          },
+          "candidate_development_delta_mean": 0.35,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 218624,
+            "cost_usd": 0.0635598,
+            "duration_seconds": 133.684352,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:8666a0d9ecf06e8501ddbb8ca9fde0f97f90b1d7093d76ab6fe33ac0b743f1a7",
+              "name": "operator-coevolution",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/operator-coevolution"
+            },
+            "input_tokens": 255180,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-operator-coevolution-development",
+            "job_digest": {
+              "file_count": 48,
+              "kind": "directory",
+              "sha256": "5aa049f94ac34ece6c58780476ab06124c814fa918c3b9ae05ae3ca40fdb2743",
+              "total_bytes": 486759
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:d70f52b83c1120529ccd5914cdab6c7c74dbefbd4b2c7c9d9c262ef9cc176163",
+                "task_name": "batch-default-triage",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:37ebda51f81b3c9472971a8577b1e944ba890e71354412468590974b11d986c3",
+                "task_name": "partial-error-policy",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 4388,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "a8e75381deaa6fe944a10ad6c81d1940dd13060ded0a4115b155105b69798207",
+                "task_name": "skill-evolution/deepfake-detector-dev-batch-default",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "439bf17ad146a43fc40951961ff2d175d10d4680d424bb4d3b1e770127b882a9",
+                "task_name": "skill-evolution/deepfake-detector-dev-partial-error",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout": {
+            "cache_tokens": 116736,
+            "cost_usd": 0.02877945,
+            "duration_seconds": 62.092258,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:8666a0d9ecf06e8501ddbb8ca9fde0f97f90b1d7093d76ab6fe33ac0b743f1a7",
+              "name": "operator-coevolution",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/operator-coevolution"
+            },
+            "input_tokens": 129179,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/holdout/20260716-deepfake-detector-operator-coevolution-holdout",
+            "job_digest": {
+              "file_count": 26,
+              "kind": "directory",
+              "sha256": "b8dc85fad00c169555b7d9e58e131c93cd539e37f246bc5aa22ce0956e1faa77",
+              "total_bytes": 245945
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:7e7da4da18a66c7c296e57c69d424e744d98de44bc16507ace2bceb377ab86f4",
+                "task_name": "policy-markers-caveat",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/deepfake-detector/dataset/policy-markers-caveat"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 2376,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "60d2f314b544cca60a621c6facc1371fdf050509db30fe381ffc10e2b23c432b",
+                "task_name": "skill-evolution/deepfake-detector-holdout-policy-markers",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/deepfake-detector/dataset/policy-markers-caveat"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout_delta_mean": 0.0,
+          "selection": "child"
+        },
+        "population_search": {
+          "candidate_bundle_byte_delta": 1008,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 208384,
+            "cost_usd": 0.05096205,
+            "duration_seconds": 132.157695,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3191c9014c64a725c744c531aebc59f8a458476e0d13ca2b34d907adb9df8b92",
+              "name": "population-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/population-search"
+            },
+            "input_tokens": 232257,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-population-search-development-audited",
+            "job_digest": {
+              "file_count": 48,
+              "kind": "directory",
+              "sha256": "da1bb3aaf20891897ba65e72fe4b4171d4e5c7e80847d6d5440b3f1383b8a910",
+              "total_bytes": 461456
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:d70f52b83c1120529ccd5914cdab6c7c74dbefbd4b2c7c9d9c262ef9cc176163",
+                "task_name": "batch-default-triage",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:37ebda51f81b3c9472971a8577b1e944ba890e71354412468590974b11d986c3",
+                "task_name": "partial-error-policy",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "mean_reward": 0.65,
+            "output_tokens": 3873,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              0.3,
+              0.3
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "a8e75381deaa6fe944a10ad6c81d1940dd13060ded0a4115b155105b69798207",
+                "task_name": "skill-evolution/deepfake-detector-dev-batch-default",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "439bf17ad146a43fc40951961ff2d175d10d4680d424bb4d3b1e770127b882a9",
+                "task_name": "skill-evolution/deepfake-detector-dev-partial-error",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.3
+          },
+          "candidate_development_delta_mean": 0.0,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 204800,
+            "cost_usd": 0.05767725,
+            "duration_seconds": 120.787028,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:f422193894749bb3a41aaa521dc2aac5550845eb7958f9613704d771ebb0c7c9",
+              "name": "deepfake-detector",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/deepfake-detector"
+            },
+            "input_tokens": 237919,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-baseline-development-study",
+            "job_digest": {
+              "file_count": 48,
+              "kind": "directory",
+              "sha256": "d20c8ca311fec3dbfac18e8150654642b8621e15c456985d1fc0964575898b19",
+              "total_bytes": 447454
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:d70f52b83c1120529ccd5914cdab6c7c74dbefbd4b2c7c9d9c262ef9cc176163",
+                "task_name": "batch-default-triage",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:37ebda51f81b3c9472971a8577b1e944ba890e71354412468590974b11d986c3",
+                "task_name": "partial-error-policy",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "mean_reward": 0.65,
+            "output_tokens": 3884,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              0.3,
+              0.3
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "a8e75381deaa6fe944a10ad6c81d1940dd13060ded0a4115b155105b69798207",
+                "task_name": "skill-evolution/deepfake-detector-dev-batch-default",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "439bf17ad146a43fc40951961ff2d175d10d4680d424bb4d3b1e770127b882a9",
+                "task_name": "skill-evolution/deepfake-detector-dev-partial-error",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.3
+          },
+          "selected_holdout": {
+            "cache_tokens": 103424,
+            "cost_usd": 0.02627805,
+            "duration_seconds": 72.109889,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:f422193894749bb3a41aaa521dc2aac5550845eb7958f9613704d771ebb0c7c9",
+              "name": "deepfake-detector",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/deepfake-detector"
+            },
+            "input_tokens": 115807,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/holdout/20260716-deepfake-detector-baseline-holdout",
+            "job_digest": {
+              "file_count": 26,
+              "kind": "directory",
+              "sha256": "bfebae0382368190e600c41e96e1b23e988e7e6bd91c02acad712da05b63bf0e",
+              "total_bytes": 234512
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:7e7da4da18a66c7c296e57c69d424e744d98de44bc16507ace2bceb377ab86f4",
+                "task_name": "policy-markers-caveat",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/deepfake-detector/dataset/policy-markers-caveat"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 2052,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "60d2f314b544cca60a621c6facc1371fdf050509db30fe381ffc10e2b23c432b",
+                "task_name": "skill-evolution/deepfake-detector-holdout-policy-markers",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/deepfake-detector/dataset/policy-markers-caveat"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout_delta_mean": 0.0,
+          "selection": "baseline"
+        },
+        "reflective_pareto_search": {
+          "candidate_bundle_byte_delta": 1278,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 193024,
+            "cost_usd": 0.0449403,
+            "duration_seconds": 123.31579,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:714272a72bd0d9640e2d6851c19142ace4b44353f8ef2aa67e3ce8ef9c38d6c5",
+              "name": "reflective-pareto-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/reflective-pareto-search"
+            },
+            "input_tokens": 213482,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-reflective-pareto-search-development-audited",
+            "job_digest": {
+              "file_count": 48,
+              "kind": "directory",
+              "sha256": "3bd498091eacc9cefb51a30dec8b3a26a695c6e0918aaeef5f079cd09c7ab743",
+              "total_bytes": 451595
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:d70f52b83c1120529ccd5914cdab6c7c74dbefbd4b2c7c9d9c262ef9cc176163",
+                "task_name": "batch-default-triage",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:37ebda51f81b3c9472971a8577b1e944ba890e71354412468590974b11d986c3",
+                "task_name": "partial-error-policy",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 3360,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "a8e75381deaa6fe944a10ad6c81d1940dd13060ded0a4115b155105b69798207",
+                "task_name": "skill-evolution/deepfake-detector-dev-batch-default",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "439bf17ad146a43fc40951961ff2d175d10d4680d424bb4d3b1e770127b882a9",
+                "task_name": "skill-evolution/deepfake-detector-dev-partial-error",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 1.0
+          },
+          "candidate_development_delta_mean": 0.35,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 193024,
+            "cost_usd": 0.0449403,
+            "duration_seconds": 123.31579,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:714272a72bd0d9640e2d6851c19142ace4b44353f8ef2aa67e3ce8ef9c38d6c5",
+              "name": "reflective-pareto-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/reflective-pareto-search"
+            },
+            "input_tokens": 213482,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-reflective-pareto-search-development-audited",
+            "job_digest": {
+              "file_count": 48,
+              "kind": "directory",
+              "sha256": "3bd498091eacc9cefb51a30dec8b3a26a695c6e0918aaeef5f079cd09c7ab743",
+              "total_bytes": 451595
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:d70f52b83c1120529ccd5914cdab6c7c74dbefbd4b2c7c9d9c262ef9cc176163",
+                "task_name": "batch-default-triage",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:37ebda51f81b3c9472971a8577b1e944ba890e71354412468590974b11d986c3",
+                "task_name": "partial-error-policy",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 3360,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "a8e75381deaa6fe944a10ad6c81d1940dd13060ded0a4115b155105b69798207",
+                "task_name": "skill-evolution/deepfake-detector-dev-batch-default",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "439bf17ad146a43fc40951961ff2d175d10d4680d424bb4d3b1e770127b882a9",
+                "task_name": "skill-evolution/deepfake-detector-dev-partial-error",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout": {
+            "cache_tokens": 88064,
+            "cost_usd": 0.0305463,
+            "duration_seconds": 70.086226,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:714272a72bd0d9640e2d6851c19142ace4b44353f8ef2aa67e3ce8ef9c38d6c5",
+              "name": "reflective-pareto-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/reflective-pareto-search"
+            },
+            "input_tokens": 108268,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/holdout/20260716-deepfake-detector-reflective-pareto-search-holdout",
+            "job_digest": {
+              "file_count": 26,
+              "kind": "directory",
+              "sha256": "6a1e85a2a388a38bedf4ad573183612cf213682e3ed7d103492aed0c2654e6fb",
+              "total_bytes": 236306
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:7e7da4da18a66c7c296e57c69d424e744d98de44bc16507ace2bceb377ab86f4",
+                "task_name": "policy-markers-caveat",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/deepfake-detector/dataset/policy-markers-caveat"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 1953,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "60d2f314b544cca60a621c6facc1371fdf050509db30fe381ffc10e2b23c432b",
+                "task_name": "skill-evolution/deepfake-detector-holdout-policy-markers",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/deepfake-detector/dataset/policy-markers-caveat"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout_delta_mean": 0.0,
+          "selection": "child"
+        },
+        "trace_distillation": {
+          "candidate_bundle_byte_delta": 2014,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 226816,
+            "cost_usd": 0.049121700000000004,
+            "duration_seconds": 125.199576,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:f8b1323f1bdedfa131ecdd1c3a08ca6d781030e801b6bd6e17ddddead5a282f8",
+              "name": "trace-distillation",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/trace-distillation"
+            },
+            "input_tokens": 246014,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-trace-distillation-development-audited",
+            "job_digest": {
+              "file_count": 48,
+              "kind": "directory",
+              "sha256": "598437c89ea783c575fde114758b8ed4b1a3049865e7e99f23578c3120e06007",
+              "total_bytes": 474410
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:d70f52b83c1120529ccd5914cdab6c7c74dbefbd4b2c7c9d9c262ef9cc176163",
+                "task_name": "batch-default-triage",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:37ebda51f81b3c9472971a8577b1e944ba890e71354412468590974b11d986c3",
+                "task_name": "partial-error-policy",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 3936,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "a8e75381deaa6fe944a10ad6c81d1940dd13060ded0a4115b155105b69798207",
+                "task_name": "skill-evolution/deepfake-detector-dev-batch-default",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "439bf17ad146a43fc40951961ff2d175d10d4680d424bb4d3b1e770127b882a9",
+                "task_name": "skill-evolution/deepfake-detector-dev-partial-error",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 1.0
+          },
+          "candidate_development_delta_mean": 0.35,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 226816,
+            "cost_usd": 0.049121700000000004,
+            "duration_seconds": 125.199576,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:f8b1323f1bdedfa131ecdd1c3a08ca6d781030e801b6bd6e17ddddead5a282f8",
+              "name": "trace-distillation",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/trace-distillation"
+            },
+            "input_tokens": 246014,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-trace-distillation-development-audited",
+            "job_digest": {
+              "file_count": 48,
+              "kind": "directory",
+              "sha256": "598437c89ea783c575fde114758b8ed4b1a3049865e7e99f23578c3120e06007",
+              "total_bytes": 474410
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:d70f52b83c1120529ccd5914cdab6c7c74dbefbd4b2c7c9d9c262ef9cc176163",
+                "task_name": "batch-default-triage",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:37ebda51f81b3c9472971a8577b1e944ba890e71354412468590974b11d986c3",
+                "task_name": "partial-error-policy",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 3936,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "a8e75381deaa6fe944a10ad6c81d1940dd13060ded0a4115b155105b69798207",
+                "task_name": "skill-evolution/deepfake-detector-dev-batch-default",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/batch-default-triage"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "439bf17ad146a43fc40951961ff2d175d10d4680d424bb4d3b1e770127b882a9",
+                "task_name": "skill-evolution/deepfake-detector-dev-partial-error",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/deepfake-detector/development/partial-error-policy"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout": {
+            "cache_tokens": 117760,
+            "cost_usd": 0.02846625,
+            "duration_seconds": 67.991749,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:f8b1323f1bdedfa131ecdd1c3a08ca6d781030e801b6bd6e17ddddead5a282f8",
+              "name": "trace-distillation",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/trace-distillation"
+            },
+            "input_tokens": 130007,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/holdout/20260716-deepfake-detector-trace-distillation-holdout",
+            "job_digest": {
+              "file_count": 26,
+              "kind": "directory",
+              "sha256": "2ab94e5d4d21ef69a0d7be2ad6b04acfcb0d906a63ec543288ce644e39a3b02d",
+              "total_bytes": 250696
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:7e7da4da18a66c7c296e57c69d424e744d98de44bc16507ace2bceb377ab86f4",
+                "task_name": "policy-markers-caveat",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/deepfake-detector/dataset/policy-markers-caveat"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 2322,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "60d2f314b544cca60a621c6facc1371fdf050509db30fe381ffc10e2b23c432b",
+                "task_name": "skill-evolution/deepfake-detector-holdout-policy-markers",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/deepfake-detector/dataset/policy-markers-caveat"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout_delta_mean": 0.0,
+          "selection": "child"
+        }
+      }
+    },
+    "openapi-integrator": {
+      "baseline": {
+        "bundle": {
+          "file_count": 9,
+          "kind": "directory",
+          "path": "../../../archie-evolution/skills/openapi-integrator",
+          "sha256": "671ef5fa12661c08f4a0edca514adc79e195cc75b4e3c44692ec0aee2d25d241",
+          "total_bytes": 32013
+        },
+        "development": {
+          "cache_tokens": 381440,
+          "cost_usd": 0.13410975,
+          "duration_seconds": 201.604194,
+          "errors": 0,
+          "harbor_skill": {
+            "digest": "sha256:7b3f7dd5018acfbe63e837e6103d2f552468fad8c262bac42fb3d14f1f98e0c4",
+            "name": "openapi-integrator",
+            "source": ".tmp/harbor-evolution-comparison/20260716/baselines/openapi-integrator"
+          },
+          "input_tokens": 448879,
+          "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-baseline-development-study",
+          "job_digest": {
+            "file_count": 44,
+            "kind": "directory",
+            "sha256": "f0bb3649ff7eb7ed0500a8854d958d5e84883c46674932d0e2270c732011d28c",
+            "total_bytes": 863249
+          },
+          "locked_task_cells": [
+            {
+              "attempts": 2,
+              "task_digest": "sha256:53f805497939690afcdee81b294de26db6eecaaaeedfd5b852c461d81396675e",
+              "task_name": "openapi3-basic-public",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+            },
+            {
+              "attempts": 2,
+              "task_digest": "sha256:6d2248f0c969ee848ba60257757c0955b9fdb9025a16cfb5d2850eea92400b81",
+              "task_name": "swagger2-query-body",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+            }
+          ],
+          "mean_reward": 0.85,
+          "output_tokens": 12205,
+          "retries": 0,
+          "rewards": [
+            1.0,
+            0.4,
+            1.0,
+            1.0
+          ],
+          "task_cells": [
+            {
+              "attempts": 2,
+              "task_checksum": "47fbff4610a33cffe57689a41f654ccf70b0df47acc459acd6119d4fdd9bc7e2",
+              "task_name": "harbor-evolution/openapi3-basic-public",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+            },
+            {
+              "attempts": 2,
+              "task_checksum": "7b69bb2123d3e00424b452843ea8e3d812d7844342abeeeded3ee4645e5ae427",
+              "task_name": "harbor-evolution/swagger2-query-body",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+            }
+          ],
+          "trials": 4,
+          "worst_case_reward": 0.4
+        },
+        "holdout": {
+          "cache_tokens": 189440,
+          "cost_usd": 0.0566745,
+          "duration_seconds": 101.774232,
+          "errors": 0,
+          "harbor_skill": {
+            "digest": "sha256:7b3f7dd5018acfbe63e837e6103d2f552468fad8c262bac42fb3d14f1f98e0c4",
+            "name": "openapi-integrator",
+            "source": ".tmp/harbor-evolution-comparison/20260716/baselines/openapi-integrator"
+          },
+          "input_tokens": 207866,
+          "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/holdout/20260716-openapi-integrator-baseline-holdout",
+          "job_digest": {
+            "file_count": 24,
+            "kind": "directory",
+            "sha256": "22b63ca5feac3377671053ae9169d1df3db208f8a30f58a149471b15105f3f5e",
+            "total_bytes": 427708
+          },
+          "locked_task_cells": [
+            {
+              "attempts": 2,
+              "task_digest": "sha256:187f487daca8e5ae8f608f15c685d8e6ee358785732bfdaded43325aaf911786",
+              "task_name": "openapi3-cookie-refs",
+              "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/openapi-integrator/dataset/openapi3-cookie-refs"
+            }
+          ],
+          "mean_reward": 0.7272725,
+          "output_tokens": 6366,
+          "retries": 0,
+          "rewards": [
+            0.454545,
+            1.0
+          ],
+          "task_cells": [
+            {
+              "attempts": 2,
+              "task_checksum": "66c4021fdd2a74dddf5f3355276c76923af283d1fe8be27ff99041be7829e7ee",
+              "task_name": "harbor-evolution/openapi3-cookie-refs",
+              "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/openapi-integrator/dataset/openapi3-cookie-refs"
+            }
+          ],
+          "trials": 2,
+          "worst_case_reward": 0.454545
+        }
+      },
+      "strategies": {
+        "operator_coevolution": {
+          "candidate_bundle_byte_delta": 1117,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 885248,
+            "cost_usd": 0.18738585,
+            "duration_seconds": 224.467328,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:f4dc031cd6ca307b449b68485d702aae6152607c5a9eeb1bc7f21ba82085ede0",
+              "name": "operator-coevolution",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/operator-coevolution"
+            },
+            "input_tokens": 955839,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-operator-coevolution-development",
+            "job_digest": {
+              "file_count": 44,
+              "kind": "directory",
+              "sha256": "bc1ddcbe4592d49bb5466fb7ce75d5baaf848dfcf54622d2f474d69e3548460d",
+              "total_bytes": 1128048
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:53f805497939690afcdee81b294de26db6eecaaaeedfd5b852c461d81396675e",
+                "task_name": "openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:6d2248f0c969ee848ba60257757c0955b9fdb9025a16cfb5d2850eea92400b81",
+                "task_name": "swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "mean_reward": 0.76136375,
+            "output_tokens": 15122,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              0.5,
+              0.545455,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "47fbff4610a33cffe57689a41f654ccf70b0df47acc459acd6119d4fdd9bc7e2",
+                "task_name": "harbor-evolution/openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "7b69bb2123d3e00424b452843ea8e3d812d7844342abeeeded3ee4645e5ae427",
+                "task_name": "harbor-evolution/swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.5
+          },
+          "candidate_development_delta_mean": -0.08863624999999997,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 381440,
+            "cost_usd": 0.13410975,
+            "duration_seconds": 201.604194,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:7b3f7dd5018acfbe63e837e6103d2f552468fad8c262bac42fb3d14f1f98e0c4",
+              "name": "openapi-integrator",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/openapi-integrator"
+            },
+            "input_tokens": 448879,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-baseline-development-study",
+            "job_digest": {
+              "file_count": 44,
+              "kind": "directory",
+              "sha256": "f0bb3649ff7eb7ed0500a8854d958d5e84883c46674932d0e2270c732011d28c",
+              "total_bytes": 863249
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:53f805497939690afcdee81b294de26db6eecaaaeedfd5b852c461d81396675e",
+                "task_name": "openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:6d2248f0c969ee848ba60257757c0955b9fdb9025a16cfb5d2850eea92400b81",
+                "task_name": "swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "mean_reward": 0.85,
+            "output_tokens": 12205,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              0.4,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "47fbff4610a33cffe57689a41f654ccf70b0df47acc459acd6119d4fdd9bc7e2",
+                "task_name": "harbor-evolution/openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "7b69bb2123d3e00424b452843ea8e3d812d7844342abeeeded3ee4645e5ae427",
+                "task_name": "harbor-evolution/swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.4
+          },
+          "selected_holdout": {
+            "cache_tokens": 189440,
+            "cost_usd": 0.0566745,
+            "duration_seconds": 101.774232,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:7b3f7dd5018acfbe63e837e6103d2f552468fad8c262bac42fb3d14f1f98e0c4",
+              "name": "openapi-integrator",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/openapi-integrator"
+            },
+            "input_tokens": 207866,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/holdout/20260716-openapi-integrator-baseline-holdout",
+            "job_digest": {
+              "file_count": 24,
+              "kind": "directory",
+              "sha256": "22b63ca5feac3377671053ae9169d1df3db208f8a30f58a149471b15105f3f5e",
+              "total_bytes": 427708
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:187f487daca8e5ae8f608f15c685d8e6ee358785732bfdaded43325aaf911786",
+                "task_name": "openapi3-cookie-refs",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/openapi-integrator/dataset/openapi3-cookie-refs"
+              }
+            ],
+            "mean_reward": 0.7272725,
+            "output_tokens": 6366,
+            "retries": 0,
+            "rewards": [
+              0.454545,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "66c4021fdd2a74dddf5f3355276c76923af283d1fe8be27ff99041be7829e7ee",
+                "task_name": "harbor-evolution/openapi3-cookie-refs",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/openapi-integrator/dataset/openapi3-cookie-refs"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 0.454545
+          },
+          "selected_holdout_delta_mean": 0.0,
+          "selection": "baseline"
+        },
+        "population_search": {
+          "candidate_bundle_byte_delta": 1275,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 433152,
+            "cost_usd": 0.11999114999999999,
+            "duration_seconds": 201.365754,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:f17c1a757cee6c89609069ab0ed761707b6a906ec0b7f7cd92502ab75e4fd3c6",
+              "name": "population-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/population-search"
+            },
+            "input_tokens": 484965,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-population-search-development",
+            "job_digest": {
+              "file_count": 44,
+              "kind": "directory",
+              "sha256": "2d4e8416edaa0941225f06378b44c66dcda4f5a06b8a0d58ab2a8ae39e4ac1ba",
+              "total_bytes": 829099
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:53f805497939690afcdee81b294de26db6eecaaaeedfd5b852c461d81396675e",
+                "task_name": "openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:6d2248f0c969ee848ba60257757c0955b9fdb9025a16cfb5d2850eea92400b81",
+                "task_name": "swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 10810,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "47fbff4610a33cffe57689a41f654ccf70b0df47acc459acd6119d4fdd9bc7e2",
+                "task_name": "harbor-evolution/openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "7b69bb2123d3e00424b452843ea8e3d812d7844342abeeeded3ee4645e5ae427",
+                "task_name": "harbor-evolution/swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 1.0
+          },
+          "candidate_development_delta_mean": 0.15000000000000002,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 433152,
+            "cost_usd": 0.11999114999999999,
+            "duration_seconds": 201.365754,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:f17c1a757cee6c89609069ab0ed761707b6a906ec0b7f7cd92502ab75e4fd3c6",
+              "name": "population-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/population-search"
+            },
+            "input_tokens": 484965,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-population-search-development",
+            "job_digest": {
+              "file_count": 44,
+              "kind": "directory",
+              "sha256": "2d4e8416edaa0941225f06378b44c66dcda4f5a06b8a0d58ab2a8ae39e4ac1ba",
+              "total_bytes": 829099
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:53f805497939690afcdee81b294de26db6eecaaaeedfd5b852c461d81396675e",
+                "task_name": "openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:6d2248f0c969ee848ba60257757c0955b9fdb9025a16cfb5d2850eea92400b81",
+                "task_name": "swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 10810,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "47fbff4610a33cffe57689a41f654ccf70b0df47acc459acd6119d4fdd9bc7e2",
+                "task_name": "harbor-evolution/openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "7b69bb2123d3e00424b452843ea8e3d812d7844342abeeeded3ee4645e5ae427",
+                "task_name": "harbor-evolution/swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout": {
+            "cache_tokens": 193024,
+            "cost_usd": 0.06081855,
+            "duration_seconds": 97.255165,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:f17c1a757cee6c89609069ab0ed761707b6a906ec0b7f7cd92502ab75e4fd3c6",
+              "name": "population-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/population-search"
+            },
+            "input_tokens": 220841,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/holdout/20260716-openapi-integrator-population-search-holdout",
+            "job_digest": {
+              "file_count": 24,
+              "kind": "directory",
+              "sha256": "34717474b8ddf3609eea1a78110dd220c64abc07b4bf6542bb8550aa1bff3d78",
+              "total_bytes": 428333
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:187f487daca8e5ae8f608f15c685d8e6ee358785732bfdaded43325aaf911786",
+                "task_name": "openapi3-cookie-refs",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/openapi-integrator/dataset/openapi3-cookie-refs"
+              }
+            ],
+            "mean_reward": 0.7272725,
+            "output_tokens": 5662,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              0.454545
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "66c4021fdd2a74dddf5f3355276c76923af283d1fe8be27ff99041be7829e7ee",
+                "task_name": "harbor-evolution/openapi3-cookie-refs",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/openapi-integrator/dataset/openapi3-cookie-refs"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 0.454545
+          },
+          "selected_holdout_delta_mean": 0.0,
+          "selection": "child"
+        },
+        "reflective_pareto_search": {
+          "candidate_bundle_byte_delta": 1540,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 387584,
+            "cost_usd": 0.11620754999999999,
+            "duration_seconds": 182.158201,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3982e90e23d404e78b520139fe199c2e80e697c3659cccff84748bc70ffd49e9",
+              "name": "reflective-pareto-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/reflective-pareto-search"
+            },
+            "input_tokens": 449271,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-reflective-pareto-search-development",
+            "job_digest": {
+              "file_count": 44,
+              "kind": "directory",
+              "sha256": "4f24eac84d0f7d0695673e013460d92ecaa7d1fb5541051e74b180f43e8a075c",
+              "total_bytes": 739429
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:53f805497939690afcdee81b294de26db6eecaaaeedfd5b852c461d81396675e",
+                "task_name": "openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:6d2248f0c969ee848ba60257757c0955b9fdb9025a16cfb5d2850eea92400b81",
+                "task_name": "swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "mean_reward": 0.9045455,
+            "output_tokens": 9083,
+            "retries": 0,
+            "rewards": [
+              0.8,
+              1.0,
+              0.909091,
+              0.909091
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "47fbff4610a33cffe57689a41f654ccf70b0df47acc459acd6119d4fdd9bc7e2",
+                "task_name": "harbor-evolution/openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "7b69bb2123d3e00424b452843ea8e3d812d7844342abeeeded3ee4645e5ae427",
+                "task_name": "harbor-evolution/swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.8
+          },
+          "candidate_development_delta_mean": 0.054545500000000025,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 387584,
+            "cost_usd": 0.11620754999999999,
+            "duration_seconds": 182.158201,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3982e90e23d404e78b520139fe199c2e80e697c3659cccff84748bc70ffd49e9",
+              "name": "reflective-pareto-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/reflective-pareto-search"
+            },
+            "input_tokens": 449271,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-reflective-pareto-search-development",
+            "job_digest": {
+              "file_count": 44,
+              "kind": "directory",
+              "sha256": "4f24eac84d0f7d0695673e013460d92ecaa7d1fb5541051e74b180f43e8a075c",
+              "total_bytes": 739429
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:53f805497939690afcdee81b294de26db6eecaaaeedfd5b852c461d81396675e",
+                "task_name": "openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:6d2248f0c969ee848ba60257757c0955b9fdb9025a16cfb5d2850eea92400b81",
+                "task_name": "swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "mean_reward": 0.9045455,
+            "output_tokens": 9083,
+            "retries": 0,
+            "rewards": [
+              0.8,
+              1.0,
+              0.909091,
+              0.909091
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "47fbff4610a33cffe57689a41f654ccf70b0df47acc459acd6119d4fdd9bc7e2",
+                "task_name": "harbor-evolution/openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "7b69bb2123d3e00424b452843ea8e3d812d7844342abeeeded3ee4645e5ae427",
+                "task_name": "harbor-evolution/swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.8
+          },
+          "selected_holdout": {
+            "cache_tokens": 184320,
+            "cost_usd": 0.046554750000000006,
+            "duration_seconds": 85.730056,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3982e90e23d404e78b520139fe199c2e80e697c3659cccff84748bc70ffd49e9",
+              "name": "reflective-pareto-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/reflective-pareto-search"
+            },
+            "input_tokens": 202335,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/holdout/20260716-openapi-integrator-reflective-pareto-search-holdout",
+            "job_digest": {
+              "file_count": 24,
+              "kind": "directory",
+              "sha256": "d31a7a493ea520b05116d9c4868ddc6e47b0f006ccc203e92768d4b1fe530932",
+              "total_bytes": 353196
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:187f487daca8e5ae8f608f15c685d8e6ee358785732bfdaded43325aaf911786",
+                "task_name": "openapi3-cookie-refs",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/openapi-integrator/dataset/openapi3-cookie-refs"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 4271,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "66c4021fdd2a74dddf5f3355276c76923af283d1fe8be27ff99041be7829e7ee",
+                "task_name": "harbor-evolution/openapi3-cookie-refs",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/openapi-integrator/dataset/openapi3-cookie-refs"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout_delta_mean": 0.2727275,
+          "selection": "child"
+        },
+        "trace_distillation": {
+          "candidate_bundle_byte_delta": 2161,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 587264,
+            "cost_usd": 0.15444855,
+            "duration_seconds": 235.862346,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:6e4c39d1efbc2143668bf33ef27fc18fbe6127cdf0599bf202993af93f4fc3d4",
+              "name": "trace-distillation",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/trace-distillation"
+            },
+            "input_tokens": 644181,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-trace-distillation-development",
+            "job_digest": {
+              "file_count": 44,
+              "kind": "directory",
+              "sha256": "188b87eaac8d8b9abab299614639db97b6c9af3cde0fc4f99c5124468f3f10f8",
+              "total_bytes": 933369
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:53f805497939690afcdee81b294de26db6eecaaaeedfd5b852c461d81396675e",
+                "task_name": "openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:6d2248f0c969ee848ba60257757c0955b9fdb9025a16cfb5d2850eea92400b81",
+                "task_name": "swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 15048,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "47fbff4610a33cffe57689a41f654ccf70b0df47acc459acd6119d4fdd9bc7e2",
+                "task_name": "harbor-evolution/openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "7b69bb2123d3e00424b452843ea8e3d812d7844342abeeeded3ee4645e5ae427",
+                "task_name": "harbor-evolution/swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 1.0
+          },
+          "candidate_development_delta_mean": 0.15000000000000002,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 587264,
+            "cost_usd": 0.15444855,
+            "duration_seconds": 235.862346,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:6e4c39d1efbc2143668bf33ef27fc18fbe6127cdf0599bf202993af93f4fc3d4",
+              "name": "trace-distillation",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/trace-distillation"
+            },
+            "input_tokens": 644181,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-trace-distillation-development",
+            "job_digest": {
+              "file_count": 44,
+              "kind": "directory",
+              "sha256": "188b87eaac8d8b9abab299614639db97b6c9af3cde0fc4f99c5124468f3f10f8",
+              "total_bytes": 933369
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:53f805497939690afcdee81b294de26db6eecaaaeedfd5b852c461d81396675e",
+                "task_name": "openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:6d2248f0c969ee848ba60257757c0955b9fdb9025a16cfb5d2850eea92400b81",
+                "task_name": "swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 15048,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "47fbff4610a33cffe57689a41f654ccf70b0df47acc459acd6119d4fdd9bc7e2",
+                "task_name": "harbor-evolution/openapi3-basic-public",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/openapi3-basic-public"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "7b69bb2123d3e00424b452843ea8e3d812d7844342abeeeded3ee4645e5ae427",
+                "task_name": "harbor-evolution/swagger2-query-body",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/openapi-integrator/development/swagger2-query-body"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout": {
+            "cache_tokens": 342528,
+            "cost_usd": 0.07928160000000001,
+            "duration_seconds": 126.917113,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:6e4c39d1efbc2143668bf33ef27fc18fbe6127cdf0599bf202993af93f4fc3d4",
+              "name": "trace-distillation",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/trace-distillation"
+            },
+            "input_tokens": 372542,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/holdout/20260716-openapi-integrator-trace-distillation-holdout",
+            "job_digest": {
+              "file_count": 24,
+              "kind": "directory",
+              "sha256": "14088a3b0cdcc61359c8712cef21ff66ecf9570eecf448c993095b1c93f71a0d",
+              "total_bytes": 460917
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:187f487daca8e5ae8f608f15c685d8e6ee358785732bfdaded43325aaf911786",
+                "task_name": "openapi3-cookie-refs",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/openapi-integrator/dataset/openapi3-cookie-refs"
+              }
+            ],
+            "mean_reward": 1.0,
+            "output_tokens": 6907,
+            "retries": 0,
+            "rewards": [
+              1.0,
+              1.0
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "66c4021fdd2a74dddf5f3355276c76923af283d1fe8be27ff99041be7829e7ee",
+                "task_name": "harbor-evolution/openapi3-cookie-refs",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/openapi-integrator/dataset/openapi3-cookie-refs"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 1.0
+          },
+          "selected_holdout_delta_mean": 0.2727275,
+          "selection": "child"
+        }
+      }
+    },
+    "scene-script-planner": {
+      "baseline": {
+        "bundle": {
+          "file_count": 4,
+          "kind": "directory",
+          "path": "../../../manim/skills/scene-script-planner",
+          "sha256": "086f2be3a128aa82e32e02510182a41a429737d92c9f9570b6750dde24e1d2b3",
+          "total_bytes": 4801
+        },
+        "development": {
+          "cache_tokens": 181760,
+          "cost_usd": 0.0677055,
+          "duration_seconds": 139.582067,
+          "errors": 0,
+          "harbor_skill": {
+            "digest": "sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57",
+            "name": "scene-script-planner",
+            "source": ".tmp/harbor-evolution-comparison/20260716/baselines/scene-script-planner"
+          },
+          "input_tokens": 213142,
+          "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-baseline-development-study",
+          "job_digest": {
+            "file_count": 52,
+            "kind": "directory",
+            "sha256": "f05bd4e729478ac47b3dabcaf08ed555e65c09ef2b144ca144dcaf151cfbc967",
+            "total_bytes": 526012
+          },
+          "locked_task_cells": [
+            {
+              "attempts": 2,
+              "task_digest": "sha256:f35c9ca1ddb33f1d1ee85783301c8153cb0e16062864f3a5563f86b94ed7a5ef",
+              "task_name": "repair-approved-card-flow",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+            },
+            {
+              "attempts": 2,
+              "task_digest": "sha256:c0bf4ed4b51c18f69c4251ffb7a9cd766a8e17b4f7e5197b121fb3a56d9501b2",
+              "task_name": "source-grounded-binary-search",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+            }
+          ],
+          "mean_reward": 0.9429765,
+          "output_tokens": 6786,
+          "retries": 0,
+          "rewards": [
+            0.907692,
+            0.907692,
+            1.0,
+            0.956522
+          ],
+          "task_cells": [
+            {
+              "attempts": 2,
+              "task_checksum": "dda67a4c8e0171b68fbc27ea85d0480addc761212785d6a1b0955f5363b43911",
+              "task_name": "harbor-evolution/scene-plan-repair-approved-card-flow",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+            },
+            {
+              "attempts": 2,
+              "task_checksum": "fcf9a0b37f71386c06430f2128eb85527624e54eda8293ab8490678dab24f205",
+              "task_name": "harbor-evolution/scene-plan-source-grounded-binary-search",
+              "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+            }
+          ],
+          "trials": 4,
+          "worst_case_reward": 0.907692
+        },
+        "holdout": {
+          "cache_tokens": 120320,
+          "cost_usd": 0.038190749999999996,
+          "duration_seconds": 79.990767,
+          "errors": 0,
+          "harbor_skill": {
+            "digest": "sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57",
+            "name": "scene-script-planner",
+            "source": ".tmp/harbor-evolution-comparison/20260716/baselines/scene-script-planner"
+          },
+          "input_tokens": 131807,
+          "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/holdout/20260716-scene-script-planner-baseline-holdout",
+          "job_digest": {
+            "file_count": 28,
+            "kind": "directory",
+            "sha256": "64eda50786bd6235eff2aebfd536b6dfe3dedfe55bd25862c8acc3a8958f478b",
+            "total_bytes": 325638
+          },
+          "locked_task_cells": [
+            {
+              "attempts": 2,
+              "task_digest": "sha256:c908eb673888576076524945d30ce2579c07c7d702c9d09b67e11039a7826f53",
+              "task_name": "grounded-heat-pump",
+              "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/scene-script-planner/dataset/grounded-heat-pump"
+            }
+          ],
+          "mean_reward": 0.8170729999999999,
+          "output_tokens": 4567,
+          "retries": 0,
+          "rewards": [
+            0.829268,
+            0.804878
+          ],
+          "task_cells": [
+            {
+              "attempts": 2,
+              "task_checksum": "e74d671fb2db53cceb59aae0f7a215b91008e96723c488ae5f0076091fd592e6",
+              "task_name": "harbor-evolution/scene-plan-grounded-heat-pump",
+              "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/scene-script-planner/dataset/grounded-heat-pump"
+            }
+          ],
+          "trials": 2,
+          "worst_case_reward": 0.804878
+        }
+      },
+      "strategies": {
+        "operator_coevolution": {
+          "candidate_bundle_byte_delta": 894,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 197632,
+            "cost_usd": 0.06619365,
+            "duration_seconds": 142.215635,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3cf1611add4e5593f94a548ce37faba6b6eed03b9d27e47b26447bfea75d46b5",
+              "name": "operator-coevolution",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/operator-coevolution"
+            },
+            "input_tokens": 225993,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-operator-coevolution-development",
+            "job_digest": {
+              "file_count": 52,
+              "kind": "directory",
+              "sha256": "855bcd1b3ea966729ea96a4cbe11ea23a3eef50f315cfad4bd7a570b6699b39a",
+              "total_bytes": 543737
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:f35c9ca1ddb33f1d1ee85783301c8153cb0e16062864f3a5563f86b94ed7a5ef",
+                "task_name": "repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c0bf4ed4b51c18f69c4251ffb7a9cd766a8e17b4f7e5197b121fb3a56d9501b2",
+                "task_name": "source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "mean_reward": 0.92123725,
+            "output_tokens": 6689,
+            "retries": 0,
+            "rewards": [
+              0.907692,
+              0.907692,
+              1.0,
+              0.869565
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "dda67a4c8e0171b68fbc27ea85d0480addc761212785d6a1b0955f5363b43911",
+                "task_name": "harbor-evolution/scene-plan-repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "fcf9a0b37f71386c06430f2128eb85527624e54eda8293ab8490678dab24f205",
+                "task_name": "harbor-evolution/scene-plan-source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.869565
+          },
+          "candidate_development_delta_mean": -0.021739249999999988,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 181760,
+            "cost_usd": 0.0677055,
+            "duration_seconds": 139.582067,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57",
+              "name": "scene-script-planner",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/scene-script-planner"
+            },
+            "input_tokens": 213142,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-baseline-development-study",
+            "job_digest": {
+              "file_count": 52,
+              "kind": "directory",
+              "sha256": "f05bd4e729478ac47b3dabcaf08ed555e65c09ef2b144ca144dcaf151cfbc967",
+              "total_bytes": 526012
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:f35c9ca1ddb33f1d1ee85783301c8153cb0e16062864f3a5563f86b94ed7a5ef",
+                "task_name": "repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c0bf4ed4b51c18f69c4251ffb7a9cd766a8e17b4f7e5197b121fb3a56d9501b2",
+                "task_name": "source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "mean_reward": 0.9429765,
+            "output_tokens": 6786,
+            "retries": 0,
+            "rewards": [
+              0.907692,
+              0.907692,
+              1.0,
+              0.956522
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "dda67a4c8e0171b68fbc27ea85d0480addc761212785d6a1b0955f5363b43911",
+                "task_name": "harbor-evolution/scene-plan-repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "fcf9a0b37f71386c06430f2128eb85527624e54eda8293ab8490678dab24f205",
+                "task_name": "harbor-evolution/scene-plan-source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.907692
+          },
+          "selected_holdout": {
+            "cache_tokens": 120320,
+            "cost_usd": 0.038190749999999996,
+            "duration_seconds": 79.990767,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57",
+              "name": "scene-script-planner",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/scene-script-planner"
+            },
+            "input_tokens": 131807,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/holdout/20260716-scene-script-planner-baseline-holdout",
+            "job_digest": {
+              "file_count": 28,
+              "kind": "directory",
+              "sha256": "64eda50786bd6235eff2aebfd536b6dfe3dedfe55bd25862c8acc3a8958f478b",
+              "total_bytes": 325638
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c908eb673888576076524945d30ce2579c07c7d702c9d09b67e11039a7826f53",
+                "task_name": "grounded-heat-pump",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/scene-script-planner/dataset/grounded-heat-pump"
+              }
+            ],
+            "mean_reward": 0.8170729999999999,
+            "output_tokens": 4567,
+            "retries": 0,
+            "rewards": [
+              0.829268,
+              0.804878
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "e74d671fb2db53cceb59aae0f7a215b91008e96723c488ae5f0076091fd592e6",
+                "task_name": "harbor-evolution/scene-plan-grounded-heat-pump",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/scene-script-planner/dataset/grounded-heat-pump"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 0.804878
+          },
+          "selected_holdout_delta_mean": 0.0,
+          "selection": "baseline"
+        },
+        "population_search": {
+          "candidate_bundle_byte_delta": 1093,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 198144,
+            "cost_usd": 0.0655173,
+            "duration_seconds": 158.388109,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:97fad8cf731ca543d452df29b929b177c49cb66d59ed20f6fcdabc3a3cdf961e",
+              "name": "population-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/population-search"
+            },
+            "input_tokens": 226554,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-population-search-development",
+            "job_digest": {
+              "file_count": 52,
+              "kind": "directory",
+              "sha256": "f8e64d90181f3ad92edce441c0d80670dea91b9cd9cab5d169407762e05fbe03",
+              "total_bytes": 545401
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:f35c9ca1ddb33f1d1ee85783301c8153cb0e16062864f3a5563f86b94ed7a5ef",
+                "task_name": "repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c0bf4ed4b51c18f69c4251ffb7a9cd766a8e17b4f7e5197b121fb3a56d9501b2",
+                "task_name": "source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "mean_reward": 0.9128762500000001,
+            "output_tokens": 6522,
+            "retries": 0,
+            "rewards": [
+              0.861538,
+              0.876923,
+              0.956522,
+              0.956522
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "dda67a4c8e0171b68fbc27ea85d0480addc761212785d6a1b0955f5363b43911",
+                "task_name": "harbor-evolution/scene-plan-repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "fcf9a0b37f71386c06430f2128eb85527624e54eda8293ab8490678dab24f205",
+                "task_name": "harbor-evolution/scene-plan-source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.861538
+          },
+          "candidate_development_delta_mean": -0.03010024999999994,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 181760,
+            "cost_usd": 0.0677055,
+            "duration_seconds": 139.582067,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57",
+              "name": "scene-script-planner",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/scene-script-planner"
+            },
+            "input_tokens": 213142,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-baseline-development-study",
+            "job_digest": {
+              "file_count": 52,
+              "kind": "directory",
+              "sha256": "f05bd4e729478ac47b3dabcaf08ed555e65c09ef2b144ca144dcaf151cfbc967",
+              "total_bytes": 526012
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:f35c9ca1ddb33f1d1ee85783301c8153cb0e16062864f3a5563f86b94ed7a5ef",
+                "task_name": "repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c0bf4ed4b51c18f69c4251ffb7a9cd766a8e17b4f7e5197b121fb3a56d9501b2",
+                "task_name": "source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "mean_reward": 0.9429765,
+            "output_tokens": 6786,
+            "retries": 0,
+            "rewards": [
+              0.907692,
+              0.907692,
+              1.0,
+              0.956522
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "dda67a4c8e0171b68fbc27ea85d0480addc761212785d6a1b0955f5363b43911",
+                "task_name": "harbor-evolution/scene-plan-repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "fcf9a0b37f71386c06430f2128eb85527624e54eda8293ab8490678dab24f205",
+                "task_name": "harbor-evolution/scene-plan-source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.907692
+          },
+          "selected_holdout": {
+            "cache_tokens": 120320,
+            "cost_usd": 0.038190749999999996,
+            "duration_seconds": 79.990767,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57",
+              "name": "scene-script-planner",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/scene-script-planner"
+            },
+            "input_tokens": 131807,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/holdout/20260716-scene-script-planner-baseline-holdout",
+            "job_digest": {
+              "file_count": 28,
+              "kind": "directory",
+              "sha256": "64eda50786bd6235eff2aebfd536b6dfe3dedfe55bd25862c8acc3a8958f478b",
+              "total_bytes": 325638
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c908eb673888576076524945d30ce2579c07c7d702c9d09b67e11039a7826f53",
+                "task_name": "grounded-heat-pump",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/scene-script-planner/dataset/grounded-heat-pump"
+              }
+            ],
+            "mean_reward": 0.8170729999999999,
+            "output_tokens": 4567,
+            "retries": 0,
+            "rewards": [
+              0.829268,
+              0.804878
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "e74d671fb2db53cceb59aae0f7a215b91008e96723c488ae5f0076091fd592e6",
+                "task_name": "harbor-evolution/scene-plan-grounded-heat-pump",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/scene-script-planner/dataset/grounded-heat-pump"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 0.804878
+          },
+          "selected_holdout_delta_mean": 0.0,
+          "selection": "baseline"
+        },
+        "reflective_pareto_search": {
+          "candidate_bundle_byte_delta": 1050,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 193536,
+            "cost_usd": 0.0797322,
+            "duration_seconds": 147.62635,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:d1d5caed12541a7db8a6231ebc5653a9fc71d5704c215c6772ad71520fc1dbcf",
+              "name": "reflective-pareto-search",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/reflective-pareto-search"
+            },
+            "input_tokens": 242722,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-reflective-pareto-search-development",
+            "job_digest": {
+              "file_count": 52,
+              "kind": "directory",
+              "sha256": "2647937720c858730d3a865c56e9de8658351e5ea01a86211364f8a3935c38e8",
+              "total_bytes": 535381
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:f35c9ca1ddb33f1d1ee85783301c8153cb0e16062864f3a5563f86b94ed7a5ef",
+                "task_name": "repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c0bf4ed4b51c18f69c4251ffb7a9cd766a8e17b4f7e5197b121fb3a56d9501b2",
+                "task_name": "source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "mean_reward": 0.8655517500000001,
+            "output_tokens": 6295,
+            "retries": 0,
+            "rewards": [
+              0.815385,
+              0.907692,
+              0.869565,
+              0.869565
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "dda67a4c8e0171b68fbc27ea85d0480addc761212785d6a1b0955f5363b43911",
+                "task_name": "harbor-evolution/scene-plan-repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "fcf9a0b37f71386c06430f2128eb85527624e54eda8293ab8490678dab24f205",
+                "task_name": "harbor-evolution/scene-plan-source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.815385
+          },
+          "candidate_development_delta_mean": -0.07742474999999993,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 181760,
+            "cost_usd": 0.0677055,
+            "duration_seconds": 139.582067,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57",
+              "name": "scene-script-planner",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/scene-script-planner"
+            },
+            "input_tokens": 213142,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-baseline-development-study",
+            "job_digest": {
+              "file_count": 52,
+              "kind": "directory",
+              "sha256": "f05bd4e729478ac47b3dabcaf08ed555e65c09ef2b144ca144dcaf151cfbc967",
+              "total_bytes": 526012
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:f35c9ca1ddb33f1d1ee85783301c8153cb0e16062864f3a5563f86b94ed7a5ef",
+                "task_name": "repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c0bf4ed4b51c18f69c4251ffb7a9cd766a8e17b4f7e5197b121fb3a56d9501b2",
+                "task_name": "source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "mean_reward": 0.9429765,
+            "output_tokens": 6786,
+            "retries": 0,
+            "rewards": [
+              0.907692,
+              0.907692,
+              1.0,
+              0.956522
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "dda67a4c8e0171b68fbc27ea85d0480addc761212785d6a1b0955f5363b43911",
+                "task_name": "harbor-evolution/scene-plan-repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "fcf9a0b37f71386c06430f2128eb85527624e54eda8293ab8490678dab24f205",
+                "task_name": "harbor-evolution/scene-plan-source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.907692
+          },
+          "selected_holdout": {
+            "cache_tokens": 120320,
+            "cost_usd": 0.038190749999999996,
+            "duration_seconds": 79.990767,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57",
+              "name": "scene-script-planner",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/scene-script-planner"
+            },
+            "input_tokens": 131807,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/holdout/20260716-scene-script-planner-baseline-holdout",
+            "job_digest": {
+              "file_count": 28,
+              "kind": "directory",
+              "sha256": "64eda50786bd6235eff2aebfd536b6dfe3dedfe55bd25862c8acc3a8958f478b",
+              "total_bytes": 325638
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c908eb673888576076524945d30ce2579c07c7d702c9d09b67e11039a7826f53",
+                "task_name": "grounded-heat-pump",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/scene-script-planner/dataset/grounded-heat-pump"
+              }
+            ],
+            "mean_reward": 0.8170729999999999,
+            "output_tokens": 4567,
+            "retries": 0,
+            "rewards": [
+              0.829268,
+              0.804878
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "e74d671fb2db53cceb59aae0f7a215b91008e96723c488ae5f0076091fd592e6",
+                "task_name": "harbor-evolution/scene-plan-grounded-heat-pump",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/scene-script-planner/dataset/grounded-heat-pump"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 0.804878
+          },
+          "selected_holdout_delta_mean": 0.0,
+          "selection": "baseline"
+        },
+        "trace_distillation": {
+          "candidate_bundle_byte_delta": 1888,
+          "candidate_bundle_file_delta": 0,
+          "candidate_development": {
+            "cache_tokens": 179200,
+            "cost_usd": 0.06339675,
+            "duration_seconds": 152.562684,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:ce6e93b435c3dd2049cb1e7f0fb8ab447a2fbc462b9e2629c6365f3f322acc4f",
+              "name": "trace-distillation",
+              "source": ".tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/trace-distillation"
+            },
+            "input_tokens": 204289,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-trace-distillation-development",
+            "job_digest": {
+              "file_count": 52,
+              "kind": "directory",
+              "sha256": "fff067b4f938ae3216e745f3a6f5e9c2b2af3b679103a86edb48b9c6f26aa947",
+              "total_bytes": 532234
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:f35c9ca1ddb33f1d1ee85783301c8153cb0e16062864f3a5563f86b94ed7a5ef",
+                "task_name": "repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c0bf4ed4b51c18f69c4251ffb7a9cd766a8e17b4f7e5197b121fb3a56d9501b2",
+                "task_name": "source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "mean_reward": 0.92123725,
+            "output_tokens": 6920,
+            "retries": 0,
+            "rewards": [
+              0.907692,
+              0.907692,
+              1.0,
+              0.869565
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "dda67a4c8e0171b68fbc27ea85d0480addc761212785d6a1b0955f5363b43911",
+                "task_name": "harbor-evolution/scene-plan-repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "fcf9a0b37f71386c06430f2128eb85527624e54eda8293ab8490678dab24f205",
+                "task_name": "harbor-evolution/scene-plan-source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.869565
+          },
+          "candidate_development_delta_mean": -0.021739249999999988,
+          "changed_from_baseline": true,
+          "selected_development": {
+            "cache_tokens": 181760,
+            "cost_usd": 0.0677055,
+            "duration_seconds": 139.582067,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57",
+              "name": "scene-script-planner",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/scene-script-planner"
+            },
+            "input_tokens": 213142,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-baseline-development-study",
+            "job_digest": {
+              "file_count": 52,
+              "kind": "directory",
+              "sha256": "f05bd4e729478ac47b3dabcaf08ed555e65c09ef2b144ca144dcaf151cfbc967",
+              "total_bytes": 526012
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:f35c9ca1ddb33f1d1ee85783301c8153cb0e16062864f3a5563f86b94ed7a5ef",
+                "task_name": "repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c0bf4ed4b51c18f69c4251ffb7a9cd766a8e17b4f7e5197b121fb3a56d9501b2",
+                "task_name": "source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "mean_reward": 0.9429765,
+            "output_tokens": 6786,
+            "retries": 0,
+            "rewards": [
+              0.907692,
+              0.907692,
+              1.0,
+              0.956522
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "dda67a4c8e0171b68fbc27ea85d0480addc761212785d6a1b0955f5363b43911",
+                "task_name": "harbor-evolution/scene-plan-repair-approved-card-flow",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/repair-approved-card-flow"
+              },
+              {
+                "attempts": 2,
+                "task_checksum": "fcf9a0b37f71386c06430f2128eb85527624e54eda8293ab8490678dab24f205",
+                "task_name": "harbor-evolution/scene-plan-source-grounded-binary-search",
+                "task_path": "evaluations/harbor-evolution-comparison/subjects/scene-script-planner/development/source-grounded-binary-search"
+              }
+            ],
+            "trials": 4,
+            "worst_case_reward": 0.907692
+          },
+          "selected_holdout": {
+            "cache_tokens": 120320,
+            "cost_usd": 0.038190749999999996,
+            "duration_seconds": 79.990767,
+            "errors": 0,
+            "harbor_skill": {
+              "digest": "sha256:3d9d81fa15d72469e16dbe319794f388a1b688267fa55ca23c64e71f12e4be57",
+              "name": "scene-script-planner",
+              "source": ".tmp/harbor-evolution-comparison/20260716/baselines/scene-script-planner"
+            },
+            "input_tokens": 131807,
+            "job": ".tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/holdout/20260716-scene-script-planner-baseline-holdout",
+            "job_digest": {
+              "file_count": 28,
+              "kind": "directory",
+              "sha256": "64eda50786bd6235eff2aebfd536b6dfe3dedfe55bd25862c8acc3a8958f478b",
+              "total_bytes": 325638
+            },
+            "locked_task_cells": [
+              {
+                "attempts": 2,
+                "task_digest": "sha256:c908eb673888576076524945d30ce2579c07c7d702c9d09b67e11039a7826f53",
+                "task_name": "grounded-heat-pump",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/scene-script-planner/dataset/grounded-heat-pump"
+              }
+            ],
+            "mean_reward": 0.8170729999999999,
+            "output_tokens": 4567,
+            "retries": 0,
+            "rewards": [
+              0.829268,
+              0.804878
+            ],
+            "task_cells": [
+              {
+                "attempts": 2,
+                "task_checksum": "e74d671fb2db53cceb59aae0f7a215b91008e96723c488ae5f0076091fd592e6",
+                "task_name": "harbor-evolution/scene-plan-grounded-heat-pump",
+                "task_path": ".tmp/harbor-evolution-comparison/20260716/holdout-release/scene-script-planner/dataset/grounded-heat-pump"
+              }
+            ],
+            "trials": 2,
+            "worst_case_reward": 0.804878
+          },
+          "selected_holdout_delta_mean": 0.0,
+          "selection": "baseline"
+        }
+      }
+    }
+  }
+}

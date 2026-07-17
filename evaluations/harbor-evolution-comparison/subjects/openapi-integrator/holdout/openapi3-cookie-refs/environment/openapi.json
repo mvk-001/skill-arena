@@ -1,0 +1,99 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Parcel Event API",
+    "version": "3.2.0",
+    "description": "Read and append parcel events."
+  },
+  "servers": [
+    {
+      "url": "https://parcel.example.test/service"
+    }
+  ],
+  "security": [
+    {
+      "sessionCookie": []
+    }
+  ],
+  "paths": {
+    "/parcels/{parcelId}/events": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ParcelId"
+        }
+      ],
+      "get": {
+        "operationId": "list.events",
+        "summary": "List parcel events",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event list"
+          }
+        }
+      },
+      "post": {
+        "operationId": "append.event",
+        "summary": "Append a parcel event",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/EventBody"
+        },
+        "responses": {
+          "201": {
+            "description": "Event appended"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "parcel_session"
+      }
+    },
+    "parameters": {
+      "ParcelId": {
+        "name": "parcelId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "requestBodies": {
+      "EventBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "state"
+              ],
+              "properties": {
+                "state": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -52,6 +52,10 @@ Use this route when no useful skill exists yet and you want to build one from tr
 
 ## Choosing between population search and trace distillation
 
-- Use `$skill-arena-population-search` when you want to generate new skill candidates through population-based mutation and crossover.
-- Use `$skill-arena-trace-distillation` when you already have execution traces and want to distill recurring lessons into one consolidated update.
-- The two approaches can be combined: use trace distillation to produce a strong initial skill from existing traces, then use population search to explore further improvements.
+- Use a population-based mutation and crossover loop when you need to generate
+  and explore new candidates; implement it directly or delegate to a matching
+  skill when one is installed.
+- Use this bundle when execution traces already exist and recurring lessons
+  should become one consolidated update.
+- The approaches can be combined: distill a strong initial skill from existing
+  traces, then explore further improvements with a population loop.

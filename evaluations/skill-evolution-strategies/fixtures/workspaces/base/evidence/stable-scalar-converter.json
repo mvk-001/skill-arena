@@ -1,0 +1,91 @@
+{
+  "scenarioId": "stable-scalar-converter",
+  "promptId": "scalar-converter",
+  "subjectId": "animated-svg-to-gif",
+  "baselineCandidateId": "baseline",
+  "minTraceSupport": 2,
+  "traces": [
+    {
+      "traceId": "converter-t1",
+      "tags": [
+        "exact-output"
+      ]
+    },
+    {
+      "traceId": "converter-t2",
+      "tags": [
+        "exact-output"
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "candidateId": "baseline",
+      "devScore": 0.65,
+      "caseScores": {
+        "natural": 0.65,
+        "boundary": 0.65
+      },
+      "operatorId": "control",
+      "parentFitness": 0.65,
+      "patchTags": [],
+      "complexityDelta": 0,
+      "evaluationCost": 2
+    },
+    {
+      "candidateId": "scalar-contract",
+      "devScore": 0.9,
+      "caseScores": {
+        "natural": 0.95,
+        "boundary": 0.75
+      },
+      "operatorId": "broad",
+      "parentFitness": 0.65,
+      "patchTags": [],
+      "complexityDelta": 3,
+      "evaluationCost": 2
+    },
+    {
+      "candidateId": "pareto-balanced",
+      "devScore": 0.84,
+      "caseScores": {
+        "natural": 0.84,
+        "boundary": 0.84
+      },
+      "operatorId": "balanced",
+      "parentFitness": 0.55,
+      "patchTags": [],
+      "complexityDelta": 2,
+      "evaluationCost": 2
+    },
+    {
+      "candidateId": "trace-exact-output",
+      "devScore": 0.82,
+      "caseScores": {
+        "natural": 0.81,
+        "boundary": 0.8
+      },
+      "operatorId": "trace",
+      "parentFitness": 0.6,
+      "patchTags": [
+        "exact-output"
+      ],
+      "complexityDelta": 4,
+      "evaluationCost": 2
+    },
+    {
+      "candidateId": "operator-child",
+      "devScore": 0.83,
+      "caseScores": {
+        "natural": 0.82,
+        "boundary": 0.82
+      },
+      "operatorId": "evolved",
+      "parentFitness": 0.3,
+      "patchTags": [],
+      "complexityDelta": 5,
+      "evaluationCost": 2
+    }
+  ],
+  "holdoutScoresWithheld": true
+}

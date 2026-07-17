@@ -64,3 +64,32 @@ Baseline: `npm test` passes 368 tests before the simplification work.
 - Changing adapter capability claims or isolation semantics.
 - Changing evaluation result schemas.
 - Rewriting large runtime modules solely to reduce line count.
+
+## Execution Result
+
+Status: completed.
+
+- Design ownership is explicit in `AGENTS.md`, the documentation index, and the
+  accepted documentation information-architecture ADR.
+- The benchmark-specific batch skill, historical logs, copied evaluation
+  overlay, duplicate authoring generator, regex validator, and overlapping
+  config-author references were removed.
+- Manifest and compare loaders now share `src/config-file.js`; both execution
+  paths share `src/promptfoo-runner.js`; CLI runners share string option
+  parsing.
+- Undocumented config-generation and dry-run wrappers plus their npm aliases
+  were removed. The package exposes the documented `evaluate`, `gen-conf`, and
+  `val-conf` surface.
+
+Verification completed:
+
+- `npm run check`: 388 tests passed and documentation links passed.
+- `npm run test:coverage`: 95.61% statements, 85.79% branches, 97.23%
+  functions, and 95.61% lines.
+- Config-author evaluation design audit: 8 prompts, 8 task families, all three
+  required case kinds, maximum 42 words, and maximum pairwise Jaccard 0.292.
+- `skill-arena val-conf` and `skill-arena evaluate --dry-run` passed for the
+  maintained config-author evaluation.
+- Top-level and command-specific help passed for all three public commands.
+- `npm pack --dry-run` produced the expected 51-file runtime package surface.
+- `git diff --check` passed.

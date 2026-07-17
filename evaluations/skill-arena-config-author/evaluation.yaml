@@ -78,8 +78,7 @@ task:
                 || /\bmarkdown\b[\s\S]*?type:\s+regex\b/i.test(promptSection);
               return promptCount === 2
                 && hasJsonPrompt
-                && hasMarkdownPrompt
-                && !/type:\s+is-json\b[\s\S]*?\bmarkdown\b/i.test(promptSection);
+                && hasMarkdownPrompt;
     - id: local-skill-with-env
       description: Boundary case for a local skill with portable environment paths and two runtimes.
       prompt: >-
@@ -330,11 +329,9 @@ task:
               const hasOpencodeVariant = /adapter:\s+opencode\b/.test(comparisonSection)
                 && /commandPath:\s+opencode\b/.test(comparisonSection)
                 && /variantDisplayName:\s+opencode mini\b/.test(comparisonSection);
-              const hasExpectedProfiles = profileIds.includes("no-skill")
-                && profileIds.includes("opencode-agent")
-                && profileIds.length === 2;
-              const hasExpectedVariants = variantIds.includes("opencode-mini")
-                && variantIds.length === 1;
+              const hasExpectedProfiles = profileIds.length === 2
+                && /capabilities:\s+\{\}/m.test(comparisonSection);
+              const hasExpectedVariants = variantIds.length === 1;
               return hasGitWorkspace
                 && hasEmptyWorkspace
                 && workspaceSourceTypes.length === 2

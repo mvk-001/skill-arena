@@ -1,0 +1,16 @@
+{
+  "name": "holdout-policy",
+  "thresholds": {
+    "likely_synthetic": 0.6,
+    "uncertain": 0.3
+  },
+  "weights": {
+    "no_exif": 0.8,
+    "channel_correlation": 0.5,
+    "edge_energy": 1.2,
+    "blockiness": 0.7,
+    "periodic_residual": 1.4,
+    "smooth_metadata_free": 0.6
+  },
+  "notes": "Frozen color-image holdout policy; classifications are not provenance claims."
+}

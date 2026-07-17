@@ -1,0 +1,122 @@
+{
+  "kind": "harbor-evolver-corpus-lock",
+  "protocol": {
+    "path": "protocol.yaml",
+    "sha256": "c1bf7ac88f3f0edd52c34f4b4d4e7ccff659a0607f75d8e0c121a188f44ad5e8"
+  },
+  "schema_version": "1",
+  "study_id": "harbor-evolver-comparison-20260716",
+  "subjects": {
+    "deepfake-detector": {
+      "development_config": {
+        "file_count": 1,
+        "kind": "file",
+        "path": "subjects/deepfake-detector/development.yaml",
+        "sha256": "b1d19c1b3d8efa2fd2d27af31596bd53c0bd4325a956eb5511d1fbc5cd361fec",
+        "total_bytes": 466
+      },
+      "development_dataset": {
+        "file_count": 18,
+        "kind": "directory",
+        "path": "subjects/deepfake-detector/development",
+        "sha256": "a23200a0ad6a8e84f12ffd24fd9cfcd56efd926558ab21a233127c2dbd553033",
+        "total_bytes": 35717
+      },
+      "holdout_config": {
+        "file_count": 1,
+        "kind": "file",
+        "path": "subjects/deepfake-detector/holdout.yaml",
+        "sha256": "43b3228084d7d5f49f65c0845b51efc9201edef207b871b820f0f34a7e0e242e",
+        "total_bytes": 458
+      },
+      "holdout_dataset": {
+        "file_count": 10,
+        "kind": "directory",
+        "path": "subjects/deepfake-detector/holdout",
+        "sha256": "4cab96527e6f9018b9ee499d36f2e109012a1fb56fe14d1987f14ea35de34bbf",
+        "total_bytes": 20728
+      },
+      "source_skill": {
+        "file_count": 18,
+        "kind": "directory",
+        "path": "../../../archie-evolution/skills/deepfake-detector",
+        "sha256": "3a6b7cbba3a657edc27b94cb372f13d57ae901a29909f9a72d888c6b7800f166",
+        "total_bytes": 1923702
+      }
+    },
+    "openapi-integrator": {
+      "development_config": {
+        "file_count": 1,
+        "kind": "file",
+        "path": "subjects/openapi-integrator/development.yaml",
+        "sha256": "8c474b410d72520d0fe9de73d8f74b2ea9c9e48ebf1aa2ec2690299dfbffe3b9",
+        "total_bytes": 484
+      },
+      "development_dataset": {
+        "file_count": 14,
+        "kind": "directory",
+        "path": "subjects/openapi-integrator/development",
+        "sha256": "ae6b445a4bab2ba85d4efd8544b0b0be6ca16bc409186c97289dab1f9fc97530",
+        "total_bytes": 23809
+      },
+      "holdout_config": {
+        "file_count": 1,
+        "kind": "file",
+        "path": "subjects/openapi-integrator/holdout.yaml",
+        "sha256": "a59d84ee04b8a3739aa7e12b3d3a8390d26f6121fcd405dff849c220e08f0559",
+        "total_bytes": 472
+      },
+      "holdout_dataset": {
+        "file_count": 7,
+        "kind": "directory",
+        "path": "subjects/openapi-integrator/holdout",
+        "sha256": "926aa21db76da690c7480a53db5845ad2f200345034a435cd8a8881abfe4a36f",
+        "total_bytes": 12999
+      },
+      "source_skill": {
+        "file_count": 9,
+        "kind": "directory",
+        "path": "../../../archie-evolution/skills/openapi-integrator",
+        "sha256": "671ef5fa12661c08f4a0edca514adc79e195cc75b4e3c44692ec0aee2d25d241",
+        "total_bytes": 32013
+      }
+    },
+    "scene-script-planner": {
+      "development_config": {
+        "file_count": 1,
+        "kind": "file",
+        "path": "subjects/scene-script-planner/development.yaml",
+        "sha256": "0be283676aa80f7847ca8a9d04953e756c9d7c73114fa413ae3ceffe448e25a3",
+        "total_bytes": 484
+      },
+      "development_dataset": {
+        "file_count": 14,
+        "kind": "directory",
+        "path": "subjects/scene-script-planner/development",
+        "sha256": "92a255d31160e73c62f00be436333900fc16806020cc5f75a77194245ff431fd",
+        "total_bytes": 37080
+      },
+      "holdout_config": {
+        "file_count": 1,
+        "kind": "file",
+        "path": "subjects/scene-script-planner/holdout.yaml",
+        "sha256": "8f04bb11acb69d72ed20a25ea8c80607e96b62339bde0e7ce920873a07ec2e93",
+        "total_bytes": 472
+      },
+      "holdout_dataset": {
+        "file_count": 7,
+        "kind": "directory",
+        "path": "subjects/scene-script-planner/holdout",
+        "sha256": "2869fddfcae7369e825067814de3b60e5f6cf0f2333c04c435f415e22a441641",
+        "total_bytes": 23141
+      },
+      "source_skill": {
+        "file_count": 4,
+        "kind": "directory",
+        "path": "../../../manim/skills/scene-script-planner",
+        "sha256": "086f2be3a128aa82e32e02510182a41a429737d92c9f9570b6750dde24e1d2b3",
+        "total_bytes": 4801
+      }
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "scenarioId": "plateaued-video-mutations",
+  "promptId": "operator-plateau",
+  "subjectId": "html-d3-anime-video-workflow",
+  "baselineCandidateId": "baseline",
+  "minTraceSupport": 2,
+  "traces": [
+    {
+      "traceId": "video-t1",
+      "tags": [
+        "render-gate"
+      ]
+    },
+    {
+      "traceId": "video-t2",
+      "tags": [
+        "render-gate"
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "candidateId": "baseline",
+      "devScore": 0.67,
+      "caseScores": {
+        "brief": 0.68,
+        "render": 0.65,
+        "recovery": 0.62
+      },
+      "operatorId": "control",
+      "parentFitness": 0.67,
+      "patchTags": [],
+      "complexityDelta": 0,
+      "evaluationCost": 3
+    },
+    {
+      "candidateId": "scalar-overfit",
+      "devScore": 0.93,
+      "caseScores": {
+        "brief": 0.98,
+        "render": 0.5,
+        "recovery": 0.42
+      },
+      "operatorId": "broad",
+      "parentFitness": 0.67,
+      "patchTags": [],
+      "complexityDelta": 14,
+      "evaluationCost": 3
+    },
+    {
+      "candidateId": "pareto-balanced",
+      "devScore": 0.87,
+      "caseScores": {
+        "brief": 0.87,
+        "render": 0.86,
+        "recovery": 0.85
+      },
+      "operatorId": "balanced",
+      "parentFitness": 0.7,
+      "patchTags": [],
+      "complexityDelta": 5,
+      "evaluationCost": 3
+    },
+    {
+      "candidateId": "trace-render-gate",
+      "devScore": 0.84,
+      "caseScores": {
+        "brief": 0.83,
+        "render": 0.82,
+        "recovery": 0.8
+      },
+      "operatorId": "trace",
+      "parentFitness": 0.62,
+      "patchTags": [
+        "render-gate"
+      ],
+      "complexityDelta": 3,
+      "evaluationCost": 3
+    },
+    {
+      "candidateId": "operator-child-a",
+      "devScore": 0.89,
+      "caseScores": {
+        "brief": 0.89,
+        "render": 0.88,
+        "recovery": 0.87
+      },
+      "operatorId": "evolved",
+      "parentFitness": 0.35,
+      "patchTags": [],
+      "complexityDelta": 6,
+      "evaluationCost": 3
+    },
+    {
+      "candidateId": "operator-child-b",
+      "devScore": 0.86,
+      "caseScores": {
+        "brief": 0.86,
+        "render": 0.84,
+        "recovery": 0.85
+      },
+      "operatorId": "evolved",
+      "parentFitness": 0.4,
+      "patchTags": [],
+      "complexityDelta": 4,
+      "evaluationCost": 3
+    }
+  ],
+  "holdoutScoresWithheld": true
+}

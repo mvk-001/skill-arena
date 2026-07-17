@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Reflective Pareto Search"
+  short_description: "Preserve Pareto candidates from Harbor feedback"
+  default_prompt: "Use $harbor-reflective-pareto-search to evolve complementary skill candidates from case-level Harbor feedback."

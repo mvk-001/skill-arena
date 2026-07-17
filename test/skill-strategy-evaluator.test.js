@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import {
+  analyzeLiveResults,
   catalogSkills,
   renderReplayReport,
   replayStrategies,
@@ -68,9 +69,12 @@ test("strategy evaluator replays four selection policies without holdout leakage
     replay.results.find((entry) => entry.strategyId === "population-search").selectedCandidateId,
     "scalar-winner",
   );
-  for (const strategyId of ["trace-distillation", "reflective-pareto-search", "operator-coevolution"]) {
+  for (const strategyId of ["trace-distillation", "reflective-pareto-search"]) {
     assert.equal(replay.results.find((entry) => entry.strategyId === strategyId).selectedCandidateId, "robust");
   }
+  const operator = replay.results.find((entry) => entry.strategyId === "operator-coevolution");
+  assert.equal(operator.selectedCandidateId, "scalar-winner");
+  assert.equal(operator.selectedOperatorId, "focused");
   assert.equal(replay.aggregates.length, 4);
   assert.match(renderReplayReport(replay), /deterministic-mechanism-replay/);
 });
@@ -92,4 +96,28 @@ test("strategy evaluator rejects missing baselines", () => {
   const input = replayFixture();
   input.scenarios[0].baselineCandidateId = "missing";
   assert.throws(() => replayStrategies(input), /baselineCandidateId/);
+});
+
+test("strategy evaluator joins hidden holdout only after live candidate selection", () => {
+  const replayInput = replayFixture();
+  replayInput.scenarios[0].promptId = "toy-prompt";
+  const promptfooResults = {
+    results: {
+      results: [{
+        success: true,
+        provider: { label: "population-search" },
+        metadata: { profileId: "population-search" },
+        testCase: { metadata: { promptId: "toy-prompt" } },
+        response: {
+          output: '{"selectedCandidateId":"scalar-winner"}',
+          tokenUsage: { total: 123 },
+        },
+        latencyMs: 456,
+      }],
+    },
+  };
+  const analysis = analyzeLiveResults(promptfooResults, replayInput);
+  assert.equal(analysis.rows[0].holdoutScore, 0.55);
+  assert.equal(analysis.rows[0].methodFidelity, true);
+  assert.equal(analysis.aggregates[0].meanTotalTokens, 123);
 });

@@ -1,0 +1,39 @@
+{
+  "id": "11000000-0000-0000-0000-000000000002",
+  "task_name": "skill-arena/marker-write",
+  "trial_name": "marker-write__claude02",
+  "trial_uri": "file:///fixture/no-skill/marker-write__claude02",
+  "task_id": { "path": "C:/fixture/marker-write" },
+  "source": "harbor-report-parity-poc",
+  "task_checksum": "sha256:marker-write-v1",
+  "config": {
+    "task": { "path": "C:/fixture/marker-write" },
+    "trial_name": "marker-write__claude02",
+    "agent": { "name": "claude-code", "model_name": "anthropic/claude-haiku-4-5", "skills": [] }
+  },
+  "agent_info": {
+    "name": "claude-code",
+    "version": "2.1.0",
+    "model_info": { "name": "claude-haiku-4-5", "provider": "anthropic" }
+  },
+  "agent_result": {
+    "n_input_tokens": 50,
+    "n_cache_tokens": 5,
+    "n_output_tokens": 5,
+    "cost_usd": 0.005,
+    "metadata": { "final_output": "" }
+  },
+  "verifier_result": null,
+  "exception_info": {
+    "exception_type": "AgentTimeoutError",
+    "exception_message": "Agent exceeded the fixture timeout.",
+    "exception_traceback": "fixture traceback",
+    "occurred_at": "2026-07-13T00:00:06Z"
+  },
+  "started_at": "2026-07-13T00:00:03Z",
+  "finished_at": "2026-07-13T00:00:07Z",
+  "agent_execution": {
+    "started_at": "2026-07-13T00:00:04Z",
+    "finished_at": "2026-07-13T00:00:06Z"
+  }
+}

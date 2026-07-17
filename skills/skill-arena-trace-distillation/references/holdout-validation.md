@@ -13,7 +13,16 @@ Use a small held-out slice to avoid overfitting the consolidation pool.
 
 - Promote the consolidated patch set only if it improves or preserves the validated baseline on the holdout.
 - If the holdout result is worse, keep the baseline and record the failed promotion with the holdout scores.
-- When comparing, use the same fitness resolution rules as the population-search skill (see the fitness-design reference in `skill-arena-population-search`).
+- Freeze one fitness-resolution rule before evaluating the holdout and apply it
+  unchanged to baseline and consolidated skill. Prefer, in order: an explicit
+  numeric `fitness`, a numeric `score`, a summary pass or success rate,
+  `successes / (successes + failures)`, or the mean of per-result scores or
+  success values. Normalize to `0..1` when practical.
+- Give any hard-gate failure fitness `0`. For equal primary fitness, prefer the
+  simpler bundle, then lower evaluation cost, then a deterministic identifier.
+- Use identical evaluator inputs, request counts, cache policy, and runtime
+  conditions for both sides. If repeated baseline runs are materially noisy,
+  stabilize the evaluator before making a promotion decision.
 
 ## When no holdout exists
 

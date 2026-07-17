@@ -1,0 +1,453 @@
+{
+  "baselines": {
+    "deepfake-detector": {
+      "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-baseline-development-study",
+      "development_job_digest": {
+        "file_count": 48,
+        "kind": "directory",
+        "sha256": "d20c8ca311fec3dbfac18e8150654642b8621e15c456985d1fc0964575898b19",
+        "total_bytes": 447454
+      },
+      "score": {
+        "eligible": true,
+        "mean_reward": 0.65,
+        "n_errors": 0,
+        "trial_rewards": [
+          1.0,
+          1.0,
+          0.3,
+          0.3
+        ],
+        "worst_case_reward": 0.3
+      }
+    },
+    "openapi-integrator": {
+      "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-baseline-development-study",
+      "development_job_digest": {
+        "file_count": 44,
+        "kind": "directory",
+        "sha256": "f0bb3649ff7eb7ed0500a8854d958d5e84883c46674932d0e2270c732011d28c",
+        "total_bytes": 863249
+      },
+      "score": {
+        "eligible": true,
+        "mean_reward": 0.85,
+        "n_errors": 0,
+        "trial_rewards": [
+          1.0,
+          0.4,
+          1.0,
+          1.0
+        ],
+        "worst_case_reward": 0.4
+      }
+    },
+    "scene-script-planner": {
+      "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-baseline-development-study",
+      "development_job_digest": {
+        "file_count": 52,
+        "kind": "directory",
+        "sha256": "f05bd4e729478ac47b3dabcaf08ed555e65c09ef2b144ca144dcaf151cfbc967",
+        "total_bytes": 526012
+      },
+      "score": {
+        "eligible": true,
+        "mean_reward": 0.9429765,
+        "n_errors": 0,
+        "trial_rewards": [
+          0.907692,
+          0.907692,
+          1.0,
+          0.956522
+        ],
+        "worst_case_reward": 0.907692
+      }
+    }
+  },
+  "candidates": {
+    "deepfake-detector": {
+      "operator_coevolution": {
+        "candidate": {
+          "file_count": 18,
+          "kind": "directory",
+          "sha256": "23c4cbd45944b3eb383e69788f2cd3be83dc000155ab85cb49b0fe6b2e56a6bf",
+          "total_bytes": 1924675
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-operator-coevolution-development",
+        "development_job_digest": {
+          "file_count": 48,
+          "kind": "directory",
+          "sha256": "5aa049f94ac34ece6c58780476ab06124c814fa918c3b9ae05ae3ca40fdb2743",
+          "total_bytes": 486759
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/operator-coevolution",
+        "score": {
+          "eligible": true,
+          "mean_reward": 1.0,
+          "n_errors": 0,
+          "trial_rewards": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "worst_case_reward": 1.0
+        },
+        "selected_sha256": "23c4cbd45944b3eb383e69788f2cd3be83dc000155ab85cb49b0fe6b2e56a6bf",
+        "selection": "child"
+      },
+      "population_search": {
+        "candidate": {
+          "file_count": 18,
+          "kind": "directory",
+          "sha256": "26ca10a2080709eaae8ff48c4b333c79730112294296d83deeb605760034fbb5",
+          "total_bytes": 1924710
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-population-search-development-audited",
+        "development_job_digest": {
+          "file_count": 48,
+          "kind": "directory",
+          "sha256": "da1bb3aaf20891897ba65e72fe4b4171d4e5c7e80847d6d5440b3f1383b8a910",
+          "total_bytes": 461456
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/population-search",
+        "score": {
+          "eligible": true,
+          "mean_reward": 0.65,
+          "n_errors": 0,
+          "trial_rewards": [
+            1.0,
+            1.0,
+            0.3,
+            0.3
+          ],
+          "worst_case_reward": 0.3
+        },
+        "selected_sha256": "3a6b7cbba3a657edc27b94cb372f13d57ae901a29909f9a72d888c6b7800f166",
+        "selection": "baseline"
+      },
+      "reflective_pareto_search": {
+        "candidate": {
+          "file_count": 18,
+          "kind": "directory",
+          "sha256": "853f3bf79a02205e333adc366b6639e69a38e94e898b3c8292f7185e07992312",
+          "total_bytes": 1924980
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-reflective-pareto-search-development-audited",
+        "development_job_digest": {
+          "file_count": 48,
+          "kind": "directory",
+          "sha256": "3bd498091eacc9cefb51a30dec8b3a26a695c6e0918aaeef5f079cd09c7ab743",
+          "total_bytes": 451595
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/reflective-pareto-search",
+        "score": {
+          "eligible": true,
+          "mean_reward": 1.0,
+          "n_errors": 0,
+          "trial_rewards": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "worst_case_reward": 1.0
+        },
+        "selected_sha256": "853f3bf79a02205e333adc366b6639e69a38e94e898b3c8292f7185e07992312",
+        "selection": "child"
+      },
+      "trace_distillation": {
+        "candidate": {
+          "file_count": 18,
+          "kind": "directory",
+          "sha256": "16984b66c7eb4eece210bf738135fd2693461d88e47a7af350a30d89bbc4fefb",
+          "total_bytes": 1925716
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/deepfake-detector/development/20260716-deepfake-detector-trace-distillation-development-audited",
+        "development_job_digest": {
+          "file_count": 48,
+          "kind": "directory",
+          "sha256": "598437c89ea783c575fde114758b8ed4b1a3049865e7e99f23578c3120e06007",
+          "total_bytes": 474410
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/deepfake-detector/trace-distillation",
+        "score": {
+          "eligible": true,
+          "mean_reward": 1.0,
+          "n_errors": 0,
+          "trial_rewards": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "worst_case_reward": 1.0
+        },
+        "selected_sha256": "16984b66c7eb4eece210bf738135fd2693461d88e47a7af350a30d89bbc4fefb",
+        "selection": "child"
+      }
+    },
+    "openapi-integrator": {
+      "operator_coevolution": {
+        "candidate": {
+          "file_count": 9,
+          "kind": "directory",
+          "sha256": "aaee94008055273b6b83acff78057aba7387b9bf4ad5364f0aaf9ced20ae7a6c",
+          "total_bytes": 33130
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-operator-coevolution-development",
+        "development_job_digest": {
+          "file_count": 44,
+          "kind": "directory",
+          "sha256": "bc1ddcbe4592d49bb5466fb7ce75d5baaf848dfcf54622d2f474d69e3548460d",
+          "total_bytes": 1128048
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/operator-coevolution",
+        "score": {
+          "eligible": true,
+          "mean_reward": 0.76136375,
+          "n_errors": 0,
+          "trial_rewards": [
+            1.0,
+            0.5,
+            0.545455,
+            1.0
+          ],
+          "worst_case_reward": 0.5
+        },
+        "selected_sha256": "671ef5fa12661c08f4a0edca514adc79e195cc75b4e3c44692ec0aee2d25d241",
+        "selection": "baseline"
+      },
+      "population_search": {
+        "candidate": {
+          "file_count": 9,
+          "kind": "directory",
+          "sha256": "9ef42bb3c694a74ad09099d3a51174f7f5fbd061cdc26b954041bb6198f28e5d",
+          "total_bytes": 33288
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-population-search-development",
+        "development_job_digest": {
+          "file_count": 44,
+          "kind": "directory",
+          "sha256": "2d4e8416edaa0941225f06378b44c66dcda4f5a06b8a0d58ab2a8ae39e4ac1ba",
+          "total_bytes": 829099
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/population-search",
+        "score": {
+          "eligible": true,
+          "mean_reward": 1.0,
+          "n_errors": 0,
+          "trial_rewards": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "worst_case_reward": 1.0
+        },
+        "selected_sha256": "9ef42bb3c694a74ad09099d3a51174f7f5fbd061cdc26b954041bb6198f28e5d",
+        "selection": "child"
+      },
+      "reflective_pareto_search": {
+        "candidate": {
+          "file_count": 9,
+          "kind": "directory",
+          "sha256": "cddf45e9cfe2eb559c8658ccc966d47f17c840d76dd227045f42f18c93f04bcb",
+          "total_bytes": 33553
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-reflective-pareto-search-development",
+        "development_job_digest": {
+          "file_count": 44,
+          "kind": "directory",
+          "sha256": "4f24eac84d0f7d0695673e013460d92ecaa7d1fb5541051e74b180f43e8a075c",
+          "total_bytes": 739429
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/reflective-pareto-search",
+        "score": {
+          "eligible": true,
+          "mean_reward": 0.9045455,
+          "n_errors": 0,
+          "trial_rewards": [
+            0.8,
+            1.0,
+            0.909091,
+            0.909091
+          ],
+          "worst_case_reward": 0.8
+        },
+        "selected_sha256": "cddf45e9cfe2eb559c8658ccc966d47f17c840d76dd227045f42f18c93f04bcb",
+        "selection": "child"
+      },
+      "trace_distillation": {
+        "candidate": {
+          "file_count": 9,
+          "kind": "directory",
+          "sha256": "d92ac905da40525bf6ee626dd4980ccab45bbb5a3924da4fda99b78dd94a4319",
+          "total_bytes": 34174
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/openapi-integrator/development/20260716-openapi-integrator-trace-distillation-development",
+        "development_job_digest": {
+          "file_count": 44,
+          "kind": "directory",
+          "sha256": "188b87eaac8d8b9abab299614639db97b6c9af3cde0fc4f99c5124468f3f10f8",
+          "total_bytes": 933369
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/openapi-integrator/trace-distillation",
+        "score": {
+          "eligible": true,
+          "mean_reward": 1.0,
+          "n_errors": 0,
+          "trial_rewards": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "worst_case_reward": 1.0
+        },
+        "selected_sha256": "d92ac905da40525bf6ee626dd4980ccab45bbb5a3924da4fda99b78dd94a4319",
+        "selection": "child"
+      }
+    },
+    "scene-script-planner": {
+      "operator_coevolution": {
+        "candidate": {
+          "file_count": 4,
+          "kind": "directory",
+          "sha256": "a87f142c48c9c94870f3f0402401660e516c4fb38fdbaed09584002cc41f5751",
+          "total_bytes": 5695
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-operator-coevolution-development",
+        "development_job_digest": {
+          "file_count": 52,
+          "kind": "directory",
+          "sha256": "855bcd1b3ea966729ea96a4cbe11ea23a3eef50f315cfad4bd7a570b6699b39a",
+          "total_bytes": 543737
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/operator-coevolution",
+        "score": {
+          "eligible": true,
+          "mean_reward": 0.92123725,
+          "n_errors": 0,
+          "trial_rewards": [
+            0.907692,
+            0.907692,
+            1.0,
+            0.869565
+          ],
+          "worst_case_reward": 0.869565
+        },
+        "selected_sha256": "086f2be3a128aa82e32e02510182a41a429737d92c9f9570b6750dde24e1d2b3",
+        "selection": "baseline"
+      },
+      "population_search": {
+        "candidate": {
+          "file_count": 4,
+          "kind": "directory",
+          "sha256": "65cd94670db43f6a6c39945759a28886cd88d7ac4c2f2c513e86f7b337e76638",
+          "total_bytes": 5894
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-population-search-development",
+        "development_job_digest": {
+          "file_count": 52,
+          "kind": "directory",
+          "sha256": "f8e64d90181f3ad92edce441c0d80670dea91b9cd9cab5d169407762e05fbe03",
+          "total_bytes": 545401
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/population-search",
+        "score": {
+          "eligible": true,
+          "mean_reward": 0.9128762500000001,
+          "n_errors": 0,
+          "trial_rewards": [
+            0.861538,
+            0.876923,
+            0.956522,
+            0.956522
+          ],
+          "worst_case_reward": 0.861538
+        },
+        "selected_sha256": "086f2be3a128aa82e32e02510182a41a429737d92c9f9570b6750dde24e1d2b3",
+        "selection": "baseline"
+      },
+      "reflective_pareto_search": {
+        "candidate": {
+          "file_count": 4,
+          "kind": "directory",
+          "sha256": "dd97f67f1cf299c535a6e670e792d0f1dab9a8d6f149eb219c21f7dff8a1e241",
+          "total_bytes": 5851
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-reflective-pareto-search-development",
+        "development_job_digest": {
+          "file_count": 52,
+          "kind": "directory",
+          "sha256": "2647937720c858730d3a865c56e9de8658351e5ea01a86211364f8a3935c38e8",
+          "total_bytes": 535381
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/reflective-pareto-search",
+        "score": {
+          "eligible": true,
+          "mean_reward": 0.8655517500000001,
+          "n_errors": 0,
+          "trial_rewards": [
+            0.815385,
+            0.907692,
+            0.869565,
+            0.869565
+          ],
+          "worst_case_reward": 0.815385
+        },
+        "selected_sha256": "086f2be3a128aa82e32e02510182a41a429737d92c9f9570b6750dde24e1d2b3",
+        "selection": "baseline"
+      },
+      "trace_distillation": {
+        "candidate": {
+          "file_count": 4,
+          "kind": "directory",
+          "sha256": "c0891213e2320ec85fe835c31f5b3161b9a2a4bafe96f9da5f8e7d8380f8fda0",
+          "total_bytes": 6689
+        },
+        "changed_from_baseline": true,
+        "development_job": "../../.tmp/harbor-evolution-comparison/20260716/jobs/scene-script-planner/development/20260716-scene-script-planner-trace-distillation-development",
+        "development_job_digest": {
+          "file_count": 52,
+          "kind": "directory",
+          "sha256": "fff067b4f938ae3216e745f3a6f5e9c2b2af3b679103a86edb48b9c6f26aa947",
+          "total_bytes": 532234
+        },
+        "path": "../../.tmp/harbor-evolution-comparison/20260716/candidates/scene-script-planner/trace-distillation",
+        "score": {
+          "eligible": true,
+          "mean_reward": 0.92123725,
+          "n_errors": 0,
+          "trial_rewards": [
+            0.907692,
+            0.907692,
+            1.0,
+            0.869565
+          ],
+          "worst_case_reward": 0.869565
+        },
+        "selected_sha256": "086f2be3a128aa82e32e02510182a41a429737d92c9f9570b6750dde24e1d2b3",
+        "selection": "baseline"
+      }
+    }
+  },
+  "corpus_lock_sha256": "d2de1855b48850c8d38735db80650c3cc5b29e810544e990abd6384207dffd82",
+  "kind": "harbor-evolver-candidate-lock",
+  "protocol_sha256": "c1bf7ac88f3f0edd52c34f4b4d4e7ccff659a0607f75d8e0c121a188f44ad5e8",
+  "registry_sha256": "74730e4770e46053bd6ddb231d5e64050697908780ea404bb4afb4c64179f8b4",
+  "schema_version": "1",
+  "study_id": "harbor-evolver-comparison-20260716"
+}

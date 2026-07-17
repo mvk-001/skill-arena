@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "C:\\Users\\villa\\dev\\skills\\.agents\\skills",
+  "skillCount": 21,
+  "digest": "9cde0bbd894fea88176a652a053bd1cc475ae20913a5a6a83a25928f3c0ba21a",
+  "skills": [
+    {
+      "skillId": "animated-svg-to-gif",
+      "declaredName": "animated-svg-to-gif",
+      "description": "Convert animated SVG files into high-quality GIFs by rendering browser-accurate frames and encoding them with an optimized ffmpeg palette. Use when Codex needs to turn CSS, SMIL, Mermaid, D3, ECharts, Slidev, or other animated SVG assets into shareable GIF files, batch-convert SVG folders, tune GIF dimensions, frame rate, duration, loop behavior, or verify conversion quality.",
+      "skillMdLines": 93,
+      "files": 5,
+      "scripts": 2,
+      "references": 0,
+      "assets": 1,
+      "agents": 1
+    },
+    {
+      "skillId": "awsome-videos",
+      "declaredName": "awsome-videos",
+      "description": "Plan, write, direct, produce, critique, or validate fast technical explainer videos using distilled patterns from the 2025-07-06 to 2026-07-06 public Awesome (@awesome-coding) and Fireship YouTube corpus. Orchestrate source, asset-generation, scene-composition, transition, renderer, audio, and visual-review skills for finished work. Use when Codex needs a video brief, script, shot plan, asset plan, composition plan, production package, MP4, or quality gate for high-density programming, AI, web-dev, software-news, or \"100 seconds\" style explainers.",
+      "skillMdLines": 112,
+      "files": 31,
+      "scripts": 18,
+      "references": 5,
+      "assets": 6,
+      "agents": 1
+    },
+    {
+      "skillId": "compose-synchronized-svg",
+      "declaredName": "compose-synchronized-svg",
+      "description": "Design, build, synchronize, and validate giant standalone SVG compositions made from many related diagrams, charts, maps, schematics, illustrations, and explanatory assets. Use when Codex must turn one idea into a coherent 6–16-module megacanvas or a 12–48-module navigable world such as a Path of Exile-style skill tree, giant genealogy, causal atlas, or linked-diagram map; keep recurring concepts visually consistent; propagate canonical values through every relevant view; coordinate focus, time, world-to-district-to-module semantic zoom, or a deterministic camera route for video; and deliver one self-contained interactive SVG with meaningful static and reduced-motion fallbacks.",
+      "skillMdLines": 250,
+      "files": 32,
+      "scripts": 18,
+      "references": 4,
+      "assets": 8,
+      "agents": 1
+    },
+    {
+      "skillId": "d3-animated-svg",
+      "declaredName": "d3-animated-svg",
+      "description": "\"Create, animate, troubleshoot, and validate D3-generated SVG visualizations that complement Mermaid diagrams. Use when Codex needs bespoke data-driven SVG geometry or animated visuals Mermaid does not cover well: simulations, dense hierarchies, edge bundling, chords, parallel sets, asymmetric set-overlap task maps, Voronoi/Delaunay, quadtrees, geospatial projections, cartograms, spike/bubble/hexbin maps, contours, calendar and vaccine-style heatmaps, word clouds, beeswarms, population pyramids, statistical diagnostics, uncertainty views, temporal playback, missing-data series, scientific charts, raster/image analysis, shape/path/arc/text tweens, brush/zoom/selection views, custom glyphs, ternary plots, or animated annotations.\"",
+      "skillMdLines": 68,
+      "files": 1434,
+      "scripts": 62,
+      "references": 263,
+      "assets": 1107,
+      "agents": 1
+    },
+    {
+      "skillId": "d3-composition-evaluator",
+      "declaredName": "d3-composition-evaluator",
+      "description": "Evaluate D3 or SVG composition quality using dynamic symmetry, balance, reading path, label clearance, visible SVG previews, and stable composition IDs. Use when a user asks what is missing or wrong in a D3/SVG pattern, gallery card, composition sheet, or generated visual example.",
+      "skillMdLines": 51,
+      "files": 6,
+      "scripts": 3,
+      "references": 1,
+      "assets": 0,
+      "agents": 1
+    },
+    {
+      "skillId": "d3-composition-recomposer",
+      "declaredName": "d3-composition-recomposer",
+      "description": "Recompose an existing D3 or SVG pattern into a requested composition armature while preserving source data semantics and creating stable composition variant IDs. Use when a user asks to convert, reimagine, or generate balance, diagonal, radial, grid, flow, proportional, or dense-label versions of a pattern.",
+      "skillMdLines": 37,
+      "files": 4,
+      "scripts": 1,
+      "references": 1,
+      "assets": 0,
+      "agents": 1
+    },
+    {
+      "skillId": "d3-logo-design",
+      "declaredName": "d3-logo-design",
+      "description": "Create, adapt, implement, and validate parametric D3/SVG logo systems using only the bundled colorset1 and colorset2 palettes. Use when Codex needs a wordmark, monogram, seal, circular text logo, animal or organic silhouette mask, responsive brand mark, typographic treatment, texture-filled emblem, texture atlas, logo exploration gallery, or reusable HTML/SVG logo generator with adjustable copy, font stack, geometry, texture, scale, rotation, density, and curvature.",
+      "skillMdLines": 79,
+      "files": 33,
+      "scripts": 15,
+      "references": 7,
+      "assets": 9,
+      "agents": 1
+    },
+    {
+      "skillId": "echarts-animated-svg",
+      "declaredName": "echarts-animated-svg",
+      "description": "Animate already-rendered Apache ECharts SVG output and build replayable SVG galleries. Use when Codex needs to render ECharts charts with SVGRenderer or SSR, post-process the resulting SVG instead of rebuilding chart geometry, choose chart-type-specific SVG animation profiles for ECharts chart types, or create an HTML index with controls to replay or restore chart animations.",
+      "skillMdLines": 91,
+      "files": 1922,
+      "scripts": 1,
+      "references": 4,
+      "assets": 1915,
+      "agents": 1
+    },
+    {
+      "skillId": "html-d3-anime-video-workflow",
+      "declaredName": "html-d3-anime-video-workflow",
+      "description": "Improve and run end-to-end video production workflows built from HTML, D3-generated SVG, Anime.js preview choreography, Playwright frame capture, and ffmpeg encoding. Use when Codex needs to create, polish, validate, or iterate on multi-video concept explainers, timestamp-driven web animation videos, research-backed scripted videos, or reusable production pipelines for this stack, while routing component-specific work to the existing D3, Anime.js, Slidev, SVG, and video skills instead of duplicating them.",
+      "skillMdLines": 168,
+      "files": 106,
+      "scripts": 70,
+      "references": 9,
+      "assets": 25,
+      "agents": 1
+    },
+    {
+      "skillId": "manim-svg-video",
+      "declaredName": "manim-svg-video",
+      "description": "Compose many SVG or animated-SVG assets into one configurable Manim-rendered video. Use when Codex needs to discover `.animated.svg` files, place multiple SVG animations in a shared timeline, keep completed SVGs occupying their final mosaic positions, generate a timed MP4 such as a 10-minute showcase, tune Manim layout/timing/import options, or validate SVG-to-video rendering.",
+      "skillMdLines": 58,
+      "files": 7,
+      "scripts": 2,
+      "references": 3,
+      "assets": 0,
+      "agents": 1
+    },
+    {
+      "skillId": "mermaid-animated-svg",
+      "declaredName": "mermaid-animated-svg",
+      "description": "Generate high-quality animated SVGs from Mermaid diagrams while preserving Mermaid-rendered layout, colors, theme variables, custom CSS, and CLI options. Use when Codex needs to render a Mermaid diagram to a static SVG, post-process it into an animated SVG, tune timing or animation style, inspect detected animation elements, control reveal order with element IDs, classes, labels, or an order file, or design Mermaid-comment animation directives.",
+      "skillMdLines": 96,
+      "files": 448,
+      "scripts": 61,
+      "references": 5,
+      "assets": 380,
+      "agents": 1
+    },
+    {
+      "skillId": "mermaid-colorset-styler",
+      "declaredName": "mermaid-colorset-styler",
+      "description": "Style existing Mermaid diagrams in a folder with colorset1 or colorset2. Use when Codex needs to batch-apply a Mermaid base theme, update .mmd files or mermaid code fences in Markdown, preserve existing diagram geometry, add only needed Mermaid color class definitions, or validate coverage across Mermaid diagram types.",
+      "skillMdLines": 115,
+      "files": 21,
+      "scripts": 16,
+      "references": 2,
+      "assets": 1,
+      "agents": 1
+    },
+    {
+      "skillId": "plantuml-colorset-renderer",
+      "declaredName": "plantuml-colorset-renderer",
+      "description": "Render PlantUML diagrams with bundled colorset1 and colorset2 themes and a normalized 1,600+ SVG catalog spanning AWS, Google Cloud, major companies, programming languages, databases, frameworks, infrastructure, AI, code-assistant harnesses, and developer tools. Use when Codex needs to create, style, batch-render, or validate PlantUML `.puml`, `.plantuml`, or `.pu` sources as SVG and PNG, find and insert consistently sized technical logos, build cloud architecture diagrams, or check PlantUML diagram-family coverage.",
+      "skillMdLines": 150,
+      "files": 2094,
+      "scripts": 23,
+      "references": 3,
+      "assets": 2066,
+      "agents": 1
+    },
+    {
+      "skillId": "scene-composition-director",
+      "declaredName": "scene-composition-director",
+      "description": "Create scene-by-scene composition briefs and selection rationale for video, animation, Slidev, HTML/D3/Anime.js, Three.js, Manim, SVG, or storyboard handoffs. Use when Codex needs to choose framing, focal hierarchy, visual armature, safe areas, depth layers, asset roles, text placement, motion phases, and validation criteria for each scene or shot. Keep planning renderer-neutral by default, allow Anime.js as a downstream implementation or handoff runtime when useful, and avoid GSAP unless the user explicitly requests it.",
+      "skillMdLines": 78,
+      "files": 8,
+      "scripts": 3,
+      "references": 3,
+      "assets": 0,
+      "agents": 1
+    },
+    {
+      "skillId": "scene-transition-director",
+      "declaredName": "scene-transition-director",
+      "description": "Design and validate memorable transitions between video, animation, Slidev, HTML/D3/Anime.js, Three.js, Manim, or storyboard scenes. Use when Codex needs to decide what persists across cuts, how a surprising recurring element evolves, how attention is handed off, and whether composition, color, zoom, depth, camera, space, or rhythm should change between scenes before implementation or final render.",
+      "skillMdLines": 73,
+      "files": 9,
+      "scripts": 3,
+      "references": 4,
+      "assets": 0,
+      "agents": 1
+    },
+    {
+      "skillId": "slidev-animejs",
+      "declaredName": "slidev-animejs",
+      "description": "Build, choreograph, troubleshoot, and validate Anime.js animations inside Slidev presentations. Use when Codex needs to add reusable Vue animation components to a Slidev deck, wire Anime.js lifecycle cleanup with Slidev clicks and slide mounts, create CSS, keyframe, JavaScript object, stagger, timeline, playback, timer, animatable, easing, SVG, text, layout, draggable, scroll, scope, WAAPI, or engine-control demos, or verify animated Slidev decks in browser and export workflows.",
+      "skillMdLines": 36,
+      "files": 24523,
+      "scripts": 0,
+      "references": 25,
+      "assets": 24496,
+      "agents": 1
+    },
+    {
+      "skillId": "slidev-echarts",
+      "declaredName": "slidev-echarts",
+      "description": "Build and troubleshoot Apache ECharts visualizations inside Slidev presentations. Use when Codex needs to add reusable ECharts Vue components to a Slidev deck, wire responsive chart containers, create click-driven data stories, tune chart modules and renderers, generate automated Slidev chart videos, or validate charts for browser and export workflows.",
+      "skillMdLines": 36,
+      "files": 26222,
+      "scripts": 0,
+      "references": 27,
+      "assets": 26193,
+      "agents": 1
+    },
+    {
+      "skillId": "slidev-quality-audit",
+      "declaredName": "slidev-quality-audit",
+      "description": "Audit Slidev decks for visual quality regressions with automated Playwright checks and actionable critiques. Use when Codex needs to verify Slidev presentations for off-screen elements, clipped or hidden information, text overlap, low contrast, tiny text, blank charts or media, broken assets, unchanged click states, unsafe margins, and excessive content density before delivering a deck, screenshot set, or video.",
+      "skillMdLines": 81,
+      "files": 4,
+      "scripts": 1,
+      "references": 1,
+      "assets": 0,
+      "agents": 1
+    },
+    {
+      "skillId": "slidev-video",
+      "declaredName": "slidev-video",
+      "description": "Record, export, and validate Slidev decks as video artifacts. Use when Codex needs to turn any Slidev presentation into MP4 or WebM, preserve native Slidev transitions, automate slide and click traversal with Playwright, create recording manifests and screenshots, trim video startup, troubleshoot video export issues, or verify that a Slidev deck renders correctly before delivering a video.",
+      "skillMdLines": 28,
+      "files": 7,
+      "scripts": 1,
+      "references": 4,
+      "assets": 0,
+      "agents": 1
+    },
+    {
+      "skillId": "source-to-video-director",
+      "declaredName": "source-to-video-director",
+      "description": "Create engine-agnostic video source packages, storyboards, shot contracts, and validation checklists from source material such as PRs, product notes, URLs, topic briefs, transcripts, music briefs, existing footage notes, or local assets. Use before rendering with HTML/D3/Anime.js, Slidev, Manim, CSS/WAAPI, or any other video engine when source facts must be frozen, routes chosen, and shot-level contracts written without committing to GSAP or engine-specific timelines.",
+      "skillMdLines": 53,
+      "files": 6,
+      "scripts": 2,
+      "references": 2,
+      "assets": 0,
+      "agents": 1
+    },
+    {
+      "skillId": "threejs-animated-3d",
+      "declaredName": "threejs-animated-3d",
+      "description": "\"Build, animate, troubleshoot, and validate Three.js/WebGL 3D scenes and galleries. Use when Codex needs browser-rendered 3D visuals, animated camera or object motion, particle fields, 3D data views, material and lighting studies, interactive canvas scenes, or a Three.js example page that should be verified with Playwright canvas-pixel checks.\"",
+      "skillMdLines": 89,
+      "files": 1643,
+      "scripts": 0,
+      "references": 3,
+      "assets": 1638,
+      "agents": 1
+    }
+  ]
+}

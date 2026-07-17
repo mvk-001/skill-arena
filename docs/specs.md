@@ -314,6 +314,24 @@ Required skill behavior:
   - `inline-files`
   - `git`
 
+Atomic skill artifact rules:
+
+- An atomic skill is one directory containing `SKILL.md` and any references,
+  scripts, assets, or other support files required by that skill.
+- Paths and relative imports originating in an atomic skill must resolve within
+  that directory. Atomic skills must not require sibling skill directories or
+  repository-root helper files.
+- External platform dependencies are allowed when declared explicitly. Examples
+  include the public Skill Arena CLI, another executable, an API, or a
+  credential supplied through the documented environment contract.
+- Reusing the public Skill Arena CLI is a platform dependency, not a skill
+  composition. Skills should not copy CLI parsing, config validation, or
+  evaluation execution into parallel implementations.
+- A workspace-overlay bundle containing root instructions, multiple skills, or
+  additional capability material is a composition rather than one atomic skill.
+- Composite and orchestrator skills must identify themselves accordingly and
+  declare the skills, capability bundles, or external inputs they require.
+
 Normalization rules for backward-compatible manifests:
 
 - If `skillMode: disabled`, the effective skill config is:
@@ -488,6 +506,23 @@ skill:
 
 - When `capabilities.skills` contains one skill, the effective legacy skill state resolves to that skill for adapter compatibility.
 - Legacy `comparison.skillModes` is still accepted and normalizes into `comparison.profiles`.
+
+### Causal interpretation of skill profiles
+
+- A control and treatment pair may support an individual-skill claim only when
+  the treatment adds exactly one atomic skill and all other declared prompt,
+  workspace, agent, capability, and execution settings remain equivalent.
+- A profile containing multiple skills supports a claim about that skill
+  composition, not the individual causal contribution of any member.
+- A profile that combines a skill with instructions, agents, hooks, MCP,
+  extensions, or plugins likewise supports only a mixed-capability composition
+  claim.
+- Individual attribution within a composition requires additional profiles that
+  isolate the capability, such as single-capability or factorial comparisons
+  under equivalent conditions.
+- Profile ids, descriptions, and reports should label composite or orchestrated
+  treatments so readers do not mistake bundle performance for individual-skill
+  evidence.
 
 ### Compare capability families
 

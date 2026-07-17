@@ -70,6 +70,6 @@ All repository artifacts must be written in English. This includes code, comment
 
 Codex does not have a native stable hook surface in this repository, so use the project closeout script as the required equivalent hook for autonomous loops.
 
-- Before closing an autonomous improvement loop or declaring an agent iteration complete, run `node skills/skill-arena-config-author/scripts/run-rust-analyzer-hook.js`.
+- Before closing an autonomous improvement loop or declaring an agent iteration complete, run `node scripts/run-rust-analyzer-hook.js`.
 - Treat a non-zero exit from that script as a failed closeout check.
 - If `rust-code-analysis` is not installed locally, install or point `SKILL_ARENA_RUST_CODE_ANALYSIS_BIN` at the binary when the loop depends on this guardrail.

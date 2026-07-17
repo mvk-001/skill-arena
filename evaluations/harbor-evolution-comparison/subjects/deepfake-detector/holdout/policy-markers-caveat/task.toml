@@ -1,0 +1,19 @@
+schema_version = "1.3"
+
+[task]
+name = "skill-evolution/deepfake-detector-holdout-policy-markers"
+description = "Transform frozen color-image policy results into a counted review queue with forensic caveats."
+authors = [{ name = "Skill Arena" }]
+keywords = ["skills", "deepfake-detector", "harbor", "holdout"]
+
+[agent]
+timeout_sec = 300.0
+user = "agent"
+network_mode = "public"
+
+[verifier]
+timeout_sec = 60.0
+
+[environment]
+build_timeout_sec = 600.0
+network_mode = "public"

@@ -25,14 +25,10 @@
   },
   "scripts": {
     "docs:check": "node scripts/check-docs.js",
-    "check": "npm run docs:check && npm test",
+    "skills:check": "node scripts/check-skill-bundles.js",
+    "check": "npm run docs:check && npm run skills:check && npm test",
     "test": "node --test test/*.test.js",
-    "test:coverage": "c8 --reporter=text --all --include=src/**/*.js --exclude=src/cli/** --exclude=src/runner.js --exclude=src/providers/codex-system-provider.js --exclude=src/providers/pi-system-provider.js --check-coverage --statements 95 --branches 85 --functions 95 --lines 95 node --test test/*.test.js",
-    "validate:manifest": "node ./src/cli/validate-manifest.js",
-    "generate:config": "node ./src/cli/generate-promptfoo-config.js",
-    "run:benchmark": "node ./src/cli/run-benchmark.js",
-    "benchmark:evaluate": "node ./src/cli/run-evaluate.js",
-    "benchmark:evaluate:dry-run": "node ./src/cli/run-evaluate-dry-run.js"
+    "test:coverage": "c8 --reporter=text --all --include=src/**/*.js --exclude=src/cli/** --exclude=src/runner.js --exclude=src/providers/codex-system-provider.js --exclude=src/providers/pi-system-provider.js --check-coverage --statements 95 --branches 85 --functions 95 --lines 95 node --test test/*.test.js"
   },
   "dependencies": {
     "@openai/codex-sdk": "^0.114.0",

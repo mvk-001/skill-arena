@@ -13,6 +13,8 @@ Start with the guide that matches the work you are doing.
    adapter contract, and output requirements.
 4. [Research foundations](./research-foundations.md) — provenance and adaptation
    boundaries for the skill-improvement workflows.
+5. [Strategy evaluation](./strategy-evaluation.md) — corpus protocol,
+   deterministic replay, live compare config, results, and decision guide.
 
 The maintained examples under [`evaluations/`](../evaluations/) are executable
 references. Use
@@ -42,6 +44,7 @@ Read [`AGENTS.md`](../AGENTS.md) before changing the repository.
 | Maintained benchmark scenarios | [`evaluations/`](../evaluations/) |
 | Validation workflow | [Testing](./testing.md) |
 | Improvement-workflow research provenance | [Research foundations](./research-foundations.md) |
+| Improvement-strategy comparison | [Strategy evaluation](./strategy-evaluation.md) |
 | Historical decisions | [ADRs](../.specs/adr/) |
 | Active implementation plans | [`.specs/plans/`](../.specs/plans/) |
 

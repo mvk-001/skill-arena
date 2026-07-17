@@ -8,6 +8,10 @@ description: Search for a better skill against a fixed workspace and repeatable 
 Improve a skill through repeatable population search instead of one-shot edits.
 Use this skill only when the workspace, benchmark fixture, and scoring method are stable enough to compare generations fairly.
 
+Runtime: execute bundled ESM helpers with Node.js 24 or newer. In commands,
+`<skill-root>` means this installed skill directory. The bundle runs without
+any sibling skill installed.
+
 The workflow's population, mutation, evaluation, and selection mechanics align
 with published prompt-optimization precedents
 [EvoPrompt](https://arxiv.org/abs/2309.08532) and
@@ -16,9 +20,8 @@ operational inspiration is the fixed-metric, keep-or-discard experiment loop in
 [autoresearch](https://github.com/karpathy/autoresearch), which is a software
 project rather than a paper. This implementation searches complete skill
 bundles, uses a fixed top-two survivor policy, and does not reproduce
-Promptbreeder's self-referential mutation-prompt evolution. See
-[Research foundations](../../docs/research-foundations.md) for the provenance
-and adaptation boundaries.
+Promptbreeder's self-referential mutation-prompt evolution; those explicit
+differences define the local adaptation boundary.
 
 ## Inputs
 
@@ -118,9 +121,12 @@ Use `scripts/create-population.js` to materialize the first generation and write
 ### 3. Evaluate every candidate
 
 - Run the same evaluation method for every candidate.
-- When the task is to run, inspect, or summarize Skill Arena evaluation output,
-  use the dedicated skill `$skill-arena-run-results`
-  instead of improvising the reporting workflow. Consider that execution would take several minutes.
+- For Skill Arena evaluations, run `skill-arena val-conf <evaluation.yaml>`,
+  `skill-arena evaluate <evaluation.yaml> --dry-run`, and then
+  `skill-arena evaluate <evaluation.yaml>` directly. Inspect
+  `merged/report.md` first and use `summary.json` for structured details. A
+  result-reporting skill may automate these same steps when available, but is
+  not required. Live execution can take several minutes.
 - Use cache deliberately:
   - prefer fresh execution for newly mutated candidates
   - use `--reuse-unchanged-profiles` or equivalent reuse only when you have

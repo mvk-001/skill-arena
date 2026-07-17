@@ -1,0 +1,9 @@
+{
+  "name": "review-policy",
+  "thresholds": {
+    "likely_synthetic": 0.7,
+    "uncertain": 0.25
+  },
+  "max_pixels": 4096,
+  "notes": "Frozen benchmark policy; its labels are heuristic outputs only."
+}

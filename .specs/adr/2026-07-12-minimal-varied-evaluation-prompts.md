@@ -26,6 +26,11 @@ different output formats provided row count without meaningful task diversity.
 - When an authoring skill designs evaluation prompts, start from the smallest
   plausible user request and keep evaluator-only knowledge in fixtures,
   assertions, and coverage metadata.
+- Preserve user-named task operations, required terms, source ids, and artifact
+  paths verbatim in at least one generated prompt. Minimal wording must not
+  erase traceability by replacing a closed-set term with a synonym.
+- Keep the core prompt-design workflow in `SKILL.md` and move the complete V1
+  schema reference into focused progressive-disclosure references.
 - Record prompt case kinds and task families in a sidecar
   `prompt-coverage.json` development artifact.
 - Validate authored prompt corpora with a deterministic audit that checks
@@ -49,5 +54,7 @@ part of the Skill Arena V1 runtime configuration schema.
 - Naturalistic prompts test whether a skill supplies the workflow it promises,
   while contract-smoke prompts remain available for deterministic script and
   exact-path checks.
+- Exact task-vocabulary preservation improves evaluator traceability without
+  disclosing assertions or prescribing the skill workflow.
 - The static audit cannot prove semantic independence, so prompt and assertion
   review remains required.

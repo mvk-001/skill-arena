@@ -1,0 +1,17 @@
+schema_version = "1.3"
+
+[task]
+name = "skill-arena/marker-write"
+description = "Write a marker that is available only through an installed skill."
+authors = [{ name = "Skill Arena" }]
+keywords = ["skills", "report-parity", "poc"]
+
+[agent]
+timeout_sec = 180.0
+user = "agent"
+
+[verifier]
+timeout_sec = 30.0
+
+[environment]
+network_mode = "public"

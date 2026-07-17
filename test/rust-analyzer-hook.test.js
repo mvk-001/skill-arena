@@ -8,12 +8,7 @@ import { promisify } from "node:util";
 import { fromProjectRoot } from "../src/project-paths.js";
 
 const execFileAsync = promisify(execFile);
-const hookScriptPath = fromProjectRoot(
-  "skills",
-  "skill-arena-config-author",
-  "scripts",
-  "run-rust-analyzer-hook.js",
-);
+const hookScriptPath = fromProjectRoot("scripts", "run-rust-analyzer-hook.js");
 
 test("rust analyzer hook skips cleanly when the binary is missing", async () => {
   const isolatedTempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "skill-arena-rust-hook-missing-"));

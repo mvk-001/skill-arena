@@ -1,0 +1,17 @@
+schema_version = "1.3"
+
+[task]
+name = "harbor-evolution/swagger2-query-body"
+description = "Generate an anchored Swagger 2 skill with query API-key auth and a legacy body parameter."
+authors = [{ name = "Skill Arena" }]
+keywords = ["swagger", "skill-generation", "query-auth", "request-body"]
+
+[agent]
+timeout_sec = 300.0
+user = "agent"
+
+[verifier]
+timeout_sec = 60.0
+
+[environment]
+network_mode = "public"

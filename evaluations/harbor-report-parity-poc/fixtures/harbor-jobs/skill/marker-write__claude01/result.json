@@ -1,0 +1,38 @@
+{
+  "id": "21000000-0000-0000-0000-000000000001",
+  "task_name": "skill-arena/marker-write",
+  "trial_name": "marker-write__claude01",
+  "trial_uri": "file:///fixture/skill/marker-write__claude01",
+  "task_id": { "path": "C:/fixture/marker-write" },
+  "source": "harbor-report-parity-poc",
+  "task_checksum": "sha256:marker-write-v1",
+  "config": {
+    "task": { "path": "C:/fixture/marker-write" },
+    "trial_name": "marker-write__claude01",
+    "agent": {
+      "name": "claude-code",
+      "model_name": "anthropic/claude-haiku-4-5",
+      "skills": ["C:/fixture/skills/harbor-marker-guide"]
+    }
+  },
+  "agent_info": {
+    "name": "claude-code",
+    "version": "2.1.0",
+    "model_info": { "name": "claude-haiku-4-5", "provider": "anthropic" }
+  },
+  "agent_result": {
+    "n_input_tokens": 90,
+    "n_cache_tokens": 15,
+    "n_output_tokens": 20,
+    "cost_usd": 0.012,
+    "metadata": { "final_output": "HARBOR-REPORT-PARITY-42" }
+  },
+  "verifier_result": { "rewards": { "reward": 1 } },
+  "exception_info": null,
+  "started_at": "2026-07-13T01:00:00Z",
+  "finished_at": "2026-07-13T01:00:03Z",
+  "agent_execution": {
+    "started_at": "2026-07-13T01:00:01.000Z",
+    "finished_at": "2026-07-13T01:00:02.200Z"
+  }
+}

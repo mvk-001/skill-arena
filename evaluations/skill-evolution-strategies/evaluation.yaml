@@ -11,63 +11,87 @@ task:
     - id: scalar-converter
       description: Stable scalar-fitness converter case.
       prompt: >-
-        Review subjects/animated-svg-to-gif/SKILL.md and evidence/stable-scalar-converter.json.
-        Use the improvement method available to you. Write output/scalar-converter.json with
-        strategy, selectedCandidateId, evidence, rejectedAlternative, developmentDecision,
-        holdoutRule, and promotionDecision. Return the same JSON as your response.
+        Select an improvement for subjects/animated-svg-to-gif/SKILL.md from
+        evidence/stable-scalar-converter.json. Return one JSON object with strategy,
+        selectedCandidateId, evidence, rejectedAlternative, developmentDecision, holdoutRule,
+        and promotionDecision.
       evaluation:
         assertions:
-          - type: file-contains
-            path: output/scalar-converter.json
-            value: '"selectedCandidateId"'
-          - type: file-contains
-            path: output/scalar-converter.json
-            value: '"promotionDecision"'
+          - type: javascript
+            value: |
+              const text = output.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+              const data = JSON.parse(text);
+              const expected = {
+                "population-search": "scalar-contract",
+                "trace-distillation": "trace-exact-output",
+                "reflective-pareto-search": "pareto-balanced",
+                "operator-coevolution": "scalar-contract",
+              };
+              return data.selectedCandidateId === expected[context?.providerResponse?.metadata?.profileId];
     - id: heterogeneous-orchestrator
       description: Heterogeneous multi-case orchestration case.
       prompt: >-
-        Review subjects/compose-synchronized-svg/SKILL.md and evidence/heterogeneous-svg-orchestration.json.
-        Use the improvement method available to you. Write output/heterogeneous-orchestrator.json
-        with strategy, selectedCandidateId, evidence, rejectedAlternative, developmentDecision,
-        holdoutRule, and promotionDecision. Return the same JSON as your response.
+        Resolve the case trade-offs for subjects/compose-synchronized-svg/SKILL.md using
+        evidence/heterogeneous-svg-orchestration.json. Respond with JSON containing strategy,
+        selectedCandidateId, supporting evidence, one rejectedAlternative, developmentDecision,
+        holdoutRule, and promotionDecision.
       evaluation:
         assertions:
-          - type: file-contains
-            path: output/heterogeneous-orchestrator.json
-            value: '"selectedCandidateId"'
-          - type: file-contains
-            path: output/heterogeneous-orchestrator.json
-            value: '"promotionDecision"'
+          - type: javascript
+            value: |
+              const text = output.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+              const data = JSON.parse(text);
+              const expected = {
+                "population-search": "scalar-overfit",
+                "trace-distillation": "trace-brief-gate",
+                "reflective-pareto-search": "pareto-balanced",
+                "operator-coevolution": "scalar-overfit",
+              };
+              return data.selectedCandidateId === expected[context?.providerResponse?.metadata?.profileId];
     - id: recurring-findings
       description: Recurrent labeled trace evidence case.
       prompt: >-
-        Review subjects/d3-composition-evaluator/SKILL.md and evidence/recurring-composition-findings.json.
-        Use the improvement method available to you. Write output/recurring-findings.json with
-        strategy, selectedCandidateId, evidence, rejectedAlternative, developmentDecision,
-        holdoutRule, and promotionDecision. Return the same JSON as your response.
+        Use the recurring signals in evidence/recurring-composition-findings.json to improve
+        subjects/d3-composition-evaluator/SKILL.md. Return JSON naming strategy,
+        selectedCandidateId, trace evidence, a weaker rejectedAlternative, developmentDecision,
+        holdoutRule, and promotionDecision.
       evaluation:
         assertions:
-          - type: file-contains
-            path: output/recurring-findings.json
-            value: '"selectedCandidateId"'
-          - type: file-contains
-            path: output/recurring-findings.json
-            value: '"promotionDecision"'
+          - type: javascript
+            value: |
+              const text = output.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+              const data = JSON.parse(text);
+              const expected = {
+                "population-search": "scalar-overfit",
+                "trace-distillation": "trace-reconciled-score",
+                "reflective-pareto-search": "pareto-balanced",
+                "operator-coevolution": "scalar-overfit",
+              };
+              return data.selectedCandidateId === expected[context?.providerResponse?.metadata?.profileId];
     - id: operator-plateau
       description: Repeated-generation operator plateau case.
       prompt: >-
-        Review subjects/html-d3-anime-video-workflow/SKILL.md and evidence/plateaued-video-mutations.json.
-        Use the improvement method available to you. Write output/operator-plateau.json with
-        strategy, selectedCandidateId, evidence, rejectedAlternative, developmentDecision,
-        holdoutRule, and promotionDecision. Return the same JSON as your response.
+        The mutations for subjects/html-d3-anime-video-workflow/SKILL.md have plateaued. Analyze
+        evidence/plateaued-video-mutations.json. Reply with JSON containing strategy,
+        selectedCandidateId, operator evidence, rejectedAlternative, developmentDecision,
+        holdoutRule, and promotionDecision.
       evaluation:
         assertions:
-          - type: file-contains
-            path: output/operator-plateau.json
-            value: '"selectedCandidateId"'
-          - type: file-contains
-            path: output/operator-plateau.json
-            value: '"promotionDecision"'
+          - type: javascript
+            value: |
+              const text = output.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+              const data = JSON.parse(text);
+              const expected = {
+                "population-search": "scalar-overfit",
+                "trace-distillation": "trace-render-gate",
+                "reflective-pareto-search": "operator-child-a",
+                "operator-coevolution": "scalar-overfit",
+              };
+              const profileId = context?.providerResponse?.metadata?.profileId;
+              const operatorEvidence = data.operatorEvidence ?? data["operator evidence"];
+              const hasEvolvedElite = profileId !== "operator-coevolution"
+                || JSON.stringify(operatorEvidence ?? {}).includes("evolved");
+              return data.selectedCandidateId === expected[profileId] && hasEvolvedElite;
 workspace:
   sources:
     - id: corpus-snapshot
@@ -78,13 +102,25 @@ workspace:
     initializeGit: true
 evaluation:
   assertions:
-    - type: llm-rubric
-      provider: skill-arena:judge:codex
-      value: >-
-        Score 1.0 only when the JSON response names the applied strategy and selected candidate,
-        cites concrete development evidence, identifies one rejected alternative, separates the
-        development decision from a holdout promotion rule, and does not misrepresent fixture
-        replay scores as a completed live validation.
+    - type: javascript
+      value: |
+        const text = output.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+        const data = JSON.parse(text);
+        const strategy = data.strategy ?? data.appliedStrategy ?? data.method;
+        const evidence = data.evidence ?? data.scoreEvidence ?? data.supportingEvidence
+          ?? data.supportingCases ?? data.traceEvidence ?? data.operatorEvidence
+          ?? data["supporting evidence"] ?? data["operator evidence"];
+        const rejected = data.rejectedAlternative ?? data.oneRejectedAlternative
+          ?? data.weakerRejectedAlternative ?? data["one rejectedAlternative"];
+        return Boolean(
+          strategy
+          && data.selectedCandidateId
+          && evidence
+          && rejected
+          && data.developmentDecision
+          && data.holdoutRule
+          && data.promotionDecision
+        );
   requests: 1
   timeoutMs: 240000
   maxConcurrency: 4
@@ -93,6 +129,7 @@ evaluation:
 comparison:
   profiles:
     - id: population-search
+      description: Fixed scalar-fitness population search.
       isolation:
         inheritSystem: false
       capabilities:
@@ -104,6 +141,7 @@ comparison:
             install:
               strategy: workspace-overlay
     - id: trace-distillation
+      description: Prevalence-based consolidation from labeled traces.
       isolation:
         inheritSystem: false
       capabilities:
@@ -115,6 +153,7 @@ comparison:
             install:
               strategy: workspace-overlay
     - id: reflective-pareto-search
+      description: Per-case reflection with Pareto archive selection.
       isolation:
         inheritSystem: false
       capabilities:
@@ -126,6 +165,7 @@ comparison:
             install:
               strategy: workspace-overlay
     - id: operator-coevolution
+      description: Joint skill-candidate and mutation-operator evolution.
       isolation:
         inheritSystem: false
       capabilities:
@@ -137,13 +177,14 @@ comparison:
             install:
               strategy: workspace-overlay
   variants:
-    - id: codex-mini
+    - id: codex-gpt54
+      description: Local Codex GPT-5.4 comparison variant.
       agent:
         adapter: codex
-        model: gpt-5.1-codex-mini
+        model: gpt-5.4
         executionMethod: command
         commandPath: codex
-        sandboxMode: workspace-write
+        sandboxMode: read-only
         approvalPolicy: never
         webSearchEnabled: false
         networkAccessEnabled: false

@@ -77,7 +77,7 @@ Create a small JSON coverage file beside the evaluation:
 List every prompt exactly once. Then run:
 
 ```bash
-node skills/skill-arena-config-author/scripts/validate-evaluation-design.js evaluations/<skill>/evaluation.yaml --coverage evaluations/<skill>/prompt-coverage.json
+node <skill-root>/scripts/validate-evaluation-design.js evaluations/<skill>/evaluation.yaml --coverage evaluations/<skill>/prompt-coverage.json
 ```
 
 The audit checks prompt count, task-family coverage, required case kinds,
@@ -88,3 +88,13 @@ only when the skill's actual scope justifies the exception.
 This static audit is a design gate, not a semantic grader. Review the prompts
 manually after it passes and keep assertions independent of the skill's own
 examples or self-reported success.
+
+## Contrastive Examples
+
+Good: `Audit the Slidev deck in deck and write grounded findings to output/audit.md.`
+
+Reject: `Read the skill audit script, run its exact command, and ensure the hidden overflow check passes.`
+
+Good: `Convert input/loader.svg to output/loader.gif while preserving its animation.`
+
+Reject: `Use the bundled Playwright capture workflow with the evaluator's expected frame count.`

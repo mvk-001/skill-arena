@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Run Results"
+  short_description: "Run Harbor jobs and publish final reports"
+  default_prompt: "Use $harbor-run-results to validate or run Harbor jobs and publish a native final report."
