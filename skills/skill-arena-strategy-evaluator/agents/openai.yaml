@@ -1,4 +1,4 @@
 interface:
-  display_name: "Strategy Evaluator"
-  short_description: "Compare skill-improvement strategies fairly"
-  default_prompt: "Use $skill-arena-strategy-evaluator to compare skill-improvement strategies on a shared corpus and produce a decision report."
+  display_name: "Strategy Evaluator (Deprecated)"
+  short_description: "Legacy Skill Arena strategy comparison"
+  default_prompt: "Use $skill-arena-strategy-evaluator only to reproduce a legacy study; use $harbor-evolve-skill or a Harbor-native strategy for new work."

@@ -39,6 +39,36 @@ This keeps installation focused on what the CLI needs to:
 - execute evaluations, and
 - report deterministic skill vs no-skill outcomes.
 
+## Deprecated Skill Arena skill logic
+
+The repository-maintained `skill-arena-*` skill bundles are deprecated and
+frozen. Keep them only for reproducing or migrating legacy workflows; do not
+use them for new work, add features to them, or duplicate their logic elsewhere.
+
+Use Harbor-native skills as the only maintained skill workflow surface:
+
+- Author native Harbor `JobConfig` files and use `harbor-run-results` instead
+  of `skill-arena-config-author`, `skill-arena-run-results`, or the legacy
+  `harbor-runner` Skill Arena reporting bridge.
+- Use `harbor-population-search` instead of `skill-arena-population-search`.
+- Use `harbor-trace-distillation` instead of
+  `skill-arena-trace-distillation`.
+- Use `harbor-reflective-pareto-search` instead of
+  `skill-arena-reflective-pareto-search`.
+- Use `harbor-operator-coevolution` instead of
+  `skill-arena-operator-coevolution`.
+- Use `harbor-evolve-skill` or the appropriate Harbor-native strategy instead
+  of `skill-arena-strategy-evaluator`.
+
+Do not revive `skill-arena-compare-batch` or add another Skill Arena-backed
+skill orchestrator. Implement evaluation execution, artifact validation,
+reporting, ranking, selection, and evolution changes once in the relevant
+Harbor-native bundle. Changes to deprecated bundles are limited to removal,
+migration aids, or critical security and compatibility fixes required to read
+existing evidence. This deprecation applies to the skill bundles, not to the
+public Skill Arena CLI runtime, which remains supported until a separate
+decision changes its status.
+
 ## Language policy
 
 All repository artifacts must be written in English. This includes code, comments, documentation, configuration keys, prompt templates stored in the repo, fixture instructions, and benchmark metadata.

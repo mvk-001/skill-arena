@@ -1,4 +1,4 @@
 interface:
-  display_name: "Operator Coevolution"
-  short_description: "Coevolve skill variants and mutation operators"
-  default_prompt: "Use $skill-arena-operator-coevolution to evolve a skill and the mutation operators that improve it."
+  display_name: "Operator Coevolution (Deprecated)"
+  short_description: "Legacy Skill Arena operator coevolution"
+  default_prompt: "Use $skill-arena-operator-coevolution only to reproduce a legacy search; use $harbor-operator-coevolution for new work."

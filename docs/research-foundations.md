@@ -1,5 +1,10 @@
 # Research Foundations
 
+> [!NOTE]
+> The Skill Arena workflow implementations described here are deprecated and
+> retained as historical research context. Their maintained replacements are
+> the corresponding Harbor-native skills.
+
 This document records the provenance of Skill Arena's skill-improvement
 workflows. It distinguishes direct inspiration from related published work and
 states where the repository deliberately implements a narrower or different

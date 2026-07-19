@@ -1,9 +1,14 @@
 ---
 name: skill-arena-run-results
-description: Execute Skill Arena compares and report the outcome clearly to the user. Use when Codex needs to validate a compare config, run a dry-run or live evaluation, inspect merged outputs, and summarize the result without dumping raw harness noise.
+description: Deprecated compatibility skill for executing and reporting Skill Arena compares. Do not use for new evaluation workflows; use harbor-run-results with native Harbor JobConfig and job artifacts instead. Retain only for reproducing or migrating existing Skill Arena comparisons.
 ---
 
 # Skill Arena Run Results
+
+> [!CAUTION]
+> Deprecated. Do not use or extend this skill for new work. Use
+> `harbor-run-results` with native Harbor job artifacts; retain this bundle only
+> to reproduce or migrate existing Skill Arena comparisons.
 
 Execute a Skill Arena compare and present the outcome clearly.
 

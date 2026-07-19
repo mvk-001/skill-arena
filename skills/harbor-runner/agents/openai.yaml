@@ -1,4 +1,4 @@
 interface:
-  display_name: "Harbor Runner"
-  short_description: "Diagnose and run Harbor evaluations safely"
-  default_prompt: "Use $harbor-runner to diagnose, run, and report a repeatable Harbor skill evaluation."
+  display_name: "Harbor Runner (Deprecated)"
+  short_description: "Legacy Harbor-to-Skill-Arena report bridge"
+  default_prompt: "Use $harbor-runner only to reproduce or migrate a legacy Skill Arena-compatible report; use $harbor-run-results for new work."

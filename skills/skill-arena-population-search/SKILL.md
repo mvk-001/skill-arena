@@ -1,9 +1,14 @@
 ---
 name: skill-arena-population-search
-description: Search for a better skill against a fixed workspace and repeatable evaluation target. Use when Codex needs to score a population of alternatives, keep the top two, generate mutated or crossover children, reevaluate them, and discard regressions.
+description: Deprecated Skill Arena population-search workflow. Do not use for new skill evolution; use harbor-population-search with native Harbor jobs and evidence instead. Retain only for reproducing or migrating existing Skill Arena searches.
 ---
 
 # Skill Arena Population Search
+
+> [!CAUTION]
+> Deprecated. Do not use or extend this skill for new work. Use
+> `harbor-population-search`; retain this bundle only to reproduce or migrate
+> existing Skill Arena searches.
 
 Improve a skill through repeatable population search instead of one-shot edits.
 Use this skill only when the workspace, benchmark fixture, and scoring method are stable enough to compare generations fairly.

@@ -1,9 +1,14 @@
 ---
 name: skill-arena-trace-distillation
-description: Distill success and failure traces gathered under a fixed benchmark into a transferable skill update. Use when Codex needs independent trajectory-local patch proposals, prevalence-based consolidation, conflict filtering, and holdout validation.
+description: Deprecated Skill Arena trace-distillation workflow. Do not use for new skill evolution; use harbor-trace-distillation with native Harbor jobs and evidence instead. Retain only for reproducing or migrating existing Skill Arena distillations.
 ---
 
 # Skill Arena Trace Distillation
+
+> [!CAUTION]
+> Deprecated. Do not use or extend this skill for new work. Use
+> `harbor-trace-distillation`; retain this bundle only to reproduce or migrate
+> existing Skill Arena distillations.
 
 Improve a skill by distilling many traces into one consolidated update.
 Use this skill when the benchmark is fixed, traces can be labeled as successes or failures, and the goal is to promote recurring lessons instead of chasing isolated wins.

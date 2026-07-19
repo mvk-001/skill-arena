@@ -1,9 +1,14 @@
 ---
 name: skill-arena-config-author
-description: Generate, repair, and validate Skill Arena compare.yaml files with explicit profiles, variants, sources, assertions, and minimal varied task prompts. Use when Codex needs to author a reproducible skill or capability comparison.
+description: Deprecated compatibility skill for Skill Arena compare configs. Do not use for new evaluation workflows; author native Harbor JobConfig files and use harbor-run-results instead. Retain only for reproducing or migrating existing Skill Arena comparisons.
 ---
 
 # Skill Arena Config Author
+
+> [!CAUTION]
+> Deprecated. Do not use or extend this skill for new work. Author native
+> Harbor `JobConfig` files and use `harbor-run-results`; retain this bundle only
+> to reproduce or migrate existing Skill Arena comparisons.
 
 Author valid Skill Arena V1 compare configs without leaking evaluator knowledge
 into the benchmarked task prompts.

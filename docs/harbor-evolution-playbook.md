@@ -21,7 +21,6 @@ declared development stage.
 
 | Responsibility | Skill | Use it for | Efficiency rule |
 | --- | --- | --- | --- |
-| Execute and normalize into Skill Arena reports | [`harbor-runner`](../skills/harbor-runner/SKILL.md) | Repository-integrated profile comparisons | Use `--skip-run` for completed jobs. |
 | Execute or report native Harbor jobs | [`harbor-run-results`](../skills/harbor-run-results/SKILL.md) | Harbor-only inspection, comparison, and final reports | Inspect existing evidence before requesting a fresh run. |
 | Recover unavailable cells | [`harbor-resume-external-failures`](../skills/harbor-resume-external-failures/SKILL.md) | Verified external failures only | Reuse successful and semantic outcomes; accept the first evaluable retry. |
 | Evolve | [`harbor-population-search`](../skills/harbor-population-search/SKILL.md), [`harbor-trace-distillation`](../skills/harbor-trace-distillation/SKILL.md), [`harbor-reflective-pareto-search`](../skills/harbor-reflective-pareto-search/SKILL.md), [`harbor-operator-coevolution`](../skills/harbor-operator-coevolution/SKILL.md), or [`harbor-evolve-skill`](../skills/harbor-evolve-skill/SKILL.md) | Candidate generation, selection, or both | Choose the least complex mechanism whose evidence contract is satisfied. |
@@ -644,5 +643,5 @@ reference contract before authoring a live configuration.
 | `harbor-resume-external-failures` | `scripts/resume_external_failures.py <config.yaml>` | `--dry-run`, `--doctor` | `--analyze-only` only for sealed recovery input and effective-job materialization |
 
 For results-only work, use `harbor-run-results` rather than invoking an
-optimizer. For Skill Arena report parity across Harbor profiles, use
-`harbor-runner`.
+optimizer. The former `harbor-runner` Skill Arena reporting bridge is
+deprecated and retained only for legacy reproduction and migration.

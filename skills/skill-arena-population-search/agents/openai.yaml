@@ -1,4 +1,4 @@
 interface:
-  display_name: "Skill Arena Population Search"
-  short_description: "Search skill variants on a fixed benchmark"
-  default_prompt: "Use $skill-arena-population-search to search for a better skill against a fixed workspace and repeatable evaluation loop."
+  display_name: "Skill Arena Population Search (Deprecated)"
+  short_description: "Legacy Skill Arena population search"
+  default_prompt: "Use $skill-arena-population-search only to reproduce a legacy search; use $harbor-population-search for new work."

@@ -1,5 +1,10 @@
 # Skill Evolution Strategy Evaluation
 
+> [!CAUTION]
+> This Skill Arena strategy workflow is deprecated and retained only for
+> historical reproduction. Use `harbor-evolve-skill` or the appropriate
+> Harbor-native population, trace, Pareto, or operator workflow for new work.
+
 This evaluation compares four improvement workflows and leaves the full inputs,
 scripts, replay results, and live compare config under
 [`evaluations/skill-evolution-strategies/`](../evaluations/skill-evolution-strategies/).
@@ -152,9 +157,9 @@ In short: start with trace distillation when reusable historical evidence
 already exists; otherwise use reflective Pareto for heterogeneous diagnosed
 cases or population search for one scalar objective. Escalate to operator
 coevolution only after ordinary operators stop improving across generations.
-Use `skill-arena-strategy-evaluator` when the evidence regime is uncertain or
-when the alternatives need a reproducible replay and live comparison; it
-evaluates strategies but does not evolve the skill itself.
+For historical reproduction only, `skill-arena-strategy-evaluator` can replay
+the committed Skill Arena study; it is deprecated and must not be used or
+extended for new strategy work.
 
 For high-stakes promotion, use a staged composition: distill recurrent lessons,
 freeze the resulting baseline, search candidates, retain complementary Pareto

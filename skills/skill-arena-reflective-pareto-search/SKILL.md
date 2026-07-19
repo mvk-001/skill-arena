@@ -1,9 +1,14 @@
 ---
 name: skill-arena-reflective-pareto-search
-description: Improve a skill from per-case execution feedback while preserving complementary candidates on a Pareto archive. Use when Codex has a fixed multi-case benchmark, textual diagnoses or traces for individual failures, and wants feedback-guided edits without collapsing heterogeneous task performance into one scalar score.
+description: Deprecated Skill Arena reflective Pareto workflow. Do not use for new skill evolution; use harbor-reflective-pareto-search with native Harbor jobs and evidence instead. Retain only for reproducing or migrating existing Skill Arena searches.
 ---
 
 # Skill Arena Reflective Pareto Search
+
+> [!CAUTION]
+> Deprecated. Do not use or extend this skill for new work. Use
+> `harbor-reflective-pareto-search`; retain this bundle only to reproduce or
+> migrate existing Skill Arena searches.
 
 Improve one skill through feedback-guided candidate updates and a deterministic
 Pareto archive. Keep the benchmark fixed and preserve candidates that are best
@@ -91,4 +96,3 @@ an optional caller-supplied run timestamp.
 Report the archive, uncovered or weak cases, reflection applied, merge parents
 if any, development and holdout scores, complexity delta, and promotion
 decision. Do not call a development-only winner validated.
-

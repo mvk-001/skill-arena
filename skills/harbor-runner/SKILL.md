@@ -1,9 +1,14 @@
 ---
 name: harbor-runner
-description: Repository-integrated orchestrator for creating, diagnosing, validating, executing, resuming, and normalizing repeatable Harbor evaluations that compare skill and no-skill agent profiles and emit Skill Arena summary.json, merged-summary.json, report.md, and run manifests. Use when Codex needs to scaffold Harbor tasks and job configs, preflight Docker, Compose, task schemas, and agent credentials without model calls, run Harbor trials through Docker or a remote sandbox, normalize existing Harbor job artifacts, enforce fair profile comparisons, or reproduce benchmark reports from Harbor.
+description: Deprecated compatibility bridge from Harbor jobs to Skill Arena report artifacts. Do not use for new evaluation workflows; use harbor-run-results with native Harbor JobConfig and job artifacts instead. Retain only for reproducing or migrating existing Skill Arena-compatible reports.
 ---
 
 # Harbor Runner
+
+> [!CAUTION]
+> Deprecated. Do not use or extend this Skill Arena reporting bridge for new
+> work. Use `harbor-run-results` and native Harbor artifacts; retain this bundle
+> only to reproduce or migrate existing Skill Arena-compatible reports.
 
 Create fair Harbor profile jobs and turn their trial artifacts into the existing
 Skill Arena report contract.

@@ -1,9 +1,14 @@
 ---
 name: skill-arena-strategy-evaluator
-description: Build and run reproducible comparisons of skill-improvement strategies over a real skill corpus. Use when Codex must catalog skills, replay population search, trace distillation, reflective Pareto search, and operator coevolution on shared evidence, aggregate holdout quality, reliability, cost, complexity, and diversity, or publish a decision guide without claiming one universal winner.
+description: Deprecated Skill Arena strategy-comparison workflow. Do not use for new skill evolution; use harbor-evolve-skill or select the appropriate Harbor-native population, trace, Pareto, or operator workflow instead. Retain only for reproducing existing Skill Arena strategy studies.
 ---
 
 # Skill Arena Strategy Evaluator
+
+> [!CAUTION]
+> Deprecated. Do not use or extend this skill for new work. Use
+> `harbor-evolve-skill` or the appropriate Harbor-native strategy; retain this
+> bundle only to reproduce existing Skill Arena strategy studies.
 
 Compare skill-improvement strategies in two separate evidence layers:
 

@@ -1,9 +1,14 @@
 ---
 name: skill-arena-operator-coevolution
-description: Coevolve skill candidates and the mutation instructions that produce them. Use when Codex runs repeated skill-improvement generations, fixed mutation operators have plateaued, and operator success can be credited from parent-to-child fitness changes under a frozen benchmark.
+description: Deprecated Skill Arena operator-coevolution workflow. Do not use for new skill evolution; use harbor-operator-coevolution with native Harbor jobs and evidence instead. Retain only for reproducing or migrating existing Skill Arena searches.
 ---
 
 # Skill Arena Operator Coevolution
+
+> [!CAUTION]
+> Deprecated. Do not use or extend this skill for new work. Use
+> `harbor-operator-coevolution`; retain this bundle only to reproduce or migrate
+> existing Skill Arena searches.
 
 Search two linked populations: skill candidates and mutation operators. Reward
 an operator only when its children improve over their parents, then retain,
