@@ -22,4 +22,4 @@ bin/
 *.tgz
 *.log
 nul
-.agents
+/.agents/

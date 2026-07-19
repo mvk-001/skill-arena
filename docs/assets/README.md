@@ -18,7 +18,8 @@ The sources use `colorset2` so evidence, evaluation, selection, mutation, and
 promotion have consistent semantic colors. Restyle and verify before rendering:
 
 ```powershell
-$Styler = ".agents/skills/mermaid-colorset-styler/scripts/style_mermaid_directory.py"
+$CodexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
+$Styler = Join-Path $CodexHome "skills/mermaid-colorset-styler/scripts/style_mermaid_directory.py"
 
 uv run --script $Styler docs/assets/harbor-evolution `
   --colorset colorset2 --write `
@@ -33,7 +34,8 @@ Render every source with `mermaid-animated-svg` while retaining the static SVG
 used by Markdown:
 
 ```powershell
-$Script = ".agents/skills/mermaid-animated-svg/scripts/animate_mermaid_svg.py"
+$CodexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
+$Script = Join-Path $CodexHome "skills/mermaid-animated-svg/scripts/animate_mermaid_svg.py"
 $Css = "docs/assets/harbor-evolution/harbor-evolution.css"
 $Names = @(
   "harbor-evolution-selector",
@@ -67,7 +69,8 @@ animated render so the final animation frame can be compared against Mermaid's
 unaltered geometry.
 
 ```powershell
-$Script = ".agents/skills/mermaid-animated-svg/scripts/animate_mermaid_svg.py"
+$CodexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
+$Script = Join-Path $CodexHome "skills/mermaid-animated-svg/scripts/animate_mermaid_svg.py"
 
 uv run --script $Script docs/assets/skill-arena-value.mmd `
   -o docs/assets/skill-arena-value.animated.svg `

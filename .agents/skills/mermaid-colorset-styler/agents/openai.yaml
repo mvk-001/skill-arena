@@ -1,4 +1,0 @@
-interface:
-  display_name: "Mermaid Colorset Styler"
-  short_description: "Style Mermaid folders with color sets"
-  default_prompt: "Use $mermaid-colorset-styler to apply colorset1 to every Mermaid diagram in this directory."
