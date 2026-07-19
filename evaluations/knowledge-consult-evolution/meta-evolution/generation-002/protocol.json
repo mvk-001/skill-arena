@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "knowledge-consult-harbor-operator-meta-evolution-g002",
+  "generationId": "generation-002",
+  "evidenceLayer": "live-harbor-target-skill-improvement-with-reused-parent",
+  "purpose": "Test two independent realizations of an evolved Harbor mutation operator while reusing the exact completed generation-001 q003 baseline as parent evidence.",
+  "knowledge": {
+    "commit": "25170692c9e211b7bf719f07d3243cdaf409c88b",
+    "baselineSkillPath": "skills/consult-semantic-okf",
+    "referenceBundlePath": "evaluations/graphrag-cross-paper/bundle"
+  },
+  "target": {
+    "logicalName": "consult-semantic-okf",
+    "baseline": {
+      "candidateId": "baseline",
+      "lineageCandidateId": "00-baseline",
+      "sourceKind": "reused-generation-001-live-parent",
+      "expectedTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7"
+    },
+    "children": [
+      {
+        "candidateId": "explicit-floor-terminal-finalize",
+        "sourcePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-002/candidates/explicit-floor-terminal-finalize/consult-semantic-okf",
+        "manifestPath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-002/candidates/explicit-floor-terminal-finalize/candidate-manifest.json",
+        "operatorRealizationPath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-002/candidates/explicit-floor-terminal-finalize/operator-realization.json",
+        "expectedTreeSha256": "2f6422013f6e27c4d9130604712552ce959605ce2cf47d078887235fbf8ae6d5",
+        "expectedManifestSha256": "54389de3582d8e282cc44fe85b6fa1471f38316d0f2b90914a94e51b779ae36a",
+        "expectedOperatorRealizationSha256": "ad6fdece441ed5b1cb71360f9f8f4cb29fe26c8adf5438aadc083ea097c91849",
+        "parentCandidateId": "00-baseline",
+        "operatorId": "explicit-floor-terminal-finalize"
+      },
+      {
+        "candidateId": "canonical-floor-terminal-finalize",
+        "sourcePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-002/candidates/canonical-floor-terminal-finalize/consult-semantic-okf",
+        "manifestPath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-002/candidates/canonical-floor-terminal-finalize/candidate-manifest.json",
+        "operatorRealizationPath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-002/candidates/canonical-floor-terminal-finalize/operator-realization.json",
+        "expectedTreeSha256": "a5b1f39495edc8c17358f38108cf4fdf106ffe7038a646821b067cd3a965f48b",
+        "expectedManifestSha256": "40fc1aaa1b910afb810841918bf2bef82f8f107a6f481cba770efe8859cbffc1",
+        "expectedOperatorRealizationSha256": "4a225688f201a0a3e4df2e4471d3ea2cf94579f6a39ae08df793460f80688821",
+        "parentCandidateId": "00-baseline",
+        "operatorId": "explicit-floor-terminal-finalize"
+      }
+    ]
+  },
+  "operator": {
+    "operatorId": "explicit-floor-terminal-finalize",
+    "instruction": "Bind any user-declared evidence floor through its exact request clause into preparation and finalization, require the parsed clause to equal the explicit floor, guarantee each planned target source is distinct or fail closed, canonicalize draft evidence deterministically at the finalizer, and make the first successful finalized stdout terminal. Preserve the exact semantic question, keep identities opaque until finalization, and use no task, corpus, or evaluation constants.",
+    "parentOperatorIds": [
+      "bounded-verified-breadth-crossover"
+    ],
+    "origin": "complementary-repair-crossover",
+    "controlOperatorId": "control-no-change",
+    "controlInstruction": "Preserve the baseline bundle unchanged and add no task-specific, corpus-specific, or evaluator-specific content."
+  },
+  "diagnosticRepairSource": {
+    "generationId": "generation-001",
+    "path": "operator-analysis/generation-001/operator-coevolution-log.json",
+    "fileSha256": "e50555dca3ce0a8ecc548a3f7ce497b0a89b7b75be95ba5290cd7a5523bb341f",
+    "schemaVersion": 1,
+    "source": "harbor-operator-coevolution",
+    "evolutionId": "knowledge-consult-harbor-operator-meta-evolution",
+    "generation": 0,
+    "generationSeal": "sha256:784004186af0a19d3b8a506521e72de7678f2baeaf5d6fdc1f99134b5c9b11b5",
+    "evolutionProfileDigest": "sha256:d6b8b7ea794a5aa237e3c33977663cefd55c9710bbd9a45be75d2a509e7b3120",
+    "diagnosticOnly": true,
+    "chainEligible": false,
+    "holdoutOpened": false,
+    "promotion": false,
+    "breedingOperatorCount": 0,
+    "repairReason": "no-qualified-development-candidate",
+    "fitnessAwarded": false,
+    "operatorCreditAwarded": false,
+    "usedAsPreviousGenerationLog": false
+  },
+  "parentEvidence": {
+    "generationId": "generation-001",
+    "taskId": "q003",
+    "candidateId": "baseline",
+    "publicationPath": "publications/q003/result.json",
+    "publicationFileSha256": "a0e306a464e09b220ba5d8db2990c2dd0aab8960b63a6f20086d6f06db7d519f",
+    "publicationSha256": "15d957fb9e44e93a71349ff9c300344203259bd4729a1e6f3b812a6781d07f33",
+    "preparationReceiptPath": "prepared/receipt.json",
+    "preparationReceiptSha256": "ed8ad97c4c31075066207e3942e5e4f9782d1df7d5db1e495974fee783b1e03b",
+    "externalRemediationReceiptPath": "jobs/q003/baseline/external-resume-receipt.json",
+    "externalRemediationReceiptSha256": "c688f09f7a40be0a820f7df20e215b28fd4f861d6eab3cbf59ce5da37b0eff73",
+    "jobDirectory": "jobs/q003/baseline/knowledge-consult-meta-g001-q003-baseline",
+    "jobName": "knowledge-consult-meta-g001-q003-baseline",
+    "taskChecksum": "489934516868c0b8bcd5469c2b7c0439ddae30eea36a0419735c3c00ccda37b0",
+    "jobConfigSha256": "17ae985be099ca46579a9929e479fbaede14ac96d37946c71094157c5e6848a6",
+    "jobLockSha256": "d56d7728ac793638aaba4b6ea365fba7051ec549cf92def48f1ebd886c55eb8e",
+    "jobResultSha256": "e85ac9cfdc3d7e98e0f72b3082be74879b88fba1e8f1f72dcbcbf80767dc4de6",
+    "trialResultSha256": "cae3b82c3b6ac9d9619137c36b910b16ebd94c7c6948708cc453d178e1d7b598",
+    "lockedSkillDigest": "sha256:666d209da5dd961d0eb0cf4cb0a20dfddca68dd2c03d6ecc76aeb2e2a5cf023b"
+  },
+  "preparationTask": {
+    "taskId": "q003",
+    "stage": "design-development",
+    "source": "generation-001/prepared/tasks/q003",
+    "expectedTreeSha256": "877c9335300ce055ace37103bf4bd9a574927d740fb96503471c406151ef6566",
+    "copyIntoGeneration002": false,
+    "environmentDirectoryMustRemainPresentAndEmpty": true
+  },
+  "frozenEvaluationProfile": {
+    "harborVersion": "0.18.0",
+    "agent": {
+      "name": "pi",
+      "version": "0.73.1",
+      "model": "openai-codex/gpt-5.3-codex-spark",
+      "thinking": "high"
+    },
+    "attemptsPerCandidateTask": 1,
+    "retries": 0,
+    "rewardKey": "reward",
+    "passThreshold": 0.000001,
+    "requiredRewards": {
+      "evidence_contract_gate": 1.0,
+      "minimum_document_gate": 1.0,
+      "mechanical_qualification_gate": 1.0
+    }
+  },
+  "frozenEvaluationProfileSha256": "5c2ed5aed2ec0490aac26acba056293e00c78a49849ed1905f08032416898da1",
+  "harbor": {
+    "jobNamePrefix": "knowledge-consult-meta-g002",
+    "authenticationMount": {
+      "source": "/tmp/skill-arena-knowledge-consult-auth",
+      "target": "/root/.pi/agent",
+      "readOnly": false,
+      "isolation": "created with only auth.json, used for both child runs, and removed in one WSL shell session"
+    },
+    "authenticationSourceContract": {
+      "acceptedInput": "auth.json file or Pi auth directory containing auth.json",
+      "jsonRootType": "object",
+      "requiredTopLevelEntry": "openai-codex",
+      "requiredEntryType": "object",
+      "requiredNonEmptyStringFields": [
+        "type",
+        "access",
+        "refresh",
+        "accountId"
+      ],
+      "requiredFiniteNumberField": "expires",
+      "validateBeforeDockerOrHarbor": true,
+      "projectCredentialValues": false,
+      "canonicalCorrectSource": "C:/Users/villa/.pi/agent"
+    },
+    "authenticationBindPreflight": {
+      "image": "semantic-okf-harbor-runtime:1.0",
+      "imageId": "sha256:1315195dcef58980e6d2620eaa41062ea6edc15c3eb8ed47d42c143be57aded5",
+      "network": "none",
+      "requirements": [
+        "/root/.pi/agent contains exactly auth.json",
+        "/root/.pi/agent/settings.json is absent",
+        "no shellPath setting is present",
+        "/bin/bash is executable and bash -lc succeeds",
+        "python is executable",
+        "both candidate compilers are readable",
+        "/tmp is writable",
+        "/root/.pi/agent is writable"
+      ],
+      "mustPassBeforeAnyHarborCall": true,
+      "sameSessionAsHarbor": true
+    },
+    "retryExcludeExceptions": [
+      "ApiUsageLimitError",
+      "RewardFileEmptyError",
+      "VerifierOutputParseError",
+      "AgentTimeoutError",
+      "RewardFileNotFoundError",
+      "VerifierTimeoutError"
+    ],
+    "knowledgeMountReadOnly": true,
+    "authenticationMountReadOnly": false,
+    "modelCallsDuringPreparation": 0
+  },
+  "operatorAnalysis": {
+    "skill": "harbor-operator-coevolution",
+    "phase": "development",
+    "analyzeOnly": true,
+    "complementaryRepair": true,
+    "minimumOperatorTrials": 2,
+    "controlOperatorHasChildren": false,
+    "holdoutDeclarationRequiredBySchema": true,
+    "holdoutPathsMustRemainUnresolved": true,
+    "executeDuringPreparation": false
+  },
+  "callAccounting": {
+    "generation001CompletedModelCalls": 3,
+    "externalBaselineRemediationModelCalls": 0,
+    "generation002ReusedParentModelCalls": 0,
+    "generation002DevelopmentMaximumModelCalls": 2,
+    "cumulativeDevelopmentMaximumModelCalls": 5,
+    "firstValidationMaximumModelCalls": 2,
+    "remainingSmokeMaximumModelCalls": 6,
+    "cumulativeMaximumIncludingValidation": 13,
+    "harborRetries": 0,
+    "stopImmediatelyOnFailedGate": true
+  },
+  "preModelAuthenticationRemediation": {
+    "script": "evaluations/knowledge-consult-evolution/meta-evolution/generation-002/scripts/record-auth-remediation.js",
+    "attemptCount": 2,
+    "expectedModelCalls": 0,
+    "expectedTokensPerAttempt": {
+      "input": 0,
+      "cache": 0,
+      "output": 0
+    },
+    "operatorTrialEligible": false,
+    "resumeSkillEligibility": "must remain false when native evidence is only a generic agent exit plus unstructured error text",
+    "preserveBeforeCorrectedRun": true
+  },
+  "stopPolicy": {
+    "selectionMetric": "reward",
+    "selectionTieBreak": "candidate-id-ascending",
+    "requireCanonicalComparableEvidence": true,
+    "requireEveryConfiguredGate": true,
+    "development": {
+      "taskId": "q003",
+      "variants": [
+        "baseline-reused-generation-001",
+        "explicit-floor-terminal-finalize",
+        "canonical-floor-terminal-finalize"
+      ],
+      "passCondition": "the reused parent and both fresh children are evaluable, at least one child passes evidence_contract_gate, minimum_document_gate, and mechanical_qualification_gate, and that child's hard-gated effective fitness is strictly above the exact parent",
+      "onPass": "permit-first-validation",
+      "onFail": "stop"
+    },
+    "validation": {
+      "taskIds": [
+        "q007",
+        "q018",
+        "q024",
+        "q030"
+      ],
+      "materialization": "forbidden-until-development-gate-passes",
+      "maximumAdditionalModelCalls": 8
+    }
+  },
+  "publication": {
+    "allowedEvidence": [
+      "primary reward",
+      "required gate values",
+      "qualification state",
+      "input/cache/output token counts",
+      "candidate, task, profile, job, lock, result, trial, parent-publication, and remediation-receipt provenance digests",
+      "cumulative call accounting"
+    ],
+    "forbiddenEvidence": [
+      "model text",
+      "relevance identities or values",
+      "agent private trace",
+      "private evaluator details",
+      "oracle content",
+      "private verifier input"
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "attestations": {
+    "candidateFrozenBeforeSelectedTaskRelease": true,
+    "contaminatedTaskContentsObservedByCandidateAuthor": [],
+    "holdoutOrHardContentsObservedByCandidateAuthor": false,
+    "selectedTaskIdsObservedByCandidateAuthor": []
+  },
+  "authorization": {
+    "harborOrModelCallsAuthorizedByLockAlone": false,
+    "holdoutOrHardReleaseAuthorized": false,
+    "selectedTaskMaterializationRequiresFreshAuthSeal": true
+  },
+  "candidate": {
+    "candidateId": "relevance-first-facet-coverage",
+    "logicalName": "consult-semantic-okf",
+    "sourcePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/candidates/relevance-first-facet-coverage/consult-semantic-okf",
+    "tree": {
+      "fileCount": 15,
+      "sha256": "65a91e9ba9846be54bdad82b6192bb030eb235a549d8f7cabb315798b7a970ae",
+      "totalBytes": 157627
+    }
+  },
+  "candidateLockSha256": "a6e9a75b86a74888de4da9e016b370e28dc2778b0b099e6fc0ec9ab23fef405d",
+  "generationId": "generation-005",
+  "kind": "generation-005-candidate-lock",
+  "parent": {
+    "candidateId": "extractive-one-shot-answer",
+    "sourcePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-003/candidates/extractive-one-shot-answer/consult-semantic-okf",
+    "tree": {
+      "fileCount": 15,
+      "sha256": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536",
+      "totalBytes": 152806
+    }
+  },
+  "protocol": {
+    "relativePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/protocol.json",
+    "sha256": "cb4c0c78d2de4ba40ce71cb61f61f85d371b80cb05167b6cc7a3b495e64e58ca"
+  },
+  "provenance": {
+    "candidateManifest": {
+      "fileSha256": "13cb5c30adfd07358fcc267da2e62dbdb6d02dd5d19622544995e73bf907680e",
+      "relativePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/candidates/relevance-first-facet-coverage/candidate-manifest.json"
+    },
+    "feedbackReceipt": {
+      "fileSha256": "66fdd661e03d442385aa506943516acfcb2d534350aa11897d59c8902909f8d3",
+      "relativePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/distillation/q018-feedback-receipt.json",
+      "taskId": "q018"
+    },
+    "feedbackTaskIds": [
+      "q018"
+    ],
+    "mutationProcedure": {
+      "fileSha256": "80c8e8faaac38699664b498bd8944f0a0eec7e4b867746386bb8bcf523fb9c5d",
+      "relativePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/distillation/mutation-procedure.md"
+    },
+    "operatorRealization": {
+      "fileSha256": "43e57322df82831f2c1139e1f56dd6c4a916f539d6432f77cc86fbaf75f64f45",
+      "operatorId": "q018-relevance-first-facet-coverage",
+      "relativePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/candidates/relevance-first-facet-coverage/operator-realization.json"
+    }
+  },
+  "schemaVersion": 1
+}

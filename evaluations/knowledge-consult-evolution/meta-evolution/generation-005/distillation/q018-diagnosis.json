@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "analysisMode": "trajectory-local-failure-analysis",
+  "traceId": "g004-q018-extractive-one-shot-answer",
+  "scope": {
+    "openedCaseIds": ["q018"],
+    "unopenedForwardCasesPreserved": true,
+    "privateQrelsInspected": false,
+    "harborCalls": 0,
+    "modelCalls": 0
+  },
+  "immutableEvidence": [
+    {
+      "artifact": "generation-004/q018/candidate/result.json",
+      "sha256": "accf1b6a33f008599b6397cfb751297f29f222b11d76fb093ed151eec0af4198",
+      "bytes": 6178
+    },
+    {
+      "artifact": "generation-004/q018/candidate/verifier/diagnostics.json",
+      "sha256": "0f344c49e6135baa6e1093010fc61bcd1eea0e458c53fa73851206b6d44f1ae1",
+      "bytes": 604
+    },
+    {
+      "artifact": "generation-004/q018/candidate/verifier/reward.json",
+      "sha256": "c26cd3ba36aba39a72a1abc13cd9229805c3b4a9ece0baa84ae900ab7cf5ef5d",
+      "bytes": 694
+    },
+    {
+      "artifact": "generation-004/q018/candidate/agent/pi.txt",
+      "sha256": "eee957a97dd91169c2df7e45d44c29cf4769acbdb39c0a7b82873295e9c1e31a",
+      "bytes": 236429
+    }
+  ],
+  "observedOutcome": {
+    "status": "scored-response",
+    "terminalOutcome": "answer-emitted",
+    "contractErrors": [],
+    "citedDocumentCount": 8,
+    "coveredRelevantDocumentCount": 5,
+    "minimumDocumentCount": 6,
+    "minimumDocumentGate": false,
+    "mechanicalQualificationGate": false,
+    "reward": 0
+  },
+  "verifiedCause": {
+    "classification": "candidate-attributable",
+    "summary": "Distinct-source breadth passed nominally, but the retrieval planner did not implement its per-facet parameter and lexical matches were too weak to guarantee semantic clause coverage.",
+    "codeEvidence": [
+      "per_facet affected ranking pool size but was not passed into plan_bounded_supports",
+      "explicit alternatives joined by or remained one facet",
+      "planner ranked source novelty ahead of relevance for equal coverage counts",
+      "any positive lexical overlap counted as dimension coverage"
+    ]
+  },
+  "patchProposal": {
+    "candidateId": "relevance-first-facet-coverage",
+    "parentCandidateId": "extractive-one-shot-answer",
+    "targets": [
+      "SKILL.md",
+      "references/harbor-answer-contract.md",
+      "scripts/_cross_source.py",
+      "scripts/harbor_answer.py"
+    ],
+    "expectedEffect": "Increase relevant-document recall by splitting answer roles and alternatives, expanding only generic intent vocabulary, and enforcing distinct-authority coverage per facet before filling the global source floor."
+  },
+  "consolidation": {
+    "traceCount": 1,
+    "minSupport": 1,
+    "status": "speculative-discovery-only",
+    "promotionAllowed": false,
+    "reason": "A single development failure can justify a narrow child proposal but cannot validate or promote it."
+  }
+}

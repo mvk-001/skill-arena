@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "caseId": "knowledge-consult-meta-generation-003-post-agent-verifier-derivation-v2",
+  "derivationContract": "harbor-0.18.0.completed-verifier-journal.task-overwrite-default-omission.derivation-v2",
+  "parentRecoveryContract": {
+    "path": "post-agent-recovery-contract.json",
+    "sha256": "sha256:ee22424a465941f642548f7eb4020456585bf88cf3e67554452a45b1daa32c0e"
+  },
+  "parentCallJournal": {
+    "path": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer/verifier-recovery/attempt-001-verifier-call-journal.json",
+    "sha256": "sha256:85f14f39ac6bd27f054de92c170489e82e957905b188123c8c1ad52808cf0663",
+    "recordDigest": "sha256:38b962fc4f64cb7ee2e797cf39295c7d923a521f3f23e7c7a398eb34d0f6a2cd"
+  },
+  "preservedV1Work": {
+    "path": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer/verifier-recovery/.attempt-001-verifier-work",
+    "artifactDigest": "sha256:b09c1d4f80d441eb6f4edd54a77f9d7bbc6df9b7fcd1b4de4929855bc07ab70a",
+    "directoryManifestDigest": "sha256:de7861836554608e7dff9b22b247a1e0f03624b2b0437a969678757eb0a6ff9b"
+  },
+  "completionDirectory": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer/verifier-recovery-completion/attempt-001",
+  "normalization": {
+    "id": "harbor-taskconfig-overwrite-default-omission-v1",
+    "scope": "JobConfig.tasks[0].overwrite",
+    "expected": false,
+    "observed": "absent",
+    "artifactMutation": false
+  },
+  "sealedFiles": [
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/complete_verifier_derivation_v2.py",
+      "sha256": "sha256:0acea831fa0fb44b7e01132a78d3afb4c1108228637ceb1a586c366ecd17f0c6"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/complete_verifier_derivation_v2.py.lock",
+      "sha256": "sha256:5cc4ba8fc8e0ce28314de87203151a616e6a91b738d4439d2da1450058927fab"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/references/verifier-only-derivation-v2.md",
+      "sha256": "sha256:a664699428fc2ad9dfad4b8d3d6a69ade4b5fdc4036338154a91bc89ebf7333b"
+    },
+    {
+      "path": "run-generation-003-verifier-derivation-v2.sh",
+      "sha256": "sha256:a37163d112ce281c6a28129a5d32b2d863a4a338023e871bd516b5e1ee52ee34"
+    },
+    {
+      "path": "../scripts/evidence-resolution-post-agent-v2.js",
+      "sha256": "sha256:567edcd6b8841a65d6326135498df9e24998857ce95edf98ff974b0089224c06"
+    },
+    {
+      "path": "../scripts/publish-generation-003-post-agent-v2.js",
+      "sha256": "sha256:ec958fab78020cce4c88c7327dba10c2fede1b99da5480f4c6f35ea4cc6aafe8"
+    }
+  ]
+}

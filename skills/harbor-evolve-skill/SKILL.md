@@ -15,9 +15,17 @@ installed skill directory.
 
 ## Method
 
-For every development evaluation, the script copies the baseline bundle,
-replaces only SKILL.md with the current candidate, injects that skill into a
-fresh Harbor trial, and returns reward plus bounded verifier, trajectory, and
+The script first copies the source into an immutable baseline snapshot under
+`baseline-snapshot/skills/<name>` and verifies its Harbor skill digest without
+writing to the source. For every development evaluation, it copies that frozen
+bundle to `<evaluation>/skills/<name>`, replaces only SKILL.md with the current
+candidate, and injects that exact path into a fresh Harbor trial. The physical
+basename observed by Harbor therefore equals the frontmatter name even when the
+source directory uses an alias.
+
+After each trial, the script binds the candidate to Harbor's config, result,
+and lock artifacts by exact source, logical name, and skill digest before using
+its reward. It returns verified reward plus bounded verifier, trajectory, and
 agent-output evidence to GEPA. GEPA reflects on this evidence, proposes
 candidate text, and preserves Pareto-useful candidates across cases.
 
@@ -72,6 +80,12 @@ destination and never mutates the source skill.
 - Preserve the baseline directory and every bundled resource. This method
   evolves SKILL.md only; use a separately reviewed workflow for scripts,
   references, or assets.
+- Require an exact portable frontmatter name: 1-64 lowercase letters, digits,
+  or interior hyphens, excluding Windows-reserved basenames. Never sanitize or
+  substitute a fallback because that changes the installed skill identity.
+- Accept a trial reward only when Harbor's config, result, and lock identify the
+  canonical staged path, exact logical name, and matching staged digest. Treat
+  missing or mismatched provenance as a fatal evaluation failure.
 - Keep candidate and agent execution exceptions visible and score them as zero.
   Abort on recognizable infrastructure, model-compatibility, or authentication
   failures instead of reinterpreting them as candidate quality.
@@ -92,6 +106,8 @@ One live run preserves:
 
 ~~~text
 <output>/
+├── baseline-snapshot/
+│   └── skills/<name>/
 ├── candidate-skill/
 ├── gepa/
 ├── harbor-trials/
@@ -102,9 +118,12 @@ One live run preserves:
 └── report.md
 ~~~
 
-run.json records exact package versions, source/candidate digests, split task
-names, optimizer counts, every holdout result, per-task regressions, and the
-promotion decision.
+Every trial directory contains `skills/<name>` plus `evaluation.json` with the
+candidate SKILL.md digest, staged bundle digest, configured sources, locked
+name/source/digest, and verification status. `run.json` records exact package
+versions, source/snapshot/candidate digests, aggregate provenance counts, split
+task names, optimizer counts, every holdout result, per-task regressions, and
+the promotion decision.
 
 ## Validation
 

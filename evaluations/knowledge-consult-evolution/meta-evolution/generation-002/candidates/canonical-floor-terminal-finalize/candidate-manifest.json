@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "generationId": "generation-002",
+  "candidateId": "canonical-floor-terminal-finalize",
+  "operatorId": "explicit-floor-terminal-finalize",
+  "parentCandidateId": "00-baseline",
+  "parentTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+  "parentBundleTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+  "parentTreeFileCount": 13,
+  "parentTreeTotalBytes": 98881,
+  "parentPublicPilotTreeSha256": "9ee796b5424d3e5090d130bb71f17fb14aeba274f5f3ebaafe15868f2f98df23",
+  "parentSourceCommit": "25170692c9e211b7bf719f07d3243cdaf409c88b",
+  "skill": {
+    "name": "consult-semantic-okf",
+    "bundle": "consult-semantic-okf",
+    "basename": "consult-semantic-okf",
+    "treeSha256": "a5b1f39495edc8c17358f38108cf4fdf106ffe7038a646821b067cd3a965f48b",
+    "fileCount": 15,
+    "totalBytes": 147801,
+    "treeHashAlgorithmId": "meta-tree-sha256-bytewise-v1",
+    "treeHashAlgorithm": "SHA-256 of the concatenation, for files sorted by unsigned UTF-8 bytes of their POSIX relative path, of path UTF-8 + 0x00 + raw file bytes + 0x00; omit every entry named __pycache__ and every filename ending .pyc; do not include the root basename"
+  },
+  "diffFiles": [
+    {
+      "path": "SKILL.md",
+      "change": "modified",
+      "sha256": "3b28648b1bbd1ca0a2624b71bb32e276def8e330b10cd802ab06c6070a3f6673"
+    },
+    {
+      "path": "references/harbor-answer-contract.md",
+      "change": "added",
+      "sha256": "95b859088fbaefd9ba21142c2b13ed3e8c4f85d5ddb4a5ee8545d54168175ce6"
+    },
+    {
+      "path": "scripts/_cross_source.py",
+      "change": "modified",
+      "sha256": "00185694ab590c5fafd8afa177324f4e4bf64b13445bcbab0113efc88bd3a959"
+    },
+    {
+      "path": "scripts/harbor_answer.py",
+      "change": "added",
+      "sha256": "4b51b929514c637695d51970fa1fb16e98e6dddec1b72d0b04266b7a35a07fd1"
+    }
+  ],
+  "verification": {
+    "syntheticTest": "../../tests/test_explicit_floor_terminal_finalize.py",
+    "fixture": "../../tests/fixtures/snapshot",
+    "modelCalls": 0,
+    "privateEvaluationData": false
+  }
+}

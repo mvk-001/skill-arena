@@ -1,0 +1,305 @@
+{
+  "schemaVersion": 2,
+  "studyId": "knowledge-consult-evolution",
+  "resultId": "q003-qualification-pilot-2026-07-18",
+  "evidenceLayer": "native-harbor-qualification-pilot",
+  "status": "complete-no-winner-exploratory",
+  "evidenceUse": "exploratory-diagnostic-only",
+  "promotable": false,
+  "causalComparisonAllowed": false,
+  "notStrategyRanking": true,
+  "task": {
+    "id": "q003",
+    "split": "discovery-smoke",
+    "datasetId": "graphrag-papers-40",
+    "family": "legacy",
+    "mode": "consult-only",
+    "taskChecksum": "489934516868c0b8bcd5469c2b7c0439ddae30eea36a0419735c3c00ccda37b0"
+  },
+  "evaluationProfileRef": "../protocol.json#/evaluationProfile",
+  "observedProfile": {
+    "harborVersion": "0.18.0",
+    "agent": {
+      "name": "pi",
+      "version": "0.73.1",
+      "model": "openai-codex/gpt-5.3-codex-spark",
+      "thinking": "high"
+    },
+    "attemptsPerCandidateTask": 1,
+    "retries": 0,
+    "rewardKey": "reward",
+    "passThreshold": 0.000001,
+    "requiredRewards": {
+      "evidence_contract_gate": 1,
+      "minimum_document_gate": 1,
+      "mechanical_qualification_gate": 1
+    },
+    "minimumDevelopmentPassRate": 1
+  },
+  "runtimeAttestation": {
+    "version": "0.18.0",
+    "method": "operator-captured-cli-and-distribution-metadata",
+    "command": "~/.local/bin/harbor --version",
+    "capturedOn": "2026-07-18",
+    "versionOutputSha256": "f5e9382967c9833066a55808829f3750fc8e1181b170cafd222c37048bb49a77",
+    "distribution": "harbor==0.18.0",
+    "distributionMetadataSha256": "f5d41b4e52d663659c3b88133d9f6c679fbd4f9256cab65affd522c6d21bb2c8",
+    "nativeResultEmbedsHarborVersion": false
+  },
+  "provenance": {
+    "identityConsistent": false,
+    "promotionBlockers": [
+      "single-discovery-task-only",
+      "mixed-installed-skill-identity-provenance",
+      "historical-noncanonical-staging",
+      "no-candidate-passed-mechanical-qualification",
+      "frozen-five-task-smoke-not-completed"
+    ],
+    "evidenceLock": {
+      "path": "q003-evidence.lock.json",
+      "sha256": "9bd995690b452c0e3251f39e625f8c4112f449ed22cae631efaecb72f73def40"
+    },
+    "nativeArtifactsCommitted": false,
+    "nativeArtifactPolicy": "ignored-local-verified-by-checksum",
+    "nativeVerifierCommand": "node evaluations/knowledge-consult-evolution/scripts/publish-q003-pilot.js verify-native"
+  },
+  "analyzerDiagnostics": {
+    "selectedWinner": null,
+    "holdoutStatus": "not-eligible-not-opened",
+    "survivorsByPrimaryFitness": [
+      "01-exact-json-evidence",
+      "03-minimal-direct-support"
+    ],
+    "repairParentsByComplementaryRequiredRewardCoverage": [
+      "04-harbor-legacy-port",
+      "05-context-budgeted"
+    ],
+    "bestEvolvableCandidate": "04-harbor-legacy-port",
+    "interpretation": "historical-analyzer-state-only-not-selection-or-promotion-evidence"
+  },
+  "aggregateUsage": {
+    "candidateTrials": 8,
+    "evaluableTrials": 4,
+    "inputTokens": 13211233,
+    "cacheTokens": 12449920,
+    "outputTokens": 372559,
+    "summedWallClockSeconds": 2562.002,
+    "costUsd": null
+  },
+  "candidates": [
+    {
+      "id": "00-baseline",
+      "treeSha256": "9ee796b5424d3e5090d130bb71f17fb14aeba274f5f3ebaafe15868f2f98df23",
+      "identityMode": "legacy-generic-basename",
+      "installedSkillBasename": "skill",
+      "promotable": false,
+      "evaluable": false,
+      "qualified": false,
+      "outcome": "provider-context-limit",
+      "exceptionType": null,
+      "fitness": null,
+      "reportedReward": 0,
+      "reportedRequiredRewards": {
+        "evidence_contract_gate": 0,
+        "minimum_document_gate": 0,
+        "mechanical_qualification_gate": 0
+      },
+      "mechanicalUtilityDiagnostic": null,
+      "citedDocumentCount": 0,
+      "coveredQrelCount": 0,
+      "inputTokens": 2346645,
+      "cacheTokens": 2216832,
+      "outputTokens": 10121,
+      "durationSeconds": 198.532
+    },
+    {
+      "id": "01-exact-json-evidence",
+      "treeSha256": "bf48772b83f6d2c81d7c8d69757b94a08018ecd8870162922ebf1f742a7a2102",
+      "identityMode": "legacy-generic-basename",
+      "installedSkillBasename": "skill",
+      "promotable": false,
+      "evaluable": true,
+      "qualified": false,
+      "outcome": "answer-emitted-invalid-evidence-identities",
+      "exceptionType": null,
+      "fitness": 0,
+      "reportedReward": 0,
+      "reportedRequiredRewards": {
+        "evidence_contract_gate": 0,
+        "minimum_document_gate": 0,
+        "mechanical_qualification_gate": 0
+      },
+      "mechanicalUtilityDiagnostic": 0.3756381777654179,
+      "citedDocumentCount": 6,
+      "coveredQrelCount": 3,
+      "inputTokens": 3489523,
+      "cacheTokens": 3388544,
+      "outputTokens": 29339,
+      "durationSeconds": 257.413
+    },
+    {
+      "id": "02-multi-paper-breadth",
+      "treeSha256": "fb3a04ca2c77c8819d982a04887621909458daf3748c0a340dcbdf904969ef38",
+      "identityMode": "legacy-generic-basename",
+      "installedSkillBasename": "skill",
+      "promotable": false,
+      "evaluable": false,
+      "qualified": false,
+      "outcome": "provider-context-limit",
+      "exceptionType": null,
+      "fitness": null,
+      "reportedReward": 0,
+      "reportedRequiredRewards": {
+        "evidence_contract_gate": 0,
+        "minimum_document_gate": 0,
+        "mechanical_qualification_gate": 0
+      },
+      "mechanicalUtilityDiagnostic": null,
+      "citedDocumentCount": 0,
+      "coveredQrelCount": 0,
+      "inputTokens": 1964712,
+      "cacheTokens": 1839360,
+      "outputTokens": 6934,
+      "durationSeconds": 341.265
+    },
+    {
+      "id": "03-minimal-direct-support",
+      "treeSha256": "c15336413aafefaed6b3b6f4f83a6e63e7afbba87ff759224642c7995d88e033",
+      "identityMode": "legacy-generic-basename",
+      "installedSkillBasename": "skill",
+      "promotable": false,
+      "evaluable": true,
+      "qualified": false,
+      "outcome": "answer-emitted-invalid-locator-contract",
+      "exceptionType": null,
+      "fitness": 0,
+      "reportedReward": 0,
+      "reportedRequiredRewards": {
+        "evidence_contract_gate": 0,
+        "minimum_document_gate": 0,
+        "mechanical_qualification_gate": 0
+      },
+      "mechanicalUtilityDiagnostic": 0.6558223298697219,
+      "citedDocumentCount": 8,
+      "coveredQrelCount": 5,
+      "inputTokens": 2782997,
+      "cacheTokens": 2658816,
+      "outputTokens": 35307,
+      "durationSeconds": 191.757
+    },
+    {
+      "id": "04-harbor-legacy-port",
+      "treeSha256": "747b0e357b6edbd4682f1d8a8ea524fb570893a6b527b205bdd6661af5115c92",
+      "identityMode": "legacy-generic-basename",
+      "installedSkillBasename": "skill",
+      "promotable": false,
+      "evaluable": true,
+      "qualified": false,
+      "outcome": "answer-emitted-contract-valid-coverage-below-minimum",
+      "exceptionType": null,
+      "fitness": 0,
+      "reportedReward": 0,
+      "reportedRequiredRewards": {
+        "evidence_contract_gate": 1,
+        "minimum_document_gate": 0,
+        "mechanical_qualification_gate": 0
+      },
+      "mechanicalUtilityDiagnostic": 0.6571727732101528,
+      "citedDocumentCount": 7,
+      "coveredQrelCount": 5,
+      "inputTokens": 1176645,
+      "cacheTokens": 1031040,
+      "outputTokens": 19886,
+      "durationSeconds": 159.268
+    },
+    {
+      "id": "05-context-budgeted",
+      "treeSha256": "39234fac9f7c32b47e6730800d6ce8d26917f70b5c098aec034ef95998f06d2e",
+      "identityMode": "candidate-id-basename",
+      "installedSkillBasename": "05-context-budgeted",
+      "promotable": false,
+      "evaluable": true,
+      "qualified": false,
+      "outcome": "answer-emitted-invalid-locator-contract",
+      "exceptionType": null,
+      "fitness": 0,
+      "reportedReward": 0,
+      "reportedRequiredRewards": {
+        "evidence_contract_gate": 0,
+        "minimum_document_gate": 1,
+        "mechanical_qualification_gate": 0
+      },
+      "mechanicalUtilityDiagnostic": 0.7816185214966725,
+      "citedDocumentCount": 10,
+      "coveredQrelCount": 7,
+      "inputTokens": 1399091,
+      "cacheTokens": 1284096,
+      "outputTokens": 33012,
+      "durationSeconds": 145.72
+    },
+    {
+      "id": "06-compiler-first",
+      "treeSha256": "99ae90265de234b7778dd113b668c6c058e9183530d6d4649ac6ad98865f900e",
+      "identityMode": "logical-name-basename",
+      "installedSkillBasename": "consult-semantic-okf",
+      "promotable": false,
+      "evaluable": false,
+      "qualified": false,
+      "outcome": "provider-context-limit-before-finalize",
+      "exceptionType": null,
+      "fitness": null,
+      "reportedReward": 0,
+      "reportedRequiredRewards": {
+        "evidence_contract_gate": 0,
+        "minimum_document_gate": 0,
+        "mechanical_qualification_gate": 0
+      },
+      "mechanicalUtilityDiagnostic": null,
+      "citedDocumentCount": 0,
+      "coveredQrelCount": 0,
+      "inputTokens": 36512,
+      "cacheTokens": 23040,
+      "outputTokens": 116172,
+      "durationSeconds": 602.43
+    },
+    {
+      "id": "07-four-call-finalizer",
+      "treeSha256": "0ab006e6aad039eadb5991142b5dfc10ddc59792c86c81cc6c5b8f43c94dceca",
+      "identityMode": "logical-name-basename",
+      "installedSkillBasename": "consult-semantic-okf",
+      "promotable": false,
+      "evaluable": false,
+      "qualified": false,
+      "outcome": "provider-context-limit-and-agent-timeout-before-finalize",
+      "exceptionType": "AgentTimeoutError",
+      "fitness": null,
+      "reportedReward": 0,
+      "reportedRequiredRewards": {
+        "evidence_contract_gate": 0,
+        "minimum_document_gate": 0,
+        "mechanical_qualification_gate": 0
+      },
+      "mechanicalUtilityDiagnostic": null,
+      "citedDocumentCount": 0,
+      "coveredQrelCount": 0,
+      "inputTokens": 15108,
+      "cacheTokens": 8192,
+      "outputTokens": 121788,
+      "durationSeconds": 665.617
+    }
+  ],
+  "semanticReview": {
+    "performed": false,
+    "reason": "No candidate passed the frozen mechanical qualification gates."
+  },
+  "limitations": [
+    "This is one discovery smoke task, not the five-task smoke or 24-task development benchmark.",
+    "It validates Harbor artifact handling and supplies mutation evidence; it does not rank strategies or estimate causal candidate effects.",
+    "Candidates 00 through 04 used the legacy generic basename skill, candidate 05 used its candidate ID, and only candidates 06 and 07 used the canonical logical basename.",
+    "Mixed installed identity and historical staging make every row exploratory and non-promotable, including the canonically staged rows.",
+    "Mechanical utility shown behind a failed gate is diagnostic only and is not reward, qualification, semantic correctness, causal evidence, or promotion evidence.",
+    "Harbor 0.18.0 is operator-attested because that runtime did not embed its package version in native result JSON.",
+    "Raw native jobs remain ignored because they contain machine-local metadata; their public projections and SHA-256 locks are tracked.",
+    "No holdout or hard task was opened."
+  ]
+}

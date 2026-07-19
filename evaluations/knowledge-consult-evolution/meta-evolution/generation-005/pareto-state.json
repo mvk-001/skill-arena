@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "benchmarkId": "knowledge-consult-g004-forward-development",
+  "caseScope": ["q018"],
+  "archive": [
+    {
+      "candidateId": "extractive-one-shot-answer",
+      "treeSha256": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536",
+      "q018Score": 0,
+      "status": "preserved-parent"
+    }
+  ],
+  "children": [
+    {
+      "candidateId": "relevance-first-facet-coverage",
+      "parentCandidateId": "extractive-one-shot-answer",
+      "q018Score": null,
+      "status": "unevaluated-development-child"
+    }
+  ],
+  "promotionDecision": "not-evaluated",
+  "holdoutOpened": false
+}

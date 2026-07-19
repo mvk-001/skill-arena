@@ -1,0 +1,129 @@
+{
+  "consolidatedAt": "2026-07-19T17:06:18.178Z",
+  "minSupport": 1,
+  "aggregated": [
+    {
+      "patchId": "issue:ignored-per-facet-contract",
+      "targetFile": "SKILL.md",
+      "changeType": "strengthen-rule",
+      "conflictGroup": "generic-ignored-per-facet-contract",
+      "summary": "Address recurring issue ignored-per-facet-contract.",
+      "support": 1,
+      "evidenceKinds": [
+        "failure"
+      ],
+      "supportingTraces": [
+        "g004-q018-extractive-one-shot-answer"
+      ],
+      "supportClass": "failure"
+    },
+    {
+      "patchId": "issue:weak-semantic-facet-recall",
+      "targetFile": "SKILL.md",
+      "changeType": "strengthen-rule",
+      "conflictGroup": "generic-weak-semantic-facet-recall",
+      "summary": "Address recurring issue weak-semantic-facet-recall.",
+      "support": 1,
+      "evidenceKinds": [
+        "failure"
+      ],
+      "supportingTraces": [
+        "g004-q018-extractive-one-shot-answer"
+      ],
+      "supportClass": "failure"
+    },
+    {
+      "patchId": "strength:strong-deterministic-ordering",
+      "targetFile": "SKILL.md",
+      "changeType": "reinforce-strength",
+      "conflictGroup": "determinism",
+      "summary": "Preserve deterministic tie-breaking and ranking order.",
+      "support": 1,
+      "evidenceKinds": [
+        "failure"
+      ],
+      "supportingTraces": [
+        "g004-q018-extractive-one-shot-answer"
+      ],
+      "supportClass": "failure"
+    },
+    {
+      "patchId": "strength:strong-output-contract",
+      "targetFile": "SKILL.md",
+      "changeType": "reinforce-strength",
+      "conflictGroup": "output-contract",
+      "summary": "Keep explicit output-contract guidance.",
+      "support": 1,
+      "evidenceKinds": [
+        "failure"
+      ],
+      "supportingTraces": [
+        "g004-q018-extractive-one-shot-answer"
+      ],
+      "supportClass": "failure"
+    }
+  ],
+  "accepted": [
+    {
+      "patchId": "issue:ignored-per-facet-contract",
+      "targetFile": "SKILL.md",
+      "changeType": "strengthen-rule",
+      "conflictGroup": "generic-ignored-per-facet-contract",
+      "summary": "Address recurring issue ignored-per-facet-contract.",
+      "support": 1,
+      "evidenceKinds": [
+        "failure"
+      ],
+      "supportingTraces": [
+        "g004-q018-extractive-one-shot-answer"
+      ],
+      "supportClass": "failure"
+    },
+    {
+      "patchId": "issue:weak-semantic-facet-recall",
+      "targetFile": "SKILL.md",
+      "changeType": "strengthen-rule",
+      "conflictGroup": "generic-weak-semantic-facet-recall",
+      "summary": "Address recurring issue weak-semantic-facet-recall.",
+      "support": 1,
+      "evidenceKinds": [
+        "failure"
+      ],
+      "supportingTraces": [
+        "g004-q018-extractive-one-shot-answer"
+      ],
+      "supportClass": "failure"
+    },
+    {
+      "patchId": "strength:strong-deterministic-ordering",
+      "targetFile": "SKILL.md",
+      "changeType": "reinforce-strength",
+      "conflictGroup": "determinism",
+      "summary": "Preserve deterministic tie-breaking and ranking order.",
+      "support": 1,
+      "evidenceKinds": [
+        "failure"
+      ],
+      "supportingTraces": [
+        "g004-q018-extractive-one-shot-answer"
+      ],
+      "supportClass": "failure"
+    },
+    {
+      "patchId": "strength:strong-output-contract",
+      "targetFile": "SKILL.md",
+      "changeType": "reinforce-strength",
+      "conflictGroup": "output-contract",
+      "summary": "Keep explicit output-contract guidance.",
+      "support": 1,
+      "evidenceKinds": [
+        "failure"
+      ],
+      "supportingTraces": [
+        "g004-q018-extractive-one-shot-answer"
+      ],
+      "supportClass": "failure"
+    }
+  ],
+  "rejected": []
+}

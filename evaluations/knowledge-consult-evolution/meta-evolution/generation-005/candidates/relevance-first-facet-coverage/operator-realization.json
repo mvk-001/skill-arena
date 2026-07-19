@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 2,
+  "generationId": "generation-005",
+  "candidateId": "relevance-first-facet-coverage",
+  "operatorId": "q018-relevance-first-facet-coverage",
+  "parentCandidateId": "extractive-one-shot-answer",
+  "instruction": "Preserve the deterministic terminal answer compiler and canonical skill name. Correct the candidate-attributable semantic recall gap by decomposing explicit alternatives and answer roles, applying only domain-neutral intent expansion, enforcing an available distinct-authority floor per facet, and ranking facet relevance before source novelty. Keep exact request and evidence bindings, read-only operation, deterministic tie breaks, and fail-closed behavior. Do not add task, corpus, qrel, evaluator, or holdout constants.",
+  "origin": "trajectory-local-reflection",
+  "candidateTreeSha256": "65a91e9ba9846be54bdad82b6192bb030eb235a549d8f7cabb315798b7a970ae",
+  "diffManifest": "candidate-manifest.json#/diffFiles",
+  "parentCandidates": [
+    {
+      "candidateId": "extractive-one-shot-answer",
+      "generationId": "generation-003",
+      "treeSha256": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536"
+    }
+  ],
+  "feedbackReceipts": [
+    {
+      "taskId": "q018",
+      "path": "../../distillation/q018-feedback-receipt.json",
+      "sha256": "66fdd661e03d442385aa506943516acfcb2d534350aa11897d59c8902909f8d3",
+      "bytes": 1410,
+      "relationship": "candidate-attributable-failure"
+    }
+  ],
+  "mutationProcedure": {
+    "path": "../../distillation/mutation-procedure.md",
+    "sha256": "80c8e8faaac38699664b498bd8944f0a0eec7e4b867746386bb8bcf523fb9c5d",
+    "bytes": 1993
+  },
+  "realization": {
+    "variant": "deterministic-extractive-relevance-first-facet-coverage",
+    "properties": [
+      "preserve one closed-answer command and terminal stdout",
+      "split explicit alternatives and separate requested answer roles into bounded facets",
+      "expand only fixed domain-neutral intent vocabulary",
+      "seal and recheck effective distinct-authority floors per facet",
+      "prefer facet relevance before source novelty while retaining deterministic order",
+      "preserve reviewed claim-ready preference and safe all-record fallback",
+      "derive every public claim from its committed record body"
+    ]
+  },
+  "promotion": {
+    "status": "not-evaluated",
+    "developmentValidationRequired": true,
+    "holdoutValidationRequired": true
+  }
+}

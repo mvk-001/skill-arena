@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 3,
+  "caseId": "knowledge-consult-meta-generation-003-post-agent-verifier-derivation-v3",
+  "derivationContract": "harbor-0.18.0.completed-verifier-journal.task-overwrite-and-job-attempts-default-omission.derivation-v3",
+  "parentDerivationContract": {
+    "path": "post-agent-derivation-v2-contract.json",
+    "sha256": "sha256:cfa6c96bcd2324d6f646f18c27c028c469bb7977518fcaf4c4eb651597e54d7f"
+  },
+  "failedParentAttempt": {
+    "ownerPath": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer/verifier-recovery-completion/.attempt-001.owner.json",
+    "ownerSha256": "sha256:4e4893d488752f15ad2119f65bb40771d1f4352c948527fbe214bd03065e010a",
+    "ownerRecordDigest": "sha256:6831f6e3648a67190234289b036caf7891ade37e3be74507275715c360cc2435",
+    "stagingPath": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer/verifier-recovery-completion/.attempt-001.build",
+    "artifactDigest": "sha256:ec67d1bb6c16f1e07153be2392ea4e5df8c16fdf173f2af4f4fcd2a69c34e7b6",
+    "directoryManifestDigest": "sha256:90f9672927fbfa6c950307498fdf59d49a6f187d2d2d706e7f40a87a6f5bc816",
+    "expectedFailure": "Each external retry JobConfig must contain exactly one attempt and one trial.",
+    "failurePhase": "recovered-job-built-before-recovery-lock"
+  },
+  "completionDirectory": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer/verifier-recovery-completion-v3/attempt-001",
+  "normalizations": [
+    {
+      "id": "harbor-taskconfig-overwrite-default-omission-v1",
+      "scope": "JobConfig.tasks[0].overwrite",
+      "expected": false,
+      "observed": "absent",
+      "artifactMutation": false
+    },
+    {
+      "id": "harbor-jobconfig-n-attempts-default-omission-v1",
+      "scope": "JobConfig.n_attempts",
+      "expected": 1,
+      "observed": "absent",
+      "artifactMutation": false
+    }
+  ],
+  "sealedFiles": [
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/complete_verifier_derivation_v3.py",
+      "sha256": "sha256:d8f28c0ef033ed3f40a7ebd541c9178b092ec7dcae5e4a12eba1108381e5a89b"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/complete_verifier_derivation_v3.py.lock",
+      "sha256": "sha256:5cc4ba8fc8e0ce28314de87203151a616e6a91b738d4439d2da1450058927fab"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/references/verifier-only-derivation-v3.md",
+      "sha256": "sha256:4886803d0ad88661bdc3c2994c66f10d728ee7d8eaba6075d181f29d25b9e8b4"
+    },
+    {
+      "path": "run-generation-003-verifier-derivation-v3.sh",
+      "sha256": "sha256:32c13b919995a4bb409f4a9039c449decdd080164b836fd7f1091d3f793cbb0d"
+    },
+    {
+      "path": "../scripts/evidence-resolution-post-agent-v3.js",
+      "sha256": "sha256:3e3ebafa7dca2814ae95da629c9a431de58f880ae7a3936e4b167b5a14598055"
+    },
+    {
+      "path": "../scripts/publish-generation-003-post-agent-v3.js",
+      "sha256": "sha256:0f2f94e5dea0554eee9c1053f20e4e383944c0c6f89cb8bbda09c31fb558ca55"
+    }
+  ]
+}

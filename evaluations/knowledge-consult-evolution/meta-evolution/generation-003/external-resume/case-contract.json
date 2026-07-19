@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "caseId": "knowledge-consult-meta-generation-003-selective-resume",
+  "failureContract": "harbor-0.18.0.sigterm-during-agent-setup.pre-agent-execution.v1",
+  "retryPolicy": {
+    "maxExternalRetriesPerTrial": 1,
+    "selection": "first-evaluable-no-best-of"
+  },
+  "sourceCandidates": {
+    "settled": "extractive-one-shot-answer",
+    "retryTarget": "contrast-matrix-one-shot-answer"
+  },
+  "harbor": {
+    "version": "0.18.0",
+    "image": "semantic-okf-harbor-runtime:1.0",
+    "imageId": "sha256:1315195dcef58980e6d2620eaa41062ea6edc15c3eb8ed47d42c143be57aded5",
+    "authSourceWsl": "/mnt/c/Users/villa/.pi/agent/auth.json",
+    "authMountWsl": "/tmp/skill-arena-knowledge-consult-g003-auth"
+  },
+  "paths": {
+    "knowledgeBundle": "../knowledge/evaluations/graphrag-cross-paper/bundle",
+    "preparedRoot": ".tmp/knowledge-consult-evolution/meta-evolution/generation-003/prepared",
+    "jobsRoot": ".tmp/knowledge-consult-evolution/meta-evolution/generation-003/jobs/q003",
+    "resumeRuntime": ".tmp/knowledge-consult-evolution/meta-evolution/generation-003/external-resume"
+  },
+  "publication": {
+    "sourceOfTruth": "external-resume/output/merged-result.json.effectiveJobs",
+    "mapKey": "sourceJob",
+    "childPolicy": "reuse settled extractive original and use the first evaluable contrast retry",
+    "privateEvidenceContentsPublished": false
+  }
+}

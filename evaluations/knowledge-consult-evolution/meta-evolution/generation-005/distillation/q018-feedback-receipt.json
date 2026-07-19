@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "taskId": "q018",
+  "sanitized": true,
+  "generationId": "generation-004",
+  "candidateId": "extractive-one-shot-answer",
+  "classification": "candidate-attributable",
+  "retryAuthorized": false,
+  "artifacts": [
+    {
+      "name": "result.json",
+      "sha256": "accf1b6a33f008599b6397cfb751297f29f222b11d76fb093ed151eec0af4198",
+      "bytes": 6178
+    },
+    {
+      "name": "verifier/diagnostics.json",
+      "sha256": "0f344c49e6135baa6e1093010fc61bcd1eea0e458c53fa73851206b6d44f1ae1",
+      "bytes": 604
+    },
+    {
+      "name": "verifier/reward.json",
+      "sha256": "c26cd3ba36aba39a72a1abc13cd9229805c3b4a9ece0baa84ae900ab7cf5ef5d",
+      "bytes": 694
+    },
+    {
+      "name": "agent/pi.txt",
+      "sha256": "eee957a97dd91169c2df7e45d44c29cf4769acbdb39c0a7b82873295e9c1e31a",
+      "bytes": 236429
+    }
+  ],
+  "diagnosis": {
+    "path": "q018-diagnosis.json",
+    "sha256": "f0fa7705a553d19ac9a5113cb9fd120311ca4f6bbf2f736051d34ec9a0db3ceb",
+    "bytes": 2788
+  },
+  "observed": {
+    "status": "scored-response",
+    "terminalOutcome": "answer-emitted",
+    "coveredRelevantDocumentCount": 5,
+    "minimumDocumentCount": 6,
+    "minimumDocumentGate": false,
+    "reward": 0
+  },
+  "analysisCalls": {
+    "harbor": 0,
+    "model": 0
+  },
+  "callAccounting": {
+    "harborInvocations": 0,
+    "modelExecutions": 0,
+    "retries": 0
+  },
+  "promotionEvidence": false
+}

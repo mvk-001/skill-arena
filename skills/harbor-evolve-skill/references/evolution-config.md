@@ -80,9 +80,26 @@ numeric for every completed development and holdout trial.
 
 ## Candidate boundary
 
-The seed is the complete baseline SKILL.md. Other bundle files are copied
-unchanged into every candidate trial. GEPA may change any text inside SKILL.md
-but the runner rejects:
+The seed is the complete baseline SKILL.md. Before GEPA starts, the runner
+copies the source skill once to
+`<output>/baseline-snapshot/skills/<frontmatter.name>` and verifies the copy
+with Harbor's skill digest. The original source remains read-only, and every
+candidate is derived from the frozen snapshot rather than from a potentially
+changing workspace directory.
+
+The frontmatter name is the installed identity, not a display label. It must be
+an exact portable basename containing 1-64 lowercase letters, digits, or
+interior hyphens and must not be a Windows-reserved name such as `con`, `nul`,
+`com1`, or `lpt1`. The source directory may have a different physical basename;
+the runner never adopts that alias or sanitizes an unsafe name.
+
+Other bundle files are copied unchanged into every candidate trial at:
+
+~~~text
+<evaluation>/skills/<frontmatter.name>/
+~~~
+
+GEPA may change any text inside SKILL.md but the runner rejects:
 
 - invalid YAML frontmatter
 - missing name or description
@@ -92,6 +109,21 @@ but the runner rejects:
 This boundary keeps each trial attributable. If evidence points to a broken
 script or reference, stop this run, repair and validate the baseline resource,
 then freeze a new benchmarked baseline.
+
+## Trial identity and provenance
+
+After `TrialQueue` completes, the runner requires exactly one terminal trial
+directory and reads its `config.json`, `result.json`, and `lock.json`. All three
+configured skill sources plus the locked source must resolve to the canonical
+staged path. The staged basename and locked name must equal the frontmatter
+name, and the locked digest must equal Harbor's digest of the staged bundle
+both before and after execution.
+
+Missing artifacts, aliases, source mismatches, digest mismatches, or multiple
+terminal trial directories fail closed before the reward reaches GEPA. There is
+no legacy/exploratory identity mode because this workflow creates new live
+trials. Each `evaluation.json` preserves the candidate text digest and complete
+identity evidence for audit.
 
 ## Promotion gate
 
@@ -103,6 +135,8 @@ Promotion requires:
 - candidate mean minus baseline mean is at least minimumMeanGain
 - no task-level mean regression unless allowTaskRegressions is true
 - no candidate execution errors when requireNoErrors is true
+- verified canonical name/source/digest provenance for every baseline and
+  candidate holdout trial
 
 The gate does not automatically install or replace the skill. Review the
 candidate, preserved trials, and normal skill tests before copying it.

@@ -147,7 +147,7 @@ The Harbor-native skills pin their Python dependencies through uv inline script
 metadata. Validate their no-model execution surfaces with:
 
 ~~~powershell
-node --test test/harbor-run-results.test.js test/harbor-evolve-skill.test.js test/harbor-population-search.test.js test/harbor-trace-distillation.test.js test/harbor-reflective-pareto-search.test.js test/harbor-operator-coevolution.test.js
+node --test test/harbor-run-results.test.js test/harbor-resume-external-failures.test.js test/harbor-evolve-skill.test.js test/harbor-population-search.test.js test/harbor-trace-distillation.test.js test/harbor-reflective-pareto-search.test.js test/harbor-operator-coevolution.test.js
 ~~~
 
 These tests exercise native Harbor result validation, comparison drift,

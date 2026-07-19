@@ -47,10 +47,27 @@ For already completed jobs, declare each candidate jobDirectory and add
 --analyze-only. The script validates native config.json, lock.json when
 present, root result.json, and every trial result.json.
 
+Declare `harbor.requiredRewards` for verifier gates that every trial must
+report and meet. Candidates with an execution error, missing required reward,
+or below-threshold required reward remain in diagnostic output but are excluded
+from the Pareto archive.
+
+When a task optionally emits `verifier/diagnostics.json`, the analyzer reads
+`status`, `failure_domain`, `terminal_outcome`, and `error_code`.
+Authentication, environment, evaluator, infrastructure, and provider failures
+make that trial and candidate non-evaluable and unqualified, whether declared
+as the domain or an equivalent terminal/error signal. Reported scores remain
+diagnostic evidence; semantic rewards, gated objectives, and aggregate
+comparisons are null. Affected candidates cannot enter the Pareto archive or
+pass holdout promotion. Generic Harbor tasks do not need to emit diagnostics.
+
 Map each completed job only to the exact candidate it evaluated. If legacy
 jobs lack lock skill digests, treat the archive as an exploratory performance
 summary: it cannot prove candidate provenance or causal improvement, and it
 must not support promotion. Prefer live jobs created by this script.
+Analyze-only also retains a factual source mismatch or physical legacy alias
+for diagnosis, but marks it exploratory and non-promotable. Canonical-looking
+paths do not substitute for the exact declared candidate source.
 
 7. Read pareto-archive.json and reflection-plan.json. For each child:
 
@@ -62,7 +79,10 @@ must not support promotion. Prefer live jobs created by this script.
 
 8. Increment search.generation, add the copied children, and repeat development
    evaluation. Keep the Harbor task set, agent, model, attempts, environment,
-   and retry policy fixed.
+   and retry policy fixed. Set `search.previousGenerationLog` to the immediate
+   prior `pareto-archive.json` and cite at least one archived candidate as a
+   parent; the runner verifies the sealed profile and lineage before writing
+   the next archive.
 9. Select one candidate from the development Pareto archive. Do not inspect
    holdout artifacts during reflection. Set selectedCandidate and
    developmentArchive, then run:
@@ -73,6 +93,12 @@ uv run <skill-root>/scripts/harbor_reflective_pareto.py <config.yaml> --phase ho
 
 Use --analyze-only only when baseline and selected holdout jobs already exist
 and are declared as holdoutJobDirectory values.
+The holdout command rejects an archive from another search or generation, any
+development/holdout evaluation-profile drift, and any change to the selected
+bundle since its `skillDigest` was recorded in the archive.
+It also requires canonical locked provenance for the selected development and
+both holdout jobs, plus an observed development job signature that exactly
+matches the declared `harbor.developmentJob` profile.
 10. Promote candidate-skill only when promotion.json says promote and ordinary
     validation and tests for that copied bundle also pass.
 
@@ -81,6 +107,8 @@ and are declared as holdoutJobDirectory values.
 The script derives case vectors from:
 
 - verifier_result.rewards[rewardKey]
+- verifier_result.rewards for every configured requiredRewards key
+- optional verifier/diagnostics.json classification and availability counts
 - exception_info
 - task checksum, agent, model, and attempts
 - agent trajectory and text outputs when present
@@ -88,13 +116,31 @@ The script derives case vectors from:
 - lock skill digests and task/environment provenance when lock.json exists
 
 It rejects incomplete jobs, candidate config drift, lock drift beyond skill
-provenance, missing rewards without an exception, mismatched case sets, and
-development/holdout checksum overlap.
+provenance, missing selected rewards without an exception, mismatched case
+sets, and development/holdout name or checksum overlap. It rejects zero-trial
+jobs and binds every TrialResult configured task/name, agent, model, skill,
+runtime setting, observed identity, attempt count, and lock entry. Missing required rewards remain
+explicitly null and make the candidate ineligible rather than becoming numeric
+zeros. Provider and infrastructure failures preserve `reportedReward`, but use
+null for the semantic `reward`, affected means, and holdout gain when the
+corresponding comparison is unavailable. The development archive also seals the
+search id, generation, Harbor job profiles, reward/gate policy, promotion rules,
+baseline digest, selected-candidate digest, and case names/checksums reconstructed
+from `candidateResults` before holdout.
 
 ## Guardrails
 
 - Use one candidate skill per Harbor job. Replace the evaluated agent skill
   list instead of adding hidden capabilities.
+- Require a portable `frontmatter.name`. For live jobs, the runner freezes each
+  candidate under an isolated path whose exact basename is that logical name;
+  it never substitutes the arbitrary source-directory basename. Source,
+  staged, and Harbor lock digests must agree before results are accepted.
+- Require every source, staged, and promoted bundle root to be self-contained.
+  Reject a root that is itself a symbolic link, junction, or reparse point, as
+  well as links nested inside the bundle, before copying.
+- Require finite primary rewards, `passThreshold`, required-reward thresholds,
+  and `minimumMeanGain`; reject NaN and infinity before archive construction.
 - Set Harbor retry.max_retries to zero. Repeated attempts are part of the fixed
   job design; retries must not inflate evidence.
 - Keep holdout invisible to reflection and archive selection.

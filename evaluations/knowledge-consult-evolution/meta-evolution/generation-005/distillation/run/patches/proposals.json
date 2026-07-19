@@ -1,0 +1,50 @@
+{
+  "proposedAt": "2026-07-19T17:06:18.121Z",
+  "proposalCount": 4,
+  "proposals": [
+    {
+      "patchId": "issue:ignored-per-facet-contract",
+      "evidenceKind": "failure",
+      "sourceTraceId": "g004-q018-extractive-one-shot-answer",
+      "sourceOutcome": "failure",
+      "tag": "ignored-per-facet-contract",
+      "targetFile": "SKILL.md",
+      "changeType": "strengthen-rule",
+      "conflictGroup": "generic-ignored-per-facet-contract",
+      "summary": "Address recurring issue ignored-per-facet-contract."
+    },
+    {
+      "patchId": "issue:weak-semantic-facet-recall",
+      "evidenceKind": "failure",
+      "sourceTraceId": "g004-q018-extractive-one-shot-answer",
+      "sourceOutcome": "failure",
+      "tag": "weak-semantic-facet-recall",
+      "targetFile": "SKILL.md",
+      "changeType": "strengthen-rule",
+      "conflictGroup": "generic-weak-semantic-facet-recall",
+      "summary": "Address recurring issue weak-semantic-facet-recall."
+    },
+    {
+      "patchId": "strength:strong-deterministic-ordering",
+      "evidenceKind": "failure",
+      "sourceTraceId": "g004-q018-extractive-one-shot-answer",
+      "sourceOutcome": "failure",
+      "tag": "strong-deterministic-ordering",
+      "targetFile": "SKILL.md",
+      "changeType": "reinforce-strength",
+      "conflictGroup": "determinism",
+      "summary": "Preserve deterministic tie-breaking and ranking order."
+    },
+    {
+      "patchId": "strength:strong-output-contract",
+      "evidenceKind": "failure",
+      "sourceTraceId": "g004-q018-extractive-one-shot-answer",
+      "sourceOutcome": "failure",
+      "tag": "strong-output-contract",
+      "targetFile": "SKILL.md",
+      "changeType": "reinforce-strength",
+      "conflictGroup": "output-contract",
+      "summary": "Keep explicit output-contract guidance."
+    }
+  ]
+}

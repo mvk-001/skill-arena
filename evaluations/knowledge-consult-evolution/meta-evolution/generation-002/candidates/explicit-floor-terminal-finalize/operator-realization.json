@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "generationId": "generation-002",
+  "candidateId": "explicit-floor-terminal-finalize",
+  "operatorId": "explicit-floor-terminal-finalize",
+  "instruction": "Bind any user-declared evidence floor through its exact request clause into preparation and finalization, require the parsed clause to equal the explicit floor, guarantee each planned target source is distinct or fail closed, canonicalize draft evidence deterministically at the finalizer, and make the first successful finalized stdout terminal. Preserve the exact semantic question, keep identities opaque until finalization, and use no task, corpus, or evaluation constants.",
+  "origin": "complementary-repair-crossover",
+  "candidateTreeSha256": "2f6422013f6e27c4d9130604712552ce959605ce2cf47d078887235fbf8ae6d5",
+  "diffManifest": "candidate-manifest.json#/diffFiles",
+  "parentCandidateId": "00-baseline",
+  "parentCandidates": [
+    {
+      "candidateId": "00-baseline",
+      "treeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+      "bundleTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+      "publicPilotTreeSha256": "9ee796b5424d3e5090d130bb71f17fb14aeba274f5f3ebaafe15868f2f98df23",
+      "sourceCommit": "25170692c9e211b7bf719f07d3243cdaf409c88b"
+    }
+  ],
+  "donorTraces": [
+    {
+      "generationId": "generation-001",
+      "candidateId": "bounded-verified-breadth",
+      "candidateTreeSha256": "d571b10691f69a0768bf9c7f55a681adbf4dba911bee227e4d08fe9e24b3dad2",
+      "relationship": "diagnostic-only",
+      "contribution": "closed preparation and deterministic evidence materialization"
+    },
+    {
+      "generationId": "generation-001",
+      "candidateId": "state-machine-verified-breadth",
+      "candidateTreeSha256": "9b70c25475b2e5ba17b5846db770d50977c30bda70f7f6239ba5346130202faf",
+      "relationship": "diagnostic-only",
+      "contribution": "bounded state and reserve planning"
+    }
+  ],
+  "realization": {
+    "variant": "direct-explicit-floor-terminal-pipeline",
+    "properties": [
+      "bind the request-declared independent-source floor in both compiler phases",
+      "commit the exact evidence clause and require its parsed floor to match",
+      "preserve the exact semantic question as the retrieval query",
+      "guarantee every target source is distinct or fail before packing",
+      "canonicalize evidence by first use and remap claim indices deterministically",
+      "materialize identities and locator objects only in the finalizer",
+      "return the first successful finalized stdout without any later tool call"
+    ]
+  }
+}

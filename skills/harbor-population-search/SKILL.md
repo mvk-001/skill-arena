@@ -26,11 +26,22 @@ Require:
 - at least two candidate skill directories containing SKILL.md;
 - an explicit baseline candidate id;
 - a reward key and pass threshold;
+- a minimum development pass rate for winner eligibility, if nonzero;
+- zero or more non-compensating required reward thresholds;
+- a holdout mean-gain threshold and, only when explicitly justified, whether
+  per-task regressions may be tolerated;
 - an output directory.
 
 Every candidate is a version of the same logical skill, so each SKILL.md must
 preserve the same frontmatter `name`. The baseline is the frozen incoming
 version of that skill, not a no-skill control or a placeholder bundle.
+The name must be an exact portable skill basename: 1-64 lowercase letters,
+digits, or interior hyphens, excluding reserved device names. The script fails
+closed instead of inventing a sanitized fallback, because Harbor installation
+identity must remain equal to the declared logical name.
+Candidate bundles must also be self-contained. An in-bundle file symlink is
+dereferenced while staging; a broken or escaping symlink and every directory
+symlink or Windows junction/reparse directory fails closed before Harbor runs.
 
 Use a separate native Harbor template for holdout tasks. Never include holdout
 trials in development ranking. Read
@@ -65,17 +76,64 @@ Run live evaluation by omitting the mode flag:
       --generation 0 \
       --reward-key reward \
       --pass-threshold 1 \
+      --minimum-development-pass-rate 1 \
+      --required-reward mechanical_qualification_gate=1 \
       --output /path/to/search-run
 
-The script freezes every candidate, creates one native JobConfig per candidate,
-and executes each through Harbor Job.create() and Job.run(). It then parses the
-native config.json, optional lock.json, root result.json, trial result.json,
-rewards, execution errors, trajectories, verifier files, agent outputs, and
-artifact manifests.
+The script freezes every candidate under an isolated
+`candidates/<id>/skills/<frontmatter-name>/` path, injects that exact path into
+one native JobConfig per candidate, and executes each through Harbor
+Job.create() and Job.run(). Consequently the basename Harbor installs is the
+logical skill name, never a generic `skill` alias or the population candidate
+id. The staging copy contains regular local files rather than dependencies on
+the source tree. It then parses the native config.json, optional lock.json, root result.json,
+trial result.json, rewards, execution errors, trajectories, verifier files,
+agent outputs, and artifact manifests.
 
-Ranking is deterministic: highest fitness first, then candidate id. A candidate
-with any execution exception receives fitness zero; its raw mean reward remains
-visible. The top two candidates become survivors.
+Every native JobConfig skill source is reconciled with every available trial
+and job lock. A verified job must lock exactly one skill with the candidate
+bundle digest and logical name; a digest mismatch or JobConfig/lock source
+disagreement fails closed. This binding applies to development and holdout.
+
+When a verifier emits `verifier/diagnostics.json`, the analyzer preserves and
+normalizes its status, failure domain, terminal outcome, and error code.
+Provider, authentication, environment, evaluator, and infrastructure aliases
+are classified across all four fields, including signals such as verifier
+errors, invalid credentials, Docker failures, platform failures, quotas, and
+context limits. They are not semantic zeros. Their raw verifier reward remains
+visible for forensics, but fitness and evaluable mean are `null` and the
+candidate cannot survive or promote.
+
+External diagnostics take precedence over reward availability: a provider
+failure that emitted no reward remains a provider failure and is not relabeled
+as a missing-primary evaluator failure. Only a non-errored trial without an
+external failure is marked `missingPrimaryReward`. Both categories are
+unavailable rather than invented zero. Every primary and required reward must
+also be finite; NaN and infinity fail closed before ranking.
+
+Ranking is deterministic: highest fitness first, then candidate id. Repeat
+`--required-reward KEY=MIN` for verifier metrics that every trial must report
+and meet. A missing required metric remains explicitly missing, and any
+required-metric failure or execution exception makes the candidate unqualified
+with fitness zero; an infrastructure failure makes fitness unavailable instead.
+The raw mean reward remains visible. The top two evaluable candidates become
+survivors; an unavailable result sorts below numeric fitness.
+
+Only an evaluable candidate that passes every configured qualification gate is
+a development winner or holdout input. Additionally,
+`--minimum-development-pass-rate` requires its primary selected-reward pass
+rate to meet the configured 0..1 threshold; the default 0 preserves prior
+behavior. A candidate below that threshold can still survive as a mutation or
+repair parent, but it is not called a winner and cannot open holdout. When no
+candidate is eligible, the run records per-candidate reasons, selects no winner,
+and keeps evaluable survivors (or the baseline fallback) available for repair.
+Repair-parent selection then greedily preserves complementary required-reward
+gates that candidates met across every trial, followed by pass rate, observed
+mean reward, and candidate id as deterministic tie-breakers. This never relaxes
+promotion; it only retains distinct repair signals for the next generation.
+When a qualified winner would otherwise fall outside the top-two survivor set
+on a deterministic zero-fitness tie, the winner replaces the lower survivor so
+the next generation never loses its selected parent.
 
 ## Analyze Existing Harbor Jobs
 
@@ -92,21 +150,31 @@ Use completed native Harbor job directories without launching agents:
       --analyze-only
 
 Provide exactly one --job mapping per candidate. Analysis fails closed on
-incomplete jobs, invalid locks, missing rewards, config drift, or task/agent
-drift. The template must describe the same benchmark as the completed jobs;
-reusing one completed job's config.json is appropriate after confirming that
-only job identity, output directory, and candidate skill paths vary.
+incomplete jobs, invalid locks, non-finite rewards, candidate digest mismatch,
+JobConfig/lock source disagreement, config drift, or task/agent drift. The
+template must describe the same benchmark as the completed jobs; reusing one
+completed job's config.json is appropriate after confirming that only job
+identity, output directory, and candidate skill paths vary.
 
-Map each job only to the exact skill version it evaluated. A legacy job
-without lock skill digests can support exploratory ranking, but it cannot by
-itself prove candidate provenance or causality; do not use such a result for a
-promotion claim. Prefer jobs created by this script, which freeze and inject
-each candidate before Harbor execution.
+Map each job only to the exact skill version it evaluated. Analyze-only accepts
+a digest-matching legacy installed alias or a lock without complete skill
+records only as `exploratory`; such evidence can support diagnostic ranking but
+is always non-promotable. A digest mismatch is never a legacy exception.
+Prefer jobs created by this script, which freeze and inject each candidate
+before Harbor execution.
 
 ## Gate on Holdout
 
 For a live run, add --holdout-template. Harbor evaluates only the preserved
-baseline and the development winner after selection.
+baseline and the development winner after selection. Each role is copied to
+`holdout/generation-NNN/attempt-NNN/<role>/skills/<frontmatter-name>/` before
+its native JobConfig is written, preserving the same installed identity and
+isolating holdout inputs. Every invocation gets a new attempt directory. Its
+immutable `attempt.json` seals the generation, selected winner id and content
+digest, baseline digest, evaluation fingerprints, and promotion policy before
+Harbor runs; its `result.json` is created once after analysis. A failed or
+non-evaluable attempt therefore remains inspectable while a retry or later
+generation uses a new path instead of overwriting it.
 
 For offline analysis, also provide:
 
@@ -114,9 +182,20 @@ For offline analysis, also provide:
     --holdout-job baseline=/path/to/holdout-baseline-job
     --holdout-job winner=/path/to/holdout-winner-job
 
-The gate rejects development/holdout task overlap, job drift, errors, or reward
-gain below --minimum-holdout-gain. Without holdout evidence, the result is
-explicitly staged and is not marked promoted.
+The gate rejects development/holdout task overlap, job drift, errors, missing
+required rewards, unverified provenance, an unqualified winner, development
+pass rate below the configured minimum, reward gain below
+`--minimum-holdout-gain`, or any matched task-signature reward regression.
+`--allow-task-regressions` is an explicit opt-in that relaxes only the final
+condition; the default is no regressions. `run.json` and `report.md` enumerate
+every task comparison, regressed task, and promotion blocker. Without holdout
+evidence, the result is explicitly staged and is not marked promoted.
+
+A selected winner whose content digest equals the preserved baseline is a
+no-op even when it has a different candidate id. Record `baseline-retained`
+with blocker `no-skill-change`, do not spend holdout calls, and continue with a
+content-changing repair generation. It can never be marked promoted merely
+because the configured minimum gain is zero.
 
 ## Continue the Search
 
@@ -129,15 +208,35 @@ Harbor template, reward rule, task set, agent, or model mid-search.
 Stop after a validated success or a declared plateau. Never overwrite the
 incoming baseline; baseline-skill is immutable across generations.
 
+The first executed generation writes an immutable `search-contract.json` that
+binds the baseline digest, logical skill, normalized development JobConfig,
+reward key, thresholds, qualification gates, and promotion policy. Every later
+generation in the same output directory must match it exactly.
+`development-signatures.json` additionally binds the observed task checksum,
+agent, model, and attempt multiset so mutable local task paths cannot drift
+behind an unchanged JobConfig. The first provided holdout template similarly
+writes `holdout-contract.json`, and the first completed release writes
+`holdout-signatures.json`; use a new output directory to change any contract.
+Holdout attempts remain append-only beneath their generation, so a provider
+failure can be retried and a later generation can evaluate a different winner
+without replacing earlier manifests, native configs, candidate results, or
+release decisions.
+
 ## Outputs
 
 The output directory contains:
 
-- baseline-skill/: preserved control bundle;
+- baseline-skill/skills/<frontmatter-name>/: preserved control bundle;
 - generation-NNN/generation.json: frozen population manifest;
 - generation-NNN/ranking.json: development-only ranking and survivors;
 - candidate-result.json per candidate: raw-Harbor-derived evidence;
-- population-search-log.json: idempotent generation history;
+- holdout/generation-NNN/attempt-NNN/: immutable attempt.json, role-specific
+  native configs/results, and one result.json decision;
+- population-search-log.json: latest summary per generation plus the append-only
+  index of all holdout attempts;
+- search-contract.json, development-signatures.json, and optional
+  holdout-contract.json/holdout-signatures.json: immutable benchmark and
+  release bindings across generations;
 - run.json and report.md: selected winner, holdout state, and next stage.
 
 Do not invoke another benchmark CLI, consume a foreign report schema, or import

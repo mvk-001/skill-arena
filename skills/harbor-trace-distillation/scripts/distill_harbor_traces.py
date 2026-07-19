@@ -15,6 +15,7 @@ import math
 import os
 import re
 import shutil
+import stat
 import subprocess
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -36,8 +37,55 @@ from harbor.skills import compute_skill_digest
 
 SCHEMA_VERSION = 1
 MAX_TEXT = 6000
+CONTEXT_BUDGET_DOMAIN = "execution-efficiency/context-budget"
+NON_EVALUABLE_FAILURE_DOMAINS = {
+    "authentication",
+    "environment",
+    "evaluator",
+    "infrastructure",
+    "provider",
+}
+FAILURE_SIGNAL_ALIASES = {
+    "authentication": (
+        "auth-",
+        "credential-",
+        "invalid-api-key",
+        "missing-api-key",
+        "unauthorized",
+    ),
+    "environment": (
+        "container-",
+        "docker-",
+        "environment-",
+        "runtime-environment-",
+    ),
+    "evaluator": ("evaluation-", "evaluator-", "verifier-"),
+    "infrastructure": ("infra-", "infrastructure-", "platform-"),
+    "provider": (
+        "api-overloaded",
+        "api-unavailable",
+        "context-length-",
+        "context-limit-",
+        "context-window-",
+        "insufficient-quota",
+        "model-not-found",
+        "provider-",
+        "quota-",
+        "rate-limit-",
+        "service-unavailable",
+    ),
+}
 ALLOWED_EXACT_TARGETS = {"SKILL.md", "agents/openai.yaml"}
 ALLOWED_TARGET_PREFIXES = ("references/", "scripts/")
+PORTABLE_SKILL_NAME = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
+RESERVED_SKILL_NAMES = {
+    "aux",
+    "con",
+    "nul",
+    "prn",
+    *(f"com{index}" for index in range(1, 10)),
+    *(f"lpt{index}" for index in range(1, 10)),
+}
 SECRET_PATTERNS = (
     re.compile(r"(?i)\b(bearer)\s+[A-Za-z0-9._~+/=-]{12,}"),
     re.compile(
@@ -66,6 +114,94 @@ def require_string(value: Any, location: str) -> str:
     return value.strip()
 
 
+def normalize_required_rewards(value: Any) -> dict[str, float]:
+    mapping = require_mapping(value if value is not None else {}, "harbor.requiredRewards")
+    normalized: dict[str, float] = {}
+    for raw_key, raw_threshold in mapping.items():
+        if (
+            not isinstance(raw_key, str)
+            or not raw_key.strip()
+            or any(character.isspace() for character in raw_key.strip())
+        ):
+            raise ValueError(
+                "harbor.requiredRewards keys must be non-empty strings without whitespace."
+            )
+        key = raw_key.strip()
+        if isinstance(raw_threshold, bool) or not isinstance(raw_threshold, (int, float)):
+            raise ValueError(
+                f"harbor.requiredRewards.{key} threshold must be numeric."
+            )
+        threshold = float(raw_threshold)
+        if not math.isfinite(threshold):
+            raise ValueError(
+                f"harbor.requiredRewards.{key} threshold must be finite."
+            )
+        normalized[key] = threshold
+    return dict(sorted(normalized.items()))
+
+
+def finite_number(value: Any, location: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{location} must be numeric.")
+    normalized = float(value)
+    if not math.isfinite(normalized):
+        raise ValueError(f"{location} must be finite.")
+    return normalized
+
+
+def assert_not_reparse_root(directory: Path, location: str) -> None:
+    """Reject a bundle path whose root entry is itself a link/reparse point."""
+
+    try:
+        metadata = directory.lstat()
+    except FileNotFoundError:
+        return
+    except OSError as error:
+        raise ValueError(f"Cannot inspect {location} root {directory}: {error}") from error
+    reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    is_junction = bool(getattr(directory, "is_junction", lambda: False)())
+    if (
+        directory.is_symlink()
+        or is_junction
+        or bool(getattr(metadata, "st_file_attributes", 0) & reparse_flag)
+    ):
+        raise ValueError(
+            f"{location} root must not be a symbolic link, junction, or reparse "
+            f"point: {directory}"
+        )
+
+
+def assert_self_contained_bundle(directory: Path, location: str) -> None:
+    """Reject links/reparse points before a skill is copied or mutated."""
+
+    assert_not_reparse_root(directory, location)
+    root = directory.resolve()
+    if not root.is_dir():
+        raise ValueError(f"{location} must be a skill directory: {directory}")
+    reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    for current, directories, files in os.walk(root, followlinks=False):
+        for name in [*directories, *files]:
+            entry = Path(current) / name
+            try:
+                metadata = entry.lstat()
+                is_junction = bool(
+                    getattr(entry, "is_junction", lambda: False)()
+                )
+            except OSError as error:
+                raise ValueError(
+                    f"Cannot inspect {location} entry {entry}: {error}"
+                ) from error
+            if (
+                entry.is_symlink()
+                or is_junction
+                or bool(getattr(metadata, "st_file_attributes", 0) & reparse_flag)
+            ):
+                raise ValueError(
+                    f"{location} must be self-contained; links and reparse points "
+                    f"are not allowed: {entry}"
+                )
+
+
 def load_yaml(path: Path, label: str) -> dict[str, Any]:
     try:
         value = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -79,6 +215,13 @@ def load_yaml(path: Path, label: str) -> dict[str, Any]:
 def resolve_path(base: Path, value: Any, location: str) -> Path:
     raw = Path(require_string(value, location)).expanduser()
     return raw.resolve() if raw.is_absolute() else (base / raw).resolve()
+
+
+def resolve_bundle_path(base: Path, value: Any, location: str) -> Path:
+    raw = Path(require_string(value, location)).expanduser()
+    unresolved = raw if raw.is_absolute() else base / raw
+    assert_not_reparse_root(unresolved, location)
+    return unresolved.resolve()
 
 
 def resolve_path_list(base: Path, value: Any, location: str) -> list[Path]:
@@ -95,9 +238,48 @@ def parse_skill_frontmatter(text: str) -> dict[str, Any]:
     except yaml.YAMLError as error:
         raise ValueError(f"SKILL.md frontmatter is invalid YAML: {error}") from error
     result = require_mapping(value, "SKILL.md frontmatter")
-    require_string(result.get("name"), "SKILL.md frontmatter.name")
+    name = require_string(result.get("name"), "SKILL.md frontmatter.name")
+    if (
+        name != result.get("name")
+        or not PORTABLE_SKILL_NAME.fullmatch(name)
+        or name in RESERVED_SKILL_NAMES
+    ):
+        raise ValueError(
+            "SKILL.md frontmatter.name must be an exact portable skill basename "
+            "(1-64 lowercase letters, digits, or interior hyphens)."
+        )
     require_string(result.get("description"), "SKILL.md frontmatter.description")
     return result
+
+
+def installed_skill_path(container: Path, logical_name: str) -> Path:
+    """Return an isolated skill path whose basename is its logical identity."""
+
+    if (
+        not PORTABLE_SKILL_NAME.fullmatch(logical_name)
+        or logical_name in RESERVED_SKILL_NAMES
+    ):
+        raise ValueError(f"Unsafe logical skill name: {logical_name!r}")
+    skills_directory = container / "skills"
+    destination = skills_directory / logical_name
+    if destination.parent != skills_directory or destination.name != logical_name:
+        raise ValueError(
+            f"Logical skill name escapes its staging directory: {logical_name!r}"
+        )
+    return destination
+
+
+def stage_skill_bundle(source: Path, container: Path, logical_name: str) -> Path:
+    assert_self_contained_bundle(source, "source skill bundle")
+    destination = installed_skill_path(container, logical_name)
+    if destination.exists():
+        raise ValueError(f"Staged skill destination already exists: {destination}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, destination, symlinks=True)
+    assert_self_contained_bundle(destination, "staged skill bundle")
+    if directory_digest(destination) != directory_digest(source):
+        raise ValueError(f"Staged skill digest mismatch: {destination}")
+    return destination
 
 
 def directory_digest(directory: Path) -> str:
@@ -115,10 +297,13 @@ def normalize_config(path: Path, output_override: Path | None = None) -> dict[st
     proposals = require_mapping(raw.get("proposals", {}), "proposals")
     holdout = require_mapping(raw.get("holdout", {}), "holdout")
 
-    baseline = resolve_path(base, run.get("baselineSkill"), "run.baselineSkill")
+    baseline = resolve_bundle_path(
+        base, run.get("baselineSkill"), "run.baselineSkill"
+    )
     skill_path = baseline / "SKILL.md"
     if not skill_path.is_file():
         raise ValueError(f"Baseline skill has no SKILL.md: {baseline}")
+    assert_self_contained_bundle(baseline, "run.baselineSkill")
     baseline_frontmatter = parse_skill_frontmatter(skill_path.read_text(encoding="utf-8"))
     output = (
         output_override.resolve()
@@ -157,7 +342,10 @@ def normalize_config(path: Path, output_override: Path | None = None) -> dict[st
         "outputDirectory": output,
         "harbor": {
             "rewardKey": require_string(harbor.get("rewardKey", "reward"), "harbor.rewardKey"),
-            "passThreshold": float(harbor.get("passThreshold", 1.0)),
+            "passThreshold": finite_number(
+                harbor.get("passThreshold", 1.0), "harbor.passThreshold"
+            ),
+            "requiredRewards": normalize_required_rewards(harbor.get("requiredRewards", {})),
             "requiredEnv": required_env,
             "requireDiscoveryLocks": bool(harbor.get("requireDiscoveryLocks", False)),
         },
@@ -176,7 +364,9 @@ def normalize_config(path: Path, output_override: Path | None = None) -> dict[st
             "baselineJobConfigs": resolve_path_list(base, holdout.get("baselineJobConfigs", []), "holdout.baselineJobConfigs"),
             "candidateJobConfigs": resolve_path_list(base, holdout.get("candidateJobConfigs", []), "holdout.candidateJobConfigs"),
             "allowWeakFairness": bool(holdout.get("allowWeakFairness", False)),
-            "minimumMeanGain": float(holdout.get("minimumMeanGain", 0.0)),
+            "minimumMeanGain": finite_number(
+                holdout.get("minimumMeanGain", 0.0), "holdout.minimumMeanGain"
+            ),
             "allowTaskRegressions": bool(holdout.get("allowTaskRegressions", False)),
             "requireNoErrors": bool(holdout.get("requireNoErrors", True)),
         },
@@ -184,6 +374,12 @@ def normalize_config(path: Path, output_override: Path | None = None) -> dict[st
 
 
 def public_plan(config: dict[str, Any]) -> dict[str, Any]:
+    staged_baseline = installed_skill_path(
+        config["outputDirectory"] / "baseline", config["skillName"]
+    )
+    candidate = installed_skill_path(
+        config["outputDirectory"] / "candidate", config["skillName"]
+    )
     return {
         "schemaVersion": SCHEMA_VERSION,
         "runId": config["runId"],
@@ -191,9 +387,12 @@ def public_plan(config: dict[str, Any]) -> dict[str, Any]:
         "baselineDigest": config["baselineDigest"],
         "skillName": config["skillName"],
         "outputDirectory": str(config["outputDirectory"]),
+        "stagedBaselineSkill": str(staged_baseline),
+        "candidateSkill": str(candidate),
         "harborVersion": version("harbor"),
         "rewardKey": config["harbor"]["rewardKey"],
         "passThreshold": config["harbor"]["passThreshold"],
+        "requiredRewardThresholds": config["harbor"]["requiredRewards"],
         "requiredEnv": config["harbor"]["requiredEnv"],
         "missingRequiredEnv": [
             name for name in config["harbor"]["requiredEnv"] if not os.environ.get(name)
@@ -489,6 +688,149 @@ def collect_feedback(trial_directory: Path, agent_name: str) -> dict[str, Any]:
     }
 
 
+def optional_diagnostic_value(value: Any) -> str | None:
+    if value is None or isinstance(value, (dict, list)):
+        return None
+    return sanitize_text(str(value), 300)
+
+
+def collect_verifier_diagnostics(trial_directory: Path) -> list[dict[str, Any]]:
+    diagnostics = []
+    for label, directory in evidence_directories(trial_directory):
+        path = directory / "verifier" / "diagnostics.json"
+        if not path.is_file():
+            continue
+        raw = read_json(path)
+        diagnostics.append(
+            {
+                "scope": label,
+                "path": str(path.resolve()),
+                "status": optional_diagnostic_value(raw.get("status")),
+                "failureDomain": optional_diagnostic_value(raw.get("failure_domain")),
+                "terminalOutcome": optional_diagnostic_value(raw.get("terminal_outcome")),
+                "errorCode": optional_diagnostic_value(raw.get("error_code")),
+            }
+        )
+    return diagnostics
+
+
+def normalize_failure_signal(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    return re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")
+
+
+def failure_domain_from_signal(value: Any) -> str | None:
+    signal = normalize_failure_signal(value)
+    if not signal:
+        return None
+    if signal == "infra" or signal.startswith("infra-"):
+        return "infrastructure"
+    if signal == "auth" or signal.startswith("auth-"):
+        return "authentication"
+    for domain in sorted(NON_EVALUABLE_FAILURE_DOMAINS):
+        if (
+            signal == domain
+            or signal.startswith(f"{domain}-")
+            or signal.endswith(f"-{domain}")
+            or f"-{domain}-" in signal
+        ):
+            return domain
+    for domain, aliases in FAILURE_SIGNAL_ALIASES.items():
+        if any(
+            signal == alias.rstrip("-") or signal.startswith(alias)
+            for alias in aliases
+        ):
+            return domain
+    return None
+
+
+def context_budget_failure(diagnostic: dict[str, Any]) -> bool:
+    signals = {
+        normalize_failure_signal(diagnostic.get(key))
+        for key in ("status", "terminalOutcome", "errorCode")
+    }
+    markers = (
+        "provider-context-limit",
+        "context-length-exceeded",
+        "context-limit-exceeded",
+        "context-window-exceeded",
+    )
+    return any(
+        signal == marker or signal.startswith(f"{marker}-")
+        for signal in signals
+        for marker in markers
+    )
+
+
+def external_evaluation_failure(
+    diagnostics: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    failures: list[tuple[dict[str, Any], str, bool]] = []
+    for diagnostic in diagnostics:
+        domain = failure_domain_from_signal(diagnostic.get("failureDomain"))
+        if domain is None:
+            for key in ("status", "terminalOutcome", "errorCode"):
+                domain = failure_domain_from_signal(diagnostic.get(key))
+                if domain is not None:
+                    break
+        if domain is not None:
+            failures.append((diagnostic, domain, context_budget_failure(diagnostic)))
+    if not failures:
+        return None
+
+    actionable_context_budget = all(
+        domain == "provider" and is_context
+        for _, domain, is_context in failures
+    )
+    priority = {
+        "authentication": 0,
+        "environment": 1,
+        "evaluator": 2,
+        "infrastructure": 3,
+        "provider": 4,
+    }
+    diagnostic, domain, _ = min(failures, key=lambda item: priority[item[1]])
+    joined = " ".join(
+        normalize_failure_signal(diagnostic.get(key))
+        for key in ("status", "failureDomain", "terminalOutcome", "errorCode")
+    )
+    if actionable_context_budget:
+        evidence_class = "operational-context-budget"
+        actionability = {
+            "actionable": True,
+            "domain": CONTEXT_BUDGET_DOMAIN,
+            "reason": "context-budget-exhausted",
+        }
+    else:
+        if domain == "authentication":
+            evidence_class = "external-provider-auth"
+        elif "quota" in joined:
+            evidence_class = "external-provider-quota"
+        elif "rate-limit" in joined:
+            evidence_class = "external-provider-rate-limit"
+        elif domain == "environment":
+            evidence_class = "external-environment"
+        elif domain == "evaluator":
+            evidence_class = "external-evaluator"
+        else:
+            evidence_class = "external-provider-or-infrastructure"
+        actionability = {
+            "actionable": False,
+            "domain": None,
+            "reason": evidence_class,
+        }
+    return {
+        "failureDomain": domain,
+        "status": diagnostic.get("status"),
+        "terminalOutcome": diagnostic.get("terminalOutcome"),
+        "errorCode": diagnostic.get("errorCode"),
+        "diagnosticsPath": diagnostic["path"],
+        "evidenceClass": evidence_class,
+        "actionability": actionability,
+    }
+
+
 def model_identifier(trial: TrialResult) -> str:
     model = trial.agent_info.model_info
     if model is None:
@@ -536,7 +878,8 @@ def resolve_locked_target_skill(
     trial_directory: Path,
     target_skill_name: str,
     expected_skill_digest: str,
-) -> Any:
+    allow_legacy_identity_alias: bool,
+) -> tuple[Any, bool]:
     matches = [
         skill for skill in lock.skills if skill.digest == expected_skill_digest
     ]
@@ -572,11 +915,21 @@ def resolve_locked_target_skill(
     source_basename = PurePosixPath(
         str(target.source).replace("\\", "/").rstrip("/")
     ).name
-    if target.name not in {target_skill_name, source_basename}:
+    strict_identity = (
+        target.name == target_skill_name and source_basename == target_skill_name
+    )
+    legacy_identity_alias = (
+        not strict_identity
+        and allow_legacy_identity_alias
+        and target.name in {target_skill_name, source_basename}
+    )
+    if not strict_identity and not legacy_identity_alias:
         raise ValueError(
-            f"Locked target skill name {target.name!r} matches neither the expected "
-            f"frontmatter name {target_skill_name!r} nor its source basename "
-            f"{source_basename!r} in Harbor trial {trial_directory}."
+            f"Locked target skill identity in Harbor trial {trial_directory} must "
+            f"use logical frontmatter name {target_skill_name!r} as both locked "
+            f"name and source basename; found locked name {target.name!r} and "
+            f"source basename {source_basename!r}. Physical basename aliases are "
+            "accepted only for analyze-only legacy discovery evidence."
         )
 
     source_path = Path(str(target.source)).expanduser()
@@ -596,7 +949,7 @@ def resolve_locked_target_skill(
                 f"Locked target skill source {source_path} has digest {source_digest}, "
                 f"expected {expected_skill_digest}."
             )
-    return target
+    return target, legacy_identity_alias
 
 
 def canonical_trial_config(
@@ -673,10 +1026,12 @@ def normalize_trial(
     harbor_version: str | None,
     reward_key: str,
     pass_threshold: float,
+    required_reward_thresholds: dict[str, float],
     target_skill_name: str,
     expected_skill_digest: str,
     include_feedback: bool,
     require_lock: bool,
+    allow_legacy_identity_alias: bool,
 ) -> dict[str, Any]:
     trial_directory = result_path.parent
     lock_path = trial_directory / "lock.json"
@@ -703,37 +1058,125 @@ def normalize_trial(
         if trial.verifier_result is not None and trial.verifier_result.rewards is not None
         else {}
     )
+    for key, value in rewards.items():
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+        ):
+            raise ValueError(
+                f"Harbor trial {trial_directory} reward {key!r} must be finite numeric."
+            )
     raw_reward = rewards.get(reward_key)
-    reward = (
+    reported_reward = (
         float(raw_reward)
-        if isinstance(raw_reward, (int, float)) and math.isfinite(float(raw_reward))
+        if not isinstance(raw_reward, bool)
+        and isinstance(raw_reward, (int, float))
+        and math.isfinite(float(raw_reward))
         else None
     )
+    verifier_diagnostics = collect_verifier_diagnostics(trial_directory)
+    # Diagnostics are authoritative before reward availability is interpreted.
+    # A provider can terminate before emitting any verifier reward; that must
+    # remain a provider failure rather than being relabeled as a missing metric.
+    evaluation_failure = external_evaluation_failure(verifier_diagnostics)
+    required_rewards: dict[str, float | None] = {}
+    qualification_failures: list[dict[str, Any]] = []
+    for key, threshold in required_reward_thresholds.items():
+        raw_value = rewards.get(key)
+        if raw_value is None:
+            required_rewards[key] = None
+            qualification_failures.append(
+                {
+                    "key": key,
+                    "threshold": threshold,
+                    "actual": None,
+                    "reason": "missing",
+                }
+            )
+            continue
+        if (
+            isinstance(raw_value, bool)
+            or not isinstance(raw_value, (int, float))
+            or not math.isfinite(float(raw_value))
+        ):
+            raise ValueError(
+                f"Harbor trial {trial_directory} required reward {key!r} must be finite numeric or null."
+            )
+        actual = float(raw_value)
+        required_rewards[key] = actual
+        if actual < threshold:
+            qualification_failures.append(
+                {
+                    "key": key,
+                    "threshold": threshold,
+                    "actual": actual,
+                    "reason": "below-threshold",
+                }
+            )
     error = None
     if trial.exception_info is not None:
         error = {
             "type": trial.exception_info.exception_type,
             "message": sanitize_text(trial.exception_info.exception_message, 1500),
         }
+
+    primary_reward_missing = (
+        error is None
+        and evaluation_failure is None
+        and reported_reward is None
+    )
+    if primary_reward_missing:
+        evaluation_failure = {
+            "failureDomain": "evaluator",
+            "status": "missing-primary-reward",
+            "terminalOutcome": "missing-primary-reward",
+            "errorCode": "missing_primary_reward",
+            "diagnosticsPath": None,
+            "evidenceClass": "missing-primary-reward",
+            "actionability": {
+                "actionable": False,
+                "domain": None,
+                "reason": "missing-primary-reward",
+            },
+        }
+    reward = None if evaluation_failure is not None else reported_reward
+
+    if error is not None:
         outcome = "error"
-    elif reward is None:
+    elif primary_reward_missing:
         outcome = "missing-reward"
+    elif evaluation_failure is not None:
+        outcome = "non-evaluable"
     elif reward >= pass_threshold:
         outcome = "success"
     else:
         outcome = "verifier-failure"
 
-    locked_target = (
-        resolve_locked_target_skill(
+    if evaluation_failure is not None:
+        evidence_class = evaluation_failure["evidenceClass"]
+        actionability = evaluation_failure["actionability"]
+        evidence_eligible = actionability["actionable"]
+    elif error is not None:
+        evidence_class = "harbor-execution-error"
+        actionability = None
+        evidence_eligible = True
+    else:
+        evidence_class = "semantic-evaluation"
+        actionability = None
+        evidence_eligible = True
+
+    locked_target: Any | None = None
+    legacy_identity_alias = False
+    if lock:
+        locked_target, legacy_identity_alias = resolve_locked_target_skill(
             lock,
             trial.config,
             trial_directory=trial_directory,
             target_skill_name=target_skill_name,
             expected_skill_digest=expected_skill_digest,
+            allow_legacy_identity_alias=allow_legacy_identity_alias,
         )
-        if lock
-        else None
-    )
     lock_canonical = canonical_trial_lock(lock, locked_target) if lock else None
     config_canonical = canonical_trial_config(
         trial.config,
@@ -758,7 +1201,22 @@ def normalize_trial(
         "model": model_identifier(trial),
         "rewardKey": reward_key,
         "reward": reward,
+        "reportedReward": reported_reward,
+        "primaryRewardMissing": primary_reward_missing,
         "rewards": dict(rewards),
+        "requiredRewards": required_rewards,
+        "qualificationPassed": (
+            error is None
+            and evaluation_failure is None
+            and not qualification_failures
+        ),
+        "qualificationFailures": qualification_failures,
+        "evaluable": evaluation_failure is None,
+        "evaluationFailure": evaluation_failure,
+        "verifierDiagnostics": verifier_diagnostics,
+        "evidenceClass": evidence_class,
+        "actionability": actionability,
+        "evidenceEligible": evidence_eligible,
         "outcome": outcome,
         "error": error,
         "usage": {
@@ -773,6 +1231,20 @@ def normalize_trial(
         "lockProblem": sanitize_text(lock_problem, 1000) if lock_problem else None,
         "lockSignature": stable_digest(lock_canonical) if lock_canonical else None,
         "targetSkillDigests": target_skill_digests,
+        "skillIdentity": {
+            "logicalName": target_skill_name,
+            "lockedName": locked_target.name if locked_target is not None else None,
+            "sourceBasename": (
+                PurePosixPath(
+                    str(locked_target.source).replace("\\", "/").rstrip("/")
+                ).name
+                if locked_target is not None
+                else None
+            ),
+            "lockVerified": locked_target is not None,
+            "legacyAliasAccepted": legacy_identity_alias,
+            "promotionEligible": locked_target is not None and not legacy_identity_alias,
+        },
         "configSignature": stable_digest(config_canonical),
         "artifactsSignature": artifacts_signature,
         "feedback": collect_feedback(trial_directory, trial.agent_info.name)
@@ -788,10 +1260,12 @@ def load_job_artifact(
     *,
     reward_key: str,
     pass_threshold: float,
+    required_reward_thresholds: dict[str, float],
     target_skill_name: str,
     expected_skill_digest: str,
     include_feedback: bool,
     require_lock: bool,
+    allow_legacy_identity_alias: bool,
 ) -> list[dict[str, Any]]:
     config = JobConfig.model_validate_json((directory / "config.json").read_text(encoding="utf-8"))
     job_result = JobResult.model_validate_json((directory / "result.json").read_text(encoding="utf-8"))
@@ -845,10 +1319,12 @@ def load_job_artifact(
             harbor_version=harbor_version,
             reward_key=reward_key,
             pass_threshold=pass_threshold,
+            required_reward_thresholds=required_reward_thresholds,
             target_skill_name=target_skill_name,
             expected_skill_digest=expected_skill_digest,
             include_feedback=include_feedback,
             require_lock=require_lock,
+            allow_legacy_identity_alias=allow_legacy_identity_alias,
         )
         for trial, path in zip(parsed_trials, paths)
     ]
@@ -859,10 +1335,12 @@ def load_trial_artifact(
     *,
     reward_key: str,
     pass_threshold: float,
+    required_reward_thresholds: dict[str, float],
     target_skill_name: str,
     expected_skill_digest: str,
     include_feedback: bool,
     require_lock: bool,
+    allow_legacy_identity_alias: bool,
 ) -> list[dict[str, Any]]:
     path = directory / "result.json"
     trial = TrialResult.model_validate_json(path.read_text(encoding="utf-8"))
@@ -876,10 +1354,12 @@ def load_trial_artifact(
             harbor_version=None,
             reward_key=reward_key,
             pass_threshold=pass_threshold,
+            required_reward_thresholds=required_reward_thresholds,
             target_skill_name=target_skill_name,
             expected_skill_digest=expected_skill_digest,
             include_feedback=include_feedback,
             require_lock=require_lock,
+            allow_legacy_identity_alias=allow_legacy_identity_alias,
         )
     ]
 
@@ -891,6 +1371,7 @@ def load_artifacts(
     expected_skill_digest: str,
     include_feedback: bool,
     require_lock: bool,
+    allow_legacy_identity_alias: bool = False,
 ) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     seen_directories: set[Path] = set()
@@ -907,20 +1388,24 @@ def load_artifacts(
                 directory,
                 reward_key=config["harbor"]["rewardKey"],
                 pass_threshold=config["harbor"]["passThreshold"],
+                required_reward_thresholds=config["harbor"]["requiredRewards"],
                 target_skill_name=config["skillName"],
                 expected_skill_digest=expected_skill_digest,
                 include_feedback=include_feedback,
                 require_lock=require_lock,
+                allow_legacy_identity_alias=allow_legacy_identity_alias,
             )
         elif "task_name" in raw_result and "trial_name" in raw_result:
             values = load_trial_artifact(
                 directory,
                 reward_key=config["harbor"]["rewardKey"],
                 pass_threshold=config["harbor"]["passThreshold"],
+                required_reward_thresholds=config["harbor"]["requiredRewards"],
                 target_skill_name=config["skillName"],
                 expected_skill_digest=expected_skill_digest,
                 include_feedback=include_feedback,
                 require_lock=require_lock,
+                allow_legacy_identity_alias=allow_legacy_identity_alias,
             )
         else:
             raise ValueError(f"Not a Harbor job or trial artifact directory: {directory}")
@@ -936,8 +1421,69 @@ def public_record(record: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in record.items() if not key.startswith("_")}
 
 
+def qualification_summary(records: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "passed": all(record["qualificationPassed"] for record in records),
+        "unqualifiedTrials": sum(
+            not record["qualificationPassed"] for record in records
+        ),
+        "erroredTrials": sum(record["error"] is not None for record in records),
+        "nonEvaluableTrials": sum(not record["evaluable"] for record in records),
+        "providerFailureTrials": sum(
+            record["evaluationFailure"] is not None
+            and record["evaluationFailure"]["failureDomain"] == "provider"
+            for record in records
+        ),
+        "infrastructureFailureTrials": sum(
+            record["evaluationFailure"] is not None
+            and record["evaluationFailure"]["failureDomain"]
+            in NON_EVALUABLE_FAILURE_DOMAINS
+            for record in records
+        ),
+        "failureDomains": dict(
+            sorted(
+                Counter(
+                    record["evaluationFailure"]["failureDomain"]
+                    for record in records
+                    if record["evaluationFailure"] is not None
+                ).items()
+            )
+        ),
+        "missingPrimaryRewardTrials": sum(
+            record["primaryRewardMissing"] for record in records
+        ),
+        "actionableContextBudgetTrials": sum(
+            record["evidenceClass"] == "operational-context-budget"
+            for record in records
+        ),
+        "nonActionableExternalTrials": sum(
+            record["evaluationFailure"] is not None
+            and record["evaluationFailure"]["failureDomain"]
+            in NON_EVALUABLE_FAILURE_DOMAINS
+            and not record["evidenceEligible"]
+            for record in records
+        ),
+        "missingRequiredRewards": sum(
+            failure["reason"] == "missing"
+            for record in records
+            for failure in record["qualificationFailures"]
+        ),
+        "belowThresholdRewards": sum(
+            failure["reason"] == "below-threshold"
+            for record in records
+            for failure in record["qualificationFailures"]
+        ),
+    }
+
+
 def build_trace_pool(records: list[dict[str, Any]]) -> dict[str, Any]:
     outcomes = Counter(record["outcome"] for record in records)
+    legacy_aliases = sum(
+        record["skillIdentity"]["legacyAliasAccepted"] for record in records
+    )
+    unverified_locks = sum(
+        not record["skillIdentity"]["lockVerified"] for record in records
+    )
     return {
         "schemaVersion": SCHEMA_VERSION,
         "source": "harbor",
@@ -947,6 +1493,12 @@ def build_trace_pool(records: list[dict[str, Any]]) -> dict[str, Any]:
             "uniqueTrials": len({record["trialId"] for record in records}),
             "uniqueTasks": len({record["taskChecksum"] for record in records}),
             "outcomes": dict(sorted(outcomes.items())),
+            "qualification": qualification_summary(records),
+            "skillIdentity": {
+                "legacyAliasTrials": legacy_aliases,
+                "unverifiedLockTrials": unverified_locks,
+                "promotionEligible": legacy_aliases == 0 and unverified_locks == 0,
+            },
         },
         "traces": [public_record(record) for record in records],
     }
@@ -1004,6 +1556,25 @@ def proposal_state(
         if unknown:
             reasons.append("unknown-or-holdout-evidence")
         supported = [evidence[item] for item in evidence_ids if item in evidence]
+        proposal_domain = raw.get("domain")
+        if proposal_domain is not None and (
+            not isinstance(proposal_domain, str) or not proposal_domain.strip()
+        ):
+            reasons.append("invalid-domain")
+            proposal_domain = None
+        if isinstance(proposal_domain, str):
+            proposal_domain = proposal_domain.strip()
+        if any(not item["evidenceEligible"] for item in supported):
+            reasons.append("ineligible-external-evidence")
+        uses_context_budget_evidence = any(
+            item["evidenceClass"] == "operational-context-budget"
+            for item in supported
+        )
+        if (
+            uses_context_budget_evidence
+            and proposal_domain != CONTEXT_BUDGET_DOMAIN
+        ):
+            reasons.append("operational-evidence-domain-mismatch")
         unique_trials = len({item["trialId"] for item in supported})
         unique_tasks = len({item["taskChecksum"] for item in supported})
         if unique_trials < config["proposals"]["minimumUniqueTrials"]:
@@ -1023,11 +1594,15 @@ def proposal_state(
         normalized = {
             "id": proposal_id,
             "diagnosis": diagnosis.strip() if isinstance(diagnosis, str) else "",
+            "domain": proposal_domain,
             "evidenceIds": evidence_ids,
             "support": {
                 "uniqueTrials": unique_trials,
                 "uniqueTasks": unique_tasks,
                 "taskChecksums": sorted({item["taskChecksum"] for item in supported}),
+                "evidenceClasses": sorted(
+                    {item["evidenceClass"] for item in supported}
+                ),
             },
             "conflictGroup": str(raw.get("conflictGroup") or proposal_id),
             "target": target or str(raw.get("target") or ""),
@@ -1075,14 +1650,20 @@ def proposal_state(
 
 
 def apply_proposal(candidate: Path, proposal: dict[str, Any], skill_name: str) -> None:
-    target = candidate.joinpath(*PurePosixPath(proposal["target"]).parts)
-    if target != candidate and not target.is_relative_to(candidate):
+    assert_self_contained_bundle(candidate, "candidate skill bundle")
+    candidate_root = candidate.resolve(strict=True)
+    lexical_target = candidate.joinpath(*PurePosixPath(proposal["target"]).parts)
+    target = lexical_target.resolve(strict=False)
+    if target != candidate_root and not target.is_relative_to(candidate_root):
         raise ValueError(f"Proposal escaped candidate bundle: {proposal['id']}")
     operation = proposal["operation"]
     if operation == "create":
-        if target.exists():
+        if lexical_target.exists() or lexical_target.is_symlink():
             raise ValueError(f"create target already exists: {proposal['target']}")
-        target.parent.mkdir(parents=True, exist_ok=True)
+        lexical_target.parent.mkdir(parents=True, exist_ok=True)
+        target = lexical_target.resolve(strict=False)
+        if target != candidate_root and not target.is_relative_to(candidate_root):
+            raise ValueError(f"Proposal escaped candidate bundle: {proposal['id']}")
         target.write_text(proposal["content"], encoding="utf-8")
     else:
         if not target.is_file():
@@ -1098,6 +1679,7 @@ def apply_proposal(candidate: Path, proposal: dict[str, Any], skill_name: str) -
                 )
             updated = current.replace(old, proposal["content"], 1)
         target.write_text(updated, encoding="utf-8")
+    assert_self_contained_bundle(candidate, "candidate skill bundle")
     skill_path = candidate / "SKILL.md"
     frontmatter = parse_skill_frontmatter(skill_path.read_text(encoding="utf-8"))
     if frontmatter["name"] != skill_name:
@@ -1109,8 +1691,12 @@ def apply_proposal(candidate: Path, proposal: dict[str, Any], skill_name: str) -
 def materialize_candidate(
     config: dict[str, Any], state: dict[str, Any]
 ) -> tuple[Path, dict[str, Any]]:
-    candidate = config["outputDirectory"] / "candidate-skill"
-    shutil.copytree(config["baselineSkill"], candidate)
+    candidate = installed_skill_path(
+        config["outputDirectory"] / "candidate", config["skillName"]
+    )
+    candidate.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(config["stagedBaselineSkill"], candidate, symlinks=True)
+    assert_self_contained_bundle(candidate, "candidate skill bundle")
     applied = []
     apply_rejected = []
     for proposal in state["accepted"]:
@@ -1123,7 +1709,8 @@ def materialize_candidate(
             )
     if apply_rejected:
         shutil.rmtree(candidate)
-        shutil.copytree(config["baselineSkill"], candidate)
+        shutil.copytree(config["stagedBaselineSkill"], candidate, symlinks=True)
+        assert_self_contained_bundle(candidate, "candidate skill bundle")
         for proposal in applied:
             if proposal["id"] not in {item["id"] for item in apply_rejected}:
                 apply_proposal(candidate, proposal, config["skillName"])
@@ -1138,9 +1725,14 @@ def materialize_candidate(
         "schemaVersion": SCHEMA_VERSION,
         "source": "harbor",
         "baselineSkill": str(config["baselineSkill"]),
+        "stagedBaselineSkill": str(config["stagedBaselineSkill"]),
         "baselineDigest": config["baselineDigest"],
         "candidateSkill": str(candidate),
         "candidateDigest": directory_digest(candidate),
+        "logicalSkillName": config["skillName"],
+        "developmentEvidencePromotionEligible": state[
+            "developmentEvidencePromotionEligible"
+        ],
         "appliedPatchIds": [item["id"] for item in state["accepted"]],
         "rejectedPatchIds": [item["id"] for item in state["rejected"]],
     }
@@ -1161,9 +1753,18 @@ def fairness_cells(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return {
         "|".join(key): {
             "attempts": len(values),
-            "lockSignatures": sorted({item["lockSignature"] for item in values}),
-            "configSignatures": sorted({item["configSignature"] for item in values}),
-            "artifactsSignatures": sorted({item["artifactsSignature"] for item in values}),
+            # Preserve multiplicity. Sets let A,A,B compare equal to A,B,B and
+            # therefore hide attempt-level replay drift.
+            "lockSignatures": sorted(
+                (item["lockSignature"] for item in values),
+                key=lambda value: (value is not None, str(value)),
+            ),
+            "configSignatures": sorted(
+                item["configSignature"] for item in values
+            ),
+            "artifactsSignatures": sorted(
+                item["artifactsSignature"] for item in values
+            ),
         }
         for key, values in sorted(grouped.items())
     }
@@ -1182,17 +1783,65 @@ def comparison_cells(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]
         grouped[key].append(record)
     output = {}
     for key, values in sorted(grouped.items()):
-        scores = [0.0 if item["error"] else item["reward"] for item in values]
+        non_evaluable = [item for item in values if not item["evaluable"]]
+        scores = [
+            0.0 if item["error"] else item["reward"]
+            for item in values
+            if item["evaluable"]
+        ]
         if any(score is None for score in scores):
             raise ValueError(f"Holdout cell has a missing configured reward: {'|'.join(key)}")
         output["|".join(key)] = {
             "taskName": key[0],
             "taskChecksum": key[1],
             "attempts": len(values),
-            "meanReward": sum(float(score) for score in scores) / len(scores),
+            "evaluable": not non_evaluable,
+            "meanReward": (
+                sum(float(score) for score in scores) / len(scores)
+                if not non_evaluable
+                else None
+            ),
+            "nonEvaluableTrials": len(non_evaluable),
             "errors": sum(1 for item in values if item["error"]),
         }
     return output
+
+
+def validate_holdout_isolation(
+    discovery: list[dict[str, Any]],
+    baseline: list[dict[str, Any]],
+    candidate: list[dict[str, Any]],
+) -> None:
+    discovery_names = {item["taskName"] for item in discovery}
+    discovery_checksums = {item["taskChecksum"] for item in discovery}
+    holdout = [*baseline, *candidate]
+    overlap_names = sorted(discovery_names & {item["taskName"] for item in holdout})
+    overlap_checksums = sorted(
+        discovery_checksums & {item["taskChecksum"] for item in holdout}
+    )
+    if overlap_names or overlap_checksums:
+        raise ValueError(
+            "Discovery and holdout Harbor tasks overlap: "
+            f"names={overlap_names}, checksums={overlap_checksums}."
+        )
+
+
+def validate_phase_profile(
+    discovery: list[dict[str, Any]], holdout: list[dict[str, Any]]
+) -> None:
+    def profiles(records: list[dict[str, Any]]) -> set[tuple[str, str, str]]:
+        return {
+            (item["agent"], item["agentVersion"], item["model"])
+            for item in records
+        }
+
+    discovery_profiles = profiles(discovery)
+    holdout_profiles = profiles(holdout)
+    if discovery_profiles != holdout_profiles:
+        raise ValueError(
+            "Discovery and holdout evaluation-profile drift: "
+            f"discovery={sorted(discovery_profiles)}, holdout={sorted(holdout_profiles)}."
+        )
 
 
 def holdout_gate(
@@ -1255,8 +1904,13 @@ def holdout_gate(
     for key in baseline_cells:
         left = baseline_cells[key]
         right = candidate_cells[key]
-        delta = right["meanReward"] - left["meanReward"]
-        if delta < 0:
+        cell_evaluable = left["evaluable"] and right["evaluable"]
+        delta = (
+            right["meanReward"] - left["meanReward"]
+            if cell_evaluable
+            else None
+        )
+        if delta is not None and delta < 0:
             regressions.append(key)
         per_cell.append(
             {
@@ -1267,52 +1921,152 @@ def holdout_gate(
                 "baselineMeanReward": left["meanReward"],
                 "candidateMeanReward": right["meanReward"],
                 "delta": delta,
+                "evaluable": cell_evaluable,
+                "baselineNonEvaluableTrials": left["nonEvaluableTrials"],
+                "candidateNonEvaluableTrials": right["nonEvaluableTrials"],
                 "candidateErrors": right["errors"],
             }
         )
+    baseline_evaluable = all(item["evaluable"] for item in baseline)
+    candidate_evaluable = all(item["evaluable"] for item in candidate)
+    holdout_evaluable = baseline_evaluable and candidate_evaluable
     baseline_scores = [0.0 if item["error"] else item["reward"] for item in baseline]
     candidate_scores = [0.0 if item["error"] else item["reward"] for item in candidate]
-    baseline_mean = sum(float(value) for value in baseline_scores) / len(baseline_scores)
-    candidate_mean = sum(float(value) for value in candidate_scores) / len(candidate_scores)
+    baseline_mean = (
+        sum(float(value) for value in baseline_scores) / len(baseline_scores)
+        if baseline_evaluable
+        else None
+    )
+    candidate_mean = (
+        sum(float(value) for value in candidate_scores) / len(candidate_scores)
+        if candidate_evaluable
+        else None
+    )
+    mean_gain = (
+        candidate_mean - baseline_mean
+        if holdout_evaluable
+        else None
+    )
     candidate_errors = sum(1 for item in candidate if item["error"])
+    baseline_qualification = qualification_summary(baseline)
+    candidate_qualification = qualification_summary(candidate)
+    required_rewards_complete = (
+        baseline_qualification["missingRequiredRewards"] == 0
+        and candidate_qualification["missingRequiredRewards"] == 0
+    )
+    candidate_qualified = candidate_qualification["passed"]
     rules = config["holdout"]
     promoted = (
-        candidate_mean - baseline_mean >= rules["minimumMeanGain"]
+        holdout_evaluable
+        and mean_gain >= rules["minimumMeanGain"]
         and (rules["allowTaskRegressions"] or not regressions)
         and (not rules["requireNoErrors"] or candidate_errors == 0)
+        and required_rewards_complete
+        and candidate_qualified
+        and config.get("developmentEvidencePromotionEligible", False)
     )
     return {
         "schemaVersion": SCHEMA_VERSION,
         "source": "harbor",
         "status": "complete",
-        "decision": "promote" if promoted else "keep-baseline",
+        "decision": (
+            "not-evaluable"
+            if not holdout_evaluable
+            else "promote" if promoted else "keep-baseline"
+        ),
         "promoted": promoted,
+        "evaluable": holdout_evaluable,
+        "baselineEvaluable": baseline_evaluable,
+        "candidateEvaluable": candidate_evaluable,
+        "reason": (
+            None
+            if holdout_evaluable
+            else "A missing primary reward or provider/infrastructure diagnostic "
+            "made at least one holdout trial non-evaluable."
+        ),
         "fairnessBasis": fairness_basis,
         "warning": warning,
         "baselineMeanReward": baseline_mean,
         "candidateMeanReward": candidate_mean,
-        "meanGain": candidate_mean - baseline_mean,
+        "meanGain": mean_gain,
         "candidateErrors": candidate_errors,
+        "requiredRewardThresholds": config["harbor"]["requiredRewards"],
+        "requiredRewardsComplete": required_rewards_complete,
+        "candidateQualified": candidate_qualified,
+        "developmentEvidencePromotionEligible": config.get(
+            "developmentEvidencePromotionEligible", False
+        ),
+        "baselineQualified": baseline_qualification["passed"],
+        "baselineQualification": baseline_qualification,
+        "candidateQualification": candidate_qualification,
         "regressedCells": regressions,
         "perCell": per_cell,
         "promotionRules": {
             "minimumMeanGain": rules["minimumMeanGain"],
             "allowTaskRegressions": rules["allowTaskRegressions"],
             "requireNoErrors": rules["requireNoErrors"],
+            "requiredRewards": config["harbor"]["requiredRewards"],
         },
         "baselineEvidence": [
-            {key: public_record(item)[key] for key in ("evidenceId", "taskName", "taskChecksum", "reward", "outcome", "error")}
+            {
+                key: public_record(item)[key]
+                for key in (
+                    "evidenceId",
+                    "taskName",
+                    "taskChecksum",
+                    "reward",
+                    "reportedReward",
+                    "primaryRewardMissing",
+                    "requiredRewards",
+                    "qualificationPassed",
+                    "qualificationFailures",
+                    "evaluable",
+                    "evaluationFailure",
+                    "verifierDiagnostics",
+                    "evidenceClass",
+                    "actionability",
+                    "evidenceEligible",
+                    "outcome",
+                    "error",
+                    "skillIdentity",
+                )
+            }
             for item in baseline
         ],
         "candidateEvidence": [
-            {key: public_record(item)[key] for key in ("evidenceId", "taskName", "taskChecksum", "reward", "outcome", "error")}
+            {
+                key: public_record(item)[key]
+                for key in (
+                    "evidenceId",
+                    "taskName",
+                    "taskChecksum",
+                    "reward",
+                    "reportedReward",
+                    "primaryRewardMissing",
+                    "requiredRewards",
+                    "qualificationPassed",
+                    "qualificationFailures",
+                    "evaluable",
+                    "evaluationFailure",
+                    "verifierDiagnostics",
+                    "evidenceClass",
+                    "actionability",
+                    "evidenceEligible",
+                    "outcome",
+                    "error",
+                    "skillIdentity",
+                )
+            }
             for item in candidate
         ],
     }
 
 
 def write_json(path: Path, value: Any) -> None:
-    path.write_text(json.dumps(value, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(value, indent=2, sort_keys=False, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
 
 
 def render_report(run: dict[str, Any]) -> str:
@@ -1342,13 +2096,37 @@ def render_report(run: dict[str, Any]) -> str:
         "",
     ]
     if holdout["status"] == "complete":
+        lines.append(f"- Fairness basis: `{holdout['fairnessBasis']}`")
+        if holdout.get("evaluable", True):
+            lines.extend(
+                [
+                    f"- Baseline mean reward: {holdout['baselineMeanReward']:.3f}",
+                    f"- Candidate mean reward: {holdout['candidateMeanReward']:.3f}",
+                    f"- Mean gain: {holdout['meanGain']:+.3f}",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    (
+                        f"- Baseline mean reward: {holdout['baselineMeanReward']:.3f}"
+                        if holdout["baselineEvaluable"]
+                        else "- Baseline mean reward: null"
+                    ),
+                    (
+                        f"- Candidate mean reward: {holdout['candidateMeanReward']:.3f}"
+                        if holdout["candidateEvaluable"]
+                        else "- Candidate mean reward: null"
+                    ),
+                    "- Mean gain: null",
+                    f"- Non-evaluable: {holdout['reason']}",
+                ]
+            )
         lines.extend(
             [
-                f"- Fairness basis: `{holdout['fairnessBasis']}`",
-                f"- Baseline mean reward: {holdout['baselineMeanReward']:.3f}",
-                f"- Candidate mean reward: {holdout['candidateMeanReward']:.3f}",
-                f"- Mean gain: {holdout['meanGain']:+.3f}",
                 f"- Candidate errors: {holdout['candidateErrors']}",
+                f"- Candidate qualified: {'yes' if holdout['candidateQualified'] else 'no'}",
+                f"- Required rewards complete: {'yes' if holdout['requiredRewardsComplete'] else 'no'}",
             ]
         )
         if holdout.get("warning"):
@@ -1373,6 +2151,10 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
     if output.exists() and any(output.iterdir()):
         raise ValueError(f"Output directory must be new or empty: {output}")
     output.mkdir(parents=True, exist_ok=True)
+    staged_baseline = stage_skill_bundle(
+        config["baselineSkill"], output / "baseline", config["skillName"]
+    )
+    config["stagedBaselineSkill"] = staged_baseline
 
     discovery_paths = list(config["discovery"]["artifacts"])
     if not analyze_only and config["discovery"]["jobConfigs"]:
@@ -1383,6 +2165,7 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
                     output=output,
                     phase="discovery",
                     baseline_skill=config["baselineSkill"],
+                    candidate_skill=staged_baseline,
                 )
             )
         )
@@ -1396,10 +2179,17 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
         expected_skill_digest=config["baselineDigest"],
         include_feedback=True,
         require_lock=config["harbor"]["requireDiscoveryLocks"],
+        allow_legacy_identity_alias=analyze_only,
     )
     trace_pool = build_trace_pool(records)
     proposals = load_proposals(config["proposals"]["path"])
     state = proposal_state(proposals, records, config)
+    state["developmentEvidencePromotionEligible"] = trace_pool["summary"][
+        "skillIdentity"
+    ]["promotionEligible"]
+    config["developmentEvidencePromotionEligible"] = state[
+        "developmentEvidencePromotionEligible"
+    ]
     candidate, consolidation = materialize_candidate(config, state)
     config["candidateDigest"] = consolidation["candidateDigest"]
 
@@ -1423,6 +2213,7 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
                         output=output,
                         phase="holdout-baseline",
                         baseline_skill=config["baselineSkill"],
+                        candidate_skill=staged_baseline,
                     )
                 )
             )
@@ -1455,6 +2246,8 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
                 include_feedback=False,
                 require_lock=not config["holdout"]["allowWeakFairness"],
             )
+            validate_holdout_isolation(records, baseline, candidate_records)
+            validate_phase_profile(records, [*baseline, *candidate_records])
             gate = holdout_gate(baseline, candidate_records, config)
         else:
             gate = {
@@ -1475,6 +2268,7 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
         "mode": "analyze-only" if analyze_only else "live",
         "generatedAt": generated_at,
         "baselineSkill": str(config["baselineSkill"]),
+        "stagedBaselineSkill": str(staged_baseline),
         "baselineDigest": config["baselineDigest"],
         "tracePool": trace_pool,
         "proposalState": state,

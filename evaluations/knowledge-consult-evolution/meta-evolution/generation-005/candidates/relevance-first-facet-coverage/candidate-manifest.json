@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 2,
+  "generationId": "generation-005",
+  "candidateId": "relevance-first-facet-coverage",
+  "operatorId": "q018-relevance-first-facet-coverage",
+  "parentCandidateId": "extractive-one-shot-answer",
+  "parentTreeSha256": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536",
+  "parentBundleTreeSha256": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536",
+  "feedbackTaskIds": ["q018"],
+  "selectedTaskIdsObservedByCandidateAuthor": [],
+  "contaminatedTaskContentsObservedByCandidateAuthor": [],
+  "holdoutOrHardContentsObservedByCandidateAuthor": false,
+  "candidateFrozenBeforeSelectedTaskRelease": true,
+  "skill": {
+    "name": "consult-semantic-okf",
+    "bundle": "consult-semantic-okf",
+    "basename": "consult-semantic-okf",
+    "treeSha256": "65a91e9ba9846be54bdad82b6192bb030eb235a549d8f7cabb315798b7a970ae",
+    "fileCount": 15,
+    "totalBytes": 157627,
+    "treeHashAlgorithmId": "meta-tree-sha256-bytewise-v1",
+    "treeHashAlgorithm": "SHA-256 of the concatenation, for files sorted by unsigned UTF-8 bytes of their POSIX relative path, of path UTF-8 + 0x00 + raw file bytes + 0x00; omit every entry named __pycache__ and every filename ending .pyc; do not include the root basename"
+  },
+  "diffFiles": [
+    {
+      "path": "SKILL.md",
+      "change": "modified",
+      "sha256": "55d6a0fb018641b9d96916e39deed5ae42682368e77d188266df1528cb9b645c"
+    },
+    {
+      "path": "references/harbor-answer-contract.md",
+      "change": "modified",
+      "sha256": "6c76a8b5b607b5b277def01bd2f4cd071a322f588f248476c0ebd9c9f7f5ffaf"
+    },
+    {
+      "path": "scripts/_cross_source.py",
+      "change": "modified",
+      "sha256": "8b32f80cf7cb8e86ce67b2592b2e05632d794651ec594c3360d9e1b895aaa592"
+    },
+    {
+      "path": "scripts/harbor_answer.py",
+      "change": "modified",
+      "sha256": "ef4512658380c5ffd7c206bca62536657b3a937d0ba84075ecd649579877ab4f"
+    }
+  ],
+  "feedbackReceipt": {
+    "taskId": "q018",
+    "path": "../../distillation/q018-feedback-receipt.json",
+    "sha256": "66fdd661e03d442385aa506943516acfcb2d534350aa11897d59c8902909f8d3",
+    "bytes": 1410
+  },
+  "mutationProcedure": {
+    "path": "../../distillation/mutation-procedure.md",
+    "sha256": "80c8e8faaac38699664b498bd8944f0a0eec7e4b867746386bb8bcf523fb9c5d",
+    "bytes": 1993
+  },
+  "verification": {
+    "syntheticTest": "../../tests/test_relevance_first_facet_coverage.py",
+    "fixture": "../../../generation-003/tests/fixtures/snapshot",
+    "modelCalls": 0,
+    "harborCalls": 0,
+    "privateEvaluationData": false,
+    "promotionStatus": "unevaluated-development-child"
+  }
+}
