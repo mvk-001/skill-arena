@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "caseId": "knowledge-consult-meta-generation-003-post-agent-verifier-recovery-v1",
+  "recoveryContract": "harbor-0.18.0.oserror-eio-during-artifact-collection.post-agent.pre-verifier.v1",
+  "resumeConfig": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer-prepared-v3/resume-config.json",
+  "sourceTrialKey": "sha256:82fa061d9f692b48454bedfe38a363059e5fa645280c61445cb28a4d3b7681c1",
+  "attempt": 1,
+  "outputDirectory": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer/verifier-recovery/attempt-001",
+  "effectiveJobDirectory": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer/effective-jobs/1dd453f95495c1d230b4cb6903ff2759f7be11f1e560f448ae1d3262259ef106/effective-job",
+  "native": {
+    "resumeLockSha256": "sha256:bcd34f60efc8e4a410c1ead76d5fcca8525d04a1a561b835b6733af4501e8821",
+    "sourceAttemptRecordDigest": "sha256:98e3250b8bca85696417c3523b5d64ca2e9b87ebce2dadb10d4f95d745659b69",
+    "retryJobDirectory": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer/retries/82fa061d9f692b48454bedfe38a363059e5fa645280c61445cb28a4d3b7681c1/attempt-001/harbor-jobs/external-retry-82fa061d9f69-a001",
+    "nativeRetryJobArtifactDigest": "sha256:da9cf4f2b5dd0045efd6ec2d1db767ec031eaa406eac893779ddcc0fbf1115b8",
+    "nativeRetryJobArtifactManifest": [
+      {
+        "path": "config.json",
+        "sha256": "sha256:979a5722c68b6f2e7a5c05368f5686f539623795ebdc735e5defece902cc6ff6"
+      },
+      {
+        "path": "job.log",
+        "sha256": "sha256:d8f61a94043f839fbcce42df54938a4db545b686e00259e5aa5b337175566c38"
+      },
+      {
+        "path": "lock.json",
+        "sha256": "sha256:5c25da678fc68925e192aa6de1cf7554ff5b7c6e33b7eccc42cba968c90bcd7d"
+      },
+      {
+        "path": "q003__dUW9ioV/agent/pi.txt",
+        "sha256": "sha256:4f9c2d5b62d5f2ed2f646a03c41d3be7272f958ae5ca12eaad656efb05f540e1"
+      },
+      {
+        "path": "q003__dUW9ioV/config.json",
+        "sha256": "sha256:dafd764d442a79aa7aa18a4722de01200cf0271f4e801e696c23a9582b2e64cf"
+      },
+      {
+        "path": "q003__dUW9ioV/exception.txt",
+        "sha256": "sha256:dcb7dbee8333be9317e1516cb06993749ca1b562008963bd36bdee9399e9b75d"
+      },
+      {
+        "path": "q003__dUW9ioV/lock.json",
+        "sha256": "sha256:4ff95056dd20a57367c62e211b95ab39a4eed02097f650e1127fba1bf018f798"
+      },
+      {
+        "path": "q003__dUW9ioV/result.json",
+        "sha256": "sha256:d2947f2a921056c73c4694391679a41e6c358530a4cb3a2874121d758684ac23"
+      },
+      {
+        "path": "q003__dUW9ioV/trial.log",
+        "sha256": "sha256:d8f61a94043f839fbcce42df54938a4db545b686e00259e5aa5b337175566c38"
+      },
+      {
+        "path": "result.json",
+        "sha256": "sha256:ea57b75f85fd19cdfccd3031f5b696d5993ff7abac10fb6b74e8a64585a9740b"
+      }
+    ],
+    "nativeRetryJobDirectoryManifest": [
+      "q003__dUW9ioV",
+      "q003__dUW9ioV/agent",
+      "q003__dUW9ioV/agent/setup",
+      "q003__dUW9ioV/artifacts",
+      "q003__dUW9ioV/artifacts/logs",
+      "q003__dUW9ioV/artifacts/logs/artifacts",
+      "q003__dUW9ioV/verifier"
+    ],
+    "trialId": "3971fba7-5285-491b-aa56-151c9ce1fadd",
+    "trialName": "q003__dUW9ioV",
+    "trialResultSha256": "sha256:d2947f2a921056c73c4694391679a41e6c358530a4cb3a2874121d758684ac23",
+    "exceptionSha256": "sha256:dcb7dbee8333be9317e1516cb06993749ca1b562008963bd36bdee9399e9b75d"
+  },
+  "agentTrace": {
+    "path": "agent/pi.txt",
+    "sha256": "sha256:4f9c2d5b62d5f2ed2f646a03c41d3be7272f958ae5ca12eaad656efb05f540e1",
+    "size": 187483,
+    "parsedEvents": 27,
+    "terminalOutputSha256": "sha256:3e5172b25da5a0cc324f7856ee1dfa7b24bd8e1efcb8d7c769a0931fb389be3d",
+    "tokens": {
+      "input": 12831,
+      "cache": 5120,
+      "output": 4659
+    }
+  },
+  "task": {
+    "testsDirectory": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-001/prepared/tasks/q003/tests",
+    "treeSha256": "877c9335300ce055ace37103bf4bd9a574927d740fb96503471c406151ef6566",
+    "checksum": "489934516868c0b8bcd5469c2b7c0439ddae30eea36a0419735c3c00ccda37b0",
+    "packagerDigest": "sha256:fdbbc9c599db8d05967720a0e948e47a895a2fe65f17d374fa907eb7ff39f4e2",
+    "taskTestsArtifactDigest": "sha256:99fa610fd92d028a1a99ce79c88c5109700c503abcada31635bff1b2bbc546cc",
+    "taskTestsArtifactManifest": [
+      {
+        "path": "Dockerfile",
+        "sha256": "sha256:f7bc1ff3820a4ef8259fb73b7ef3fc59a7f47413d1b0a3c20478ffc1608f1f89"
+      },
+      {
+        "path": "answer.schema.json",
+        "sha256": "sha256:19b7e9f3cfc72ac91e2db6984bfcc94f3b341e3510267c01baa3ba8747dd181b"
+      },
+      {
+        "path": "question.json",
+        "sha256": "sha256:833bb7d6a4c7b92e61714d1eb7f65b4a19853481600ac1a39e71763b66703b0c"
+      },
+      {
+        "path": "records.jsonl",
+        "sha256": "sha256:df06f8ed7fd0ca4b2b8b5761c637a79d525595a2c180aeaf6885555e266754dc"
+      },
+      {
+        "path": "score.py",
+        "sha256": "sha256:bb4c9c39eea9a648622aade5ead4b669e74473cc329779b83a8180cfbf9dfac1"
+      },
+      {
+        "path": "source-combination.json",
+        "sha256": "sha256:cd9819730862bac18f8358a975501200214478dd56d080d300abf9b8f1c2464f"
+      },
+      {
+        "path": "test.sh",
+        "sha256": "sha256:6c614bb9a00d22c3e2c2f0235b5f19c0881d91ac1269200e20d87228a9bfdf2d"
+      },
+      {
+        "path": "trace_status.py",
+        "sha256": "sha256:ba411ec0f4fa8d84516224d112fc136e0c95f2fae6e12173a89494d590018924"
+      }
+    ]
+  },
+  "verifier": {
+    "image": "semantic-okf-harbor-runtime:1.0",
+    "imageId": "sha256:1315195dcef58980e6d2620eaa41062ea6edc15c3eb8ed47d42c143be57aded5",
+    "command": [
+      "/tests/test.sh"
+    ],
+    "network": "none",
+    "repeat": 2
+  },
+  "sealedFiles": [
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/recover_verifier_only.py",
+      "sha256": "sha256:d8f26d45f5015b4af5196d4bc75c8c7785186397e33aff07e49f54a469ac6692"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/recover_verifier_only.py.lock",
+      "sha256": "sha256:5cc4ba8fc8e0ce28314de87203151a616e6a91b738d4439d2da1450058927fab"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/resume_external_failures.py",
+      "sha256": "sha256:f6ce95113c54cf434460757ace2efe7361bbe6938dcf777847434b3cd4dd6fa7"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/references/verifier-only-recovery.md",
+      "sha256": "sha256:5da625521d40f8c17983894791e9fe6311142206c066db4c4b0a5cf57f6595c4"
+    },
+    {
+      "path": "run-generation-003-verifier-recovery.sh",
+      "sha256": "sha256:3895ba2b6a451ec0f43632ebe69f9958dfdae2439b3caf11f30513c4c872f2b7"
+    },
+    {
+      "path": "../scripts/evidence-resolution-post-agent.js",
+      "sha256": "sha256:70b3215c0426ac113f7847ec256011d0067779b222d911076190df750809b38b"
+    },
+    {
+      "path": "../scripts/prepare-generation-003-post-agent.js",
+      "sha256": "sha256:c0b9280130a6239e5e344ecf7dd08ec4486f388c25be272afa2f979f4bccc1ae"
+    },
+    {
+      "path": "../scripts/publish-generation-003-post-agent.js",
+      "sha256": "sha256:2a09ec533af99ae9224dd070ba5dffae89ec6f2dc5a39dedd5dc626b49c856e3"
+    }
+  ]
+}

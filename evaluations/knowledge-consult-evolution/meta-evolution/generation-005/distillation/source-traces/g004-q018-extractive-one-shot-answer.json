@@ -1,0 +1,17 @@
+{
+  "traceId": "g004-q018-extractive-one-shot-answer",
+  "outcome": "failure",
+  "benchmarkId": "knowledge-consult-g004-forward-development",
+  "promptId": "q018",
+  "issues": [
+    "ignored-per-facet-contract",
+    "weak-semantic-facet-recall"
+  ],
+  "strengths": [
+    "strong-deterministic-ordering",
+    "strong-output-contract"
+  ],
+  "notes": "The run emitted a scored response with a valid closed contract and eight distinct cited authorities. The redacted verifier reported covered_qrel_count=5, minimum_document_count=6, minimum_document_gate=false, and reward=0. The candidate used per_facet only to size a lexical ranking pool, did not enforce a per-facet authority floor, did not split explicit or-alternatives, and treated any positive token overlap as facet coverage. This is candidate-attributable discovery evidence, not promotion evidence.",
+  "filesTouched": [],
+  "score": 0
+}

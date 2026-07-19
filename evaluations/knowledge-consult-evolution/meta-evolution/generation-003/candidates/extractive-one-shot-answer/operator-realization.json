@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "generationId": "generation-003",
+  "candidateId": "extractive-one-shot-answer",
+  "operatorId": "deterministic-terminal-answer-compiler",
+  "instruction": "Replace the model-authored closed-answer draft with a deterministic compiler path that selects validated supports, extracts only text directly present in those records, builds a complete evidence-indexed answer, finalizes it internally, and emits the exact public contract in one command. Make successful stdout terminal; after any execution-tool failure, forbid every fallback tool or knowledge read so orchestration can classify the external failure. Preserve exact request bindings and fail closed without task, corpus, evaluator, or holdout constants.",
+  "origin": "mutation",
+  "candidateTreeSha256": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536",
+  "diffManifest": "candidate-manifest.json#/diffFiles",
+  "parentCandidateId": "00-baseline",
+  "parentCandidates": [
+    {
+      "candidateId": "00-baseline",
+      "treeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+      "bundleTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+      "publicPilotTreeSha256": "9ee796b5424d3e5090d130bb71f17fb14aeba274f5f3ebaafe15868f2f98df23",
+      "sourceCommit": "25170692c9e211b7bf719f07d3243cdaf409c88b"
+    }
+  ],
+  "donorTraces": [
+    {
+      "generationId": "generation-002",
+      "candidateId": "canonical-floor-terminal-finalize",
+      "candidateTreeSha256": "a5b1f39495edc8c17358f38108cf4fdf106ffe7038a646821b067cd3a965f48b",
+      "relationship": "diagnostic-only",
+      "contribution": "exact evidence-clause binding, distinct-authority planning, deterministic evidence canonicalization, and terminal failure handling"
+    }
+  ],
+  "realization": {
+    "variant": "deterministic-extractive-one-shot",
+    "properties": [
+      "expose one closed-answer command and compose the complete draft internally",
+      "prefer reviewed claim-ready records by generic paper or source identity with a safe all-record fallback",
+      "derive every claim statement from text present in its committed record body",
+      "bind the exact request, selection policy, breadth contract, dimensions, and supports",
+      "canonicalize evidence and emit the closed public contract as terminal stdout",
+      "stop after the first command or execution-tool failure without another knowledge or fallback call"
+    ]
+  }
+}

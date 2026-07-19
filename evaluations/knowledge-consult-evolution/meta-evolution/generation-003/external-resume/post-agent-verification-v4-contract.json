@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 4,
+  "caseId": "knowledge-consult-meta-generation-003-post-agent-verification-v4",
+  "verificationContract": "harbor-0.18.0.verifier-recovery-v3.native-harbor-ordinary-json.js-parity-v4",
+  "parentV3": {
+    "contractPath": "post-agent-derivation-v3-contract.json",
+    "contractSha256": "sha256:459515053e87fc63672d537f15c910f665b6501086dbb6c374f746c1909a90e7",
+    "receiptPath": "../../../../../.tmp/knowledge-consult-evolution/meta-evolution/generation-003/resume/q003/contrast-matrix-one-shot-answer/verifier-recovery-completion-v3/attempt-001/completion-receipt.json",
+    "receiptSha256": "sha256:d89cc799c8a561a4c4747bb320715bde91daff2f2bac32cb50f9486876484a57",
+    "completionRecordDigest": "sha256:2f544570a49fdddbdd4d238cbe9b751344ce8138f942b0aabfe3a69efc0f1580"
+  },
+  "parentLegacyResolver": {
+    "path": "../scripts/evidence-resolution-post-agent.js",
+    "sha256": "sha256:70b3215c0426ac113f7847ec256011d0067779b222d911076190df750809b38b"
+  },
+  "pythonVerifier": {
+    "builderPath": "../../../../../skills/harbor-resume-external-failures/scripts/complete_verifier_derivation_v3.py",
+    "builderSha256": "sha256:d8f28c0ef033ed3f40a7ebd541c9178b092ec7dcae5e4a12eba1108381e5a89b"
+  },
+  "normalization": [
+    {
+      "id": "harbor-native-artifact-ordinary-json-boundary-v1",
+      "scope": [
+        "JobResult",
+        "TrialResult",
+        "lock.json",
+        "source config.json"
+      ],
+      "parser": "ordinary-json",
+      "byteTrust": "manifest-bound-only",
+      "pythonCanonicalRecoveryRecordsUnchanged": true,
+      "artifactMutation": false
+    },
+    {
+      "id": "python-codepoint-manifest-order-v1",
+      "scope": [
+        "file manifests",
+        "manifest path assertions",
+        "terminal key assertions"
+      ],
+      "ordering": "python-codepoint",
+      "artifactMutation": false
+    },
+    {
+      "id": "harbor-recovered-trial-lock-default-projection-v1",
+      "comparisonContract": "harbor-0.18.0.trial-lock-default-projection-v1",
+      "artifactShapes": {
+        "nativeTrialResult": {
+          "environmentPresentNullFields": [
+            "import_path",
+            "override_cpus",
+            "override_memory_mb",
+            "override_storage_mb",
+            "override_gpus",
+            "override_tpu"
+          ],
+          "verifierPresentNullFields": [
+            "override_timeout_sec",
+            "max_timeout_sec"
+          ],
+          "resumeProvenance": "forbidden"
+        },
+        "effectiveSourceConfig": {
+          "environmentExactSourceKeys": [
+            "mounts",
+            "type"
+          ],
+          "environmentOmittedLockDefaults": {
+            "force_build": false,
+            "delete": true,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+          },
+          "verifier": "absent",
+          "lockVerifierEquivalent": {
+            "disable": false
+          },
+          "resumeProvenance": "required-digest-pair"
+        }
+      },
+      "artifactMutation": false
+    }
+  ],
+  "crossBindings": [
+    "recoveryLockSha256",
+    "recoveryRecordDigest",
+    "recoveryResultSha256",
+    "recoveryResultDigest",
+    "effectiveJobDigest",
+    "nativeRetryJobArtifactDigest",
+    "recoveredJobArtifactDigest",
+    "resumeManifestSha256"
+  ],
+  "sealedFiles": [
+    {
+      "path": "../scripts/evidence-resolution-post-agent-v4-legacy.js",
+      "sha256": "sha256:fb6fd191dd1e80c751693c31053adec003c922ea20746f902901289e87a4cfe5"
+    },
+    {
+      "path": "../scripts/publish-generation-003-v4.js",
+      "sha256": "sha256:737918e957bdf3a7e6e9bdfdff73c5b4ee71e7bc31bfa014a3c99adb63b3fa79"
+    },
+    {
+      "path": "../scripts/publish-generation-003-post-agent-v4-legacy.js",
+      "sha256": "sha256:f93dcdee6ddd9a28ea9e2e96a51f50a44bdba7d5e790c52963ab1d29ab39b0da"
+    },
+    {
+      "path": "../scripts/evidence-resolution-post-agent-v4.js",
+      "sha256": "sha256:a15289cd6d233f86ebda22a5ecf9bb8e47c5b347e93e46e03924a25aca0871f2"
+    },
+    {
+      "path": "../scripts/publish-generation-003-post-agent-v4.js",
+      "sha256": "sha256:81ba65a64fe7100e85b888a75d766c4789faffbd3d8316dce21296318e9400af"
+    },
+    {
+      "path": "run-generation-003-baseline-v4.sh",
+      "sha256": "sha256:6e4d56d356e2d76c229532afc29e24297bc7274640615f9c486fbca5c3e6c483"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/publish_q003_verification_v4.py",
+      "sha256": "sha256:2bc6e9f5c6952d5b68c8018c8d5c242e7ad651b749069d0b94009c8dc0f81168"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/publish_q003_verification_v4.py.lock",
+      "sha256": "sha256:5cc4ba8fc8e0ce28314de87203151a616e6a91b738d4439d2da1450058927fab"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/references/verifier-js-parity-v4.md",
+      "sha256": "sha256:d804db1da578a4dfc452d9ea4983f168580460b7db179313f9fd1cc1f58d2e66"
+    }
+  ],
+  "sharedFiles": [
+    {
+      "path": "../scripts/evidence-resolution.js",
+      "sha256": "sha256:60be7a7d276fe074a7601cdd0abaadee586a62031222db35d339fd8e26eb862f"
+    },
+    {
+      "path": "../scripts/prepare-generation-003.js",
+      "sha256": "sha256:04cbbc3d5ef37c362db12db785ce2019fc66a75e1f383085e526102433786b5d"
+    },
+    {
+      "path": "../scripts/publish-generation-003.js",
+      "sha256": "sha256:2a6838cabec22affe0d64114cbff44c16524b33fbf7255cc0605a7f5b7108004"
+    },
+    {
+      "path": "../../generation-002/scripts/prepare-generation-002.js",
+      "sha256": "sha256:7308455c02224e9f01a2d6abaa9ccde5b1e5bde792756ed278de848bedddf959"
+    },
+    {
+      "path": "../../scripts/prepare-meta-evolution.js",
+      "sha256": "sha256:f738ba9a8fc0ae9ee349845b64d48a4b4e68e7ae1d699752a2c5eabf63b52a9c"
+    },
+    {
+      "path": "../../scripts/publish-meta-evolution.js",
+      "sha256": "sha256:40197352fb910fb3ff3291e18c221df2f07462ed6f7c8c03846ead1922f30442"
+    },
+    {
+      "path": "../../../../../package.json",
+      "sha256": "sha256:6997e66f18a252e5438e473d0a2bb1958e8147164c5607577c6cbec93e80235c"
+    },
+    {
+      "path": "../../../../../package-lock.json",
+      "sha256": "sha256:7dc2f78557a93636cf96bc0d86b1736f304505c1db2e5eb5c2e02e53004d75d7"
+    }
+  ]
+}

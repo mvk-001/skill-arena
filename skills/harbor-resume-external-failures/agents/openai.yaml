@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Resume External Failures"
+  short_description: "Retry only verified external Harbor failures"
+  default_prompt: "Use $harbor-resume-external-failures to retry only evidence-attested external Harbor failures, preserve exact lineage, stop at the first evaluable result, and atomically emit complete effective jobs without rerunning semantic outcomes."

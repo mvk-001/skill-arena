@@ -38,6 +38,18 @@ from harbor.models.trial.config import (
     TrialConfig,
     VerifierConfig,
 )
+from harbor.skills import compute_skill_digest
+
+
+PORTABLE_SKILL_NAME = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
+RESERVED_SKILL_NAMES = {
+    "aux",
+    "con",
+    "nul",
+    "prn",
+    *(f"com{index}" for index in range(1, 10)),
+    *(f"lpt{index}" for index in range(1, 10)),
+}
 
 
 REFLECTION_PROMPT = """I am evolving a complete SKILL.md file for an agent.
@@ -65,7 +77,10 @@ class HarborTaskExample:
 
 @dataclass
 class Runtime:
+    source_skill: Path
+    source_digest: str
     baseline_skill: Path
+    baseline_digest: str
     skill_name: str
     output_directory: Path
     agent_name: str
@@ -119,6 +134,39 @@ def directory_digest(directory: Path) -> str:
     return "sha256:" + digest.hexdigest()
 
 
+def text_digest(text: str) -> str:
+    return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def require_portable_skill_name(value: Any, location: str) -> str:
+    name = require_string(value, location)
+    if (
+        value != name
+        or not PORTABLE_SKILL_NAME.fullmatch(name)
+        or name in RESERVED_SKILL_NAMES
+    ):
+        raise ValueError(
+            f"{location} must be an exact portable skill basename "
+            "(1-64 lowercase letters, digits, or interior hyphens). "
+            "No fallback name is used because that would change the identity "
+            f"installed by Harbor: {value!r}."
+        )
+    return name
+
+
+def installed_skill_path(container: Path, logical_name: str) -> Path:
+    """Return an isolated path whose physical basename is the skill identity."""
+
+    require_portable_skill_name(logical_name, "logical skill name")
+    skills_directory = container / "skills"
+    destination = skills_directory / logical_name
+    if destination.parent != skills_directory or destination.name != logical_name:
+        raise ValueError(
+            f"Logical skill name escapes its staging directory: {logical_name!r}"
+        )
+    return destination
+
+
 def parse_skill_frontmatter(text: str) -> dict[str, Any]:
     match = re.match(r"^---\s*\r?\n(.*?)\r?\n---(?:\s*\r?\n|$)", text, re.DOTALL)
     if not match:
@@ -128,7 +176,9 @@ def parse_skill_frontmatter(text: str) -> dict[str, Any]:
     except yaml.YAMLError as error:
         raise ValueError(f"SKILL.md frontmatter is invalid YAML: {error}") from error
     frontmatter = require_mapping(value, "SKILL.md frontmatter")
-    require_string(frontmatter.get("name"), "SKILL.md frontmatter.name")
+    frontmatter["name"] = require_portable_skill_name(
+        frontmatter.get("name"), "SKILL.md frontmatter.name"
+    )
     require_string(frontmatter.get("description"), "SKILL.md frontmatter.description")
     return frontmatter
 
@@ -327,7 +377,8 @@ def public_plan(config: dict[str, Any]) -> dict[str, Any]:
         "schemaVersion": 1,
         "evolutionId": config["id"],
         "baselineSkill": str(config["baselineSkill"]),
-        "baselineDigest": directory_digest(config["baselineSkill"]),
+        "baselineDigest": compute_skill_digest(config["baselineSkill"]),
+        "baselineSourceBasename": config["baselineSkill"].name,
         "skillName": config["skillName"],
         "outputDirectory": str(config["outputDirectory"]),
         "harborVersion": version("harbor"),
@@ -391,13 +442,217 @@ def run_check(command: list[str]) -> str:
     return completed.stdout.strip() or "ready"
 
 
+def preserve_skill_copy(source: Path, destination: Path, label: str) -> dict[str, Any]:
+    """Copy a skill once and prove that the source and copy stayed identical."""
+
+    source_digest = compute_skill_digest(source)
+    if destination.exists():
+        raise RuntimeError(f"{label} destination already exists: {destination}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, destination)
+    source_digest_after_copy = compute_skill_digest(source)
+    copied_digest = compute_skill_digest(destination)
+    if source_digest_after_copy != source_digest:
+        raise RuntimeError(f"{label} source changed while it was being copied: {source}")
+    if copied_digest != source_digest:
+        raise RuntimeError(
+            f"{label} digest changed while staging {source} at {destination}: "
+            f"{source_digest} != {copied_digest}"
+        )
+    return {
+        "logicalName": parse_skill_frontmatter(
+            (destination / "SKILL.md").read_text(encoding="utf-8")
+        )["name"],
+        "sourceSkill": str(source),
+        "sourceBasename": source.name,
+        "sourceDigest": source_digest,
+        "sourceDigestAfterCopy": source_digest_after_copy,
+        "copiedSkill": str(destination),
+        "copiedBasename": destination.name,
+        "copiedDigest": copied_digest,
+        "sourceUnchanged": True,
+    }
+
+
+def verify_frozen_baseline(runtime: Runtime, context: str) -> str:
+    observed = compute_skill_digest(runtime.baseline_skill)
+    if observed != runtime.baseline_digest:
+        raise RuntimeError(
+            f"Frozen baseline digest changed {context}: {runtime.baseline_skill}: "
+            f"{runtime.baseline_digest} != {observed}"
+        )
+    return observed
+
+
 def create_candidate_bundle(
     candidate: str, destination: Path, runtime: Runtime
-) -> Path:
+) -> dict[str, Any]:
+    """Create one attributable candidate without writing to the source skill."""
+
     validate_candidate(candidate, runtime.skill_name)
+    source_digest_before = verify_frozen_baseline(runtime, "before candidate staging")
+    if destination.exists():
+        raise RuntimeError(f"Candidate destination already exists: {destination}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(runtime.baseline_skill, destination)
     (destination / "SKILL.md").write_text(candidate, encoding="utf-8")
-    return destination
+    source_digest_after = verify_frozen_baseline(runtime, "after candidate staging")
+    staged_text = (destination / "SKILL.md").read_text(encoding="utf-8")
+    if staged_text != candidate:
+        raise RuntimeError(f"Candidate SKILL.md changed while staging: {destination}")
+    staged_digest = compute_skill_digest(destination)
+    return {
+        "logicalName": runtime.skill_name,
+        "sourceSkill": str(runtime.baseline_skill),
+        "sourceBasename": runtime.baseline_skill.name,
+        "sourceDigest": source_digest_before,
+        "sourceDigestAfterStaging": source_digest_after,
+        "stagedSkill": str(destination),
+        "stagedBasename": destination.name,
+        "stagedDigest": staged_digest,
+        "candidateSkillMdDigest": text_digest(candidate),
+        "canonicalStaging": (
+            destination.name == runtime.skill_name
+            and destination.parent.name == "skills"
+        ),
+        "sourceUnchanged": True,
+    }
+
+
+def stage_candidate_bundle(
+    candidate: str, evaluation_directory: Path, runtime: Runtime
+) -> tuple[Path, dict[str, Any]]:
+    destination = installed_skill_path(evaluation_directory, runtime.skill_name)
+    provenance = create_candidate_bundle(candidate, destination, runtime)
+    if not provenance["canonicalStaging"]:
+        raise RuntimeError(
+            f"Candidate was not staged under its exact logical name: {destination}"
+        )
+    return destination, provenance
+
+
+def read_json_mapping(path: Path, label: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as error:
+        raise RuntimeError(f"{label} is missing: {path}") from error
+    except json.JSONDecodeError as error:
+        raise RuntimeError(f"{label} is invalid JSON: {path}: {error}") from error
+    if not isinstance(value, dict):
+        raise RuntimeError(f"{label} must contain an object: {path}")
+    return value
+
+
+def normalized_skill_source(value: str) -> str:
+    normalized = value.strip().replace("\\", "/").rstrip("/")
+    wsl_match = re.fullmatch(r"/mnt/([A-Za-z])/(.*)", normalized)
+    if wsl_match:
+        normalized = f"{wsl_match.group(1)}:/{wsl_match.group(2)}"
+    if re.match(r"^[A-Za-z]:/", normalized):
+        normalized = normalized.casefold()
+    return normalized
+
+
+def configured_skill_source(payload: dict[str, Any], label: str) -> str:
+    agent = require_mapping(payload.get("agent"), f"{label}.agent")
+    skills = agent.get("skills")
+    if (
+        not isinstance(skills, list)
+        or len(skills) != 1
+        or not isinstance(skills[0], str)
+        or not skills[0].strip()
+    ):
+        raise RuntimeError(f"{label}.agent.skills must contain exactly one path.")
+    return skills[0]
+
+
+def verify_trial_skill_provenance(
+    trials_directory: Path,
+    staged_skill: Path,
+    staged_provenance: dict[str, Any],
+) -> dict[str, Any]:
+    """Bind a completed Harbor trial to the exact staged name, source, and digest."""
+
+    trial_directories = sorted(
+        path for path in trials_directory.iterdir() if path.is_dir()
+    )
+    if len(trial_directories) != 1:
+        raise RuntimeError(
+            "A candidate evaluation must produce exactly one Harbor trial directory; "
+            f"found {len(trial_directories)} under {trials_directory}."
+        )
+    trial = trial_directories[0]
+    config_payload = read_json_mapping(trial / "config.json", "Trial config")
+    lock_payload = read_json_mapping(trial / "lock.json", "Trial lock")
+    result_payload = read_json_mapping(trial / "result.json", "Trial result")
+    result_config = require_mapping(result_payload.get("config"), "Trial result.config")
+    configured_sources = [
+        configured_skill_source(config_payload, "Trial config"),
+        configured_skill_source(lock_payload, "Trial lock"),
+        configured_skill_source(result_config, "Trial result.config"),
+    ]
+    locked_skills = lock_payload.get("skills")
+    if not isinstance(locked_skills, list) or len(locked_skills) != 1:
+        raise RuntimeError("Trial lock.skills must contain exactly one skill record.")
+    locked_skill = require_mapping(locked_skills[0], "Trial lock.skills[0]")
+    locked_name = require_string(locked_skill.get("name"), "Trial lock.skills[0].name")
+    locked_source = require_string(
+        locked_skill.get("source"), "Trial lock.skills[0].source"
+    )
+    locked_digest = require_string(
+        locked_skill.get("digest"), "Trial lock.skills[0].digest"
+    )
+    logical_name = staged_provenance["logicalName"]
+    expected_source = normalized_skill_source(str(staged_skill.resolve()))
+    observed_sources = [*configured_sources, locked_source]
+    source_matches = all(
+        normalized_skill_source(source) == expected_source
+        for source in observed_sources
+    )
+    name_matches = (
+        locked_name == logical_name
+        and staged_skill.name == logical_name
+        and all(
+            normalized_skill_source(source).rsplit("/", 1)[-1] == logical_name
+            for source in observed_sources
+        )
+    )
+    observed_staged_digest = compute_skill_digest(staged_skill)
+    digest_matches = (
+        locked_digest == staged_provenance["stagedDigest"]
+        and observed_staged_digest == staged_provenance["stagedDigest"]
+    )
+    if not name_matches:
+        raise RuntimeError(
+            "Harbor trial locked or configured the candidate under a different "
+            f"skill name: expected {logical_name!r}, locked {locked_name!r}."
+        )
+    if not source_matches:
+        raise RuntimeError(
+            "Harbor trial skill source does not match the canonical staged path: "
+            f"expected {staged_skill}, observed {observed_sources}."
+        )
+    if not digest_matches:
+        raise RuntimeError(
+            "Harbor trial skill digest does not match the staged candidate: "
+            f"expected {staged_provenance['stagedDigest']}, locked {locked_digest}, "
+            f"observed {observed_staged_digest}."
+        )
+    return {
+        **staged_provenance,
+        "status": "verified",
+        "verified": True,
+        "trialDirectory": str(trial),
+        "configuredSources": configured_sources,
+        "lockedName": locked_name,
+        "lockedSource": locked_source,
+        "lockedDigest": locked_digest,
+        "stagedDigestAfterTrial": observed_staged_digest,
+        "nameMatches": True,
+        "sourceMatches": True,
+        "digestMatches": True,
+        "contentStableAfterTrial": True,
+    }
 
 
 def read_first(paths: list[Path], limit: int = 6000) -> str:
@@ -462,10 +717,23 @@ async def run_candidate_trial(
         / f"{sequence:05d}-{candidate_digest}-{example.task_id}-{uuid4().hex[:8]}"
     )
     evaluation_directory.mkdir(parents=True)
-    candidate_directory = evaluation_directory / "skill"
+    candidate_directory = installed_skill_path(
+        evaluation_directory, runtime.skill_name
+    )
     trials_directory = evaluation_directory / "trials"
+    staged_provenance: dict[str, Any] = {
+        "status": "not-staged",
+        "verified": False,
+        "logicalName": runtime.skill_name,
+        "sourceSkill": str(runtime.baseline_skill),
+        "sourceDigest": runtime.baseline_digest,
+        "stagedSkill": str(candidate_directory),
+        "candidateSkillMdDigest": text_digest(candidate),
+    }
     try:
-        create_candidate_bundle(candidate, candidate_directory, runtime)
+        candidate_directory, staged_provenance = stage_candidate_bundle(
+            candidate, evaluation_directory, runtime
+        )
     except ValueError as error:
         evidence = {
             "taskId": example.task_id,
@@ -476,11 +744,39 @@ async def run_candidate_trial(
             "agentOutput": "",
             "verifierOutput": "",
             "artifactDirectory": str(evaluation_directory),
+            "skillProvenance": {
+                **staged_provenance,
+                "status": "candidate-rejected",
+                "reason": str(error),
+            },
         }
         (evaluation_directory / "evaluation.json").write_text(
             json.dumps(evidence, indent=2) + "\n", encoding="utf-8"
         )
         return evidence
+    except Exception as error:
+        evidence = {
+            "taskId": example.task_id,
+            "taskName": example.task_name,
+            "reward": 0.0,
+            "error": f"{type(error).__name__}: {error}",
+            "agentTrajectory": "",
+            "agentOutput": "",
+            "verifierOutput": "",
+            "artifactDirectory": str(evaluation_directory),
+            "skillProvenance": {
+                **staged_provenance,
+                "status": "staging-failed",
+                "reason": str(error),
+            },
+        }
+        (evaluation_directory / "evaluation.json").write_text(
+            json.dumps(evidence, indent=2) + "\n", encoding="utf-8"
+        )
+        raise RuntimeError(
+            f"Could not stage an attributable candidate for {example.task_name}: "
+            f"{type(error).__name__}: {error}"
+        ) from error
 
     config = TrialConfig(
         task=TaskConfig(path=example.path),
@@ -497,6 +793,10 @@ async def run_candidate_trial(
     fatal_error: RuntimeError | None = None
     try:
         result = await runtime.queue.submit(config)
+        trial_provenance = verify_trial_skill_provenance(
+            trials_directory, candidate_directory, staged_provenance
+        )
+        verify_frozen_baseline(runtime, "after Harbor trial execution")
         rewards = (
             result.verifier_result.rewards
             if result.verifier_result and result.verifier_result.rewards
@@ -515,6 +815,7 @@ async def run_candidate_trial(
             "error": error,
             **collect_trial_evidence(trials_directory, runtime.agent_name),
             "artifactDirectory": str(evaluation_directory),
+            "skillProvenance": trial_provenance,
         }
         if error and is_infrastructure_error(error):
             fatal_error = RuntimeError(
@@ -530,6 +831,12 @@ async def run_candidate_trial(
             "agentOutput": "",
             "verifierOutput": "",
             "artifactDirectory": str(evaluation_directory),
+            "skillProvenance": {
+                **staged_provenance,
+                "status": "verification-failed",
+                "verified": False,
+                "reason": f"{type(error).__name__}: {error}",
+            },
         }
         fatal_error = RuntimeError(
             f"Harbor could not execute {example.task_name}: {type(error).__name__}: {error}"
@@ -621,21 +928,65 @@ def summarize_holdout(
     baseline_mean = mean([item["reward"] for item in baseline])
     candidate_mean = mean([item["reward"] for item in candidate])
     candidate_errors = sum(1 for item in candidate if item["error"])
+    provenance_failures = sum(
+        1
+        for item in baseline + candidate
+        if not item.get("skillProvenance", {}).get("verified", False)
+    )
     rules = config["promotion"]
     promoted = (
         candidate_mean - baseline_mean >= rules["minimumMeanGain"]
         and (rules["allowTaskRegressions"] or not regressions)
         and (not rules["requireNoErrors"] or candidate_errors == 0)
+        and provenance_failures == 0
     )
     return {
         "baselineMeanReward": baseline_mean,
         "candidateMeanReward": candidate_mean,
         "meanGain": candidate_mean - baseline_mean,
         "candidateErrors": candidate_errors,
+        "provenanceFailures": provenance_failures,
+        "provenanceVerified": provenance_failures == 0,
         "regressedTasks": regressions,
         "perTask": per_task,
         "promotionRules": rules,
         "promoted": promoted,
+    }
+
+
+def summarize_preserved_provenance(output_directory: Path) -> dict[str, Any]:
+    phases: dict[str, dict[str, int | bool]] = {}
+    trials_root = output_directory / "harbor-trials"
+    for phase in ("development", "holdout-baseline", "holdout-candidate"):
+        evidence_files = (
+            sorted((trials_root / phase).glob("*/evaluation.json"))
+            if (trials_root / phase).is_dir()
+            else []
+        )
+        rows = [read_json_mapping(path, "Trial evaluation") for path in evidence_files]
+        provenance_rows = [row.get("skillProvenance", {}) for row in rows]
+        staged_rows = [row for row in provenance_rows if row.get("stagedDigest")]
+        verified = sum(1 for row in staged_rows if row.get("verified", False))
+        rejected = sum(
+            1 for row in provenance_rows if row.get("status") == "candidate-rejected"
+        )
+        phases[phase] = {
+            "verified": verified,
+            "total": len(staged_rows),
+            "rejectedCandidates": rejected,
+            "allVerified": bool(staged_rows) and verified == len(staged_rows),
+        }
+    total = sum(int(row["total"]) for row in phases.values())
+    verified = sum(int(row["verified"]) for row in phases.values())
+    return {
+        "policy": "exact-logical-name-source-digest",
+        "required": True,
+        "phases": phases,
+        "verifiedTrials": verified,
+        "totalTrials": total,
+        "allTrialsVerified": total > 0
+        and verified == total
+        and all(bool(row["allVerified"]) for row in phases.values()),
     }
 
 
@@ -651,6 +1002,13 @@ def render_report(run: dict[str, Any]) -> str:
         "",
         f"- Baseline skill: `{run['baselineSkill']}`",
         f"- Candidate skill: `{run['candidateSkill']}`",
+        f"- Logical skill name: `{run['skillProvenance']['logicalName']}`",
+        f"- Frozen baseline: `{run['baselineSnapshot']}`",
+        f"- Baseline digest: `{run['baselineDigest']}`",
+        f"- Candidate digest: `{run['candidateDigest']}`",
+        "- Verified staged identities: "
+        f"{run['skillProvenance']['verifiedTrials']}/"
+        f"{run['skillProvenance']['totalTrials']}",
         f"- Harbor: `{run['harborVersion']}`",
         f"- GEPA: `{run['gepaVersion']}`",
         f"- Agent/model: `{run['agent']}` / `{run['model']}`",
@@ -675,6 +1033,7 @@ def render_report(run: dict[str, Any]) -> str:
             f"Overall candidate: {holdout['candidateMeanReward']:.3f}",
             f"Mean gain: {holdout['meanGain']:+.3f}",
             f"Candidate errors: {holdout['candidateErrors']}",
+            f"Provenance failures: {holdout['provenanceFailures']}",
             f"Regressed tasks: {', '.join(holdout['regressedTasks']) or 'none'}",
             "",
             "The source skill was not modified. Promote the candidate bundle only after reviewing this report and its preserved Harbor trial artifacts.",
@@ -684,9 +1043,14 @@ def render_report(run: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def initialize_runtime(config: dict[str, Any]) -> Runtime:
+def initialize_runtime(
+    config: dict[str, Any], baseline_snapshot: Path, source_digest: str
+) -> Runtime:
     return Runtime(
-        baseline_skill=config["baselineSkill"],
+        source_skill=config["baselineSkill"],
+        source_digest=source_digest,
+        baseline_skill=baseline_snapshot,
+        baseline_digest=compute_skill_digest(baseline_snapshot),
         skill_name=config["skillName"],
         output_directory=config["outputDirectory"],
         agent_name=config["harbor"]["agentName"],
@@ -713,7 +1077,15 @@ def run_evolution(config: dict[str, Any]) -> dict[str, Any]:
     if output.exists() and any(output.iterdir()):
         raise ValueError(f"Output directory must be new or empty: {output}")
     output.mkdir(parents=True, exist_ok=True)
-    _RUNTIME = initialize_runtime(config)
+    baseline_snapshot = installed_skill_path(
+        output / "baseline-snapshot", config["skillName"]
+    )
+    baseline_snapshot_provenance = preserve_skill_copy(
+        config["baselineSkill"], baseline_snapshot, "Baseline snapshot"
+    )
+    _RUNTIME = initialize_runtime(
+        config, baseline_snapshot, baseline_snapshot_provenance["sourceDigest"]
+    )
 
     gepa_directory = output / "gepa"
     result = optimize_anything(
@@ -748,7 +1120,9 @@ def run_evolution(config: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("GEPA returned a non-text candidate for a text SKILL.md seed.")
     validate_candidate(candidate, config["skillName"])
     candidate_directory = output / "candidate-skill"
-    create_candidate_bundle(candidate, candidate_directory, _RUNTIME)
+    candidate_artifact_provenance = create_candidate_bundle(
+        candidate, candidate_directory, _RUNTIME
+    )
 
     _RUNTIME.queue = TrialQueue(n_concurrent=config["harbor"]["concurrency"])
     holdout = config["splits"]["holdout"]
@@ -761,16 +1135,40 @@ def run_evolution(config: dict[str, Any]) -> dict[str, Any]:
         evaluate_holdout(candidate, holdout, attempts, "holdout-candidate")
     )
     holdout_summary = summarize_holdout(baseline_results, candidate_results, config)
+    source_digest_at_completion = compute_skill_digest(_RUNTIME.source_skill)
+    if source_digest_at_completion != _RUNTIME.source_digest:
+        raise RuntimeError(
+            "Source skill changed after the frozen baseline snapshot was created: "
+            f"{_RUNTIME.source_skill}: {_RUNTIME.source_digest} != "
+            f"{source_digest_at_completion}. Refusing to finalize promotion evidence."
+        )
+    verify_frozen_baseline(_RUNTIME, "before finalizing the run")
+    provenance_summary = summarize_preserved_provenance(output)
     generated_at = datetime.now(timezone.utc).isoformat()
     run = {
         "schemaVersion": 1,
         "source": "harbor-gepa",
         "evolutionId": config["id"],
         "generatedAt": generated_at,
-        "baselineSkill": str(config["baselineSkill"]),
-        "baselineDigest": directory_digest(config["baselineSkill"]),
+        "baselineSkill": str(_RUNTIME.source_skill),
+        "baselineDigest": _RUNTIME.source_digest,
+        "baselineSnapshot": str(baseline_snapshot),
+        "baselineSnapshotDigest": _RUNTIME.baseline_digest,
+        "baselineSnapshotProvenance": baseline_snapshot_provenance,
         "candidateSkill": str(candidate_directory),
-        "candidateDigest": directory_digest(candidate_directory),
+        "candidateDigest": compute_skill_digest(candidate_directory),
+        "candidateArtifactProvenance": candidate_artifact_provenance,
+        "skillProvenance": {
+            **provenance_summary,
+            "logicalName": config["skillName"],
+            "sourceSkill": str(_RUNTIME.source_skill),
+            "sourceBasename": _RUNTIME.source_skill.name,
+            "sourceDigest": _RUNTIME.source_digest,
+            "sourceDigestAtCompletion": source_digest_at_completion,
+            "sourceUnchanged": True,
+            "baselineSnapshot": str(baseline_snapshot),
+            "baselineSnapshotDigest": _RUNTIME.baseline_digest,
+        },
         "harborVersion": version("harbor"),
         "gepaVersion": version("gepa"),
         "agent": config["harbor"]["agentName"],

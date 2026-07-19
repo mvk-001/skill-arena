@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "status": "sealed-before-forward-task-execution",
+  "experimentId": "knowledge-consult-harbor-operator-forward-g004",
+  "generationId": "generation-004",
+  "evidenceLayer": "prospective-forward-validation-of-a-frozen-operator-realization",
+  "purpose": "Test whether the already frozen extractive-one-shot-answer bundle improves on its exact baseline under a prospectively declared candidate-attributable context-limit policy, without retrying context failures.",
+  "knowledge": {
+    "commit": "25170692c9e211b7bf719f07d3243cdaf409c88b",
+    "baselineSkillPath": "skills/consult-semantic-okf",
+    "referenceBundlePath": "evaluations/graphrag-cross-paper/bundle"
+  },
+  "target": {
+    "logicalName": "consult-semantic-okf",
+    "baseline": {
+      "candidateId": "baseline",
+      "expectedTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+      "fileCount": 13,
+      "totalBytes": 98881
+    },
+    "candidate": {
+      "candidateId": "extractive-one-shot-answer",
+      "sourcePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-003/candidates/extractive-one-shot-answer/consult-semantic-okf",
+      "expectedTreeSha256": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536",
+      "fileCount": 15,
+      "totalBytes": 152806,
+      "operatorId": "deterministic-terminal-answer-compiler",
+      "parentCandidateId": "baseline"
+    }
+  },
+  "candidateSelectionProvenance": {
+    "generationId": "generation-003",
+    "publicationPath": ".tmp/knowledge-consult-evolution/meta-evolution/generation-003/publications/q003/result.json",
+    "publicationFileSha256": "056ba99cdeade376516a2287209647c9835ecd60e48de8d01e3e1a81c6e874f8",
+    "publicationRecordSha256": "31ff94e2b9088d7896c6504a3b2499a4eeeb174818a741aa1dcfe5dddcb5b2b3",
+    "publishedSelectedCandidateId": "child-001",
+    "mappedCandidateId": "extractive-one-shot-answer",
+    "candidateFrozenBeforeForwardTasks": true,
+    "comparativeFitnessImported": false,
+    "operatorCreditImported": false,
+    "reasonNotImported": "The historical q003 publisher treated a structured context-limit result as evaluable zero while the evolver treated it as unavailable. q003 fixes candidate identity only and is not forward-test fitness."
+  },
+  "frozenEvaluationProfile": {
+    "harborVersion": "0.18.0",
+    "agent": {
+      "name": "pi",
+      "version": "0.73.1",
+      "model": "openai-codex/gpt-5.3-codex-spark",
+      "thinking": "high"
+    },
+    "attemptsPerCandidateTask": 1,
+    "retries": 0,
+    "rewardKey": "reward",
+    "passThreshold": 0.000001,
+    "requiredRewards": {
+      "evidence_contract_gate": 1.0,
+      "minimum_document_gate": 1.0,
+      "mechanical_qualification_gate": 1.0
+    }
+  },
+  "diagnosticDisposition": {
+    "operatorConfigPath": "harbor.candidateAttributableDiagnosticPolicy.contracts",
+    "contracts": [
+      "provider-context-limit.v1"
+    ],
+    "provider-context-limit.v1": {
+      "exactRawSignals": {
+        "status": "provider-failure",
+        "failure_domain": "provider",
+        "terminal_outcome": "provider-context-limit",
+        "error_code": "context_length_exceeded"
+      },
+      "requiresEveryDiagnosticObservationToMatch": true,
+      "requiresNoHarborException": true,
+      "requiresPrimaryAndConfiguredRequiredRewardsToBeAbsentOrExactZero": true,
+      "unconfiguredAuxiliaryAuditMetricsMayBeNonzero": true,
+      "evaluationAvailable": true,
+      "score": 0.0,
+      "qualificationPassed": false,
+      "retryAuthorized": false,
+      "fitnessMeaning": "candidate-attributable-operational-failure"
+    },
+    "defaultForAuthenticationEnvironmentEvaluatorInfrastructureAndTransientProvider": "unavailable-null",
+    "ambiguousOrConflictingSignals": "unavailable-null",
+    "externalResumePolicyUnchanged": true
+  },
+  "tasks": {
+    "q007": {
+      "role": "first-forward-case",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q007",
+      "expectedTreeSha256": "239b0ae2cceb8de659d10fa044e26eb640b4f164a14a38374180f1bedab0e234",
+      "fileCount": 12,
+      "totalBytes": 3754772
+    },
+    "q018": {
+      "role": "remaining-forward-validation",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q018",
+      "expectedTreeSha256": "64f44f7552fc100beafb5dc0806294aff84af3a74392074a4419e196e1187eac",
+      "fileCount": 12,
+      "totalBytes": 3756992
+    },
+    "q024": {
+      "role": "remaining-forward-validation",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q024",
+      "expectedTreeSha256": "686dbcf98fb3a3f521983220b4f30b209e21d760088438e1582744849839b763",
+      "fileCount": 12,
+      "totalBytes": 3759616
+    },
+    "q030": {
+      "role": "remaining-forward-validation",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q030",
+      "expectedTreeSha256": "f342dfa3023a53a50712d6061fee09c3b0393a73acf13c8ef8331809d8c78f15",
+      "fileCount": 12,
+      "totalBytes": 3760683
+    }
+  },
+  "stages": [
+    {
+      "stageId": "q007",
+      "variants": [
+        "baseline",
+        "extractive-one-shot-answer"
+      ],
+      "maximumModelExecutions": 2,
+      "passCondition": "both records have an available disposition; candidate is fully qualified; candidate effective fitness does not regress; transient external or ambiguous evidence stops",
+      "onPass": "materialize-remaining-forward-validation",
+      "onFail": "stop"
+    },
+    {
+      "stageId": "remaining-forward-validation",
+      "taskIds": [
+        "q018",
+        "q024",
+        "q030"
+      ],
+      "variants": [
+        "baseline",
+        "extractive-one-shot-answer"
+      ],
+      "maximumModelExecutions": 6,
+      "passCondition": "every record has an available disposition; candidate is fully qualified on every task; no task regresses; aggregate effective-fitness gain is strictly positive",
+      "onPass": "forward-validation-complete",
+      "onFail": "stop"
+    }
+  ],
+  "callBudget": {
+    "maximumAdditionalHarborInvocations": 4,
+    "maximumAdditionalModelExecutions": 8,
+    "harborBuiltInRetries": 0,
+    "automaticExternalRetries": 0,
+    "stopImmediatelyOnFailedGate": true
+  },
+  "authentication": {
+    "sourceContract": "current Pi auth.json sealed privately immediately before preparation",
+    "isolatedMount": "/tmp/skill-arena-knowledge-consult-g004-auth",
+    "mountTarget": "/root/.pi/agent",
+    "copyOnlyAuthJson": true,
+    "publishPayloadDigest": false,
+    "publishCredentialMetadata": false,
+    "historicalGeneration003SealReused": false
+  },
+  "publication": {
+    "allowedEvidence": [
+      "primary reward",
+      "required gate values",
+      "qualification and diagnostic disposition",
+      "input/cache/output token counts",
+      "candidate, task, profile, job, lock, result, and trial provenance digests"
+    ],
+    "forbiddenEvidence": [
+      "answer text",
+      "qrel identities or values",
+      "agent reasoning or trajectories",
+      "private verifier inputs",
+      "authentication payload or credential metadata"
+    ]
+  }
+}

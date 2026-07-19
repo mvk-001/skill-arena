@@ -1,0 +1,4 @@
+interface:
+  display_name: "Semantic OKF Consultant"
+  short_description: "Navigate and consult semantic knowledge folders"
+  default_prompt: "Use $consult-semantic-okf to navigate this Semantic OKF knowledge folder efficiently and answer with exact local evidence."

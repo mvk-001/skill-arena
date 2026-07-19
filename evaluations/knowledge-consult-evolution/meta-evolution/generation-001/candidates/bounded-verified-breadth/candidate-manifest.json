@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "generationId": "generation-001",
+  "candidateId": "bounded-verified-breadth",
+  "operatorId": "bounded-verified-breadth-crossover",
+  "parentCandidateId": "00-baseline",
+  "parentTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+  "parentBundleTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+  "parentTreeFileCount": 13,
+  "parentTreeTotalBytes": 98881,
+  "parentPublicPilotTreeSha256": "9ee796b5424d3e5090d130bb71f17fb14aeba274f5f3ebaafe15868f2f98df23",
+  "parentSourceCommit": "25170692c9e211b7bf719f07d3243cdaf409c88b",
+  "skill": {
+    "name": "consult-semantic-okf",
+    "bundle": "consult-semantic-okf",
+    "basename": "consult-semantic-okf",
+    "treeSha256": "d571b10691f69a0768bf9c7f55a681adbf4dba911bee227e4d08fe9e24b3dad2",
+    "fileCount": 15,
+    "totalBytes": 141753,
+    "treeHashAlgorithmId": "meta-tree-sha256-bytewise-v1",
+    "treeHashAlgorithm": "SHA-256 of the concatenation, for files sorted by unsigned UTF-8 bytes of their POSIX relative path, of path UTF-8 + 0x00 + raw file bytes + 0x00; omit every entry named __pycache__ and every filename ending .pyc; do not include the root basename"
+  },
+  "diffFiles": [
+    {
+      "path": "SKILL.md",
+      "change": "modified",
+      "sha256": "9c507ada106aed115f19bf0a0d9f28296ff075b9de4583544ea06e87362ca6bf"
+    },
+    {
+      "path": "references/harbor-answer-contract.md",
+      "change": "added",
+      "sha256": "4f7a839847fedefdd819a5292e236cf2f8a1cd5da4066c90fb48e37ca3f5b8a6"
+    },
+    {
+      "path": "scripts/_cross_source.py",
+      "change": "modified",
+      "sha256": "3f7209ca69c37c3a6fa2288fb10e7b4159c73a0f9505f0359aea7e235dea0f18"
+    },
+    {
+      "path": "scripts/harbor_answer.py",
+      "change": "added",
+      "sha256": "b91e9aaac2bf8d25baf4a22a6e57765bab291b670b5d397496851f7f5389ddb1"
+    }
+  ],
+  "verification": {
+    "syntheticTest": "../../tests/test_bounded_verified_breadth.py",
+    "fixture": "../../tests/fixtures/snapshot",
+    "modelCalls": 0,
+    "privateEvaluationData": false
+  }
+}

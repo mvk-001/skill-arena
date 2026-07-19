@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 2,
+  "status": "sealed",
+  "experimentId": "knowledge-consult-harbor-operator-meta-evolution-g003",
+  "generationId": "generation-003",
+  "evidenceLayer": "live-harbor-generation-003-native-cohort-with-lineage-preserving-external-resume",
+  "purpose": "Evaluate one fresh generation-003 baseline, the preserved extractive child job, and the first-evaluable contrast retry through its manifested effective job. Generation-001 supplies lineage and task provenance only; no generation-001 result enters fitness, selection, or operator credit.",
+  "knowledge": {
+    "commit": "25170692c9e211b7bf719f07d3243cdaf409c88b",
+    "baselineSkillPath": "skills/consult-semantic-okf",
+    "referenceBundlePath": "evaluations/graphrag-cross-paper/bundle"
+  },
+  "target": {
+    "logicalName": "consult-semantic-okf",
+    "baseline": {
+      "candidateId": "baseline",
+      "lineageCandidateId": "00-baseline",
+      "sourceKind": "fresh-generation-003-evaluation-from-generation-001-lineage-tree",
+      "expectedTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7"
+    },
+    "children": [
+      {
+        "candidateId": "extractive-one-shot-answer",
+        "sourcePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-003/candidates/extractive-one-shot-answer/consult-semantic-okf",
+        "manifestPath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-003/candidates/extractive-one-shot-answer/candidate-manifest.json",
+        "operatorRealizationPath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-003/candidates/extractive-one-shot-answer/operator-realization.json",
+        "expectedTreeSha256": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536",
+        "expectedManifestSha256": "9fa32ba662b4b61ece17f72fd4213dde7ceb679cee6e0e5abd358ea3f30aeefc",
+        "expectedOperatorRealizationSha256": "67a6d911c541ba2d8bf5a2c5680da02fc59a1c4ce7bf2fe53ed93011d320866b",
+        "parentCandidateId": "00-baseline",
+        "operatorId": "deterministic-terminal-answer-compiler"
+      },
+      {
+        "candidateId": "contrast-matrix-one-shot-answer",
+        "sourcePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-003/candidates/contrast-matrix-one-shot-answer/consult-semantic-okf",
+        "manifestPath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-003/candidates/contrast-matrix-one-shot-answer/candidate-manifest.json",
+        "operatorRealizationPath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-003/candidates/contrast-matrix-one-shot-answer/operator-realization.json",
+        "expectedTreeSha256": "d7c9ae4171b583d5676bce67d36fbcdda686f093c355b697c87d2e2a0dc883af",
+        "expectedManifestSha256": "825dcb5438385f8dc85112a04d6ea56c6c51e0132d0c64ab27b78fc72e2129bb",
+        "expectedOperatorRealizationSha256": "abe5be87a24a2e5d9273fcec51f59802b16c24156dbddb47477bb19655b16865",
+        "parentCandidateId": "00-baseline",
+        "operatorId": "deterministic-terminal-answer-compiler"
+      }
+    ]
+  },
+  "operator": {
+    "operatorId": "deterministic-terminal-answer-compiler",
+    "instruction": "Replace the model-authored closed-answer draft with a deterministic compiler path that selects validated supports, extracts only text directly present in those records, builds a complete evidence-indexed answer, finalizes it internally, and emits the exact public contract in one command. Make successful stdout terminal; after any execution-tool failure, forbid every fallback tool or knowledge read so orchestration can classify the external failure. Preserve exact request bindings and fail closed without task, corpus, evaluator, or holdout constants.",
+    "parentOperatorIds": [],
+    "origin": "seed",
+    "historicalCandidateRealizationOrigin": "mutation",
+    "controlOperatorId": "control-no-change",
+    "controlInstruction": "Preserve the baseline bundle unchanged and add no task-specific, corpus-specific, or evaluator-specific content."
+  },
+  "diagnosticOperatorProvenance": {
+    "generationId": "generation-001",
+    "path": "operator-analysis/generation-001/operator-coevolution-log.json",
+    "fileSha256": "e50555dca3ce0a8ecc548a3f7ce497b0a89b7b75be95ba5290cd7a5523bb341f",
+    "schemaVersion": 1,
+    "source": "harbor-operator-coevolution",
+    "evolutionId": "knowledge-consult-harbor-operator-meta-evolution",
+    "generation": 0,
+    "generationSeal": "sha256:784004186af0a19d3b8a506521e72de7678f2baeaf5d6fdc1f99134b5c9b11b5",
+    "evolutionProfileDigest": "sha256:d6b8b7ea794a5aa237e3c33977663cefd55c9710bbd9a45be75d2a509e7b3120",
+    "diagnosticOnly": true,
+    "chainEligible": false,
+    "holdoutOpened": false,
+    "promotion": false,
+    "importedAsPreviousGeneration": false,
+    "fitnessImported": false,
+    "operatorCreditImported": false
+  },
+  "diagnosticDonorTrace": {
+    "generationId": "generation-002",
+    "candidateId": "canonical-floor-terminal-finalize",
+    "candidateTreeSha256": "a5b1f39495edc8c17358f38108cf4fdf106ffe7038a646821b067cd3a965f48b",
+    "purpose": "generic external-failure and terminal-route lessons only",
+    "parentageImported": false,
+    "jobEvidenceImported": false,
+    "fitnessImported": false,
+    "operatorCreditImported": false,
+    "modelOutputImported": false
+  },
+  "comparisonPolicy": {
+    "lineageParentGeneration": "generation-001",
+    "comparisonCohortGeneration": "generation-003",
+    "generation001ResultImported": false,
+    "generation001FitnessImported": false,
+    "generation001OperatorCreditImported": false,
+    "excludedFitnessGenerationIds": [
+      "generation-002"
+    ],
+    "generation002JobsReused": false,
+    "generation002FitnessImported": false,
+    "generation002OperatorCreditImported": false,
+    "generation002ParentageImported": false
+  },
+  "lineageParentEvidence": {
+    "generationId": "generation-001",
+    "taskId": "q003",
+    "candidateId": "00-baseline",
+    "preparationReceiptPath": "prepared/receipt.json",
+    "preparationReceiptSha256": "ed8ad97c4c31075066207e3942e5e4f9782d1df7d5db1e495974fee783b1e03b",
+    "baselinePreparedPath": "prepared/inputs/baseline/consult-semantic-okf",
+    "expectedTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+    "resultImported": false,
+    "fitnessImported": false,
+    "operatorCreditImported": false
+  },
+  "effectiveEvidence": {
+    "baseline": {
+      "candidateId": "baseline",
+      "mode": "fresh-generation-003-original-job",
+      "jobDirectory": "jobs/q003/baseline/knowledge-consult-meta-g003-q003-baseline"
+    },
+    "extractive-one-shot-answer": {
+      "mode": "preserved-generation-003-original-job"
+    },
+    "contrast-matrix-one-shot-answer": {
+      "mode": "manifested-first-evaluable-retry-effective-job",
+      "originalJobImmutable": true,
+      "resumeOutputDirectory": "resume/q003/contrast-matrix-one-shot-answer",
+      "selectionPolicy": "first-evaluable-retry-never-best-of",
+      "maximumExternalRetries": 1,
+      "requiredSelectedLineage": "retry",
+      "requiredAttempt": 1,
+      "requiredManifest": "resume-manifest.json"
+    }
+  },
+  "privateAuthenticationSeal": {
+    "schemaVersion": 1,
+    "path": "private/auth-payload-seal.json",
+    "mountTarget": "/root/.pi/agent",
+    "projectedEntries": [
+      "auth.json"
+    ],
+    "bindsExistingChildWrapper": true,
+    "requiredBeforeContrastRetry": true,
+    "requiredBeforeFreshBaseline": true,
+    "publishPayloadDigest": false,
+    "publishCredentialMetadata": false
+  },
+  "preparationTask": {
+    "taskId": "q003",
+    "stage": "design-development",
+    "source": "generation-001/prepared/tasks/q003",
+    "expectedTreeSha256": "877c9335300ce055ace37103bf4bd9a574927d740fb96503471c406151ef6566",
+    "copyIntoGeneration003": false,
+    "environmentDirectoryMustRemainPresentAndEmpty": true
+  },
+  "preparationUpgrade": {
+    "legacySchemaVersion": 1,
+    "legacyProtocolSha256": "57a0d6304fa45a716c1be47aa768a36b62a639f8b23c7338f63529cbab4f1c60",
+    "legacyReceiptFileSha256": "529cdd746a97cbe827700f882abe36bfab6facf42848dcbc34b7d85d5146e9ae",
+    "legacyImmutablePayloadSha256": "dee85ca99cd94012b5701130fb654e998f27ee51e092ad2527cb3dfc29308d6a",
+    "preserveExistingArtifactsBytewise": true,
+    "legacyGeneration001BaselineRecordFitnessImported": false,
+    "legacyOperatorConfigConsumed": false,
+    "liveJobDirectoriesMutable": false
+  },
+  "frozenEvaluationProfile": {
+    "harborVersion": "0.18.0",
+    "agent": {
+      "name": "pi",
+      "version": "0.73.1",
+      "model": "openai-codex/gpt-5.3-codex-spark",
+      "thinking": "high"
+    },
+    "attemptsPerCandidateTask": 1,
+    "retries": 0,
+    "rewardKey": "reward",
+    "passThreshold": 0.000001,
+    "requiredRewards": {
+      "evidence_contract_gate": 1.0,
+      "minimum_document_gate": 1.0,
+      "mechanical_qualification_gate": 1.0
+    }
+  },
+  "frozenEvaluationProfileSha256": "5c2ed5aed2ec0490aac26acba056293e00c78a49849ed1905f08032416898da1",
+  "harbor": {
+    "jobNamePrefix": "knowledge-consult-meta-g003",
+    "authenticationMount": {
+      "source": "/tmp/skill-arena-knowledge-consult-g003-auth",
+      "target": "/root/.pi/agent",
+      "readOnly": false,
+      "contents": "exactly auth.json"
+    },
+    "authenticationSourceContract": {
+      "acceptedInput": "auth.json file or Pi auth directory containing auth.json",
+      "requiredTopLevelEntry": "openai-codex",
+      "requiredNonEmptyStringFields": [
+        "type",
+        "access",
+        "refresh",
+        "accountId"
+      ],
+      "requiredFiniteNumberField": "expires",
+      "copyOnlyAuthJson": true,
+      "copySettings": false,
+      "rejectShellPathKeyInIsolatedDirectory": true
+    },
+    "containerPreflight": {
+      "image": "semantic-okf-harbor-runtime:1.0",
+      "imageId": "sha256:1315195dcef58980e6d2620eaa41062ea6edc15c3eb8ed47d42c143be57aded5",
+      "pull": "never",
+      "network": "none",
+      "entrypoint": "/bin/bash",
+      "requirements": [
+        "isolated Pi directory contains exactly auth.json",
+        "settings.json and shellPath are absent",
+        "/bin/bash and bash -lc work",
+        "python works",
+        "both scripts/harbor_answer.py files are readable",
+        "/tmp is writable"
+      ],
+      "mustPassBeforeAnyHarborCall": true
+    },
+    "retryExcludeExceptions": [
+      "ApiUsageLimitError",
+      "RewardFileEmptyError",
+      "VerifierOutputParseError",
+      "AgentTimeoutError",
+      "RewardFileNotFoundError",
+      "VerifierTimeoutError"
+    ],
+    "knowledgeMountReadOnly": true,
+    "modelCallsDuringPreparation": 0
+  },
+  "operatorAnalysis": {
+    "skill": "harbor-operator-coevolution",
+    "phase": "development",
+    "analyzeOnly": true,
+    "generation": 0,
+    "previousGenerationLog": null,
+    "minimumOperatorTrials": 2,
+    "holdoutPathsMustRemainUnresolved": true,
+    "executeDuringPreparation": false
+  },
+  "callAccounting": {
+    "generation001HistoricalHarborInvocations": 3,
+    "generation001HistoricalModelExecutions": 3,
+    "generation002HistoricalHarborInvocations": 2,
+    "generation002HistoricalModelExecutions": 2,
+    "generation001ComparableResultsImported": 0,
+    "generation002ComparableResultsImported": 0,
+    "generation003HarborInvocations": 4,
+    "generation003ModelExecutions": 3,
+    "generation003PreAgentExternalFailures": 1,
+    "generation003ExternalRetries": 1,
+    "effectiveComparableEvaluations": 3,
+    "historicalHarborInvocations": 9,
+    "historicalModelExecutions": 8
+  },
+  "stopPolicy": {
+    "selectionMetric": "reward",
+    "requireCanonicalComparableEvidence": true,
+    "requireExactNativeGeneration003ProfilesAndLocks": true,
+    "forbidGeneration001ResultReuse": true,
+    "requireManifestedFirstEvaluableRetryForContrast": true,
+    "requireEveryConfiguredGate": true,
+    "taskId": "q003",
+    "onPass": "permit-separately-sealed-validation-stage",
+    "onFail": "stop",
+    "validationMaterialization": "forbidden-until-development-gate-passes"
+  }
+}

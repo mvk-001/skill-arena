@@ -97,6 +97,19 @@ function configFor(root, tasks) {
   };
 }
 
+async function createAliasedSkill(root, logicalName) {
+  const skill = path.join(root, "physical-alias");
+  await fs.cp(baselineSkill, skill, { recursive: true });
+  const skillPath = path.join(skill, "SKILL.md");
+  const source = await fs.readFile(skillPath, "utf8");
+  await fs.writeFile(
+    skillPath,
+    source.replace(/^name:.*$/m, `name: ${JSON.stringify(logicalName)}`),
+    "utf8",
+  );
+  return skill;
+}
+
 test("Harbor evolution dry-run validates isolated train, validation, and holdout tasks", {
   skip: !uvAvailable,
 }, async () => {
@@ -162,6 +175,46 @@ test("Harbor evolution dry-run rejects split leakage", {
   }
 });
 
+test("Harbor evolution rejects unsafe logical names before staging", {
+  skip: !uvAvailable,
+}, async () => {
+  for (const [index, logicalName] of [
+    "../escaped",
+    "toy_skill",
+    "con",
+    "a".repeat(65),
+  ].entries()) {
+    const tempDirectory = await fs.mkdtemp(
+      path.join(os.tmpdir(), `harbor-evolve-name-${index}-`),
+    );
+    try {
+      const tasks = {
+        train: await createTask(tempDirectory, "train", "train-case"),
+        validation: await createTask(
+          tempDirectory,
+          "validation",
+          "validation-case",
+        ),
+        holdout: await createTask(tempDirectory, "holdout", "holdout-case"),
+      };
+      const config = configFor(tempDirectory, tasks);
+      config.evolution.baselineSkill = await createAliasedSkill(
+        tempDirectory,
+        logicalName,
+      );
+      const configPath = path.join(tempDirectory, "evolution.yaml");
+      await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
+
+      const completed = runDry(configPath);
+      assert.notEqual(completed.status, 0);
+      assert.match(completed.stderr, /exact portable skill basename/i);
+      await assert.rejects(fs.stat(path.join(tempDirectory, "output")), /ENOENT/);
+    } finally {
+      await fs.rm(tempDirectory, { recursive: true, force: true });
+    }
+  }
+});
+
 test("Harbor evolution simulated lifecycle preserves baseline and gates on holdout", {
   skip: !uvAvailable,
 }, () => {
@@ -176,5 +229,29 @@ test("Harbor evolution simulated lifecycle preserves baseline and gates on holdo
     developmentTrials: 2,
     holdoutBaselineTrials: 2,
     holdoutCandidateTrials: 2,
+    aliasSourceBasename: "baseline",
+    stagedSkillBasenames: ["simulation-skill"],
+    stagedParentBasenames: ["skills"],
+    verifiedIdentityTrials: 6,
+  });
+});
+
+test("Harbor evolution fails closed when Harbor locks a staged alias", {
+  skip: !uvAvailable,
+}, () => {
+  const completed = spawnSync(
+    "uv",
+    ["run", simulation, script, "tamper-lock-name"],
+    {
+      cwd: path.resolve("."),
+      encoding: "utf8",
+      timeout: 60000,
+    },
+  );
+  assert.equal(completed.status, 0, completed.stderr);
+  assert.deepEqual(JSON.parse(completed.stdout), {
+    status: "rejected",
+    reason: "locked-name-mismatch",
+    sourceUnchanged: true,
   });
 });

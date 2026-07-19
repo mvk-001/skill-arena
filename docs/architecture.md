@@ -153,6 +153,14 @@ checksums and resolved job or lock provenance enforce that the holdout did not
 enter development and that candidate comparisons changed only skill
 provenance.
 
+Selective continuation is a separate atomic Harbor-native boundary.
+`harbor-resume-external-failures` consumes native jobs, retries only structured
+or explicitly versioned external-failure contracts as new immutable jobs, and
+merges lineage by first evaluable result rather than reward. It does not alter
+the four strategy algorithms. Complete derived `effective-job` views let those
+strategies consume resumed evidence through their ordinary analyze-only input
+without importing the resume implementation.
+
 ### Agent adapters
 
 The adapter layer maps a manifest scenario into a Promptfoo provider definition. V1 implements:

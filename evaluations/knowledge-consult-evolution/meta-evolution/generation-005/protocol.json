@@ -1,0 +1,508 @@
+{
+  "schemaVersion": 1,
+  "status": "cohort-sealed-before-candidate-lock-and-before-selected-task-release",
+  "experimentId": "knowledge-consult-harbor-q018-reflection-forward-g005",
+  "generationId": "generation-005",
+  "evidenceLayer": "prospective-forward-validation-of-a-q018-only-reflection",
+  "purpose": "Compare a child evolved only from sanitized q018 feedback with its frozen extractive-one-shot-answer parent on a content-blind, prospectively selected discovery cohort. q024 and q030 are observed and cannot contribute prospective evidence.",
+  "knowledge": {
+    "commit": "25170692c9e211b7bf719f07d3243cdaf409c88b",
+    "referenceBundlePath": "evaluations/graphrag-cross-paper/bundle",
+    "discoveryTaskRoot": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery"
+  },
+  "target": {
+    "logicalName": "consult-semantic-okf",
+    "parent": {
+      "candidateId": "extractive-one-shot-answer",
+      "sourcePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-003/candidates/extractive-one-shot-answer/consult-semantic-okf",
+      "expectedTreeSha256": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536",
+      "fileCount": 15,
+      "totalBytes": 152806
+    },
+    "child": {
+      "candidateDataIntentionallyAbsent": true,
+      "candidateLockPath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/candidate-lock.json",
+      "protocolMustNotBeEditedToInsertCandidateData": true,
+      "taskReleaseRequiresValidCandidateLock": true
+    }
+  },
+  "candidateLockContract": {
+    "schemaVersion": 1,
+    "writeMode": "exclusive-create-once",
+    "mustBeSealedBefore": [
+      "reading-or-materializing-any-selected-task-beyond-opaque-digest-verification",
+      "authentication-seal-for-live-execution",
+      "harbor-config-materialization",
+      "any-generation-005-harbor-or-model-call"
+    ],
+    "mustBind": [
+      "this-protocol-file-sha256",
+      "candidate-id-and-source-path",
+      "logical-frontmatter-name-consult-semantic-okf",
+      "candidate-tree-sha256-file-count-and-total-bytes",
+      "exact-parent-id-and-parent-tree-sha256",
+      "sanitized-q018-feedback-receipt-path-and-sha256",
+      "mutation-procedure-id-path-and-sha256",
+      "q018-as-the-only-benchmark-case-feedback-input",
+      "candidate-frozen-before-selected-task-release",
+      "no-access-to-contamination-denylist-selected-tasks-holdout-or-hard-content"
+    ],
+    "requiredExactValues": {
+      "generationId": "generation-005",
+      "logicalName": "consult-semantic-okf",
+      "parentCandidateId": "extractive-one-shot-answer",
+      "parentTreeSha256": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536",
+      "feedbackTaskIds": [
+        "q018"
+      ],
+      "selectedTaskIdsObservedByCandidateAuthor": [],
+      "contaminatedTaskContentsObservedByCandidateAuthor": [],
+      "holdoutOrHardContentsObservedByCandidateAuthor": false
+    },
+    "candidateIdConstraints": {
+      "mustBeNonemptyPortableBasename": true,
+      "mustDifferFrom": [
+        "baseline",
+        "extractive-one-shot-answer"
+      ]
+    },
+    "selfSeal": "candidate-lock-sha256-over-canonical-json-body-without-the-self-seal-field"
+  },
+  "discoverySelection": {
+    "selectionPerformedWith": "immediate-directory-names-and-opaque-tree-metadata-only",
+    "contentBlind": true,
+    "forbiddenDuringSelection": [
+      "task-instructions",
+      "qrels",
+      "rubric-points",
+      "ground-truth",
+      "verifier-source-or-private-inputs",
+      "prior-answers",
+      "agent-trajectories",
+      "harbor-task-outputs"
+    ],
+    "inventoryRule": {
+      "root": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery",
+      "scope": "immediate-child-directories-only",
+      "acceptedBasenameRegex": "^q\\d{3}$",
+      "sort": "ascending-ordinal-UTF-8-bytes",
+      "forbiddenSplitRoots": [
+        ".tmp/knowledge-consult-evolution/prepared/tasks/holdout",
+        ".tmp/knowledge-consult-evolution/prepared/tasks/hard"
+      ]
+    },
+    "observedDiscoveryTaskIds": [
+      "q001",
+      "q002",
+      "q003",
+      "q004",
+      "q006",
+      "q007",
+      "q008",
+      "q009",
+      "q011",
+      "q012",
+      "q013",
+      "q014",
+      "q016",
+      "q017",
+      "q018",
+      "q019",
+      "q021",
+      "q022",
+      "q023",
+      "q024",
+      "q026",
+      "q027",
+      "q028",
+      "q030"
+    ],
+    "contaminationDenylist": {
+      "taskIds": [
+        "q003",
+        "q007",
+        "q018",
+        "q024",
+        "q030"
+      ],
+      "reasons": {
+        "q003": "historical candidate-realization and diagnostic evidence",
+        "q007": "generation-004 first forward case",
+        "q018": "generation-004 observed case and the sole allowed reflection-feedback source for the child",
+        "q024": "generation-004 observed case; never prospective for generation-005",
+        "q030": "generation-004 observed case; never prospective for generation-005"
+      },
+      "entireSplits": [
+        "holdout",
+        "hard"
+      ]
+    },
+    "eligibleTaskIds": [
+      "q001",
+      "q002",
+      "q004",
+      "q006",
+      "q008",
+      "q009",
+      "q011",
+      "q012",
+      "q013",
+      "q014",
+      "q016",
+      "q017",
+      "q019",
+      "q021",
+      "q022",
+      "q023",
+      "q026",
+      "q027",
+      "q028"
+    ],
+    "eligibleInventoryProof": {
+      "encoding": "UTF-8 taskId plus LF for each eligibleTaskIds entry in declared order",
+      "sha256": "ca14cf88d45b6c187f548d2575b4521c9ca0e966dd55ed8a5ea56f51eb16a6cd"
+    },
+    "rankingRule": {
+      "algorithm": "SHA-256",
+      "seedPrefix": "knowledge-consult-harbor-g005|fresh-discovery-v1|",
+      "keyInputEncoding": "UTF-8 bytes of seedPrefix immediately followed by taskId, with no terminator",
+      "sort": "ascending lowercase hexadecimal selectionKey, then ascending taskId",
+      "take": 4,
+      "roleAssignment": "rank 1 is first gate; ranks 2 through 4 are remaining validation"
+    },
+    "rankedEligibleTasks": [
+      {
+        "taskId": "q016",
+        "selectionKey": "0e3968ae8d108c1f0d131bb8b0f147452cc5bbd54424478b7c35ae15152b13c2"
+      },
+      {
+        "taskId": "q022",
+        "selectionKey": "0e4a3af7c0c1a22274c793a7d85e2c11235feec93228cfc6a98e5b9e4025d6f6"
+      },
+      {
+        "taskId": "q019",
+        "selectionKey": "165306601360a231ff313ddc21a5d367716d24bb1c56f4515291600bf1995f74"
+      },
+      {
+        "taskId": "q001",
+        "selectionKey": "29241f867bad9bbbc92342f621452afd7bf55f345cff664dff594ac06486abe3"
+      },
+      {
+        "taskId": "q004",
+        "selectionKey": "3c7f57039c18587773e38850be5b0d49cb9f46b0f22f1c6997723d13c65be456"
+      },
+      {
+        "taskId": "q027",
+        "selectionKey": "3eab5fd234be690b7b1bc41f5e1c0c5ce121dd05f3c5ddd86eb06966d3845576"
+      },
+      {
+        "taskId": "q011",
+        "selectionKey": "426d2104348ef19ba7c15f48c76d9abfd542441fa22bcfb971ff3500e4b35b6a"
+      },
+      {
+        "taskId": "q006",
+        "selectionKey": "6a91f41df899487ae7954187e25a9c3f3e5fe2c48544136b452cebfbcde9f49f"
+      },
+      {
+        "taskId": "q021",
+        "selectionKey": "7defc591ccddec08a239387869b182ce481a27f9f8414740fcd91da74581cf37"
+      },
+      {
+        "taskId": "q008",
+        "selectionKey": "902f4d4ab0711f6f85c270905b4c6390a368bbd68f46c7d9c273ece2508b5f23"
+      },
+      {
+        "taskId": "q002",
+        "selectionKey": "9c8b72e0f8f875e79df16600198519d0700916f42253be9ab332a05cfbffdb03"
+      },
+      {
+        "taskId": "q017",
+        "selectionKey": "a26ef870bb829e4d794f8f4cf31cb83767da717011d2ff142dfdcbd6d889da68"
+      },
+      {
+        "taskId": "q014",
+        "selectionKey": "b2284d28def9e71b3b130786ce30c1d18bd32d7b19dea9ed4c10970fd9ba31fd"
+      },
+      {
+        "taskId": "q028",
+        "selectionKey": "b38a74c4b7b87748d24d780ad00f8fd08df5aac498417636348641d9600bab81"
+      },
+      {
+        "taskId": "q026",
+        "selectionKey": "c2a7d3b035ef527f055f925b683d50baa5f6c92be6d010c9cd99b8e68e639177"
+      },
+      {
+        "taskId": "q012",
+        "selectionKey": "deb4b46ff959961e7f30e49ea47abf67d46ce4fa0bf1c74c67375ef30071fe05"
+      },
+      {
+        "taskId": "q023",
+        "selectionKey": "e17ae33ede0ae3f05ddfcfd6c0ce082e550451c730dd4c5b728c8387318e50f6"
+      },
+      {
+        "taskId": "q013",
+        "selectionKey": "f55a34d74be988f856ad9e79b72feca37bf67af14769bb2872c3d5617e8f1f35"
+      },
+      {
+        "taskId": "q009",
+        "selectionKey": "fedec835f2e47eb69bb525d0f3c0c270ae27205c07bd1759302472f751b5abec"
+      }
+    ],
+    "rankedInventoryProof": {
+      "encoding": "UTF-8 taskId, TAB, selectionKey, LF for each rankedEligibleTasks entry",
+      "sha256": "3e2fa62de3bac0026c03b3d2881bbbf4adfd28c9ab4b6c6c1c5db3530316814b"
+    },
+    "selectedTaskIds": [
+      "q016",
+      "q022",
+      "q019",
+      "q001"
+    ]
+  },
+  "taskTreeDigestContract": {
+    "algorithm": "sha256(relative-path-utf8 || NUL || file-bytes || NUL for each file)",
+    "fileOrder": "ascending unsigned UTF-8 byte order of forward-slash relative paths",
+    "omissions": [
+      "directories named __pycache__",
+      "files ending in .pyc"
+    ],
+    "linksOrJunctionsAllowed": false,
+    "contentInspection": "opaque-byte-hashing-only"
+  },
+  "tasks": {
+    "q016": {
+      "role": "first-forward-gate",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q016",
+      "expectedTreeSha256": "c461e33b9814912fa3c9fbb6e3d5f187de2de2931ad54e54ded377c9da4a006d",
+      "fileCount": 12,
+      "totalBytes": 3757565
+    },
+    "q022": {
+      "role": "remaining-forward-validation",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q022",
+      "expectedTreeSha256": "aafe5911be4bee50823256013c50f5bec2c9f5a3c6fd653e2506053311e36cd5",
+      "fileCount": 12,
+      "totalBytes": 3755408
+    },
+    "q019": {
+      "role": "remaining-forward-validation",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q019",
+      "expectedTreeSha256": "9e9ec790f1ea0e15b974c0468d98cdad4d3ea78489f35b4512b89e4995ebd2e3",
+      "fileCount": 12,
+      "totalBytes": 3755413
+    },
+    "q001": {
+      "role": "remaining-forward-validation",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q001",
+      "expectedTreeSha256": "b4604f6c4734816bb35e51ea7d4f9133045e915a964a54727b4577a78a26ab5a",
+      "fileCount": 12,
+      "totalBytes": 3760512
+    }
+  },
+  "frozenEvaluationProfile": {
+    "harbor": {
+      "version": "0.18.0",
+      "command": "uvx --offline --from harbor==0.18.0 harbor",
+      "nAttempts": 1,
+      "installOnly": false,
+      "timeoutMultiplier": 1,
+      "debug": false,
+      "nConcurrentTrials": 1,
+      "quiet": false,
+      "retry": {
+        "maxRetries": 0,
+        "excludeExceptions": [
+          "ApiUsageLimitError",
+          "RewardFileEmptyError",
+          "VerifierOutputParseError",
+          "AgentTimeoutError",
+          "RewardFileNotFoundError",
+          "VerifierTimeoutError"
+        ],
+        "waitMultiplier": 1,
+        "minWaitSec": 1,
+        "maxWaitSec": 60
+      }
+    },
+    "environment": {
+      "type": "docker",
+      "image": "semantic-okf-harbor-runtime:1.0",
+      "imageId": "sha256:1315195dcef58980e6d2620eaa41062ea6edc15c3eb8ed47d42c143be57aded5",
+      "forceBuild": false,
+      "delete": true,
+      "cpuEnforcementPolicy": "auto",
+      "memoryEnforcementPolicy": "auto",
+      "knowledgeMountTarget": "/knowledge",
+      "knowledgeMountReadOnly": true,
+      "extraDockerCompose": [],
+      "extraAllowedHosts": [],
+      "kwargs": {}
+    },
+    "agent": {
+      "name": "pi",
+      "version": "0.73.1",
+      "model": "openai-codex/gpt-5.3-codex-spark",
+      "thinking": "high",
+      "nConcurrent": 1,
+      "extraAllowedHosts": [],
+      "mcpServers": []
+    },
+    "verifier": {
+      "disable": false
+    },
+    "metrics": [],
+    "artifacts": [],
+    "extraInstructionPaths": [],
+    "datasetOverwrite": false,
+    "rewardKey": "reward",
+    "passThreshold": 0.000001,
+    "requiredRewards": {
+      "evidence_contract_gate": 1.0,
+      "minimum_document_gate": 1.0,
+      "mechanical_qualification_gate": 1.0
+    }
+  },
+  "diagnosticDisposition": {
+    "operatorConfigPath": "harbor.candidateAttributableDiagnosticPolicy.contracts",
+    "contracts": [
+      "provider-context-limit.v1"
+    ],
+    "provider-context-limit.v1": {
+      "exactRawSignals": {
+        "status": "provider-failure",
+        "failure_domain": "provider",
+        "terminal_outcome": "provider-context-limit",
+        "error_code": "context_length_exceeded"
+      },
+      "requiresEveryDiagnosticObservationToMatch": true,
+      "requiresNoHarborException": true,
+      "requiresPrimaryAndConfiguredRequiredRewardsToBeAbsentOrExactZero": true,
+      "unconfiguredAuxiliaryAuditMetricsMayBeNonzero": true,
+      "evaluationAvailable": true,
+      "score": 0.0,
+      "qualificationPassed": false,
+      "retryAuthorized": false,
+      "fitnessMeaning": "candidate-attributable-operational-failure"
+    },
+    "normalCompletedEvaluation": {
+      "effectiveFitness": "exact numeric primary reward",
+      "qualificationRequiresEveryConfiguredRequiredReward": true
+    },
+    "defaultForAuthenticationEnvironmentEvaluatorInfrastructureAndTransientProvider": "unavailable-null",
+    "ambiguousPartialOrConflictingSignals": "unavailable-null",
+    "missingPrimaryRewardWithoutExactAllowlistedDiagnostic": "unavailable-null",
+    "externalResumeAuthorizedByThisProtocol": false
+  },
+  "stages": [
+    {
+      "stageId": "q016-first-gate",
+      "taskIds": [
+        "q016"
+      ],
+      "variantsInExecutionOrder": [
+        "extractive-one-shot-answer-parent",
+        "candidate-lock-child"
+      ],
+      "maximumHarborInvocations": 2,
+      "maximumModelExecutions": 2,
+      "precondition": "valid immutable candidate lock, fresh private authentication seal, exact task-parent-candidate-profile verification, and no selected task content previously released",
+      "parentToChildCallGate": "run the child only when the parent has an available, unambiguous disposition; candidate-attributable context zero is available but never retryable",
+      "passCondition": "both records have available dispositions; the child is fully qualified; child effective fitness does not regress; no retry or best-of selection occurred",
+      "onPass": "verify an immutable q016 publication, then materialize remaining-forward-validation",
+      "onFail": "stop with remaining task contents unopened and unmaterialized"
+    },
+    {
+      "stageId": "remaining-forward-validation",
+      "taskIds": [
+        "q022",
+        "q019",
+        "q001"
+      ],
+      "variantsInExecutionOrder": [
+        "extractive-one-shot-answer-parent",
+        "candidate-lock-child"
+      ],
+      "maximumHarborInvocations": 2,
+      "maximumModelExecutions": 6,
+      "precondition": "independently recomputed immutable q016 pass bound to this protocol and candidate lock",
+      "parentToChildCallGate": "run the child batch only when every parent trial has an available, unambiguous disposition",
+      "passCondition": "every parent and child record across all four selected tasks has an available disposition; the child is fully qualified on every task; no child task regresses; the sum of child effective fitness across all four tasks is strictly greater than the parent sum; no retry or best-of selection occurred",
+      "onPass": "generation-005 prospective development validation complete; no holdout or hard release is authorized here",
+      "onFail": "stop"
+    }
+  ],
+  "callBudget": {
+    "maximumAdditionalHarborInvocations": 4,
+    "maximumAdditionalModelExecutions": 8,
+    "harborBuiltInRetries": 0,
+    "automaticExternalRetries": 0,
+    "selectiveExternalResumeAttemptsAuthorized": 0,
+    "bestOfSelectionAllowed": false,
+    "stopImmediatelyOnFailedGate": true,
+    "q018EvolutionCallsExcludedButMustBeReportedSeparately": true
+  },
+  "authentication": {
+    "sourceContract": "current Pi auth.json sealed privately after the candidate lock and immediately before preparation",
+    "isolatedMount": "/tmp/skill-arena-knowledge-consult-g005-auth",
+    "mountTarget": "/root/.pi/agent",
+    "copyOnlyAuthJson": true,
+    "publishPayloadDigest": false,
+    "publishCredentialMetadata": false,
+    "historicalSealReused": false
+  },
+  "contaminationBoundary": {
+    "candidateAuthorAllowedBenchmarkEvidence": [
+      "sanitized case-local q018 feedback bound by digest"
+    ],
+    "candidateAuthorForbiddenBenchmarkEvidence": [
+      "q003 or q007 task contents or outputs",
+      "q024 or q030 task contents or outputs",
+      "q016 q022 q019 or q001 task contents metadata beyond the public IDs and opaque locked tree statistics",
+      "all other discovery task contents",
+      "all holdout or hard task names beyond split identity, contents, qrels, rubric points, ground truth, verifier code, answers, trajectories, and outputs"
+    ],
+    "evaluatorIsolation": "the selected task trees may be copied only after the candidate lock verifies; only the execution harness and Harbor receive their contents",
+    "remainingStageIsolation": "q022 q019 and q001 must remain unopened and unmaterialized until the immutable q016 pass is independently recomputed",
+    "observedCasesNeverProspective": [
+      "q003",
+      "q007",
+      "q018",
+      "q024",
+      "q030"
+    ],
+    "holdoutAndHardReleaseAuthorized": false
+  },
+  "publication": {
+    "allowedEvidence": [
+      "primary reward",
+      "required gate values",
+      "qualification and diagnostic disposition",
+      "input cache and output token counts",
+      "parent candidate task profile job lock result trial protocol and candidate-lock provenance digests",
+      "aggregate non-regression and strict-improvement decision"
+    ],
+    "forbiddenEvidence": [
+      "task instruction text",
+      "answer text",
+      "qrel identities or values",
+      "rubric points or ground truth",
+      "agent reasoning or trajectories",
+      "private verifier inputs",
+      "authentication payload digest or credential metadata"
+    ]
+  },
+  "executionAuthorization": {
+    "protocolAloneAuthorizesLiveCalls": false,
+    "requiredBeforeAnyLiveCall": [
+      "candidate-lock-validator-and-exclusive-writer",
+      "content-boundary-enforcing-staged-preparer",
+      "profile-and-tree-verifier",
+      "private-auth-sealer",
+      "parent-before-child-call-gate",
+      "sanitized-publisher",
+      "model-free tests for all preceding components"
+    ],
+    "runtimeMaterializedAtProtocolSeal": false,
+    "harborOrModelCallsAtProtocolSeal": 0
+  }
+}

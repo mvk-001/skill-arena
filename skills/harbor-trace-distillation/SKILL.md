@@ -22,8 +22,9 @@ required.
 1. Read
    [references/harbor-trace-contract.md](references/harbor-trace-contract.md)
    before authoring a run.
-2. Freeze the baseline skill, Harbor tasks, reward key, pass threshold, agent,
-   model, and environment. Put task answers only in verifiers.
+2. Freeze the baseline skill, Harbor tasks, reward key, pass threshold, any
+   non-compensating required reward thresholds, agent, model, and environment.
+   Put task answers only in verifiers.
 3. Gather completed discovery jobs or trials. Keep holdout paths out of all
    diagnoses and proposals.
 4. Validate the plan without creating output or running Harbor:
@@ -61,9 +62,10 @@ uv run <skill-root>/scripts/distill_harbor_traces.py <config.yaml>
 ~~~
 
 9. Inspect `trace-pool.json`, `proposal-state.json`, `consolidation.json`, the
-   copied `candidate-skill/`, `holdout-gate.json`, and `report.md`. Promote only
-   when the holdout decision is `promote` and ordinary skill validation still
-   passes. The script never overwrites the source skill.
+   staged `baseline/skills/<name>/` and `candidate/skills/<name>/` bundles,
+   `holdout-gate.json`, and `report.md`. Promote only when the holdout decision
+   is `promote` and ordinary skill validation still passes. The script never
+   overwrites the source skill.
 
 ## Rules
 
@@ -71,19 +73,71 @@ uv run <skill-root>/scripts/distill_harbor_traces.py <config.yaml>
   accepted patch. Repeated attempts on one task increase trial support, never
   task diversity. The script rejects lower configured thresholds.
 - Treat Harbor exceptions as errors. Treat a completed non-error trial with no
-  numeric configured reward as invalid evidence, not a zero-reward failure.
+  numeric configured primary reward as a non-evaluable evaluator failure, not
+  a zero-reward failure. It is ineligible proposal evidence and makes a holdout
+  decision `not-evaluable`.
+- If present, read bounded classification fields from
+  trial- and step-scoped `verifier/diagnostics.json` files. Aggregate every
+  classified diagnostic for the trial. A diagnostic classified to the provider or
+  infrastructure domain makes that trial non-evaluable: preserve the verifier's
+  reported reward for audit, but expose the semantic reward as null. Do not
+  require diagnostics from verifiers that do not produce them, and keep Harbor
+  exceptions classified as errors. Classify these diagnostics before testing
+  primary-reward availability so a provider failure that emitted no reward is
+  not mislabeled as an evaluator failure.
+- Treat `provider-context-limit` or `context_length_exceeded` as actionable only
+  for an `execution-efficiency/context-budget` proposal. Require the ordinary
+  two-trial and two-task-checksum support before accepting that operational
+  patch. Context-budget evidence cannot support a semantic-improvement domain.
+  Quota, rate-limit, authentication, environment, and other external failures
+  remain ineligible patch evidence. A context-limit signal is actionable only
+  when every classified diagnostic for that trial is a provider context-budget
+  failure; any mixed external domain keeps the trial non-actionable.
+- Configure `harbor.requiredRewards` when verifier metrics are qualification
+  gates rather than compensating fitness terms. Every trial must report every
+  required metric at or above its finite threshold. Missing values remain null,
+  and missing or below-threshold values are reported with distinct reasons.
 - Use bounded, redacted ATIF messages, agent logs, verifier stdout, and verifier
   stderr for discovery feedback. Preserve raw artifacts by path instead of
   copying them into prompts or reports.
 - Accept only patches whose cited evidence is in the discovery pool. Reject
   unknown or holdout evidence, path traversal, out-of-bundle targets, thin
   support, and losing members of a conflict group.
+- Require the baseline bundle root and every materialized bundle to be
+  self-contained. Reject a root that is itself a symbolic link, junction, or
+  other filesystem reparse point as well as links nested inside the bundle;
+  resolve every proposal destination inside the copied candidate bundle.
 - Do not expose holdout rewards, task names, trajectories, verifier output, or
   errors to the distillation stage. Holdout is read only after the candidate is
   materialized.
 - Require matching task checksums, attempts, agent/version/model cells, and
   replay settings for holdout comparison. Missing locks require an explicit
   weak-fairness opt-in and are reported as a limitation.
+- Compare lock, TrialConfig, and artifact signatures as sorted multisets, not
+  sets. Repeated signatures retain their multiplicity, so `A,A,B` cannot pass
+  as equivalent to `A,B,B`.
+- Require discovery and holdout to be disjoint by both task name and checksum,
+  and require the exact discovery agent/version/model profile on holdout.
+- Promotion always requires every discovery trial to have canonical verified
+  lock provenance. `requireDiscoveryLocks: false` keeps older unlocked evidence
+  inspectable in analyze-only mode; it does not make that evidence promotable.
+- Require `SKILL.md` frontmatter `name` to be an exact portable lowercase
+  basename. Stage every live baseline and candidate job-config bundle at
+  `<output>/<role>/skills/<name>` so Harbor's physical basename matches its
+  logical name. Locked live artifacts must use that exact name as both lock
+  name and source basename. Analyze-only may import legacy discovery locks that
+  used a physical alias, but marks that evidence and its consolidation
+  non-promotable; live discovery and every holdout reject such aliases.
+- Do not promote a candidate when any candidate holdout trial errors or fails a
+  required reward gate, or when either holdout side omits a required metric.
+  With an empty `requiredRewards` mapping, no additional verifier metrics are
+  required.
+- Require finite numeric `harbor.passThreshold`, holdout `minimumMeanGain`,
+  primary rewards, and required-reward thresholds. Reject NaN and infinities
+  before scoring or serializing artifacts.
+- Mark the holdout `not-evaluable` rather than treating a missing primary
+  reward or provider/infrastructure failure as semantic reward zero. Keep
+  unaffected side means visible and report the affected mean and gain as null.
 - Use new output and Harbor job names. Do not resume a job against changed
   skill content.
 

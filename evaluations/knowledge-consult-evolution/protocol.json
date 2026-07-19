@@ -1,0 +1,438 @@
+{
+  "schemaVersion": 1,
+  "studyId": "knowledge-consult-evolution",
+  "evidenceLayer": "live-skill-evolution-on-frozen-consult-tasks",
+  "evolutionContract": {
+    "evolverBundles": [
+      "skills/harbor-population-search",
+      "skills/harbor-trace-distillation",
+      "skills/harbor-reflective-pareto-search",
+      "skills/harbor-operator-coevolution"
+    ],
+    "evolverOwnership": "self-contained-generic-bundles",
+    "targetSkillOwnership": "external-input",
+    "datasetOwnership": "external-input",
+    "requiredExternalInputs": [
+      "native Harbor development JobConfig",
+      "target skill bundle path",
+      "strategy candidate or mutation state",
+      "optional disjoint holdout JobConfig"
+    ],
+    "targetSpecificContentAllowedInsideEvolver": false
+  },
+  "sourceFreeze": {
+    "repository": {
+      "name": "knowledge",
+      "expectedRelativePath": "../knowledge",
+      "commit": "25170692c9e211b7bf719f07d3243cdaf409c88b"
+    },
+    "dataset": {
+      "id": "graphrag-papers-40",
+      "family": "legacy",
+      "mode": "consult-only",
+      "descriptorPath": "evaluations/semantic-okf-datasets/datasets/graphrag-papers-40.json",
+      "cohortsPath": "evaluations/semantic-okf-datasets/datasets/graphrag-papers-40-cohorts.json",
+      "referenceBundlePath": "evaluations/graphrag-cross-paper/bundle",
+      "baselineSkillPath": "skills/consult-semantic-okf",
+      "graderPath": "evaluations/semantic-okf-harbor/grader"
+    },
+    "files": [
+      {
+        "path": "evaluations/semantic-okf-datasets/datasets/graphrag-papers-40.json",
+        "sha256": "05b47f0dde8054bf8f7ad5149e183de9412917e350dac01fd2e6f51966e2118e"
+      },
+      {
+        "path": "evaluations/semantic-okf-datasets/datasets/graphrag-papers-40-cohorts.json",
+        "sha256": "bf3472dec02fa4416b2764daa7a50d693e8ac5fa49459f41152a710fe38d44a4"
+      },
+      {
+        "path": "evaluations/semantic-okf-datasets/families.json",
+        "sha256": "51a04f2ad6ff9d61f6e1c1efdf768e6b96f1255faf1123c0be13ee3adc342e86"
+      },
+      {
+        "path": "evaluations/semantic-okf-datasets/dataset_tool.py",
+        "sha256": "551887d9afce7df67fd4ce3ed6bb32977c013a765e4a3b53fe9c47e08686fcf1"
+      },
+      {
+        "path": "evaluations/semantic-okf-datasets/generate_harbor_tasks.py",
+        "sha256": "3962e725863cc88fb93351b57951c69e2f5bacd1f9e4c22fe802a99351f5063c"
+      },
+      {
+        "path": "evaluations/semantic-okf-datasets/validate_harbor_tasks.py",
+        "sha256": "29b8c68f20f766b92f0856d167d573b7a05756d44f1303fa9df14b9c5b07a7a0"
+      },
+      {
+        "path": "evaluations/graphrag-cross-paper/manifest.json",
+        "sha256": "a4e83ce7d9630bf57ce4b3c2bf2cb445e34032c3ec46673b4bbed585885b0c37"
+      },
+      {
+        "path": "evaluations/semantic-okf-adaptive/retrieval-questions.jsonl",
+        "sha256": "21ca640514c7378c06f3e2a1a02210d079c5c3048fd2d07b14ade15f1c9788ec"
+      },
+      {
+        "path": "evaluations/graphrag-cross-paper/questions-blueprint.json",
+        "sha256": "127fbfa19801b9269738d1a10656a803ce4f9a41fcaaf4a5bd4f381e8fcbbc15"
+      },
+      {
+        "path": "evaluations/semantic-okf-adaptive/hard-ground-truth.jsonl",
+        "sha256": "c4e5aa00a85efba41cd18c4de7fda5e2b7f3ce61de9916f55268cfc5afecd388"
+      }
+    ],
+    "trees": [
+      {
+        "path": "evaluations/graphrag-cross-paper/bundle",
+        "sha256": "8f127d26cacded575478b7871e1031f73a849f98f92297631b93fc3f17b3d405",
+        "fileCount": 884,
+        "totalBytes": 10888503
+      },
+      {
+        "path": "skills/consult-semantic-okf",
+        "sha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+        "fileCount": 13,
+        "totalBytes": 98881
+      },
+      {
+        "path": "evaluations/semantic-okf-harbor/grader",
+        "sha256": "af61a5e28fc0a1c5e8c48f27b059afbab22e97fe5609a036247ee3007eba22ad",
+        "fileCount": 4,
+        "totalBytes": 32826
+      }
+    ]
+  },
+  "benchmark": {
+    "cohorts": {
+      "discovery": [
+        "q001",
+        "q002",
+        "q003",
+        "q004",
+        "q006",
+        "q007",
+        "q008",
+        "q009",
+        "q011",
+        "q012",
+        "q013",
+        "q014",
+        "q016",
+        "q017",
+        "q018",
+        "q019",
+        "q021",
+        "q022",
+        "q023",
+        "q024",
+        "q026",
+        "q027",
+        "q028",
+        "q030"
+      ],
+      "holdout": [
+        "q005",
+        "q010",
+        "q015",
+        "q020",
+        "q025",
+        "q029"
+      ],
+      "hard": [
+        "q031",
+        "q032",
+        "q033",
+        "q034",
+        "q035",
+        "q036",
+        "q037",
+        "q038",
+        "q039",
+        "q040"
+      ]
+    },
+    "smoke": {
+      "taskIds": [
+        "q003",
+        "q007",
+        "q018",
+        "q024",
+        "q030"
+      ],
+      "purpose": "qualification-only",
+      "reuseAsDevelopmentEvidence": false
+    },
+    "development": {
+      "taskIdsFromCohort": "discovery",
+      "taskCount": 24,
+      "attemptsPerCandidateTask": 1,
+      "retries": 0
+    },
+    "finalRelease": {
+      "taskIdsFromCohorts": [
+        "holdout",
+        "hard"
+      ],
+      "holdoutTaskCount": 6,
+      "hardTaskCount": 10,
+      "releaseCount": 1,
+      "selectedBundlesPerStrategy": 1,
+      "sharedBaseline": true,
+      "maximumTaskAttempts": 80,
+      "postReleaseMutationAllowed": false
+    }
+  },
+  "evaluationProfile": {
+    "harborVersion": "0.18.0",
+    "agent": {
+      "name": "pi",
+      "version": "0.73.1",
+      "model": "openai-codex/gpt-5.3-codex-spark",
+      "thinking": "high"
+    },
+    "attemptsPerCandidateTask": 1,
+    "retries": 0,
+    "rewardKey": "reward",
+    "passThreshold": 0.000001,
+    "requiredRewards": {
+      "evidence_contract_gate": 1.0,
+      "minimum_document_gate": 1.0,
+      "mechanical_qualification_gate": 1.0
+    },
+    "minimumDevelopmentPassRate": 1.0,
+    "externalResumePolicy": {
+      "strategy": "harbor-resume-external-failures",
+      "harborBuiltInRetries": 0,
+      "maximumExternalRetriesPerTrial": 1,
+      "eligibleFailureDomains": [
+        "authentication",
+        "environment",
+        "evaluator",
+        "infrastructure",
+        "provider"
+      ],
+      "requirements": {
+        "canonicalSkillIdentity": true,
+        "candidateTaskProfileAndJobLocks": true,
+        "verifiableFailureEvidence": true,
+        "unstructuredFailureTextAllowed": false,
+        "missingRewardAloneSufficient": false
+      },
+      "requiredLockFields": {
+        "sourceTrials": [
+          "taskChecksum",
+          "candidateSkillDigest",
+          "evaluationProfileDigest",
+          "originalJobDigest"
+        ],
+        "completedRetryAttempts": [
+          "retryJobDigest"
+        ]
+      },
+      "failureEvidence": {
+        "verifierOwnedStructuredDiagnostic": {
+          "eligibleFields": [
+            "failureDomain",
+            "status",
+            "terminalOutcome",
+            "errorCode"
+          ],
+          "minimumExactAllowlistedSignals": 1
+        },
+        "exactHarborException": {
+          "eligibleFields": [
+            "exceptionType",
+            "errorCode"
+          ],
+          "mustBeAllowlisted": true
+        }
+      },
+      "conditionalRemediationAttestation": {
+        "requiredForFailureDomains": [
+          "authentication",
+          "environment"
+        ],
+        "requiredLockFields": [
+          "remediationAttestationDigest"
+        ],
+        "requiredFields": [
+          "remediationType",
+          "evidencePath",
+          "remediationEvidenceSha256"
+        ],
+        "evidenceContentsCopied": false,
+        "successfulLivePreflightRequired": true
+      },
+      "providerEligibility": {
+        "structuredTransientSignals": [
+          "api-overloaded",
+          "http-5xx",
+          "provider-5xx",
+          "provider-unavailable",
+          "rate-limit",
+          "rate-limit-exceeded",
+          "service-unavailable"
+        ],
+        "exactTransientExceptionTypes": [
+          "ApiUsageLimitError",
+          "ProviderUnavailableError",
+          "RateLimitError"
+        ],
+        "genericProviderLabelSufficient": false,
+        "absoluteDenylistTakesPrecedence": true
+      },
+      "absoluteDenylist": [
+        "context-length",
+        "context-budget",
+        "agent-timeout",
+        "token-budget",
+        "tool-budget",
+        "semantic-reward",
+        "required-reward-gate",
+        "invalid-response-contract",
+        "ambiguous-or-conflicting-failure-attestation"
+      ],
+      "retryJob": {
+        "mode": "new-immutable-harbor-job",
+        "mutateOriginalJob": false,
+        "reuseOriginalJobDirectory": false,
+        "candidateTaskAndProfileMustMatchLocks": true
+      },
+      "attemptLedger": {
+        "singleWriterLock": "sibling-o-excl-fail-closed",
+        "automaticStaleLockRemoval": false,
+        "reservationPersistedBeforeAttemptWritesOrCalls": true,
+        "reservedOrFailedAttemptConsumesCap": true,
+        "firstEvaluableStopsFurtherAttempts": true,
+        "analyzeOnlyNoop": {
+          "condition": "empty-retry-jobs-and-complete-existing-outputs",
+          "byteIdempotent": true
+        }
+      },
+      "effectiveJob": {
+        "materializationCondition": "all-source-trials-have-effective-results",
+        "incompleteJobAllowed": false,
+        "publicationMode": "atomic-new-directory",
+        "manifest": "resume-manifest.json",
+        "sealSourceAndDestinationChecksums": true,
+        "downstreamConsumption": "analyze-only-job-directory",
+        "selectionPolicy": "first-evaluable-no-best-of"
+      },
+      "mergePolicy": "first-evaluable-no-best-of",
+      "bestOfSelectionAllowed": false
+    },
+    "failurePolicy": {
+      "providerAuthenticationEnvironmentEvaluatorInfrastructure": "non-evaluable-null-not-zero",
+      "missingPrimaryReward": "non-evaluable-null-not-zero",
+      "missingRequiredReward": "unqualified",
+      "belowThresholdRequiredReward": "unqualified"
+    },
+    "smokeQualification": {
+      "requiredTaskIds": [
+        "q003",
+        "q007",
+        "q018",
+        "q024",
+        "q030"
+      ],
+      "allTasksMustBeEvaluable": true,
+      "allTasksMustMeetPassThreshold": true,
+      "allTasksMustMeetEveryRequiredReward": true,
+      "failureAction": "repair-or-reject-before-full-development"
+    },
+    "promotion": {
+      "developmentWinnerMustMeetMinimumPassRate": true,
+      "holdoutAndHardMustBeDisjointFromDevelopment": true,
+      "minimumMeanGain": 0.0,
+      "allowTaskRegressions": false,
+      "requireNoErrors": true,
+      "requireInfrastructureFree": true,
+      "requireEveryRequiredReward": true,
+      "postReleaseMutationAllowed": false
+    }
+  },
+  "strategyBudgets": {
+    "scope": "minimum-study-budget-not-global-skill-defaults",
+    "populationSearch": {
+      "generation0": {
+        "baselineBundles": 1,
+        "submittedChildren": 4,
+        "evaluatedBundles": 5
+      },
+      "survivors": 2,
+      "generation1": {
+        "reevaluatedSurvivors": 2,
+        "submittedOffspring": 4,
+        "evaluatedBundles": 6
+      },
+      "uniqueBaselineBundles": 1,
+      "uniqueSubmittedChildren": 8,
+      "uniqueBundles": 9,
+      "candidateGenerationEvaluations": 11,
+      "smokeTaskAttemptsIfAllQualify": 45,
+      "fullDevelopmentTaskAttemptsIfAllQualify": 264
+    },
+    "traceDistillation": {
+      "tracePoolTaskCount": 24,
+      "independentTraceAnalyses": 24,
+      "minimumSupportingTrialsPerPatch": 2,
+      "minimumDistinctTaskChecksumsPerPatch": 2,
+      "consolidatedChildren": 1,
+      "uniqueBundlesIncludingBaseline": 2,
+      "smokeTaskAttemptsIfAllQualify": 10,
+      "fullDevelopmentTaskAttemptsIfAllQualify": 48
+    },
+    "reflectiveParetoSearch": {
+      "baselineBundles": 1,
+      "initialCandidates": 4,
+      "fullCaseReevaluationPerCandidate": 24,
+      "archiveMaximum": null,
+      "mergeCandidates": 1,
+      "mergeMaximumParents": 2,
+      "uniqueBundlesIncludingBaselineAndMerge": 6,
+      "smokeTaskAttemptsIfAllQualify": 30,
+      "fullDevelopmentTaskAttemptsIfAllQualify": 144
+    },
+    "operatorCoevolution": {
+      "activeOperatorSlotsPerGeneration": 2,
+      "childrenPerOperatorPerGeneration": 2,
+      "generations": 2,
+      "minimumTrialsPerOperatorIdentity": 2,
+      "uniqueSubmittedChildren": 8,
+      "uniqueBundlesIncludingBaseline": 9,
+      "smokeTaskAttemptsIfAllQualify": 45,
+      "fullDevelopmentTaskAttemptsIfAllQualify": 216
+    }
+  },
+  "publishedEvidence": {
+    "q003QualificationPilot": {
+      "resultPath": "results/q003-qualification-pilot.json",
+      "reportPath": "results/q003-qualification-pilot.md",
+      "evidenceLockPath": "results/q003-evidence.lock.json",
+      "publisherPath": "scripts/publish-q003-pilot.js",
+      "evidenceUse": "exploratory-diagnostic-only",
+      "promotable": false,
+      "causalComparisonAllowed": false,
+      "notStrategyRanking": true,
+      "nativeArtifactsCommitted": false,
+      "nativeArtifactPolicy": "ignored-local-verified-by-checksum",
+      "requiredIdentityModeForNewRuns": "logical-name-basename"
+    }
+  },
+  "isolation": {
+    "knowledgeRepositoryAccess": "read-only",
+    "candidateVisibleCohortsBeforeRelease": [
+      "discovery"
+    ],
+    "verifierOnlyArtifacts": [
+      "tests",
+      "solution/oracle-pi.jsonl",
+      "qrels",
+      "semantic rubric",
+      "hard ground truth",
+      "authority evidence"
+    ],
+    "evaluatedAgentTaskExposure": "one native Harbor task directory selected from the current cohort",
+    "evaluatedAgentHostWorkspaceMounted": false,
+    "releaseMaterializationLimitation": "Preparation verifies and materializes every cohort under the orchestrator-owned ignored tree; path policy, JobConfig mounts, and release procedure enforce visibility, not filesystem ACLs.",
+    "taskMaterializationRoot": ".tmp/knowledge-consult-evolution/prepared/tasks",
+    "baselineSkillMaterializationRoot": ".tmp/knowledge-consult-evolution/prepared/baseline-skill"
+  }
+}

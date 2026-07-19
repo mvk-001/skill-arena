@@ -1,0 +1,64 @@
+{
+  "caseId": "knowledge-consult-meta-generation-003-q003-publication-v5",
+  "failureReproduction": {
+    "error": "q003 V4 publication result self-digest drifted.",
+    "firstDifferenceColumn": 22,
+    "firstDifferenceLine": 224,
+    "javascriptCanonicalLength": 10764,
+    "jsonPointer": "/thresholds/passThreshold",
+    "pythonCanonicalLength": 10761,
+    "pythonObjectDigest": "sha256:3f52311e63f8e0259251fd4de0f9d4c11cd8194c47d5b6062bf70418f04676d2",
+    "storedJavaScriptObjectDigest": "sha256:31ff94e2b9088d7896c6504a3b2499a4eeeb174818a741aa1dcfe5dddcb5b2b3"
+  },
+  "parentV4": {
+    "contractPath": "post-agent-verification-v4-contract.json",
+    "contractSha256": "sha256:0d17825136d07069302e39dac9cc5737fc6adfa7ff06666cf097f052a7591394",
+    "verificationContract": "harbor-0.18.0.verifier-recovery-v3.native-harbor-ordinary-json.js-parity-v4"
+  },
+  "publicBindings": [
+    "postAgentVerificationContractFileSha256",
+    "recoveryLockSha256",
+    "recoveryRecordDigest",
+    "recoveryResultSha256",
+    "recoveryResultDigest",
+    "effectiveJobDigest",
+    "nativeRetryJobArtifactDigest",
+    "recoveredJobArtifactDigest",
+    "resumeManifestSha256"
+  ],
+  "publicationContract": "harbor-0.18.0.q003-publication-javascript-number-token-parity-v5",
+  "schemaVersion": 5,
+  "sealedFiles": [
+    {
+      "path": "../scripts/publish-generation-003-post-agent-v5.js",
+      "sha256": "sha256:a3ee573805ba7c08a18e31b587c2b0c2f2b4ec55d205ba971e56f6acfac91756"
+    },
+    {
+      "path": "run-generation-003-q003-publication-v5.sh",
+      "sha256": "sha256:d065f56485d0d3742d606aad807fee7fddaeb712d4e651408013a8d9721a8dc6"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/publish_q003_verification_v5.py",
+      "sha256": "sha256:0e3ed2a07779561687a87661f9b7d38a7568d68600d089e41fd8934175cb8bd1"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/scripts/publish_q003_verification_v5.py.lock",
+      "sha256": "sha256:5cc4ba8fc8e0ce28314de87203151a616e6a91b738d4439d2da1450058927fab"
+    },
+    {
+      "path": "../../../../../skills/harbor-resume-external-failures/references/q003-publication-number-parity-v5.md",
+      "sha256": "sha256:0a0521828e3bde1ddb2e35b2b8154aa81c5e816a5134942b775721f587497e68"
+    }
+  ],
+  "serializationBoundary": {
+    "artifactMutation": false,
+    "bodyDigest": "sha256(exact-result-bytes-after-root-member-line-elision)",
+    "id": "javascript-canonical-root-member-elision-v1",
+    "javascriptNumberTokens": "preserved-verbatim",
+    "layout": "LF-only-two-space-JavaScript-canonical-pretty",
+    "memberLineCount": 1,
+    "parser": "strict-utf8-json-no-bom-no-duplicate-keys",
+    "rootMember": "publicationSha256",
+    "scope": "result.json root publicationSha256"
+  }
+}

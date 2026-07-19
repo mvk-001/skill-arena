@@ -140,6 +140,7 @@ member.
 | [`skill-arena-run-results`](./skills/skill-arena-run-results/SKILL.md) | You need to validate, dry-run, execute, inspect, and summarize a comparison. |
 | [`harbor-runner`](./skills/harbor-runner/SKILL.md) | You need repeatable Harbor profile jobs normalized into Skill Arena reports. |
 | [`harbor-run-results`](./skills/harbor-run-results/SKILL.md) | You need to run or inspect Harbor jobs and publish a native final JSON and Markdown report without Skill Arena. |
+| [`harbor-resume-external-failures`](./skills/harbor-resume-external-failures/SKILL.md) | You need to continue only independently attested external Harbor failures without rerunning semantic outcomes or selecting the best retry. |
 | [`harbor-evolve-skill`](./skills/harbor-evolve-skill/SKILL.md) | You need Harbor trials and GEPA reflection to evolve SKILL.md and gate it on an untouched holdout. |
 | [`harbor-population-search`](./skills/harbor-population-search/SKILL.md) | You need broad candidate search ranked from native Harbor rewards and errors. |
 | [`harbor-trace-distillation`](./skills/harbor-trace-distillation/SKILL.md) | You need to consolidate recurring lessons from native Harbor trial traces. |
@@ -246,6 +247,7 @@ independent of the Skill Arena CLI and report schema.
 | [Configuration specs](./docs/specs.md) | Read the canonical schema and normalization contract. |
 | [Research foundations](./docs/research-foundations.md) | Trace the papers, related work, and adaptation boundaries behind skill improvement. |
 | [Strategy evaluation](./docs/strategy-evaluation.md) | Reproduce the four-way comparison and choose a workflow for your evidence regime. |
+| [Harbor evolution playbook](./docs/harbor-evolution-playbook.md) | Select, compose, test, and recover Harbor-native evolution workflows with minimum unnecessary calls. |
 | [Testing](./docs/testing.md) | Validate documentation, runtime code, configs, and live runs. |
 | [ADRs](./.specs/adr/) | Review durable technical and workflow decisions. |
 

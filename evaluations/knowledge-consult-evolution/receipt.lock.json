@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "studyId": "knowledge-consult-evolution",
+  "knowledgeCommit": "25170692c9e211b7bf719f07d3243cdaf409c88b",
+  "dataset": {
+    "id": "graphrag-papers-40",
+    "family": "legacy",
+    "mode": "consult-only",
+    "cohortCounts": {
+      "discovery": 24,
+      "holdout": 6,
+      "hard": 10
+    }
+  },
+  "source": {
+    "referenceBundleTreeSha256": "8f127d26cacded575478b7871e1031f73a849f98f92297631b93fc3f17b3d405",
+    "referenceLedgerSha256": "df06f8ed7fd0ca4b2b8b5761c637a79d525595a2c180aeaf6885555e266754dc",
+    "baselineSkillTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+    "graderTreeSha256": "af61a5e28fc0a1c5e8c48f27b059afbab22e97fe5609a036247ee3007eba22ad"
+  },
+  "materialized": {
+    "tasks": {
+      "treeSha256": "b99f247213febab9ba362f23eb3f094a19f01febc9a8ed1fb3cacd5c4491cf9c",
+      "manifestSha256": "27b447a1d22211694508b663371b3afc827caed92f769a3eae94ad4060fa08da",
+      "fileCount": 529,
+      "totalBytes": 153017644
+    },
+    "baselineSkill": {
+      "treeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+      "fileCount": 13,
+      "totalBytes": 98881
+    }
+  }
+}

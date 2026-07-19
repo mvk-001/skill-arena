@@ -15,6 +15,8 @@ Start with the guide that matches the work you are doing.
    boundaries for the skill-improvement workflows.
 5. [Strategy evaluation](./strategy-evaluation.md) — corpus protocol,
    deterministic replay, live compare config, results, and decision guide.
+6. [Harbor evolution playbook](./harbor-evolution-playbook.md) — select and
+   compose Harbor-native evolution skills while minimizing unnecessary calls.
 
 The maintained examples under [`evaluations/`](../evaluations/) are executable
 references. Use
@@ -45,6 +47,7 @@ Read [`AGENTS.md`](../AGENTS.md) before changing the repository.
 | Validation workflow | [Testing](./testing.md) |
 | Improvement-workflow research provenance | [Research foundations](./research-foundations.md) |
 | Improvement-strategy comparison | [Strategy evaluation](./strategy-evaluation.md) |
+| Harbor-native evolution workflow | [Harbor evolution playbook](./harbor-evolution-playbook.md) |
 | Historical decisions | [ADRs](../.specs/adr/) |
 | Active implementation plans | [`.specs/plans/`](../.specs/plans/) |
 

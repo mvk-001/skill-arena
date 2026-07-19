@@ -1,0 +1,296 @@
+{
+  "schemaVersion": 1,
+  "status": "prospective-cohort-sealed-before-candidate-lock-and-selected-task-release",
+  "experimentId": "knowledge-consult-harbor-guarded-minimum-relevance-fallback-g006",
+  "generationId": "generation-006",
+  "evidenceLayer": "prospective-content-blind-forward-validation",
+  "purpose": "Compare guarded-minimum-relevance-fallback with its frozen relevance-first-facet-coverage parent on three unopened discovery cases selected before the child is sealed.",
+  "knowledge": {
+    "commit": "25170692c9e211b7bf719f07d3243cdaf409c88b",
+    "referenceBundlePath": "evaluations/graphrag-cross-paper/bundle",
+    "discoveryTaskRoot": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery"
+  },
+  "target": {
+    "logicalName": "consult-semantic-okf",
+    "parent": {
+      "candidateId": "relevance-first-facet-coverage",
+      "sourcePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/candidates/relevance-first-facet-coverage/consult-semantic-okf",
+      "expectedTreeSha256": "65a91e9ba9846be54bdad82b6192bb030eb235a549d8f7cabb315798b7a970ae",
+      "fileCount": 15,
+      "totalBytes": 157627
+    },
+    "child": {
+      "candidateId": "guarded-minimum-relevance-fallback",
+      "expectedSourcePath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-006/candidates/guarded-minimum-relevance-fallback/consult-semantic-okf",
+      "candidateDataIntentionallyAbsent": true,
+      "candidateLockPath": "evaluations/knowledge-consult-evolution/meta-evolution/generation-006/candidate-lock.json",
+      "protocolMustNotBeEditedToInsertCandidateData": true,
+      "taskReleaseRequiresValidCandidateLock": true
+    }
+  },
+  "candidateLockContract": {
+    "schemaVersion": 1,
+    "writeMode": "exclusive-create-once",
+    "candidateTreeHashPredeclared": false,
+    "mustBeSealedBefore": [
+      "reading-or-materializing-q022-q019-or-q001-beyond-opaque-digest-verification",
+      "authentication-seal-for-live-execution",
+      "harbor-config-materialization",
+      "any-generation-006-harbor-or-model-call"
+    ],
+    "mustBind": [
+      "this-protocol-file-sha256",
+      "exact-candidate-id-source-path-and-logical-name",
+      "candidate-tree-sha256-file-count-and-total-bytes-computed-only-after-candidate-exists",
+      "exact-parent-id-source-path-and-parent-tree-sha256",
+      "both-sanitized-feedback-receipts-by-path-task-id-and-sha256",
+      "mutation-procedure-by-path-and-sha256",
+      "candidate-manifest-and-operator-realization-by-path-and-sha256",
+      "candidate-frozen-before-selected-task-release",
+      "no-selected-task-contamination-and-no-holdout-or-hard-access",
+      "fresh-generation-006-authorship-and-no-post-freeze-mutation"
+    ],
+    "requiredExactValues": {
+      "generationId": "generation-006",
+      "logicalName": "consult-semantic-okf",
+      "candidateId": "guarded-minimum-relevance-fallback",
+      "parentCandidateId": "relevance-first-facet-coverage",
+      "parentTreeSha256": "65a91e9ba9846be54bdad82b6192bb030eb235a549d8f7cabb315798b7a970ae",
+      "feedbackTaskIds": ["q018", "q016"],
+      "selectedTaskIdsObservedByCandidateAuthor": [],
+      "contaminatedTaskContentsObservedByCandidateAuthor": [],
+      "holdoutOrHardContentsObservedByCandidateAuthor": false,
+      "candidateFrozenBeforeSelectedTaskRelease": true,
+      "candidateFreshlyAuthoredForGeneration": true
+    },
+    "selfSeal": "candidate-lock-sha256-over-canonical-json-body-without-the-self-seal-field"
+  },
+  "discoverySelection": {
+    "selectionPerformedWith": "public-case-identifiers-and-prior-contamination-status-only",
+    "contentBlind": true,
+    "selectionTimestamp": "2026-07-19T00:00:00Z",
+    "selectedTaskContentsOpenedAtSeal": false,
+    "forbiddenDuringSelectionAndAuthorship": [
+      "task-instructions",
+      "qrels",
+      "rubric-points",
+      "ground-truth",
+      "verifier-source-or-private-inputs",
+      "prior-answers",
+      "agent-trajectories",
+      "harbor-task-outputs"
+    ],
+    "contaminationDenylist": {
+      "taskIds": ["q003", "q007", "q016", "q018", "q024", "q030"],
+      "entireSplits": ["holdout", "hard"]
+    },
+    "selectedTaskIds": ["q022", "q019", "q001"],
+    "selectionOrder": "q022 is the predeclared first gate; q019 then q001 form the remaining cohort",
+    "selectionAttestation": "These public IDs were selected without opening or inspecting their task trees; opaque digests are inherited from the already sealed generation-005 protocol."
+  },
+  "taskTreeDigestContract": {
+    "algorithm": "sha256(relative-path-utf8 || NUL || file-bytes || NUL for each file)",
+    "fileOrder": "ascending unsigned UTF-8 byte order of forward-slash relative paths",
+    "omissions": ["directories named __pycache__", "files ending in .pyc"],
+    "linksOrJunctionsAllowed": false,
+    "contentInspection": "opaque-byte-hashing-only"
+  },
+  "tasks": {
+    "q022": {
+      "role": "first-forward-gate",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q022",
+      "expectedTreeSha256": "aafe5911be4bee50823256013c50f5bec2c9f5a3c6fd653e2506053311e36cd5",
+      "fileCount": 12,
+      "totalBytes": 3755408
+    },
+    "q019": {
+      "role": "remaining-forward-validation",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q019",
+      "expectedTreeSha256": "9e9ec790f1ea0e15b974c0468d98cdad4d3ea78489f35b4512b89e4995ebd2e3",
+      "fileCount": 12,
+      "totalBytes": 3755413
+    },
+    "q001": {
+      "role": "remaining-forward-validation",
+      "sourcePath": ".tmp/knowledge-consult-evolution/prepared/tasks/discovery/q001",
+      "expectedTreeSha256": "b4604f6c4734816bb35e51ea7d4f9133045e915a964a54727b4577a78a26ab5a",
+      "fileCount": 12,
+      "totalBytes": 3760512
+    }
+  },
+  "frozenEvaluationProfile": {
+    "harbor": {
+      "version": "0.18.0",
+      "command": "uvx --offline --from harbor==0.18.0 harbor",
+      "nAttempts": 1,
+      "installOnly": false,
+      "timeoutMultiplier": 1,
+      "debug": false,
+      "nConcurrentTrials": 1,
+      "quiet": false,
+      "retry": {
+        "maxRetries": 0,
+        "excludeExceptions": ["ApiUsageLimitError", "RewardFileEmptyError", "VerifierOutputParseError", "AgentTimeoutError", "RewardFileNotFoundError", "VerifierTimeoutError"],
+        "waitMultiplier": 1,
+        "minWaitSec": 1,
+        "maxWaitSec": 60
+      }
+    },
+    "environment": {
+      "type": "docker",
+      "image": "semantic-okf-harbor-runtime:1.0",
+      "imageId": "sha256:1315195dcef58980e6d2620eaa41062ea6edc15c3eb8ed47d42c143be57aded5",
+      "forceBuild": false,
+      "delete": true,
+      "cpuEnforcementPolicy": "auto",
+      "memoryEnforcementPolicy": "auto",
+      "knowledgeMountTarget": "/knowledge",
+      "knowledgeMountReadOnly": true,
+      "extraDockerCompose": [],
+      "extraAllowedHosts": [],
+      "kwargs": {}
+    },
+    "agent": {
+      "name": "pi",
+      "version": "0.73.1",
+      "model": "openai-codex/gpt-5.3-codex-spark",
+      "thinking": "high",
+      "nConcurrent": 1,
+      "extraAllowedHosts": [],
+      "mcpServers": []
+    },
+    "verifier": {"disable": false},
+    "metrics": [],
+    "artifacts": [],
+    "extraInstructionPaths": [],
+    "datasetOverwrite": false,
+    "rewardKey": "reward",
+    "passThreshold": 0.000001,
+    "requiredRewards": {
+      "evidence_contract_gate": 1.0,
+      "minimum_document_gate": 1.0,
+      "mechanical_qualification_gate": 1.0
+    }
+  },
+  "diagnosticDisposition": {
+    "operatorConfigPath": "harbor.candidateAttributableDiagnosticPolicy.contracts",
+    "contracts": ["provider-context-limit.v1"],
+    "provider-context-limit.v1": {
+      "exactRawSignals": {
+        "status": "provider-failure",
+        "failure_domain": "provider",
+        "terminal_outcome": "provider-context-limit",
+        "error_code": "context_length_exceeded"
+      },
+      "requiresEveryDiagnosticObservationToMatch": true,
+      "requiresNoHarborException": true,
+      "requiresPrimaryAndConfiguredRequiredRewardsToBeAbsentOrExactZero": true,
+      "evaluationAvailable": true,
+      "score": 0.0,
+      "qualificationPassed": false,
+      "retryAuthorized": false,
+      "fitnessMeaning": "candidate-attributable-operational-failure"
+    },
+    "normalCompletedEvaluation": {
+      "effectiveFitness": "exact numeric primary reward",
+      "qualificationRequiresEveryConfiguredRequiredReward": true
+    },
+    "defaultForAuthenticationEnvironmentEvaluatorInfrastructureAndTransientProvider": "unavailable-null",
+    "ambiguousPartialOrConflictingSignals": "unavailable-null",
+    "missingPrimaryRewardWithoutExactAllowlistedDiagnostic": "unavailable-null",
+    "externalResumeAuthorizedByThisProtocol": false
+  },
+  "stages": [
+    {
+      "stageId": "q022-first-gate",
+      "taskIds": ["q022"],
+      "variantsInExecutionOrder": ["relevance-first-facet-coverage-parent", "guarded-minimum-relevance-fallback-child"],
+      "maximumHarborInvocations": 2,
+      "maximumModelExecutions": 2,
+      "precondition": "valid exclusive immutable candidate lock, fresh private authentication seal, exact task-parent-candidate-profile verification, and no selected task content previously released",
+      "parentToChildCallGate": "run the child only when the parent is evaluated and has an available unambiguous disposition; an exact candidate-attributable context-limit zero is available but never retryable",
+      "passCondition": "child is available, actually evaluated, fully qualified, and has strictly greater effective fitness than the comparable parent under identical task/profile/attempt provenance; no retry or best-of occurred",
+      "onPass": "independently recompute and verify an immutable q022 publication, then and only then materialize q019 and q001",
+      "onFail": "stop fail-closed with q019 and q001 unopened and unmaterialized"
+    },
+    {
+      "stageId": "remaining-forward-validation",
+      "taskIds": ["q019", "q001"],
+      "variantsInExecutionOrder": ["relevance-first-facet-coverage-parent", "guarded-minimum-relevance-fallback-child"],
+      "maximumHarborInvocations": 2,
+      "maximumModelExecutions": 4,
+      "precondition": "independently recomputed immutable q022 strict-improvement pass bound to this protocol and candidate lock",
+      "parentToChildCallGate": "run the child batch only when both parent trials are evaluated and have available unambiguous dispositions",
+      "passCondition": "all six records are available and evaluated; child is fully qualified on every task; child does not regress on any comparable parent task; child total effective fitness across all three tasks is strictly greater than parent total; no retry or best-of occurred",
+      "onPass": "generation-006 prospective development validation complete; holdout and hard remain closed",
+      "onFail": "stop fail-closed"
+    }
+  ],
+  "callBudget": {
+    "maximumAdditionalHarborInvocations": 4,
+    "maximumAdditionalModelExecutions": 6,
+    "harborBuiltInRetries": 0,
+    "automaticExternalRetries": 0,
+    "selectiveExternalResumeAttemptsAuthorized": 0,
+    "bestOfSelectionAllowed": false,
+    "stopImmediatelyOnFailedGate": true,
+    "feedbackEvolutionCallsExcludedButMustBeReportedSeparately": true
+  },
+  "authentication": {
+    "sourceContract": "current Pi auth.json sealed privately after the candidate lock and immediately before preparation",
+    "isolatedMount": "/tmp/skill-arena-knowledge-consult-g006-auth",
+    "mountTarget": "/root/.pi/agent",
+    "copyOnlyAuthJson": true,
+    "publishPayloadDigest": false,
+    "publishCredentialMetadata": false,
+    "historicalSealReused": false,
+    "freshnessRequired": true
+  },
+  "contaminationBoundary": {
+    "candidateAuthorAllowedBenchmarkEvidence": ["sanitized digest-bound q018 feedback", "sanitized digest-bound q016 feedback"],
+    "candidateAuthorForbiddenBenchmarkEvidence": [
+      "q003 q007 q024 or q030 task contents or outputs",
+      "q022 q019 or q001 contents and metadata beyond public IDs and opaque sealed tree statistics",
+      "all other discovery task contents",
+      "all holdout or hard names beyond split identity, contents, qrels, rubric points, ground truth, verifier code, answers, trajectories, and outputs"
+    ],
+    "evaluatorIsolation": "selected task trees may be copied only after the candidate lock verifies; only the execution harness and Harbor receive contents",
+    "remainingStageIsolation": "q019 and q001 remain unopened and unmaterialized until q022 strict improvement is independently recomputed",
+    "observedCasesNeverProspective": ["q003", "q007", "q016", "q018", "q024", "q030"],
+    "holdoutAndHardReleaseAuthorized": false
+  },
+  "publication": {
+    "allowedEvidence": [
+      "primary reward",
+      "required gate values",
+      "qualification evaluation-availability evaluated-state and diagnostic disposition",
+      "input cache and output token counts",
+      "parent child task profile job lock result trial protocol candidate-lock preparation and freshness provenance digests",
+      "per-case comparison aggregate non-regression and strict attributable improvement decision"
+    ],
+    "forbiddenEvidence": [
+      "task instruction text",
+      "answer text",
+      "qrel identities or values",
+      "rubric points or ground truth",
+      "agent reasoning or trajectories",
+      "private verifier inputs",
+      "authentication payload digest or credential metadata"
+    ]
+  },
+  "executionAuthorization": {
+    "protocolAloneAuthorizesLiveCalls": false,
+    "requiredBeforeAnyLiveCall": [
+      "candidate-lock-exclusive-writer-and-validator",
+      "contamination-and-freshness-attestation-validator",
+      "content-boundary-enforcing-staged-preparer",
+      "exact-harbor-0.18-profile-tree-and-native-projection-verifier",
+      "fresh-private-auth-sealer",
+      "parent-before-child-call-gate",
+      "sanitized-exclusive-publisher-with-immutable-receipts",
+      "model-free-adversarial-tests-for-all-preceding-components"
+    ],
+    "runtimeMaterializedAtProtocolSeal": false,
+    "harborOrModelCallsAtProtocolSeal": 0
+  }
+}

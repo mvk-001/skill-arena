@@ -198,6 +198,10 @@ search when the budget supports several children per generation. Add operator
 coevolution only after ordinary mutation operators plateau and the experiment
 can attribute multiple children to multiple operators.
 
+See the [Harbor evolution playbook](./harbor-evolution-playbook.md) for the
+minimum-call operating sequence, selection quadrant, and per-strategy Ishikawa
+and test-state diagrams.
+
 The reproducible protocol, frozen locks, detailed critique, and machine-readable
 summary are in
 [`evaluations/harbor-evolution-comparison/`](../evaluations/harbor-evolution-comparison/),

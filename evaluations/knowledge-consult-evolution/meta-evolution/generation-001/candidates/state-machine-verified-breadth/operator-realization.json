@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "generationId": "generation-001",
+  "candidateId": "state-machine-verified-breadth",
+  "operatorId": "bounded-verified-breadth-crossover",
+  "operator": "closed evidence compiler + adaptive breadth budget",
+  "origin": "crossover",
+  "candidateTreeSha256": "9b70c25475b2e5ba17b5846db770d50977c30bda70f7f6239ba5346130202faf",
+  "diffManifest": "candidate-manifest.json#/diffFiles",
+  "parentCandidateId": "00-baseline",
+  "parentCandidates": [
+    {
+      "candidateId": "00-baseline",
+      "treeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+      "bundleTreeSha256": "8e3412afc7690f2862073eb25ea5fa82736fb5b1c9f243585e6df704b850a8a7",
+      "publicPilotTreeSha256": "9ee796b5424d3e5090d130bb71f17fb14aeba274f5f3ebaafe15868f2f98df23",
+      "sourceCommit": "25170692c9e211b7bf719f07d3243cdaf409c88b"
+    }
+  ],
+  "donorCandidates": [
+    {
+      "candidateId": "04-harbor-legacy-port",
+      "publicTreeSha256": "747b0e357b6edbd4682f1d8a8ea524fb570893a6b527b205bdd6661af5115c92",
+      "contribution": "closed evidence compiler"
+    },
+    {
+      "candidateId": "05-context-budgeted",
+      "publicTreeSha256": "39234fac9f7c32b47e6730800d6ce8d26917f70b5c098aec034ef95998f06d2e",
+      "contribution": "adaptive breadth budget"
+    }
+  ],
+  "realization": {
+    "variant": "ordered-state-machine-with-two-source-reserve-and-utf8-pack-gate",
+    "properties": [
+      "advance load, contract, rank, plan, pack, and seal states in order",
+      "derive source and dimension gates from the exact request",
+      "retain up to two distinct-source reserves within the support cap",
+      "bound the exact emitted support pack by UTF-8 bytes",
+      "materialize and validate the locator object only after the sealed state"
+    ]
+  }
+}
