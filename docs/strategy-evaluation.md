@@ -5,6 +5,20 @@
 > historical reproduction. Use `harbor-evolve-skill` or the appropriate
 > Harbor-native population, trace, Pareto, or operator workflow for new work.
 
+## Current Harbor recommendation
+
+Use the [Harbor evolution playbook](./harbor-evolution-playbook.md) as the
+operational decision guide. In the committed Harbor comparison, trace
+distillation was the strongest evidence-backed generator and reflective Pareto
+search was the strongest robustness companion; both tied for the best holdout
+result. Population search remains the simplest choice for a trustworthy scalar
+objective and real candidate breadth. Operator coevolution is justified only
+after repeated attributable generations. Use `harbor-evolve-skill` when GEPA
+should automate complete `SKILL.md` proposals with train/validation separation.
+
+The detailed Harbor measurements and limitations are under
+[Harbor live comparison conclusions](#harbor-live-comparison-conclusions).
+
 This evaluation compares four improvement workflows and leaves the full inputs,
 scripts, replay results, and live compare config under
 [`evaluations/skill-evolution-strategies/`](../evaluations/skill-evolution-strategies/).

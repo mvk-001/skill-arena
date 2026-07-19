@@ -5,6 +5,14 @@
 > retained as historical research context. Their maintained replacements are
 > the corresponding Harbor-native skills.
 
+| Strategy | Maintained Harbor implementation |
+| --- | --- |
+| Scalar population search | [`harbor-population-search`](../skills/harbor-population-search/SKILL.md) |
+| Trace distillation | [`harbor-trace-distillation`](../skills/harbor-trace-distillation/SKILL.md) |
+| Reflective Pareto search | [`harbor-reflective-pareto-search`](../skills/harbor-reflective-pareto-search/SKILL.md) |
+| Mutation-operator coevolution | [`harbor-operator-coevolution`](../skills/harbor-operator-coevolution/SKILL.md) |
+| Integrated GEPA text evolution | [`harbor-evolve-skill`](../skills/harbor-evolve-skill/SKILL.md) |
+
 This document records the provenance of Skill Arena's skill-improvement
 workflows. It distinguishes direct inspiration from related published work and
 states where the repository deliberately implements a narrower or different

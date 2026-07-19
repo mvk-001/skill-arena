@@ -8,7 +8,7 @@ Skill Arena is a declarative, CLI-first benchmark harness for comparing coding
 agents under the same task, workspace, and execution constraints. It turns
 capability decisions into repeatable experiments and normalized evidence.
 
-**[Vision](#vision) · [Quick start](#quick-start) · [Core CLI](#core-cli) · [Skill toolkit](#skill-toolkit) · [Improvement workflows](#choose-an-improvement-workflow) · [Documentation](#documentation)**
+**[Vision](#vision) · [Harbor evolution](#harbor-evolution) · [Quick start](#quick-start) · [Core CLI](#core-cli) · [Documentation](#documentation)**
 
 ## Vision
 
@@ -23,6 +23,40 @@ cell, and preserve the evidence needed to make a defensible decision.
 The central promise is simple: **know what helped, by how much, and under which
 conditions.**
 
+## Harbor evolution
+
+The maintained skill-improvement surface is Harbor-native. Harbor executes the
+tasks and preserves native jobs, locks, trials, rewards, verifier diagnostics,
+trajectories, costs, and skill digests. Each evolution skill consumes that
+evidence directly and keeps development selection separate from the final
+holdout promotion decision.
+
+Choose one primary strategy from the evidence you already have. Do not run all
+of them and select the luckiest result.
+
+![Harbor evolution strategy selector](./docs/assets/harbor-evolution/harbor-evolution-selector.static.svg)
+
+| Skill | Best when | Strategy | Avoid when |
+| --- | --- | --- | --- |
+| [`harbor-population-search`](./skills/harbor-population-search/SKILL.md) | One trusted scalar objective can score the baseline and several genuine alternatives. | Rank hard-gated Harbor fitness, keep the top two, then create focused mutation or crossover children. | There is only one child, case-level regressions matter, or the mean hides conflicting strengths. |
+| [`harbor-trace-distillation`](./skills/harbor-trace-distillation/SKILL.md) | Diverse completed success and failure traces contain recurring, causally supported lessons. | Cite bounded evidence, require support from at least two trials and two task checksums, resolve conflicts, and consolidate patches. | Evidence is sparse, correlated, external-only, or does not justify a safe edit. |
+| [`harbor-reflective-pareto-search`](./skills/harbor-reflective-pareto-search/SKILL.md) | Cases conflict and each weakness has verified local feedback. | Build hard-gated case vectors, preserve non-dominated candidates, reflect on weak cases, and create lineage-bound children. | Only an aggregate score exists or full case-vector reevaluation is unaffordable. |
+| [`harbor-operator-coevolution`](./skills/harbor-operator-coevolution/SKILL.md) | Several generations provide unambiguous parent-child-operator lineage and multiple established operators. | Credit mutation instructions by parent-to-child improvement, then breed the operators that repeatedly produce qualified children. | This is a first generation, operator attribution is ambiguous, or independent trials are insufficient. |
+| [`harbor-evolve-skill`](./skills/harbor-evolve-skill/SKILL.md) | One integrated optimizer should rewrite complete `SKILL.md` text from training feedback and select on validation. | GEPA reflects on bounded Harbor evidence, preserves Pareto-useful text candidates, and uses validation before untouched holdout. | Scripts, references, or assets must change, or deterministic patch-level control is required. |
+
+Use [`harbor-run-results`](./skills/harbor-run-results/SKILL.md) to execute,
+inspect, compare, and report native jobs. Add
+[`harbor-resume-external-failures`](./skills/harbor-resume-external-failures/SKILL.md)
+only for independently verified external failures; it is a recovery layer, not
+an optimizer. The [Harbor evolution playbook](./docs/harbor-evolution-playbook.md)
+contains the full decision rules, strategy diagrams, compositions, commands,
+and promotion gates.
+
+The public Skill Arena CLI remains supported for declarative cross-agent
+comparisons. Its former `skill-arena-*` evolution skills and the
+`harbor-runner` reporting bridge are deprecated and retained only for legacy
+reproduction and migration.
+
 ## What you can achieve
 
 | Outcome | What Skill Arena gives you |
@@ -32,7 +66,7 @@ conditions.**
 | Compare agent runtimes | Run the same benchmark across Codex, Copilot CLI, Pi, OpenCode, Claude Code, and Antigravity CLI. |
 | Measure reliability and efficiency | Repeat each cell and inspect pass rate, token usage, latency, errors, and artifacts. |
 | Protect benchmark integrity | Materialize fresh workspaces and expose only declared capabilities and minimum authentication state. |
-| Improve skills systematically | Search scored variants, distill traces, reflect across Pareto cases, or coevolve mutation operators. |
+| Improve skills systematically | Use native Harbor evidence for population search, trace distillation, reflective Pareto search, operator coevolution, or GEPA evolution. |
 
 ## How it works
 
@@ -120,55 +154,6 @@ judges, profile reuse, and result inspection.
 
 Use `skill-arena help <command>` or the [CLI reference](./docs/cli-reference.md)
 for every option.
-
-## Skill toolkit
-
-The repository's maintained skill surface uses Harbor-native evaluation,
-reporting, and evolution workflows.
-
-Atomic skills keep their references, scripts, and other relative resources
-inside one independently copyable directory. They may declare shared platform
-dependencies such as another executable. A multi-skill or mixed-capability
-profile measures that composition, not the individual causal effect of one
-member.
-
-| Skill | Use it when |
-| --- | --- |
-| [`harbor-run-results`](./skills/harbor-run-results/SKILL.md) | You need to run or inspect Harbor jobs and publish a native final JSON and Markdown report without Skill Arena. |
-| [`harbor-resume-external-failures`](./skills/harbor-resume-external-failures/SKILL.md) | You need to continue only independently attested external Harbor failures without rerunning semantic outcomes or selecting the best retry. |
-| [`harbor-evolve-skill`](./skills/harbor-evolve-skill/SKILL.md) | You need Harbor trials and GEPA reflection to evolve SKILL.md and gate it on an untouched holdout. |
-| [`harbor-population-search`](./skills/harbor-population-search/SKILL.md) | You need broad candidate search ranked from native Harbor rewards and errors. |
-| [`harbor-trace-distillation`](./skills/harbor-trace-distillation/SKILL.md) | You need to consolidate recurring lessons from native Harbor trial traces. |
-| [`harbor-reflective-pareto-search`](./skills/harbor-reflective-pareto-search/SKILL.md) | You need per-case Harbor feedback and a non-dominated candidate archive. |
-| [`harbor-operator-coevolution`](./skills/harbor-operator-coevolution/SKILL.md) | You need Harbor-derived parent-to-child credit to evolve mutation operators. |
-
-The `skill-arena-*` workflow skills and the `harbor-runner` Skill Arena report
-bridge are deprecated. They remain in the repository only for legacy
-reproduction and migration; use the Harbor-native skills above for new work.
-
-### Choose an improvement workflow
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/mvk-001/skill-arena/main/docs/assets/improvement-workflows.gif" width="1200" alt="Skill Arena selects among four evidence-driven skill-improvement workflows on top of a trusted benchmark.">
-</p>
-
-| Workflow | Best input | Selection mechanism | Best fit |
-| --- | --- | --- | --- |
-| Population search | Repeatable scalar fitness | Score all candidates and keep the top two | Stable objective, affordable breadth |
-| Trace distillation | Labeled success/failure traces | Consolidate recurrent, conflict-free patches | Existing evidence pool, recurring lessons |
-| Reflective Pareto search | Per-case scores plus diagnoses | Preserve non-dominated case specialists and robust merges | Heterogeneous tasks and rich feedback |
-| Operator coevolution | Multi-generation operator credit | Evolve mutation instructions with skill candidates | Fixed operators have plateaued |
-
-All four keep the benchmark fixed and use a holdout promotion gate. See
-[Research foundations](./docs/research-foundations.md) for provenance and
-[strategy evaluation](./docs/strategy-evaluation.md) for the reproducible
-corpus, replay results, live benchmark, and decision guide.
-
-The maintained workflows execute or inspect standard Harbor jobs, derive
-selection evidence from native job and trial artifacts, and never invoke Skill
-Arena configuration, runtime modules, or normalized reports. The former Skill
-Arena variants are deprecated and retained only for legacy reproduction and
-migration.
 
 ## Supported agent runtimes
 

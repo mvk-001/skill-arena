@@ -1,17 +1,39 @@
 # Harbor Evolution Playbook
 
-This guide selects and composes the Harbor-native skills that improve another
-skill. Its optimization goal is not merely the highest observed reward. It is
-the strongest reproducible candidate obtained with the fewest unnecessary
-Harbor and model calls, without giving semantic failures extra attempts.
+This is the primary guide for the maintained Harbor-native skill-evolution
+surface. It explains when each evolver is appropriate, the strategy each one
+implements, how to compose them without leaking holdout evidence, and how to
+obtain the strongest reproducible candidate with the fewest unnecessary Harbor
+and model calls.
 
 Use Mermaid 11.14.0 or newer to render this guide. Although the current
 [Ishikawa syntax page](https://mermaid.js.org/syntax/ishikawa.html) labels the
 diagram as 11.12.3+, `ishikawa-beta` was introduced in
 [Mermaid 11.13.0](https://github.com/mermaid-js/mermaid/releases/tag/mermaid%4011.13.0),
 and 11.14.0 fixed hierarchy preservation. It is still a beta grammar, so
-validate these blocks again when upgrading Mermaid. The state and quadrant
-diagrams use the stable `stateDiagram-v2` and `quadrantChart` grammars.
+validate these blocks again when upgrading Mermaid. The lifecycle diagrams use
+the stable `stateDiagram-v2` grammar.
+
+## Choose one primary evolution strategy
+
+Choose from the evidence that can justify the next edit, not from whichever
+strategy produces the highest score after trying all of them.
+
+![Harbor evolution strategy selector](./assets/harbor-evolution/harbor-evolution-selector.static.svg)
+
+| Skill | Best when | Core strategy | Do not start here when |
+| --- | --- | --- | --- |
+| [`harbor-population-search`](../skills/harbor-population-search/SKILL.md) | One stable scalar objective can evaluate the baseline and several genuine alternatives. | Hard-gated scalar ranking, top-two survival, then focused mutation or crossover. | There is only one child, important cases conflict, or an average can hide regressions. |
+| [`harbor-trace-distillation`](../skills/harbor-trace-distillation/SKILL.md) | Diverse completed traces contain recurring, independently supported lessons. | Evidence-cited diagnoses, minimum support across trials and task checksums, conflict resolution, and patch consolidation. | Evidence is thin, correlated, external-only, or cannot establish a safe causal edit. |
+| [`harbor-reflective-pareto-search`](../skills/harbor-reflective-pareto-search/SKILL.md) | Case outcomes conflict and weak cases have verified local feedback. | Hard-gated case vectors, a non-dominated archive, reflection on weak cases, and lineage-bound children. | Only an aggregate reward exists or full case-vector reevaluation is unaffordable. |
+| [`harbor-operator-coevolution`](../skills/harbor-operator-coevolution/SKILL.md) | Repeated generations provide unambiguous parent-child-operator lineage and several established operators. | Parent-to-child operator credit, establishment gates, and breeding of mutation instructions. | This is a first generation, fewer than two operators are established, or attribution is noisy. |
+| [`harbor-evolve-skill`](../skills/harbor-evolve-skill/SKILL.md) | One integrated optimizer should author complete `SKILL.md` revisions from train feedback and select on validation. | GEPA reflective Pareto optimization over text candidates, followed by independent holdout. | Scripts, references, or assets must change, or deterministic patch-level control is required. |
+
+Every row requires a frozen baseline and execution profile, development-only
+selection evidence, and an untouched baseline-versus-candidate holdout. If no
+row's evidence contract is satisfied, use `harbor-run-results` to inspect the
+jobs and improve the benchmark, diagnostics, or candidate breadth before
+evolving anything.
 
 ## Separate the three responsibilities
 
@@ -68,49 +90,6 @@ evidence-producing operation, not an invisible retry inside the benchmark.
 | Selective external recovery | Only eligible unavailable cells | Restore comparability without rerunning valid or semantic outcomes. |
 | Holdout | Baseline and one selected candidate only | Make the release decision after selection is frozen. |
 
-## Select by evidence granularity and experiment maturity
-
-The horizontal axis asks what can justify a change: only an aggregate reward,
-or verified case-local traces and diagnoses. The vertical axis asks how much
-history exists: a first generation, or repeated generations with trustworthy
-parent, child, and operator lineage.
-
-```mermaid
-quadrantChart
-    title Harbor evolution strategy selector
-    x-axis Scalar reward --> Case-level evidence
-    y-axis One generation --> Repeated lineage
-    quadrant-1 Distill or coevolve
-    quadrant-2 Enrich evidence first
-    quadrant-3 Population search
-    quadrant-4 Reflect or run GEPA
-    Population search: [0.18, 0.20]
-    GEPA evolve skill: [0.73, 0.38]
-    Reflective Pareto: [0.90, 0.46]
-    Trace distillation: [0.88, 0.76]
-    Operator coevolution: [0.62, 0.91]
-```
-
-The coordinates are routing heuristics, not measured performance scores.
-Budget, canonical provenance, hard gates, and an untouched holdout are entry
-conditions for every quadrant rather than selection axes.
-
-| Evidence situation | Start with | Escalate when | Avoid when |
-| --- | --- | --- | --- |
-| One stable scalar objective and several affordable candidates | Population search | Important cases conflict or the mean hides regressions | There is only one child; there is no real population to compare. |
-| Diverse completed traces contain recurrent, independently supported lessons | Trace distillation | Several valid patches protect different case families | Evidence is sparse, correlated, or unsupported by bounded artifacts. |
-| Failures differ by case and have verified local diagnoses | Reflective Pareto search | Repeated editing mechanisms plateau | Only an aggregate score exists or full case-vector reevaluation is unaffordable. |
-| Multiple generations have unambiguous parent-to-child operator lineage | Operator coevolution | Operator credit is stable across generations | This is a one-shot edit or fewer than two operators are established. |
-| An integrated optimizer should propose SKILL.md text from train feedback and select on validation | GEPA through `harbor-evolve-skill` | A deterministic, inspectable archive or patch-level control becomes necessary | Scripts, references, or assets must change; this path evolves SKILL.md only. |
-
-The current Harbor-native comparison supports a practical default: use trace
-distillation as the evidence-backed generator and reflective Pareto search as
-the robustness selector. They tied for the best holdout result in that study,
-while the one-child population and one-operator coevolution budgets did not
-improve the aggregate holdout. See
-[Strategy evaluation](./strategy-evaluation.md#harbor-live-comparison-conclusions)
-for the measurements and limitations.
-
 ## Recommended compositions
 
 - **Fast scalar path:** population search with the unchanged baseline plus
@@ -133,12 +112,34 @@ earlier method. When composing methods, all candidate generation and selection
 must remain inside one development boundary; the release holdout is opened
 only after the final candidate digest is frozen.
 
+## GEPA versus reflective Pareto search
+
+Both preserve complementary case strengths, but they own different parts of
+the editing loop.
+
+| Choose `harbor-evolve-skill` | Choose `harbor-reflective-pareto-search` |
+| --- | --- |
+| GEPA should author complete `SKILL.md` text proposals automatically. | An editing agent should author explicit, evidence-cited candidate changes. |
+| Training feedback drives reflection and validation chooses among candidates. | Identical development case vectors construct an inspectable non-dominated archive. |
+| Metric-call and proposal budgets are the main search controls. | Generation, parent lineage, archive membership, and case-level weaknesses are the main controls. |
+| Only `SKILL.md` should change; bundled scripts, references, and assets remain fixed. | Candidate bundles or merge hypotheses need explicit review and lineage outside GEPA's text-only contract. |
+| The optimizer's proposal loop is preferred over manual patch orchestration. | Deterministic archive artifacts and deliberate per-case edits are more important than integrated automation. |
+
 ## Population search
 
 Use population search for a trusted scalar objective when the budget supports
 the baseline plus several genuine alternatives. It is the cheapest mechanism
 to understand and parallelize, but one child is a comparison, not a useful
 population.
+
+| Decision | Population-search rule |
+| --- | --- |
+| Optimizes | Absolute hard-gated scalar fitness across a real candidate population. |
+| Selects | The highest qualified candidate; preserves the top two evaluable survivors for another generation. |
+| Learns | Which focused mutation or crossover hypotheses improve the frozen objective. |
+| Stops | On a promoted holdout winner, a no-op winner, no qualified candidate, budget exhaustion, or plateau. |
+
+![Harbor population-search strategy](./assets/harbor-evolution/harbor-population-search.static.svg)
 
 Efficient steps:
 
@@ -217,6 +218,15 @@ diverse pattern of success and failure. It saves calls because candidate
 construction can happen from the existing discovery pool; unsupported edits
 are rejected before holdout.
 
+| Decision | Trace-distillation rule |
+| --- | --- |
+| Optimizes | Patch support and transferability, not the reward of one memorable trial. |
+| Selects | Only non-conflicting patches supported by at least two unique trials and two unique task checksums. |
+| Learns | Recurrent mechanisms from bounded trajectories, outputs, logs, and verifier evidence. |
+| Stops | With an unchanged candidate when causal support is insufficient, or after one frozen candidate reaches holdout. |
+
+![Harbor trace-distillation strategy](./assets/harbor-evolution/harbor-trace-distillation.static.svg)
+
 Efficient steps:
 
 1. Freeze discovery and holdout as disjoint task-name and checksum sets.
@@ -294,6 +304,15 @@ hide complementary strengths. Its extra full-case reevaluation cost is
 justified only when each weak case has bounded, verified evidence that can
 guide a safe edit.
 
+| Decision | Reflective-Pareto rule |
+| --- | --- |
+| Optimizes | A vector of hard-gated case outcomes instead of one compensating mean. |
+| Selects | Non-dominated candidates; ties favor fewer errors and the smaller bundle. |
+| Learns | Case-local edits from verified weak-case evidence while preserving passing behavior. |
+| Stops | When one robust archive member qualifies, the archive plateaus, or full-case reevaluation is no longer affordable. |
+
+![Harbor reflective-Pareto strategy](./assets/harbor-evolution/harbor-reflective-pareto-search.static.svg)
+
 Efficient steps:
 
 1. Evaluate each candidate on the identical development case set and build its
@@ -370,6 +389,15 @@ Use operator coevolution only after ordinary candidate mutations have been
 observed across repeated generations. It learns which mutation instructions
 produce improvements relative to their own evaluated parents; it is not a
 shortcut for a first generation.
+
+| Decision | Operator-coevolution rule |
+| --- | --- |
+| Optimizes | Candidate fitness and the mutation operators' parent-relative improvement credit. |
+| Selects | Qualified candidate survivors plus operators established by enough independent, attributable trials. |
+| Learns | Which mutation instructions repeatedly create non-regressing children from their own parents. |
+| Stops | When a candidate promotes, operator credit plateaus, lineage is insufficient, or the next generation cannot be sealed. |
+
+![Harbor operator-coevolution strategy](./assets/harbor-evolution/harbor-operator-coevolution.static.svg)
 
 Efficient steps:
 
@@ -450,6 +478,15 @@ Use `harbor-evolve-skill` when one integrated optimizer should generate and
 select complete SKILL.md revisions. GEPA receives bounded Harbor development
 feedback, proposes text, preserves Pareto-useful candidates, and uses
 validation for optimizer-visible selection. Holdout remains independent.
+
+| Decision | Integrated-GEPA rule |
+| --- | --- |
+| Optimizes | Complete `SKILL.md` text with GEPA over training feedback and validation cases. |
+| Selects | A validation winner from Pareto-useful candidates; validation is not the release claim. |
+| Learns | Reflective text revisions from rewards, bounded diagnostics, errors, outputs, and trajectories. |
+| Stops | At the declared metric-call or proposal budget, convergence, an unsafe/no-op candidate, or the final holdout decision. |
+
+![Harbor GEPA evolution strategy](./assets/harbor-evolution/harbor-gepa-evolution.static.svg)
 
 Efficient steps:
 
