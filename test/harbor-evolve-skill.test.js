@@ -12,14 +12,14 @@ const script = path.resolve(
   "evolve_skill_with_harbor.py",
 );
 const sourceTask = path.resolve(
-  "evaluations",
-  "harbor-report-parity-poc",
+  "test",
+  "fixtures",
   "dataset",
   "marker-write",
 );
 const baselineSkill = path.resolve(
-  "evaluations",
-  "harbor-report-parity-poc",
+  "test",
+  "fixtures",
   "skills",
   "harbor-marker-guide",
 );

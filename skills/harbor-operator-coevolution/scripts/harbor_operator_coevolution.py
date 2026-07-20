@@ -22,6 +22,7 @@ from collections import Counter, defaultdict
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Iterable
+from uuid import UUID
 
 import yaml
 from harbor import Job
@@ -368,6 +369,26 @@ def normalize_job_reference(
     return {"jobConfig": job_config, "jobDirectory": job_directory}
 
 
+def opaque_job_reference_projection(
+    raw: dict[str, Any], base: Path, location: str
+) -> dict[str, str | None]:
+    """Canonically bind declared paths without resolving or reading their targets."""
+
+    def lexical_path(value: Any, field: str) -> str | None:
+        if value is None:
+            return None
+        path = Path(require_string(value, field)).expanduser()
+        declared = path if path.is_absolute() else base / path
+        return os.path.normcase(os.path.abspath(os.path.normpath(str(declared))))
+
+    return {
+        "jobConfig": lexical_path(raw.get("jobConfig"), f"{location}.jobConfig"),
+        "jobDirectory": lexical_path(
+            raw.get("jobDirectory"), f"{location}.jobDirectory"
+        ),
+    }
+
+
 def normalize_config(config_path: Path, output_override: Path | None) -> dict[str, Any]:
     raw = read_document(config_path)
     if raw.get("schemaVersion") != 1:
@@ -585,6 +606,7 @@ def normalize_config(config_path: Path, output_override: Path | None) -> dict[st
 
     holdout_raw = require_mapping(raw.get("holdout"), "holdout")
     holdout_entries = {}
+    holdout_declaration_entries = {}
     for side in ("baseline", "candidate"):
         item = require_mapping(holdout_raw.get(side), f"holdout.{side}")
         candidate_id = require_string(
@@ -601,12 +623,33 @@ def normalize_config(config_path: Path, output_override: Path | None) -> dict[st
                 resolve_references=False,
             ),
         }
+        holdout_declaration_entries[side] = {
+            "candidateId": candidate_id,
+            **opaque_job_reference_projection(item, base, f"holdout.{side}"),
+        }
     if holdout_entries["baseline"]["candidateId"] != baseline_id:
         raise ValueError("holdout.baseline must use evolution.baselineCandidateId.")
 
     minimum_mean_gain = float(holdout_raw.get("minimumMeanGain", 0))
     if not math.isfinite(minimum_mean_gain):
         raise ValueError("holdout.minimumMeanGain must be finite.")
+    allow_task_regressions = bool(holdout_raw.get("allowTaskRegressions", False))
+    holdout_require_no_errors = bool(holdout_raw.get("requireNoErrors", True))
+    holdout_declaration = {
+        "schemaVersion": 2,
+        "baseline": holdout_declaration_entries["baseline"],
+        "candidateSlot": {
+            "jobConfig": holdout_declaration_entries["candidate"]["jobConfig"],
+            "jobDirectory": holdout_declaration_entries["candidate"][
+                "jobDirectory"
+            ],
+        },
+        "promotionPolicy": {
+            "minimumMeanGain": minimum_mean_gain,
+            "allowTaskRegressions": allow_task_regressions,
+            "requireNoErrors": holdout_require_no_errors,
+        },
+    }
     output = (
         output_override.resolve()
         if output_override is not None
@@ -671,11 +714,10 @@ def normalize_config(config_path: Path, output_override: Path | None) -> dict[st
         "holdout": {
             **holdout_entries,
             "minimumMeanGain": minimum_mean_gain,
-            "allowTaskRegressions": bool(
-                holdout_raw.get("allowTaskRegressions", False)
-            ),
-            "requireNoErrors": bool(holdout_raw.get("requireNoErrors", True)),
+            "allowTaskRegressions": allow_task_regressions,
+            "requireNoErrors": holdout_require_no_errors,
         },
+        "holdoutDeclaration": holdout_declaration,
     }
 
 
@@ -1529,6 +1571,14 @@ def stable_digest(value: Any) -> str:
     return "sha256:" + hashlib.sha256(payload).hexdigest()
 
 
+def file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return "sha256:" + digest.hexdigest()
+
+
 def load_candidate_job(
     job_directory: Path,
     candidate: dict[str, Any],
@@ -1799,6 +1849,7 @@ def load_candidate_job(
                 "qualificationFailures": qualification_failures,
                 "error": error,
                 "resultPath": str(path.resolve()),
+                "resultDigest": file_digest(path),
                 "diagnostics": diagnostics,
             }
         )
@@ -1994,7 +2045,12 @@ def load_candidate_job(
         "exploratory": identity["exploratory"],
         "identityReason": identity["reason"],
         "jobDirectory": str(directory),
+        "jobId": str(job_result.id),
         "jobName": job_config.job_name,
+        "jobConfigDigest": file_digest(config_path),
+        "jobLockDigest": file_digest(lock_path),
+        "jobResultPath": str(result_path.resolve()),
+        "jobResultDigest": file_digest(result_path),
         "harborVersion": lock.harbor.version or version("harbor"),
         "evaluationProfileDigest": stable_digest(evaluation_profile),
         "completedTrials": len(records),
@@ -2056,6 +2112,14 @@ def validate_cross_phase_profile(
         )
 
 
+def holdout_declaration_profile_fields(config: dict[str, Any]) -> dict[str, Any]:
+    declaration = config["holdoutDeclaration"]
+    return {
+        "holdoutDeclaration": declaration,
+        "holdoutDeclarationDigest": stable_digest(declaration),
+    }
+
+
 def build_evolution_profile(
     config: dict[str, Any],
     development: list[dict[str, Any]],
@@ -2092,11 +2156,15 @@ def build_evolution_profile(
         "observedEvaluationProfiles": observed_profiles(development),
         "developmentLock": development[0]["_comparableLock"],
         "holdoutLock": holdout[0]["_comparableLock"],
+        **holdout_declaration_profile_fields(config),
     }
 
 
 def build_development_evolution_profile(
-    config: dict[str, Any], development: list[dict[str, Any]]
+    config: dict[str, Any],
+    development: list[dict[str, Any]],
+    *,
+    include_holdout_declaration: bool = False,
 ) -> dict[str, Any]:
     harbor_policy = {
         "rewardKey": config["harbor"]["rewardKey"],
@@ -2107,7 +2175,7 @@ def build_development_evolution_profile(
         harbor_policy["candidateAttributableDiagnosticPolicy"] = config["harbor"][
             "candidateAttributableDiagnosticPolicy"
         ]
-    return {
+    profile = {
         "schemaVersion": 1,
         "harborVersion": development[0]["harborVersion"],
         "harborPolicy": harbor_policy,
@@ -2131,6 +2199,9 @@ def build_development_evolution_profile(
         "holdoutLock": None,
         "holdoutOpened": False,
     }
+    if include_holdout_declaration or config["previousGenerationLog"] is not None:
+        profile.update(holdout_declaration_profile_fields(config))
+    return profile
 
 
 def development_profile_projection(profile: dict[str, Any]) -> dict[str, Any]:
@@ -2145,14 +2216,438 @@ def development_profile_projection(profile: dict[str, Any]) -> dict[str, Any]:
             "evaluationProfile",
             "observedEvaluationProfiles",
             "developmentLock",
+            "holdoutDeclaration",
+            "holdoutDeclarationDigest",
         )
     }
+
+
+def holdout_declaration_commitment(
+    profile: dict[str, Any], location: str, *, required: bool
+) -> dict[str, Any] | None:
+    has_declaration = "holdoutDeclaration" in profile
+    has_digest = "holdoutDeclarationDigest" in profile
+    if has_declaration != has_digest:
+        raise ValueError(
+            f"{location} must contain both holdoutDeclaration and "
+            "holdoutDeclarationDigest."
+        )
+    if not has_declaration:
+        if required:
+            raise ValueError(f"{location} has no sealed holdout declaration.")
+        return None
+    declaration = require_mapping(
+        profile.get("holdoutDeclaration"), f"{location}.holdoutDeclaration"
+    )
+    digest = require_string(
+        profile.get("holdoutDeclarationDigest"),
+        f"{location}.holdoutDeclarationDigest",
+    )
+    if digest != stable_digest(declaration):
+        raise ValueError(f"{location} holdout declaration digest is invalid.")
+    return declaration
+
+
+def validate_holdout_declaration_v2(
+    declaration: dict[str, Any], location: str
+) -> None:
+    if declaration.get("schemaVersion") != 2:
+        raise ValueError(
+            f"{location} must use holdout declaration schemaVersion 2; legacy "
+            "candidate-bound declarations cannot seed deferred release."
+        )
+    expected_keys = {
+        "schemaVersion",
+        "baseline",
+        "candidateSlot",
+        "promotionPolicy",
+    }
+    if set(declaration) != expected_keys:
+        raise ValueError(f"{location} has an invalid schemaVersion 2 shape.")
+    baseline = require_mapping(declaration.get("baseline"), f"{location}.baseline")
+    candidate_slot = require_mapping(
+        declaration.get("candidateSlot"), f"{location}.candidateSlot"
+    )
+    if set(baseline) != {"candidateId", "jobConfig", "jobDirectory"}:
+        raise ValueError(f"{location}.baseline has an invalid shape.")
+    require_string(baseline.get("candidateId"), f"{location}.baseline.candidateId")
+    if set(candidate_slot) != {"jobConfig", "jobDirectory"}:
+        raise ValueError(f"{location}.candidateSlot has an invalid shape.")
+    if "candidateId" in candidate_slot:
+        raise ValueError(
+            f"{location}.candidateSlot must not predict the release candidate ID."
+        )
+    for reference_name, reference in (
+        ("baseline", baseline),
+        ("candidateSlot", candidate_slot),
+    ):
+        references = [reference.get("jobConfig"), reference.get("jobDirectory")]
+        if all(value is None for value in references):
+            raise ValueError(f"{location}.{reference_name} has no job reference.")
+        for field, value in zip(("jobConfig", "jobDirectory"), references):
+            if value is not None:
+                require_string(value, f"{location}.{reference_name}.{field}")
+    promotion_policy = require_mapping(
+        declaration.get("promotionPolicy"), f"{location}.promotionPolicy"
+    )
+    if set(promotion_policy) != {
+        "minimumMeanGain",
+        "allowTaskRegressions",
+        "requireNoErrors",
+    }:
+        raise ValueError(f"{location}.promotionPolicy has an invalid shape.")
+
+
+def without_holdout_declaration_commitment(
+    profile: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in profile.items()
+        if key not in {"holdoutDeclaration", "holdoutDeclarationDigest"}
+    }
+
+
+def development_evidence_identity(
+    config: dict[str, Any], development: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Project immutable Harbor run identities without scoring payloads."""
+
+    candidate_by_id = {item["candidateId"]: item for item in config["candidates"]}
+    candidates = []
+    for evidence in sorted(development, key=lambda item: item["candidateId"]):
+        candidate = candidate_by_id[evidence["candidateId"]]
+        candidates.append(
+            {
+                "candidateId": evidence["candidateId"],
+                "parentCandidateId": candidate["parentCandidateId"],
+                "operatorId": candidate["operatorId"],
+                "evidenceClass": (
+                    "generated-child"
+                    if candidate["operatorId"] is not None
+                    else "reference-or-survivor"
+                ),
+                "skillDigest": evidence["skillDigest"],
+                "jobDirectory": evidence["jobDirectory"],
+                "jobId": evidence["jobId"],
+                "jobConfigDigest": evidence["jobConfigDigest"],
+                "jobLockDigest": evidence["jobLockDigest"],
+                "jobResultPath": evidence["jobResultPath"],
+                "jobResultDigest": evidence["jobResultDigest"],
+                "trials": [
+                    {
+                        "trialId": trial["trialId"],
+                        "trialName": trial["trialName"],
+                        "taskName": trial["taskName"],
+                        "taskChecksum": trial["taskChecksum"],
+                        "resultPath": trial["resultPath"],
+                        "resultDigest": trial["resultDigest"],
+                    }
+                    for trial in sorted(
+                        evidence["trials"],
+                        key=lambda item: (item["trialName"], item["trialId"]),
+                    )
+                ],
+            }
+        )
+    return {
+        "schemaVersion": 1,
+        "candidates": candidates,
+    }
+
+
+def require_sha256_digest(value: Any, location: str) -> str:
+    digest = require_string(value, location)
+    if re.fullmatch(r"sha256:[0-9a-f]{64}", digest) is None:
+        raise ValueError(f"{location} must be a canonical sha256 digest.")
+    return digest
+
+
+def require_uuid(value: Any, location: str) -> str:
+    identifier = require_string(value, location)
+    try:
+        UUID(identifier)
+    except ValueError as error:
+        raise ValueError(f"{location} must be a UUID.") from error
+    return identifier
+
+
+def validate_development_evidence_identity(
+    raw: Any, location: str
+) -> list[dict[str, Any]]:
+    identity = require_mapping(raw, location)
+    if identity.get("schemaVersion") != 1:
+        raise ValueError(f"{location}.schemaVersion must be 1.")
+    raw_candidates = require_list(identity.get("candidates"), f"{location}.candidates")
+    if not raw_candidates:
+        raise ValueError(f"{location}.candidates must not be empty.")
+    candidates: list[dict[str, Any]] = []
+    candidate_ids: set[str] = set()
+    globally_unique: dict[str, set[str]] = {
+        "jobDirectory": set(),
+        "jobId": set(),
+        "jobResultPath": set(),
+        "jobResultDigest": set(),
+        "trialId": set(),
+        "trialResultPath": set(),
+        "trialResultDigest": set(),
+    }
+
+    def unique(field: str, value: str, value_location: str) -> None:
+        normalized = (
+            os.path.normcase(os.path.abspath(value))
+            if field in {"jobDirectory", "jobResultPath", "trialResultPath"}
+            else value
+        )
+        if normalized in globally_unique[field]:
+            raise ValueError(
+                f"{location} reuses {field} identity at {value_location}."
+            )
+        globally_unique[field].add(normalized)
+
+    for index, raw_candidate in enumerate(raw_candidates):
+        candidate_location = f"{location}.candidates[{index}]"
+        candidate = require_mapping(raw_candidate, candidate_location)
+        candidate_id = require_string(
+            candidate.get("candidateId"), f"{candidate_location}.candidateId"
+        )
+        if candidate_id in candidate_ids:
+            raise ValueError(f"{location} contains duplicate candidate IDs.")
+        candidate_ids.add(candidate_id)
+        parent_candidate_id = candidate.get("parentCandidateId")
+        operator_id = candidate.get("operatorId")
+        if (parent_candidate_id is None) != (operator_id is None):
+            raise ValueError(
+                f"{candidate_location} must bind both parentCandidateId and "
+                "operatorId, or neither."
+            )
+        if parent_candidate_id is not None:
+            parent_candidate_id = require_string(
+                parent_candidate_id, f"{candidate_location}.parentCandidateId"
+            )
+            operator_id = require_string(
+                operator_id, f"{candidate_location}.operatorId"
+            )
+        expected_class = (
+            "generated-child"
+            if operator_id is not None
+            else "reference-or-survivor"
+        )
+        if candidate.get("evidenceClass") != expected_class:
+            raise ValueError(
+                f"{candidate_location}.evidenceClass disagrees with operator "
+                "attribution."
+            )
+        job_directory = require_string(
+            candidate.get("jobDirectory"), f"{candidate_location}.jobDirectory"
+        )
+        job_id = require_uuid(candidate.get("jobId"), f"{candidate_location}.jobId")
+        job_result_path = require_string(
+            candidate.get("jobResultPath"), f"{candidate_location}.jobResultPath"
+        )
+        job_result_digest = require_sha256_digest(
+            candidate.get("jobResultDigest"),
+            f"{candidate_location}.jobResultDigest",
+        )
+        unique("jobDirectory", job_directory, candidate_location)
+        unique("jobId", job_id, candidate_location)
+        unique("jobResultPath", job_result_path, candidate_location)
+        unique("jobResultDigest", job_result_digest, candidate_location)
+        trials = []
+        for trial_index, raw_trial in enumerate(
+            require_list(candidate.get("trials"), f"{candidate_location}.trials")
+        ):
+            trial_location = f"{candidate_location}.trials[{trial_index}]"
+            trial = require_mapping(raw_trial, trial_location)
+            trial_id = require_uuid(trial.get("trialId"), f"{trial_location}.trialId")
+            result_path = require_string(
+                trial.get("resultPath"), f"{trial_location}.resultPath"
+            )
+            result_digest = require_sha256_digest(
+                trial.get("resultDigest"), f"{trial_location}.resultDigest"
+            )
+            unique("trialId", trial_id, trial_location)
+            unique("trialResultPath", result_path, trial_location)
+            unique("trialResultDigest", result_digest, trial_location)
+            trials.append(
+                {
+                    "trialId": trial_id,
+                    "trialName": require_string(
+                        trial.get("trialName"), f"{trial_location}.trialName"
+                    ),
+                    "taskName": require_string(
+                        trial.get("taskName"), f"{trial_location}.taskName"
+                    ),
+                    "taskChecksum": require_string(
+                        trial.get("taskChecksum"),
+                        f"{trial_location}.taskChecksum",
+                    ),
+                    "resultPath": result_path,
+                    "resultDigest": result_digest,
+                }
+            )
+        if not trials:
+            raise ValueError(f"{candidate_location}.trials must not be empty.")
+        if trials != sorted(
+            trials, key=lambda item: (item["trialName"], item["trialId"])
+        ):
+            raise ValueError(f"{candidate_location}.trials must be canonically sorted.")
+        candidates.append(
+            {
+                "candidateId": candidate_id,
+                "parentCandidateId": parent_candidate_id,
+                "operatorId": operator_id,
+                "evidenceClass": expected_class,
+                "skillDigest": require_sha256_digest(
+                    candidate.get("skillDigest"),
+                    f"{candidate_location}.skillDigest",
+                ),
+                "jobDirectory": job_directory,
+                "jobId": job_id,
+                "jobConfigDigest": require_sha256_digest(
+                    candidate.get("jobConfigDigest"),
+                    f"{candidate_location}.jobConfigDigest",
+                ),
+                "jobLockDigest": require_sha256_digest(
+                    candidate.get("jobLockDigest"),
+                    f"{candidate_location}.jobLockDigest",
+                ),
+                "jobResultPath": job_result_path,
+                "jobResultDigest": job_result_digest,
+                "trials": trials,
+            }
+        )
+    if candidates != sorted(candidates, key=lambda item: item["candidateId"]):
+        raise ValueError(f"{location}.candidates must be canonically sorted.")
+    return candidates
+
+
+def evidence_freshness_identities(candidate: dict[str, Any]) -> dict[str, set[str]]:
+    return {
+        "jobDirectory": {
+            os.path.normcase(os.path.abspath(candidate["jobDirectory"]))
+        },
+        "jobId": {candidate["jobId"]},
+        "jobResultPath": {
+            os.path.normcase(os.path.abspath(candidate["jobResultPath"]))
+        },
+        "jobResultDigest": {candidate["jobResultDigest"]},
+        "trialId": {trial["trialId"] for trial in candidate["trials"]},
+        "trialResultPath": {
+            os.path.normcase(os.path.abspath(trial["resultPath"]))
+            for trial in candidate["trials"]
+        },
+        "trialResultDigest": {
+            trial["resultDigest"] for trial in candidate["trials"]
+        },
+    }
+
+
+def validate_inter_generation_evidence_freshness(
+    previous_candidates: list[dict[str, Any]],
+    current_candidates: list[dict[str, Any]],
+    previous_selected_candidate_id: str | None,
+) -> None:
+    previous_identities = [
+        (candidate, evidence_freshness_identities(candidate))
+        for candidate in previous_candidates
+    ]
+    for current in current_candidates:
+        current_identity = evidence_freshness_identities(current)
+        collisions = []
+        for previous, previous_identity in previous_identities:
+            fields = sorted(
+                field
+                for field, values in current_identity.items()
+                if values & previous_identity[field]
+            )
+            if fields:
+                collisions.append((previous, fields))
+        if not collisions:
+            continue
+        if current["operatorId"] is not None:
+            details = "; ".join(
+                f"{previous['candidateId']} ({', '.join(fields)})"
+                for previous, fields in collisions
+            )
+            raise ValueError(
+                f"Generated-child Harbor evidence for {current['candidateId']} is "
+                f"not fresh and disjoint from the predecessor: {details}."
+            )
+        for previous, fields in collisions:
+            reusable_reference = (
+                current["candidateId"] == previous["candidateId"]
+                and current["skillDigest"] == previous["skillDigest"]
+                and current_identity == evidence_freshness_identities(previous)
+                and (
+                    previous["operatorId"] is None
+                    or previous["candidateId"]
+                    == previous_selected_candidate_id
+                )
+            )
+            if not reusable_reference:
+                raise ValueError(
+                    f"Unattributed candidate {current['candidateId']} reuses "
+                    f"predecessor evidence from {previous['candidateId']} via "
+                    f"{', '.join(fields)} without being the same root reference "
+                    "or the exact selectedDevelopment winner with an identical "
+                    "evidence identity."
+                )
+
+
+def validate_holdout_candidate_evidence_identity(
+    raw: Any, location: str
+) -> dict[str, Any]:
+    identity = require_mapping(raw, location)
+    if set(identity) != {
+        "jobDirectory",
+        "jobId",
+        "jobResultPath",
+        "jobResultDigest",
+        "trials",
+    }:
+        raise ValueError(f"{location} has an invalid shape.")
+    require_string(identity.get("jobDirectory"), f"{location}.jobDirectory")
+    require_uuid(identity.get("jobId"), f"{location}.jobId")
+    require_string(identity.get("jobResultPath"), f"{location}.jobResultPath")
+    require_sha256_digest(
+        identity.get("jobResultDigest"), f"{location}.jobResultDigest"
+    )
+    trials = require_list(identity.get("trials"), f"{location}.trials")
+    if not trials:
+        raise ValueError(f"{location}.trials must not be empty.")
+    trial_ids: set[str] = set()
+    result_paths: set[str] = set()
+    result_digests: set[str] = set()
+    for index, raw_trial in enumerate(trials):
+        trial_location = f"{location}.trials[{index}]"
+        trial = require_mapping(raw_trial, trial_location)
+        if set(trial) != {"trialId", "resultPath", "resultDigest"}:
+            raise ValueError(f"{trial_location} has an invalid shape.")
+        trial_id = require_uuid(trial.get("trialId"), f"{trial_location}.trialId")
+        result_path = require_string(
+            trial.get("resultPath"), f"{trial_location}.resultPath"
+        )
+        result_digest = require_sha256_digest(
+            trial.get("resultDigest"), f"{trial_location}.resultDigest"
+        )
+        if (
+            trial_id in trial_ids
+            or os.path.normcase(os.path.abspath(result_path)) in result_paths
+            or result_digest in result_digests
+        ):
+            raise ValueError(f"{location} contains duplicate trial identities.")
+        trial_ids.add(trial_id)
+        result_paths.add(os.path.normcase(os.path.abspath(result_path)))
+        result_digests.add(result_digest)
+    return identity
 
 
 def validate_previous_generation_profile(
     config: dict[str, Any],
     profile: dict[str, Any],
     *,
+    development_evidence: list[dict[str, Any]],
     development_only: bool = False,
 ) -> None:
     path = config["previousGenerationLog"]
@@ -2167,11 +2662,49 @@ def validate_previous_generation_profile(
         "harbor-operator-coevolution"
     ):
         raise ValueError("Previous generation log has the wrong schema or source.")
-    if previous.get("chainEligible", True) is not True:
+    previous_phase = previous.get("phase")
+    raw_previous_profile = previous.get("evolutionProfile")
+    legacy_full_log = (
+        "chainEligible" not in previous
+        and "requestedPhase" not in previous
+        and previous_phase is None
+        and isinstance(raw_previous_profile, dict)
+        and "holdoutDeclaration" not in raw_previous_profile
+        and "holdoutDeclarationDigest" not in raw_previous_profile
+    )
+    chain_eligible = (
+        previous.get("chainEligible")
+        if "chainEligible" in previous
+        else legacy_full_log
+    )
+    if chain_eligible is not True:
         raise ValueError(
-            "Previous generation log is diagnostic-only and cannot seed a new "
+            "Previous generation log is not chain-eligible and cannot seed a new "
             "coevolution generation."
         )
+    previous_is_development_chain = previous_phase == "development"
+    previous_is_explicit_full = previous_phase == "full"
+    explicit_predecessor = (
+        previous_is_development_chain or previous_is_explicit_full
+    )
+    if previous_is_development_chain and previous.get("requestedPhase") != (
+        "development-chain"
+    ):
+        raise ValueError(
+            "Only an explicit development-chain log can seed another generation "
+            "without opening holdout."
+        )
+    if previous_is_explicit_full and previous.get("requestedPhase") != "full":
+        raise ValueError(
+            "An explicit full predecessor must record requestedPhase: full."
+        )
+    if previous_phase is None and not legacy_full_log:
+        raise ValueError(
+            "Only genuinely historical full logs may omit explicit phase and "
+            "chain markers."
+        )
+    if previous_phase is not None and not explicit_predecessor:
+        raise ValueError("Previous generation log has an unsupported phase marker.")
     if previous.get("evolutionId") != config["id"]:
         raise ValueError("Previous generation log belongs to another evolutionId.")
     previous_generation = previous.get("generation")
@@ -2191,26 +2724,342 @@ def validate_previous_generation_profile(
     )
     if seal != stable_digest(generation_seal_payload(previous)):
         raise ValueError("Previous generation seal is invalid.")
+    selected_candidate_id: str | None = None
+    selected_skill_digest: str | None = None
+    previous_holdout: dict[str, Any] | None = None
+    previous_release_binding: dict[str, Any] | None = None
+    candidate_rows: list[dict[str, Any]] | None = None
+    candidate_survivors: list[Any] | None = None
+    if explicit_predecessor:
+        expected_holdout_opened = previous_is_explicit_full
+        if (
+            previous.get("diagnosticOnly") is not False
+            or previous.get("holdoutOpened") is not expected_holdout_opened
+            or previous.get("holdoutUsedForDevelopmentSelection") is not False
+        ):
+            raise ValueError(
+                "An explicit predecessor must be non-diagnostic, record the "
+                "expected holdout-open state, and prove holdout was not used "
+                "for development selection."
+            )
+        if previous_is_development_chain and previous.get("promotion") is not False:
+            raise ValueError(
+                "A development-chain predecessor must keep promotion false."
+            )
+        selected_development = require_mapping(
+            previous.get("selectedDevelopment"),
+            "previousGenerationLog.selectedDevelopment",
+        )
+        if selected_development.get("qualified") is not True:
+            raise ValueError(
+                "A development-chain predecessor requires a qualified selected "
+                "development candidate."
+            )
+        selected_candidate_id = require_string(
+            selected_development.get("candidateId"),
+            "previousGenerationLog.selectedDevelopment.candidateId",
+        )
+        selected_skill_digest = require_string(
+            selected_development.get("skillDigest"),
+            "previousGenerationLog.selectedDevelopment.skillDigest",
+        )
+        candidate_ranking = require_mapping(
+            previous.get("candidateRanking"),
+            "previousGenerationLog.candidateRanking",
+        )
+        candidate_survivors = require_list(
+            candidate_ranking.get("survivors"),
+            "previousGenerationLog.candidateRanking.survivors",
+        )
+        if not candidate_survivors or candidate_survivors[0] != selected_candidate_id:
+            raise ValueError(
+                "Explicit predecessor selectedDevelopment must match the first "
+                "candidate survivor."
+            )
+        candidate_rows = [
+            require_mapping(item, "previousGenerationLog candidate ranking row")
+            for item in require_list(
+                candidate_ranking.get("ranking"),
+                "previousGenerationLog.candidateRanking.ranking",
+            )
+        ]
+        selected_rows = [
+            row
+            for row in candidate_rows
+            if row.get("candidateId") == selected_candidate_id
+        ]
+        if (
+            len(selected_rows) != 1
+            or selected_rows[0].get("qualified") is not True
+            or selected_rows[0].get("skillDigest") != selected_skill_digest
+        ):
+            raise ValueError(
+                "Explicit predecessor selectedDevelopment differs from its "
+                "qualified candidate ranking row."
+            )
+        previous_holdout = require_mapping(
+            previous.get("holdoutPromotion"),
+            "previousGenerationLog.holdoutPromotion",
+        )
+    if previous_is_development_chain:
+        assert previous_holdout is not None
+        assert selected_candidate_id is not None
+        assert selected_skill_digest is not None
+        if (
+            previous_holdout.get("opened") is not False
+            or previous_holdout.get("holdoutOpened") is not False
+            or previous_holdout.get("promotion") is not False
+            or previous_holdout.get("promoted") is not False
+        ):
+            raise ValueError(
+                "A development-chain predecessor must contain an explicitly "
+                "unopened, non-promoting holdout projection."
+            )
+        if (
+            previous_holdout.get("selectedCandidateId") != selected_candidate_id
+            or previous_holdout.get("selectedCandidateSkillDigest")
+            != selected_skill_digest
+        ):
+            raise ValueError(
+                "Development-chain selected candidate identity differs from its "
+                "unopened holdout projection."
+            )
+        if "holdoutReleaseBinding" in previous:
+            raise ValueError(
+                "A development-chain predecessor must not bind a final holdout "
+                "release candidate."
+            )
+    if previous_is_explicit_full:
+        assert previous_holdout is not None
+        assert selected_candidate_id is not None
+        promoted = previous_holdout.get("promoted")
+        if not isinstance(promoted, bool):
+            raise ValueError(
+                "An explicit full predecessor must record a Boolean holdout "
+                "promotion decision."
+            )
+        if (
+            previous.get("promotion") is not promoted
+            or previous.get("decision") != previous_holdout.get("decision")
+            or previous_holdout.get("candidateId") != selected_candidate_id
+        ):
+            raise ValueError(
+                "Explicit full predecessor promotion and selected candidate "
+                "must agree with holdoutPromotion."
+            )
+        previous_release_binding = require_mapping(
+            previous.get("holdoutReleaseBinding"),
+            "previousGenerationLog.holdoutReleaseBinding",
+        )
+        expected_release_keys = {
+            "schemaVersion",
+            "candidateId",
+            "developmentSkillDigest",
+            "holdoutCandidateSkillDigest",
+            "holdoutDeclarationDigest",
+            "candidateSlotDigest",
+            "candidateEvidenceIdentity",
+            "candidateEvidenceIdentityDigest",
+        }
+        if (
+            set(previous_release_binding) != expected_release_keys
+            or previous_release_binding.get("schemaVersion") != 1
+            or previous_release_binding.get("candidateId")
+            != selected_candidate_id
+            or previous_release_binding.get("developmentSkillDigest")
+            != selected_skill_digest
+            or previous_release_binding.get("holdoutCandidateSkillDigest")
+            != selected_skill_digest
+            or previous_holdout.get("candidateSkillDigest")
+            != selected_skill_digest
+        ):
+            raise ValueError(
+                "Explicit full predecessor has an invalid final holdout release "
+                "candidate binding."
+            )
+        release_evidence = validate_holdout_candidate_evidence_identity(
+            previous_release_binding.get("candidateEvidenceIdentity"),
+            "previousGenerationLog.holdoutReleaseBinding.candidateEvidenceIdentity",
+        )
+        release_evidence_digest = require_sha256_digest(
+            previous_release_binding.get("candidateEvidenceIdentityDigest"),
+            "previousGenerationLog.holdoutReleaseBinding."
+            "candidateEvidenceIdentityDigest",
+        )
+        if (
+            release_evidence_digest != stable_digest(release_evidence)
+            or previous_holdout.get("candidateEvidenceIdentity")
+            != release_evidence
+            or previous_holdout.get("candidateEvidenceIdentityDigest")
+            != release_evidence_digest
+            or previous_holdout.get("candidateJobDirectory")
+            != release_evidence.get("jobDirectory")
+        ):
+            raise ValueError(
+                "Explicit full predecessor release binding differs from its "
+                "observed holdout result identity."
+            )
     previous_profile = require_mapping(
         previous.get("evolutionProfile"), "previousGenerationLog.evolutionProfile"
     )
+    if previous_is_development_chain and (
+        previous_profile.get("holdoutLock") is not None
+        or previous_profile.get("holdoutOpened") is not False
+    ):
+        raise ValueError(
+            "A development-chain predecessor profile must contain no observed "
+            "holdout lock."
+        )
+    if previous_is_explicit_full and previous_profile.get("holdoutLock") is None:
+        raise ValueError(
+            "An explicit full predecessor profile must contain an observed "
+            "holdout lock."
+        )
     previous_digest = require_string(
         previous.get("evolutionProfileDigest"),
         "previousGenerationLog.evolutionProfileDigest",
     )
     if previous_digest != stable_digest(previous_profile):
         raise ValueError("Previous generation evolution profile digest is invalid.")
-    profiles_match = (
-        development_profile_projection(previous_profile)
-        == development_profile_projection(profile)
-        if development_only
-        else previous_profile == profile
+    previous_holdout_declaration = holdout_declaration_commitment(
+        previous_profile,
+        "previousGenerationLog.evolutionProfile",
+        required=explicit_predecessor,
     )
+    current_holdout_declaration = holdout_declaration_commitment(
+        profile,
+        "current evolution profile",
+        required=previous_holdout_declaration is not None,
+    )
+    if explicit_predecessor:
+        assert previous_holdout_declaration is not None
+        assert current_holdout_declaration is not None
+        validate_holdout_declaration_v2(
+            previous_holdout_declaration,
+            "previousGenerationLog.evolutionProfile.holdoutDeclaration",
+        )
+        validate_holdout_declaration_v2(
+            current_holdout_declaration,
+            "current evolution profile holdoutDeclaration",
+        )
+        if previous_is_explicit_full:
+            assert previous_release_binding is not None
+            if (
+                previous_release_binding.get("holdoutDeclarationDigest")
+                != previous_profile.get("holdoutDeclarationDigest")
+                or previous_release_binding.get("candidateSlotDigest")
+                != stable_digest(
+                    require_mapping(
+                        previous_holdout_declaration.get("candidateSlot"),
+                        "previous holdout declaration candidateSlot",
+                    )
+                )
+            ):
+                raise ValueError(
+                    "Explicit full predecessor release binding differs from its "
+                    "sealed holdout declaration or candidate slot."
+                )
+    if (
+        previous_holdout_declaration is not None
+        and previous_holdout_declaration != current_holdout_declaration
+    ):
+        raise ValueError(
+            "Current holdout declaration drifted from the previous generation "
+            "before holdout was opened."
+        )
+    if development_only or previous_is_development_chain:
+        previous_comparison = development_profile_projection(previous_profile)
+        current_comparison = development_profile_projection(profile)
+    else:
+        previous_comparison = previous_profile
+        current_comparison = profile
+    if previous_holdout_declaration is None:
+        previous_comparison = without_holdout_declaration_commitment(
+            previous_comparison
+        )
+        current_comparison = without_holdout_declaration_commitment(
+            current_comparison
+        )
+    profiles_match = previous_comparison == current_comparison
     if not profiles_match:
         raise ValueError(
             "Current generation evaluation/promotion profile drifted from the "
             "previous generation."
         )
+    if candidate_rows is None or candidate_survivors is None:
+        candidate_ranking = require_mapping(
+            previous.get("candidateRanking"),
+            "previousGenerationLog.candidateRanking",
+        )
+        candidate_rows = [
+            require_mapping(item, "previousGenerationLog candidate ranking row")
+            for item in require_list(
+                candidate_ranking.get("ranking"),
+                "previousGenerationLog.candidateRanking.ranking",
+            )
+        ]
+        candidate_survivors = require_list(
+            candidate_ranking.get("survivors"),
+            "previousGenerationLog.candidateRanking.survivors",
+        )
+    previous_identity_raw = previous.get("developmentEvidenceIdentity")
+    previous_identity_digest_raw = previous.get(
+        "developmentEvidenceIdentityDigest"
+    )
+    if previous_identity_raw is None or previous_identity_digest_raw is None:
+        raise ValueError(
+            "Previous generation log does not seal Harbor job/trial evidence "
+            "identities, so generated-child freshness cannot be proven. "
+            "Historical logs remain readable but cannot seed a new generation."
+        )
+    previous_identity_digest = require_sha256_digest(
+        previous_identity_digest_raw,
+        "previousGenerationLog.developmentEvidenceIdentityDigest",
+    )
+    if previous_identity_digest != stable_digest(previous_identity_raw):
+        raise ValueError(
+            "Previous generation development evidence identity digest is invalid."
+        )
+    previous_identity = validate_development_evidence_identity(
+        previous_identity_raw,
+        "previousGenerationLog.developmentEvidenceIdentity",
+    )
+    ranking_by_id = {
+        require_string(row.get("candidateId"), "previous candidateId"): row
+        for row in candidate_rows
+    }
+    if len(ranking_by_id) != len(candidate_rows):
+        raise ValueError("Previous candidate ranking contains duplicate candidate IDs.")
+    identity_by_id = {row["candidateId"]: row for row in previous_identity}
+    if set(identity_by_id) != set(ranking_by_id):
+        raise ValueError(
+            "Previous development evidence identities do not cover exactly the "
+            "candidate ranking."
+        )
+    for candidate_id, identity_row in identity_by_id.items():
+        ranking_row = ranking_by_id[candidate_id]
+        for field in (
+            "parentCandidateId",
+            "operatorId",
+            "skillDigest",
+            "jobDirectory",
+        ):
+            if identity_row[field] != ranking_row.get(field):
+                raise ValueError(
+                    f"Previous development evidence identity for {candidate_id} "
+                    f"differs from candidate ranking field {field}."
+                )
+    current_identity_raw = development_evidence_identity(
+        config, development_evidence
+    )
+    current_identity = validate_development_evidence_identity(
+        current_identity_raw, "current developmentEvidenceIdentity"
+    )
+    validate_inter_generation_evidence_freshness(
+        previous_identity,
+        current_identity,
+        selected_candidate_id,
+    )
     previous_plan = require_mapping(
         previous.get("breedingPlan"), "previousGenerationLog.breedingPlan"
     )
@@ -2219,12 +3068,28 @@ def validate_previous_generation_profile(
     raw_planned = require_list(
         previous_plan.get("operators"), "previousGenerationLog.breedingPlan.operators"
     )
+    if explicit_predecessor:
+        operator_count = previous_plan.get("operatorCount")
+        if (
+            isinstance(operator_count, bool)
+            or not isinstance(operator_count, int)
+            or operator_count != len(raw_planned)
+            or operator_count == 0
+            or previous_plan.get("diagnosticOnly") is not False
+            or previous_plan.get("chainEligible") is not True
+        ):
+            raise ValueError(
+                "Explicit predecessor requires a non-diagnostic, chain-eligible "
+                "normal breeding plan whose operatorCount matches its operators."
+            )
     planned = {
         require_string(item.get("operatorId"), "planned operatorId"): item
         for item in (
             require_mapping(value, "planned operator") for value in raw_planned
         )
     }
+    if len(planned) != len(raw_planned):
+        raise ValueError("Previous breeding plan contains duplicate operator IDs.")
     current = {item["operatorId"]: item for item in config["operators"]}
     if set(planned) != set(current):
         raise ValueError(
@@ -2233,11 +3098,32 @@ def validate_previous_generation_profile(
     for operator_id in sorted(current):
         planned_operator = planned[operator_id]
         current_operator = current[operator_id]
+        planned_instruction = require_string(
+            planned_operator.get("instruction"),
+            f"previous breeding plan operator {operator_id}.instruction",
+        )
+        instruction_contract = require_mapping(
+            planned_operator.get("instructionContract"),
+            f"previous breeding plan operator {operator_id}.instructionContract",
+        )
+        if (
+            instruction_contract.get("mode") != "exact-text-v1"
+            or instruction_contract.get("instructionDigest")
+            != stable_digest({"instruction": planned_instruction})
+        ):
+            raise ValueError(
+                f"Operator {operator_id} has an invalid sealed instruction contract."
+            )
         if sorted(planned_operator.get("parentOperatorIds", [])) != current_operator[
             "parentOperatorIds"
         ] or planned_operator.get("origin") != current_operator["origin"]:
             raise ValueError(
                 f"Operator {operator_id} lineage differs from the previous breeding plan."
+            )
+        if current_operator["instruction"] != planned_instruction:
+            raise ValueError(
+                f"Operator {operator_id} instruction differs from the sealed "
+                "exact-text breeding-plan contract."
             )
 
 
@@ -2263,10 +3149,19 @@ def generation_seal_payload(log: dict[str, Any]) -> dict[str, Any]:
         "holdoutOpened",
         "promotion",
         "selectedDevelopment",
+        "holdoutReleaseBinding",
+        "developmentEvidenceIdentity",
+        "developmentEvidenceIdentityDigest",
         "repairPlan",
     ):
         if key in log:
             payload[key] = log[key]
+    # Historical full logs predate explicit phase markers and did not seal this
+    # field. Every newly phased log binds the negative-selection assertion.
+    if "phase" in log and "holdoutUsedForDevelopmentSelection" in log:
+        payload["holdoutUsedForDevelopmentSelection"] = log[
+            "holdoutUsedForDevelopmentSelection"
+        ]
     return payload
 
 
@@ -2856,9 +3751,18 @@ def build_breeding_plan(
                 ),
             }
         )
+    for operator in next_operators:
+        operator["instructionContract"] = {
+            "mode": "exact-text-v1",
+            "instructionDigest": stable_digest(
+                {"instruction": operator["instruction"]}
+            ),
+        }
     return {
         "schemaVersion": 1,
         "sourceGenerationId": config["generationId"],
+        "diagnosticOnly": False,
+        "chainEligible": True,
         "operatorCount": target,
         "operators": next_operators,
     }
@@ -2929,11 +3833,34 @@ def summarize_holdout(
         and identity_promotion_eligible
         and (not rules["requireNoErrors"] or candidate["errorCount"] == 0)
     )
+    candidate_evidence_identity = {
+        "jobDirectory": candidate["jobDirectory"],
+        "jobId": candidate["jobId"],
+        "jobResultPath": candidate["jobResultPath"],
+        "jobResultDigest": candidate["jobResultDigest"],
+        "trials": [
+            {
+                "trialId": trial["trialId"],
+                "resultPath": trial["resultPath"],
+                "resultDigest": trial["resultDigest"],
+            }
+            for trial in sorted(
+                candidate["trials"],
+                key=lambda item: (item["trialName"], item["trialId"]),
+            )
+        ],
+    }
     return {
         "schemaVersion": 1,
         "source": "harbor",
         "baselineCandidateId": baseline["candidateId"],
         "candidateId": candidate["candidateId"],
+        "baselineSkillDigest": baseline["skillDigest"],
+        "candidateSkillDigest": candidate["skillDigest"],
+        "candidateEvidenceIdentity": candidate_evidence_identity,
+        "candidateEvidenceIdentityDigest": stable_digest(
+            candidate_evidence_identity
+        ),
         "baselineJobDirectory": baseline["jobDirectory"],
         "candidateJobDirectory": candidate["jobDirectory"],
         "baselineMeanReward": baseline["rawFitness"],
@@ -3009,6 +3936,48 @@ def validate_holdout_isolation(
         )
 
 
+def selected_development_artifact(
+    selected_candidate: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if selected_candidate is None:
+        return None
+    return {
+        "candidateId": selected_candidate["candidateId"],
+        "skillDigest": selected_candidate["skillDigest"],
+        "qualified": selected_candidate["qualified"],
+        "identityMode": selected_candidate["identityMode"],
+        "promotionEligibleIdentity": selected_candidate[
+            "promotionEligibleIdentity"
+        ],
+        "jobDirectory": selected_candidate["jobDirectory"],
+    }
+
+
+def holdout_release_binding(
+    config: dict[str, Any],
+    selected_candidate: dict[str, Any],
+    holdout: dict[str, Any],
+) -> dict[str, Any]:
+    candidate_slot = require_mapping(
+        config["holdoutDeclaration"].get("candidateSlot"),
+        "holdoutDeclaration.candidateSlot",
+    )
+    return {
+        "schemaVersion": 1,
+        "candidateId": selected_candidate["candidateId"],
+        "developmentSkillDigest": selected_candidate["skillDigest"],
+        "holdoutCandidateSkillDigest": holdout["candidateSkillDigest"],
+        "holdoutDeclarationDigest": stable_digest(
+            config["holdoutDeclaration"]
+        ),
+        "candidateSlotDigest": stable_digest(candidate_slot),
+        "candidateEvidenceIdentity": holdout["candidateEvidenceIdentity"],
+        "candidateEvidenceIdentityDigest": holdout[
+            "candidateEvidenceIdentityDigest"
+        ],
+    }
+
+
 def unopened_holdout_artifact(
     *,
     reason: str,
@@ -3040,6 +4009,8 @@ def render_development_report(
     candidate_output: dict[str, Any],
     operator_output: dict[str, Any],
     repair_plan: dict[str, Any] | None,
+    *,
+    chain_eligible: bool,
 ) -> str:
     selected = (
         next(
@@ -3075,7 +4046,7 @@ def render_development_report(
         f"- Operator survivors: {', '.join(operator_output['survivors']) or 'none'}",
         "- Holdout opened: no",
         "- Promotion: false",
-        "- Chain eligible: false",
+        f"- Chain eligible: {str(chain_eligible).lower()}",
         *(
             [
                 "- Candidate-attributable diagnostic failures: "
@@ -3137,6 +4108,14 @@ def finalize_development_phase(
     repair_plan: dict[str, Any] | None,
 ) -> dict[str, Any]:
     diagnostic_only = repair_plan is not None
+    chain_eligible = requested_phase == "development-chain"
+    if chain_eligible and (
+        diagnostic_only or operator_output["insufficientEstablishedOperators"]
+    ):
+        raise ValueError(
+            "Development-chain requires a qualified development winner and a "
+            "complete normal breeding plan."
+        )
     selected_candidate = (
         next(
             item
@@ -3146,6 +4125,11 @@ def finalize_development_phase(
         if candidate_output["survivors"]
         else None
     )
+    if chain_eligible and selected_candidate is None:
+        raise ValueError(
+            "Development-chain requires a selected development winner before "
+            "the predecessor is sealed."
+        )
     if diagnostic_only:
         breeding = {
             "schemaVersion": 1,
@@ -3181,11 +4165,19 @@ def finalize_development_phase(
         selected_candidate=selected_candidate,
         diagnostic_only=diagnostic_only,
     )
-    evolution_profile = build_development_evolution_profile(config, development)
+    evolution_profile = build_development_evolution_profile(
+        config,
+        development,
+        include_holdout_declaration=chain_eligible,
+    )
     validate_previous_generation_profile(
-        config, evolution_profile, development_only=True
+        config,
+        evolution_profile,
+        development_evidence=development,
+        development_only=True,
     )
     public_development = [public_evidence(item) for item in development]
+    evidence_identity = development_evidence_identity(config, development)
     exploratory = any(item["exploratory"] for item in development)
     evidence_output = {
         "schemaVersion": 1,
@@ -3219,20 +4211,7 @@ def finalize_development_phase(
         "holdout": [],
         "holdoutOpened": False,
     }
-    selected_development = (
-        {
-            "candidateId": selected_candidate["candidateId"],
-            "skillDigest": selected_candidate["skillDigest"],
-            "qualified": selected_candidate["qualified"],
-            "identityMode": selected_candidate["identityMode"],
-            "promotionEligibleIdentity": selected_candidate[
-                "promotionEligibleIdentity"
-            ],
-            "jobDirectory": selected_candidate["jobDirectory"],
-        }
-        if selected_candidate is not None
-        else None
-    )
+    selected_development = selected_development_artifact(selected_candidate)
     decision = (
         "repair-planned"
         if repair_plan is not None and repair_plan["planned"]
@@ -3253,10 +4232,12 @@ def finalize_development_phase(
         "requestedPhase": requested_phase,
         "decision": decision,
         "diagnosticOnly": diagnostic_only,
-        "chainEligible": False,
+        "chainEligible": chain_eligible,
         "holdoutOpened": False,
         "promotion": False,
         "selectedDevelopment": selected_development,
+        "developmentEvidenceIdentity": evidence_identity,
+        "developmentEvidenceIdentityDigest": stable_digest(evidence_identity),
         "candidateRanking": candidate_output,
         "operatorRanking": operator_output,
         "breedingPlan": breeding,
@@ -3280,7 +4261,11 @@ def finalize_development_phase(
     write_json(output / OUTPUT_FILES["log"], log)
     (output / OUTPUT_FILES["report"]).write_text(
         render_development_report(
-            config, candidate_output, operator_output, repair_plan
+            config,
+            candidate_output,
+            operator_output,
+            repair_plan,
+            chain_eligible=chain_eligible,
         ),
         encoding="utf-8",
     )
@@ -3290,7 +4275,7 @@ def finalize_development_phase(
         "requestedPhase": requested_phase,
         "decision": decision,
         "diagnosticOnly": diagnostic_only,
-        "chainEligible": False,
+        "chainEligible": chain_eligible,
         "holdoutOpened": False,
         "promotion": False,
         "exploratory": exploratory,
@@ -3467,6 +4452,11 @@ def run_analysis(
         allow_incomplete_operator_population=phase == "development",
     )
     if not candidate_output["survivors"]:
+        if phase == "development-chain":
+            raise ValueError(
+                "Development-chain requires a qualified development winner; "
+                "complementary repair cannot seed another generation."
+            )
         if not config["coevolution"]["complementaryRepair"]:
             raise ValueError("No development candidate passed all qualification gates.")
         repair_plan = build_complementary_repair_plan(
@@ -3481,7 +4471,7 @@ def run_analysis(
             requested_phase=phase,
             repair_plan=repair_plan,
         )
-    if phase == "development":
+    if phase in ("development", "development-chain"):
         return finalize_development_phase(
             config,
             development,
@@ -3500,6 +4490,19 @@ def run_analysis(
             f"candidate {selected_candidate_id}; holdout cannot choose the candidate."
         )
 
+    # Validate the predecessor, breeding lineage, and frozen development profile
+    # before resolving any holdout reference. A later full-profile validation
+    # additionally seals the newly observed holdout lock.
+    validate_previous_generation_profile(
+        config,
+        build_development_evolution_profile(
+            config,
+            development,
+            include_holdout_declaration=True,
+        ),
+        development_evidence=development,
+        development_only=True,
+    )
     resolve_deferred_holdout_references(config)
     holdout_paths = resolve_holdout_jobs(config, analyze_only)
     holdout_evidence = []
@@ -3519,7 +4522,9 @@ def run_analysis(
     evolution_profile = build_evolution_profile(
         config, development, holdout_evidence
     )
-    validate_previous_generation_profile(config, evolution_profile)
+    validate_previous_generation_profile(
+        config, evolution_profile, development_evidence=development
+    )
     holdout = summarize_holdout(
         config,
         holdout_evidence[0],
@@ -3563,6 +4568,18 @@ def run_analysis(
         "development": public_development,
         "holdout": public_holdout_evidence,
     }
+    selected_ranking_candidate = next(
+        item
+        for item in candidate_output["ranking"]
+        if item["candidateId"] == selected_candidate_id
+    )
+    selected_development = selected_development_artifact(
+        selected_ranking_candidate
+    )
+    release_binding = holdout_release_binding(
+        config, selected_ranking_candidate, holdout
+    )
+    evidence_identity = development_evidence_identity(config, development)
     log = {
         "schemaVersion": 1,
         "source": "harbor-operator-coevolution",
@@ -3570,6 +4587,17 @@ def run_analysis(
         "evolutionId": config["id"],
         "generation": config["generation"],
         "generationId": config["generationId"],
+        "phase": "full",
+        "requestedPhase": "full",
+        "decision": holdout["decision"],
+        "diagnosticOnly": False,
+        "chainEligible": True,
+        "holdoutOpened": True,
+        "promotion": holdout["promoted"],
+        "selectedDevelopment": selected_development,
+        "holdoutReleaseBinding": release_binding,
+        "developmentEvidenceIdentity": evidence_identity,
+        "developmentEvidenceIdentityDigest": stable_digest(evidence_identity),
         "candidateRanking": candidate_output,
         "operatorRanking": operator_output,
         "breedingPlan": breeding,
@@ -3633,9 +4661,12 @@ def parse_args() -> argparse.Namespace:
     mode.add_argument("--analyze-only", action="store_true")
     parser.add_argument(
         "--phase",
-        choices=("full", "development"),
+        choices=("full", "development", "development-chain"),
         default="full",
-        help="Run the full workflow or development jobs only (never opening holdout).",
+        help=(
+            "Run the full workflow, a terminal development receipt, or an explicit "
+            "chainable development predecessor; development modes never open holdout."
+        ),
     )
     return parser.parse_args()
 

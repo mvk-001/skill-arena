@@ -1,25 +1,16 @@
 node_modules/
 .tools/
-# Generated benchmark run artifacts and manual reuse validation runs.
-/results/
-# Native Harbor jobs can contain local agent sessions and machine metadata.
-/jobs/
-coverage/
-reports/
-# Temporary local experiments and scratch compare configs.
 .tmp/
+/jobs/
+/results/
+/reports/
+coverage/
 tmp/
-deliverables/
-# Browser screenshots generated during visual documentation checks.
-output/playwright/
-output/animated-svg-to-gif/
+output/
 .playwright-cli/
+.ruff_cache/
 __pycache__/
 *.py[cod]
-bin/
-!bin/
-!bin/skill-arena.js
-*.tgz
 *.log
 nul
 /.agents/

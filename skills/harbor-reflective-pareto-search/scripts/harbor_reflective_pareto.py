@@ -25,7 +25,7 @@ from typing import Any
 import yaml
 from harbor.job import Job
 from harbor.models.job.config import JobConfig
-from harbor.models.job.lock import JobLock
+from harbor.models.job.lock import JobLock, TrialLock
 from harbor.models.job.result import JobResult
 from harbor.models.trial.result import TrialResult
 from harbor.skills import compute_skill_digest
@@ -565,6 +565,158 @@ def normalized_path_value(value: Any) -> str | None:
     return os.path.normcase(str(Path(str(value)).expanduser()))
 
 
+def task_id_projection(value: Any) -> dict[str, Any]:
+    raw = value.model_dump(mode="json", exclude_none=True)
+    if raw.get("path") is not None:
+        raw["path"] = normalized_path_value(raw["path"])
+    return raw
+
+
+def configured_task_lock_projection(value: Any) -> dict[str, Any]:
+    task_id = value.get_task_id()
+    task_type = (
+        "package"
+        if value.is_package_task()
+        else "git" if value.is_git_task() else "local"
+    )
+    return {
+        "name": task_id.get_name(),
+        "type": task_type,
+        "source": str(value.source) if value.source is not None else None,
+        "path": normalized_path_value(value.path),
+        "gitUrl": str(value.git_url) if value.git_url is not None else None,
+    }
+
+
+def locked_task_projection(value: Any) -> dict[str, Any]:
+    return {
+        "name": str(value.name),
+        "type": str(value.type),
+        "source": str(value.source) if value.source is not None else None,
+        "path": normalized_path_value(value.path),
+        "gitUrl": str(value.git_url) if value.git_url is not None else None,
+    }
+
+
+def is_resolved_git_commit(value: Any) -> bool:
+    return bool(
+        value is not None
+        and re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", str(value))
+    )
+
+
+def is_sha256_digest(value: Any) -> bool:
+    return bool(
+        value is not None
+        and re.fullmatch(r"sha256:[0-9a-f]{64}", str(value))
+    )
+
+
+def task_requires_adjacent_lock(configured: Any) -> bool:
+    """Whether a root-only lock cannot prove the configured mutable identity."""
+    if configured.is_git_task():
+        return not is_resolved_git_commit(configured.git_commit_id)
+    if configured.is_package_task():
+        return not is_sha256_digest(configured.ref)
+    return False
+
+
+def configured_task_matches_lock(
+    configured: Any,
+    locked: Any,
+    *,
+    adjacent_lock: bool,
+) -> bool:
+    if configured_task_lock_projection(configured) != locked_task_projection(locked):
+        return False
+    if configured.is_git_task():
+        if is_resolved_git_commit(configured.git_commit_id):
+            return str(locked.git_commit_id or "") == str(configured.git_commit_id)
+        return adjacent_lock and is_resolved_git_commit(locked.git_commit_id)
+    if configured.is_package_task():
+        if is_sha256_digest(configured.ref):
+            return str(locked.digest) == str(configured.ref)
+        return adjacent_lock and is_sha256_digest(locked.digest)
+    return True
+
+
+def canonical_trial_lock(value: TrialLock) -> str:
+    return json.dumps(
+        value.model_dump(mode="json", exclude_none=False),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def associate_trial_locks(
+    trials: list[TrialResult],
+    trial_paths: list[Path],
+    root_locks: list[TrialLock],
+    directory: Path,
+) -> tuple[list[TrialLock], bool]:
+    per_trial_paths = [path.parent / "lock.json" for path in trial_paths]
+    present = [path.is_file() for path in per_trial_paths]
+    if any(present) and not all(present):
+        raise ValueError(
+            f"Harbor job has only a partial set of per-trial locks in {directory}."
+        )
+    if all(present):
+        associated = [
+            TrialLock.model_validate_json(path.read_text(encoding="utf-8"))
+            for path in per_trial_paths
+        ]
+        if Counter(map(canonical_trial_lock, associated)) != Counter(
+            map(canonical_trial_lock, root_locks)
+        ):
+            raise ValueError(
+                f"Harbor root/per-trial lock drift in {directory}."
+            )
+        return associated, True
+
+    remaining = list(root_locks)
+    associated: list[TrialLock] = []
+    for trial in trials:
+        if task_requires_adjacent_lock(trial.config.task):
+            raise ValueError(
+                "Harbor root-only lock matching cannot durably bind a mutable "
+                f"Git/package task identity in {directory}; adjacent per-trial "
+                "locks are required in this matching environment."
+            )
+        observed_model = observed_trial_profile(trial)[2]
+        matches = [
+            index
+            for index, lock in enumerate(remaining)
+            if configured_task_matches_lock(
+                trial.config.task, lock.task, adjacent_lock=False
+            )
+            and trial.agent_info.name == lock.agent.name
+            and observed_model == str(lock.agent.model_name or "")
+            and trial_runtime_projection(
+                trial.config, lock=False
+            ) == trial_runtime_projection(lock, lock=True)
+        ]
+        if not matches:
+            raise ValueError(
+                f"Harbor TrialResult configured task/agent/model/runtime has no matching "
+                f"root TrialLock in {directory}."
+            )
+        distinct_matches = {
+            canonical_trial_lock(remaining[index]) for index in matches
+        }
+        if len(distinct_matches) > 1:
+            raise ValueError(
+                "Harbor root-only lock association is ambiguous across "
+                f"non-identical TrialLocks in {directory}; adjacent per-trial "
+                "locks are required in this matching environment."
+            )
+        associated.append(remaining.pop(matches[0]))
+    if remaining:
+        raise ValueError(
+            f"Harbor root lock contains unmatched trials in {directory}."
+        )
+    return associated, False
+
+
 def trial_runtime_projection(value: Any, *, lock: bool) -> dict[str, Any]:
     raw = value.model_dump(mode="json", exclude_defaults=False)
     raw.pop("schema_version", None)
@@ -578,7 +730,6 @@ def trial_runtime_projection(value: Any, *, lock: bool) -> dict[str, Any]:
     raw["task"] = {
         "path": normalized_path_value(task.get("path")),
         "git_url": task.get("git_url"),
-        "git_commit_id": task.get("git_commit_id"),
     }
     agent = require_mapping(raw.get("agent", {}), "trial agent binding")
     agent["skills"] = ["<candidate-skill>"]
@@ -609,12 +760,6 @@ def observed_profiles(records: list[dict[str, Any]]) -> list[dict[str, str]]:
             }
         )
     ]
-
-
-def locked_task_digest(value: str) -> str:
-    if re.fullmatch(r"sha256:[0-9a-f]{64}", value):
-        return value
-    return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 def canonical_json_digest(value: Any) -> str:
@@ -1149,13 +1294,9 @@ def load_native_job(
                 f"TrialResult.config trial_name differs from trial_name for "
                 f"{trial.trial_name} in {directory}."
             )
-        task_id = trial.task_id.model_dump(mode="json", exclude_none=True)
-        configured_task = trial.config.task.model_dump(mode="json", exclude_none=True)
-        if (
-            task_id.get("path") is not None
-            and normalized_path_value(task_id.get("path"))
-            != normalized_path_value(configured_task.get("path"))
-        ):
+        task_id = task_id_projection(trial.task_id)
+        configured_task_id = task_id_projection(trial.config.task.get_task_id())
+        if task_id != configured_task_id:
             raise ValueError(
                 f"TrialResult.config task differs from task_id for "
                 f"{trial.trial_name} in {directory}."
@@ -1288,6 +1429,9 @@ def load_native_job(
                 f"Harbor lock/result trial-count drift in {directory}: "
                 f"locks={len(lock.trials)}, results={len(trials)}."
             )
+        associated_locks, has_adjacent_locks = associate_trial_locks(
+            trials, trial_paths, lock.trials, directory
+        )
         lock_signature, provenance = canonical_lock(lock)
         harbor_version = lock.harbor.version or harbor_version
         expected_digest = evaluated_digest
@@ -1330,27 +1474,31 @@ def load_native_job(
                     f"Trial lock {index + 1} candidate provenance mismatch in "
                     f"{directory}."
                 )
-        result_lock_cells = Counter(
-            (
-                locked_task_digest(trial.task_checksum),
-                trial.agent_info.name,
-                observed_trial_profile(trial)[2],
-            )
-            for trial in trials
-        )
-        lock_cells = Counter(
-            (
-                trial_lock.task.digest,
-                trial_lock.agent.name,
-                str(trial_lock.agent.model_name or ""),
-            )
-            for trial_lock in lock.trials
-        )
-        if result_lock_cells != lock_cells:
-            raise ValueError(
-                f"Harbor lock/result task, agent, model, or attempt drift in "
-                f"{directory}."
-            )
+        for trial, trial_lock in zip(trials, associated_locks, strict=True):
+            if not configured_task_matches_lock(
+                trial.config.task,
+                trial_lock.task,
+                adjacent_lock=has_adjacent_locks,
+            ):
+                raise ValueError(
+                    f"Harbor TrialResult configured task identity differs from its "
+                    f"TrialLock in {directory}."
+                )
+            if (
+                trial.agent_info.name != trial_lock.agent.name
+                or observed_trial_profile(trial)[2]
+                != str(trial_lock.agent.model_name or "")
+            ):
+                raise ValueError(
+                    f"Harbor TrialResult agent/model differs from its TrialLock in "
+                    f"{directory}."
+                )
+            if trial_runtime_projection(
+                trial.config, lock=False
+            ) != trial_runtime_projection(trial_lock, lock=True):
+                raise ValueError(
+                    f"Harbor TrialResult.config/lock runtime drift in {directory}."
+                )
         result_runtime_cells = Counter(
             json.dumps(
                 trial_runtime_projection(trial.config, lock=False),

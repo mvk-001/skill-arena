@@ -1,4 +1,0 @@
-interface:
-  display_name: "Skill Arena Trace Distillation (Deprecated)"
-  short_description: "Legacy Skill Arena trace distillation"
-  default_prompt: "Use $skill-arena-trace-distillation only to reproduce a legacy distillation; use $harbor-trace-distillation for new work."

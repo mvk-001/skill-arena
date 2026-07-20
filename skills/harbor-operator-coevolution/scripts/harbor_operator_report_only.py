@@ -154,7 +154,13 @@ def run_report(config_path: Path, output_override: Path | None) -> dict[str, Any
     holdout["reportOnly"] = True
     profile = operator.build_development_evolution_profile(config, development)
     operator.validate_previous_generation_profile(
-        config, profile, development_only=True
+        config,
+        profile,
+        development_evidence=development,
+        development_only=True,
+    )
+    evidence_identity = operator.development_evidence_identity(
+        config, development
     )
     evidence = {
         "schemaVersion": 1,
@@ -199,6 +205,10 @@ def run_report(config_path: Path, output_override: Path | None) -> dict[str, Any
         "holdoutOpened": False,
         "promotion": False,
         "selectedDevelopment": None,
+        "developmentEvidenceIdentity": evidence_identity,
+        "developmentEvidenceIdentityDigest": operator.stable_digest(
+            evidence_identity
+        ),
         "candidateRanking": candidate_ranking,
         "operatorRanking": operator_ranking,
         "breedingPlan": breeding,

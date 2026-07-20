@@ -1,4 +1,0 @@
-interface:
-  display_name: "Harbor Runner (Deprecated)"
-  short_description: "Legacy Harbor-to-Skill-Arena report bridge"
-  default_prompt: "Use $harbor-runner only to reproduce or migrate a legacy Skill Arena-compatible report; use $harbor-run-results for new work."

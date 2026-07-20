@@ -13,8 +13,7 @@ const script = path.resolve(
   "search_harbor_population.py",
 );
 const fixtures = path.resolve(
-  "evaluations",
-  "harbor-report-parity-poc",
+  "test",
   "fixtures",
   "harbor-jobs",
 );

@@ -117,6 +117,11 @@ test("knowledge consult protocol freezes one shared non-compensating evaluation 
   assert.equal(profile.rewardKey, "reward");
   assert.equal(profile.passThreshold, 0.000001);
   assert.equal(profile.minimumDevelopmentPassRate, 1);
+  assert.equal(protocol.benchmark.development.taskCount, 24);
+  assert.equal(
+    protocol.strategyBudgets.traceDistillation.fullDevelopmentTaskAttemptsIfAllQualify,
+    48,
+  );
   assert.deepEqual(profile.requiredRewards, {
     evidence_contract_gate: 1,
     minimum_document_gate: 1,

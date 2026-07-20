@@ -1,4 +1,0 @@
-interface:
-  display_name: "Reflective Pareto Search (Deprecated)"
-  short_description: "Legacy Skill Arena Pareto search"
-  default_prompt: "Use $skill-arena-reflective-pareto-search only to reproduce a legacy search; use $harbor-reflective-pareto-search for new work."

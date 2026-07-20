@@ -36,6 +36,15 @@ from harbor.skills import compute_skill_digest
 
 
 SCHEMA_VERSION = 1
+SUPPORTED_CONFIG_SCHEMA_VERSIONS = {1, 2}
+RETRY_FIELDS = {
+    "max_retries",
+    "include_exceptions",
+    "exclude_exceptions",
+    "wait_multiplier",
+    "min_wait_sec",
+    "max_wait_sec",
+}
 MAX_TEXT = 6000
 CONTEXT_BUDGET_DOMAIN = "execution-efficiency/context-budget"
 NON_EVALUABLE_FAILURE_DOMAINS = {
@@ -147,6 +156,86 @@ def finite_number(value: Any, location: str) -> float:
     if not math.isfinite(normalized):
         raise ValueError(f"{location} must be finite.")
     return normalized
+
+
+def canonical_retry_config(retry: Any, location: str) -> dict[str, Any]:
+    value = retry.model_dump(mode="json")
+    max_retries = value.get("max_retries")
+    if isinstance(max_retries, bool) or not isinstance(max_retries, int):
+        raise ValueError(f"{location}.max_retries must be an integer.")
+    waits = {
+        key: finite_number(value.get(key), f"{location}.{key}")
+        for key in ("wait_multiplier", "min_wait_sec", "max_wait_sec")
+    }
+    if any(number < 0 for number in waits.values()):
+        raise ValueError(f"{location} wait values must be non-negative.")
+    if waits["min_wait_sec"] > waits["max_wait_sec"]:
+        raise ValueError(f"{location}.min_wait_sec must not exceed max_wait_sec.")
+
+    exception_values: dict[str, list[str] | None] = {}
+    for key in ("include_exceptions", "exclude_exceptions"):
+        raw = value.get(key)
+        if raw is None:
+            exception_values[key] = None
+            continue
+        if not isinstance(raw, list) or any(
+            not isinstance(item, str) or not item for item in raw
+        ):
+            raise ValueError(f"{location}.{key} must be null or a string list.")
+        exception_values[key] = sorted(raw)
+    return {
+        "maxRetries": max_retries,
+        "includeExceptions": exception_values["include_exceptions"],
+        "excludeExceptions": exception_values["exclude_exceptions"],
+        "waitMultiplier": waits["wait_multiplier"],
+        "minWaitSec": waits["min_wait_sec"],
+        "maxWaitSec": waits["max_wait_sec"],
+    }
+
+
+def require_complete_locked_retry(
+    raw_job_lock: dict[str, Any], job_lock: JobLock, location: str
+) -> dict[str, Any]:
+    raw_retry = require_mapping(raw_job_lock.get("retry"), f"{location}.retry")
+    missing = sorted(RETRY_FIELDS - set(raw_retry))
+    if missing:
+        raise ValueError(
+            f"{location}.retry is missing required fields: {', '.join(missing)}."
+        )
+    raw_max_retries = raw_retry.get("max_retries")
+    if isinstance(raw_max_retries, bool) or not isinstance(raw_max_retries, int):
+        raise ValueError(f"{location}.retry.max_retries must be an integer.")
+    for key in ("wait_multiplier", "min_wait_sec", "max_wait_sec"):
+        finite_number(raw_retry.get(key), f"{location}.retry.{key}")
+    for key in ("include_exceptions", "exclude_exceptions"):
+        raw = raw_retry.get(key)
+        if raw is None:
+            continue
+        if not isinstance(raw, list) or any(
+            not isinstance(item, str) or not item for item in raw
+        ):
+            raise ValueError(
+                f"{location}.retry.{key} must be null or a string list."
+            )
+        if len(raw) != len(set(raw)):
+            raise ValueError(
+                f"{location}.retry.{key} must not contain duplicate values."
+            )
+    canonical = canonical_retry_config(job_lock.retry, f"{location}.retry")
+    if canonical["maxRetries"] != 0:
+        raise ValueError(
+            f"{location}.retry.max_retries must be 0 for schemaVersion 2 evaluation."
+        )
+    return canonical
+
+
+def require_zero_job_config_retries(config: JobConfig, location: str) -> dict[str, Any]:
+    canonical = canonical_retry_config(config.retry, f"{location}.retry")
+    if canonical["maxRetries"] != 0:
+        raise ValueError(
+            f"{location}.retry.max_retries must be 0 for schemaVersion 2 evaluation."
+        )
+    return canonical
 
 
 def assert_not_reparse_root(directory: Path, location: str) -> None:
@@ -288,12 +377,19 @@ def directory_digest(directory: Path) -> str:
 
 def normalize_config(path: Path, output_override: Path | None = None) -> dict[str, Any]:
     raw = load_yaml(path, "config")
-    if raw.get("schemaVersion") != SCHEMA_VERSION:
-        raise ValueError("schemaVersion must be 1.")
+    config_schema_version = raw.get("schemaVersion")
+    if config_schema_version not in SUPPORTED_CONFIG_SCHEMA_VERSIONS:
+        raise ValueError("schemaVersion must be 1 or 2.")
+    if config_schema_version == 1 and "development" in raw:
+        raise ValueError(
+            "The development block requires schemaVersion 2; schemaVersion 1 "
+            "retains the legacy discovery-to-holdout workflow."
+        )
     base = path.resolve().parent
     run = require_mapping(raw.get("run"), "run")
     harbor = require_mapping(raw.get("harbor", {}), "harbor")
     discovery = require_mapping(raw.get("discovery", {}), "discovery")
+    development = require_mapping(raw.get("development", {}), "development")
     proposals = require_mapping(raw.get("proposals", {}), "proposals")
     holdout = require_mapping(raw.get("holdout", {}), "holdout")
 
@@ -333,7 +429,36 @@ def normalize_config(path: Path, output_override: Path | None = None) -> dict[st
         if proposals.get("path") is not None
         else None
     )
+    development_artifacts = resolve_path_list(
+        base,
+        development.get("candidateArtifacts", []),
+        "development.candidateArtifacts",
+    )
+    development_job_configs = resolve_path_list(
+        base,
+        development.get("candidateJobConfigs", []),
+        "development.candidateJobConfigs",
+    )
+    if config_schema_version == 2:
+        if not development_artifacts and not development_job_configs:
+            raise ValueError(
+                "schemaVersion 2 requires at least one development candidate "
+                "artifact or job config."
+            )
+        if "minimumPassRate" not in development:
+            raise ValueError(
+                "schemaVersion 2 requires development.minimumPassRate."
+            )
+        minimum_development_pass_rate = finite_number(
+            development.get("minimumPassRate"),
+            "development.minimumPassRate",
+        )
+        if not 0.0 <= minimum_development_pass_rate <= 1.0:
+            raise ValueError("development.minimumPassRate must be between 0 and 1.")
+    else:
+        minimum_development_pass_rate = 0.0
     return {
+        "configSchemaVersion": config_schema_version,
         "configPath": path.resolve(),
         "runId": require_string(run.get("id"), "run.id"),
         "baselineSkill": baseline,
@@ -352,6 +477,11 @@ def normalize_config(path: Path, output_override: Path | None = None) -> dict[st
         "discovery": {
             "artifacts": resolve_path_list(base, discovery.get("artifacts", []), "discovery.artifacts"),
             "jobConfigs": resolve_path_list(base, discovery.get("jobConfigs", []), "discovery.jobConfigs"),
+        },
+        "development": {
+            "candidateArtifacts": development_artifacts,
+            "candidateJobConfigs": development_job_configs,
+            "minimumPassRate": minimum_development_pass_rate,
         },
         "proposals": {
             "path": proposal_path,
@@ -374,13 +504,19 @@ def normalize_config(path: Path, output_override: Path | None = None) -> dict[st
 
 
 def public_plan(config: dict[str, Any]) -> dict[str, Any]:
+    if config["configSchemaVersion"] == 2:
+        for path in [
+            *config["discovery"]["jobConfigs"],
+            *config["development"]["candidateJobConfigs"],
+        ]:
+            load_job_config(path, require_zero_retries=True)
     staged_baseline = installed_skill_path(
         config["outputDirectory"] / "baseline", config["skillName"]
     )
     candidate = installed_skill_path(
         config["outputDirectory"] / "candidate", config["skillName"]
     )
-    return {
+    plan = {
         "schemaVersion": SCHEMA_VERSION,
         "runId": config["runId"],
         "baselineSkill": str(config["baselineSkill"]),
@@ -412,6 +548,18 @@ def public_plan(config: dict[str, Any]) -> dict[str, Any]:
             "candidateJobConfigCount": len(config["holdout"]["candidateJobConfigs"]),
         },
     }
+    if config["configSchemaVersion"] == 2:
+        plan["configSchemaVersion"] = 2
+        plan["development"] = {
+            "candidateArtifactCount": len(
+                config["development"]["candidateArtifacts"]
+            ),
+            "candidateJobConfigCount": len(
+                config["development"]["candidateJobConfigs"]
+            ),
+            "minimumPassRate": config["development"]["minimumPassRate"],
+        }
+    return plan
 
 
 def prepare_job_raw(path: Path) -> dict[str, Any]:
@@ -448,8 +596,11 @@ def prepare_job_raw(path: Path) -> dict[str, Any]:
     return raw
 
 
-def load_job_config(path: Path) -> JobConfig:
-    return JobConfig.model_validate(prepare_job_raw(path))
+def load_job_config(path: Path, *, require_zero_retries: bool = False) -> JobConfig:
+    config = JobConfig.model_validate(prepare_job_raw(path))
+    if require_zero_retries:
+        require_zero_job_config_retries(config, f"Harbor job config {path}")
+    return config
 
 
 def candidate_job_config(
@@ -479,7 +630,7 @@ def candidate_job_config(
         agents.append(agent.model_copy(update={"skills": skills}))
     if replaced_total == 0:
         raise ValueError(
-            "Candidate holdout job config does not reference the declared baseline skill."
+            "Candidate job config does not reference the declared baseline skill."
         )
     return source.model_copy(update={"agents": agents})
 
@@ -491,10 +642,11 @@ async def execute_jobs(
     phase: str,
     baseline_skill: Path,
     candidate_skill: Path | None = None,
+    require_zero_retries: bool = False,
 ) -> list[Path]:
     job_directories: list[Path] = []
     for index, path in enumerate(paths, start=1):
-        config = load_job_config(path)
+        config = load_job_config(path, require_zero_retries=require_zero_retries)
         if candidate_skill is not None:
             config = candidate_job_config(
                 config,
@@ -527,17 +679,32 @@ def doctor(config: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(
             "Missing required environment variables: " + ", ".join(plan["missingRequiredEnv"])
         )
-    job_paths = [
-        *config["discovery"]["jobConfigs"],
-        *config["holdout"]["baselineJobConfigs"],
-        *config["holdout"]["candidateJobConfigs"],
+    job_paths = [*config["discovery"]["jobConfigs"]]
+    if config["configSchemaVersion"] == 2:
+        # Development must pass before holdout inputs are opened. Doctor validates
+        # the pre-release jobs only; holdout JobConfigs are validated immediately
+        # before their guarded execution.
+        job_paths.extend(config["development"]["candidateJobConfigs"])
+    else:
+        job_paths.extend(config["holdout"]["baselineJobConfigs"])
+        job_paths.extend(config["holdout"]["candidateJobConfigs"])
+    job_configs = [
+        load_job_config(
+            path,
+            require_zero_retries=config["configSchemaVersion"] == 2,
+        )
+        for path in job_paths
     ]
-    job_configs = [load_job_config(path) for path in job_paths]
     uses_docker = any(str(job.environment.type or "docker") == "docker" for job in job_configs)
     checks: dict[str, Any] = {
         "credentials": "declared variables present",
         "jobConfigs": len(job_configs),
     }
+    if config["configSchemaVersion"] == 2:
+        checks["deferredHoldoutJobConfigs"] = (
+            len(config["holdout"]["baselineJobConfigs"])
+            + len(config["holdout"]["candidateJobConfigs"])
+        )
     if uses_docker:
         checks["docker"] = run_check(["docker", "info", "--format", "server={{.ServerVersion}}"])
         checks["dockerCompose"] = run_check(["docker", "compose", "version", "--short"])
@@ -1018,6 +1185,26 @@ def stable_digest(value: Any) -> str:
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
+def file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return "sha256:" + digest.hexdigest()
+
+
+def attempt_fingerprint(
+    trial: TrialResult, config_canonical: dict[str, Any]
+) -> str:
+    """Bind attempt evidence while ignoring labels that a copied job can rename."""
+
+    value = trial.model_dump(mode="json", exclude_none=False)
+    for key in ("id", "trial_name", "trial_uri", "source"):
+        value.pop(key, None)
+    value["config"] = config_canonical
+    return stable_digest(value)
+
+
 def normalize_trial(
     trial: TrialResult,
     *,
@@ -1250,6 +1437,12 @@ def normalize_trial(
         "feedback": collect_feedback(trial_directory, trial.agent_info.name)
         if include_feedback
         else None,
+        "_resultArtifactDigest": file_digest(result_path),
+        "_attemptFingerprint": attempt_fingerprint(trial, config_canonical),
+        "_trialUri": str(trial.trial_uri) if trial.trial_uri is not None else None,
+        "_trialConfigJobId": (
+            str(trial.config.job_id) if trial.config.job_id is not None else None
+        ),
         "_lockCanonical": lock_canonical,
     }
     return record
@@ -1266,6 +1459,7 @@ def load_job_artifact(
     include_feedback: bool,
     require_lock: bool,
     allow_legacy_identity_alias: bool,
+    require_zero_retry_contract: bool = False,
 ) -> list[dict[str, Any]]:
     config = JobConfig.model_validate_json((directory / "config.json").read_text(encoding="utf-8"))
     job_result = JobResult.model_validate_json((directory / "result.json").read_text(encoding="utf-8"))
@@ -1301,17 +1495,38 @@ def load_job_artifact(
         )
     job_lock_path = directory / "lock.json"
     harbor_version: str | None = None
+    job_retry: dict[str, Any] | None = None
     if job_lock_path.is_file():
-        job_lock = JobLock.model_validate_json(job_lock_path.read_text(encoding="utf-8"))
+        raw_job_lock = read_json(job_lock_path)
+        job_lock = JobLock.model_validate(raw_job_lock)
         harbor_version = job_lock.harbor.version
         if harbor_version is not None and harbor_version != version("harbor"):
             raise ValueError(
                 f"Harbor artifact version drift in {directory}: lock={harbor_version}, runtime={version('harbor')}."
             )
-    elif require_lock:
+        if require_zero_retry_contract:
+            job_retry = require_complete_locked_retry(
+                raw_job_lock,
+                job_lock,
+                f"Harbor job lock {job_lock_path}",
+            )
+            config_retry = require_zero_job_config_retries(
+                config,
+                f"Harbor artifact config {directory / 'config.json'}",
+            )
+            if config_retry != job_retry:
+                raise ValueError(
+                    f"Harbor artifact JobConfig and JobLock retry drift in {directory}."
+                )
+            if job_result.stats.n_retries != 0:
+                raise ValueError(
+                    f"Harbor job {directory} reports {job_result.stats.n_retries} "
+                    "built-in retries; schemaVersion 2 evaluation requires zero."
+                )
+    elif require_lock or require_zero_retry_contract:
         raise ValueError(f"Harbor job is missing lock.json: {directory}")
     label = config.job_name or directory.name
-    return [
+    records = [
         normalize_trial(
             trial,
             result_path=path,
@@ -1328,6 +1543,20 @@ def load_job_artifact(
         )
         for trial, path in zip(parsed_trials, paths)
     ]
+    if job_retry is not None:
+        job_retry_digest = stable_digest(job_retry)
+        for record in records:
+            record["jobRetry"] = job_retry
+            record["jobRetryDigest"] = job_retry_digest
+    for record in records:
+        record["_jobArtifactDirectory"] = str(directory.resolve())
+        record["_jobResultId"] = str(job_result.id)
+        record["_jobConfigPath"] = str((directory / "config.json").resolve())
+        record["_jobResultPath"] = str((directory / "result.json").resolve())
+        record["_jobLockPath"] = (
+            str(job_lock_path.resolve()) if job_lock_path.is_file() else None
+        )
+    return records
 
 
 def load_trial_artifact(
@@ -1341,12 +1570,18 @@ def load_trial_artifact(
     include_feedback: bool,
     require_lock: bool,
     allow_legacy_identity_alias: bool,
+    require_zero_retry_contract: bool = False,
 ) -> list[dict[str, Any]]:
+    if require_zero_retry_contract:
+        raise ValueError(
+            "schemaVersion 2 discovery, candidate development, and holdout require whole "
+            f"Harbor job artifacts with a locked zero-retry contract: {directory}"
+        )
     path = directory / "result.json"
     trial = TrialResult.model_validate_json(path.read_text(encoding="utf-8"))
     if trial.finished_at is None:
         raise ValueError(f"Incomplete Harbor trial has no finished_at: {directory}")
-    return [
+    records = [
         normalize_trial(
             trial,
             result_path=path,
@@ -1362,6 +1597,7 @@ def load_trial_artifact(
             allow_legacy_identity_alias=allow_legacy_identity_alias,
         )
     ]
+    return records
 
 
 def load_artifacts(
@@ -1372,6 +1608,7 @@ def load_artifacts(
     include_feedback: bool,
     require_lock: bool,
     allow_legacy_identity_alias: bool = False,
+    require_zero_retry_contract: bool = False,
 ) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     seen_directories: set[Path] = set()
@@ -1394,6 +1631,7 @@ def load_artifacts(
                 include_feedback=include_feedback,
                 require_lock=require_lock,
                 allow_legacy_identity_alias=allow_legacy_identity_alias,
+                require_zero_retry_contract=require_zero_retry_contract,
             )
         elif "task_name" in raw_result and "trial_name" in raw_result:
             values = load_trial_artifact(
@@ -1406,6 +1644,7 @@ def load_artifacts(
                 include_feedback=include_feedback,
                 require_lock=require_lock,
                 allow_legacy_identity_alias=allow_legacy_identity_alias,
+                require_zero_retry_contract=require_zero_retry_contract,
             )
         else:
             raise ValueError(f"Not a Harbor job or trial artifact directory: {directory}")
@@ -1765,6 +2004,10 @@ def fairness_cells(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
             "artifactsSignatures": sorted(
                 item["artifactsSignature"] for item in values
             ),
+            "jobRetryDigests": sorted(
+                (item.get("jobRetryDigest") for item in values),
+                key=lambda value: (value is not None, str(value)),
+            ),
         }
         for key, values in sorted(grouped.items())
     }
@@ -1805,6 +2048,251 @@ def comparison_cells(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]
             "errors": sum(1 for item in values if item["error"]),
         }
     return output
+
+
+def validate_pair_fairness(
+    baseline: list[dict[str, Any]],
+    candidate: list[dict[str, Any]],
+    *,
+    phase_label: str,
+    expected_baseline_digest: str,
+    expected_candidate_digest: str,
+    allow_weak_fairness: bool,
+    require_job_retry_fairness: bool = False,
+) -> tuple[str, str | None]:
+    if not baseline or not candidate:
+        raise ValueError(f"{phase_label} requires non-empty baseline and candidate evidence.")
+    baseline_signature = fairness_cells(baseline)
+    candidate_signature = fairness_cells(candidate)
+    if set(baseline_signature) != set(candidate_signature):
+        raise ValueError(
+            f"{phase_label} jobs are not comparable: "
+            "task/checksum/agent/version/model cells differ."
+        )
+    for cell in baseline_signature:
+        left = baseline_signature[cell]
+        right = candidate_signature[cell]
+        if left["attempts"] != right["attempts"]:
+            raise ValueError(f"{phase_label} attempt-count drift in cell {cell}.")
+        if left["configSignatures"] != right["configSignatures"]:
+            raise ValueError(
+                f"{phase_label} TrialConfig drift beyond the target skill in cell {cell}."
+            )
+        if left["artifactsSignatures"] != right["artifactsSignatures"]:
+            raise ValueError(
+                f"{phase_label} trial artifact-config drift in cell {cell}."
+            )
+        if require_job_retry_fairness:
+            if any(
+                digest is None
+                for digest in [
+                    *left["jobRetryDigests"],
+                    *right["jobRetryDigests"],
+                ]
+            ):
+                raise ValueError(
+                    f"{phase_label} requires complete JobLock retry digests in cell {cell}."
+                )
+            if left["jobRetryDigests"] != right["jobRetryDigests"]:
+                raise ValueError(
+                    f"{phase_label} JobLock retry drift in cell {cell}."
+                )
+
+    lock_available = all(item["lockSignature"] for item in baseline + candidate)
+    if lock_available:
+        for label, values, expected in (
+            ("baseline", baseline, expected_baseline_digest),
+            ("candidate", candidate, expected_candidate_digest),
+        ):
+            mismatches = [
+                item["evidenceId"]
+                for item in values
+                if item["targetSkillDigests"] != [expected]
+            ]
+            if mismatches:
+                raise ValueError(
+                    f"Locked {label} {phase_label.lower()} trials do not contain "
+                    f"exactly the expected target skill digest: {mismatches}"
+                )
+        for cell in baseline_signature:
+            if (
+                baseline_signature[cell]["lockSignatures"]
+                != candidate_signature[cell]["lockSignatures"]
+            ):
+                raise ValueError(
+                    f"{phase_label} trial-lock drift beyond the target skill in cell {cell}."
+                )
+        return "trial-lock-and-result", None
+    if not allow_weak_fairness:
+        if phase_label == "Holdout":
+            raise ValueError(
+                "Holdout comparison requires trial lock.json files. Set "
+                "allowWeakFairness only for explicitly limited legacy evidence."
+            )
+        raise ValueError(
+            f"{phase_label} comparison requires trial lock.json files. "
+            "Weak fairness is not permitted for this phase."
+        )
+    return (
+        "trial-result-and-config",
+        "Trial locks were unavailable; replay-setting parity could not be fully verified.",
+    )
+
+
+def validate_development_independence(
+    discovery: list[dict[str, Any]], candidate: list[dict[str, Any]]
+) -> str:
+    """Require candidate development to contain genuinely separate attempts."""
+
+    checks = (
+        ("job artifact directory", "_jobArtifactDirectory"),
+        ("job result identity", "_jobResultId"),
+        ("job config path", "_jobConfigPath"),
+        ("job result path", "_jobResultPath"),
+        ("job lock path", "_jobLockPath"),
+        ("evidence ID", "evidenceId"),
+        ("trial UUID", "trialId"),
+        ("trial result identity", "trialName"),
+        ("trial artifact directory", "artifactDirectory"),
+        ("trial result path", "resultPath"),
+        ("trial lock path", "lockPath"),
+        ("trial URI", "_trialUri"),
+        ("trial-config job identity", "_trialConfigJobId"),
+        ("raw result artifact digest", "_resultArtifactDigest"),
+        ("attempt evidence fingerprint", "_attemptFingerprint"),
+    )
+    for label, key in checks:
+        left = {
+            str(item[key])
+            for item in discovery
+            if item.get(key) is not None
+        }
+        right = {
+            str(item[key])
+            for item in candidate
+            if item.get(key) is not None
+        }
+        overlap = sorted(left & right)
+        if overlap:
+            rendered = overlap[:4]
+            suffix = "" if len(overlap) <= 4 else f" (+{len(overlap) - 4} more)"
+            raise ValueError(
+                "Candidate development must use physically and evidentially "
+                f"independent attempts; reused {label}: {rendered}{suffix}."
+            )
+    return stable_digest(
+        {
+            "discovery": sorted(item["_attemptFingerprint"] for item in discovery),
+            "candidate": sorted(item["_attemptFingerprint"] for item in candidate),
+        }
+    )
+
+
+def candidate_development_gate(
+    discovery: list[dict[str, Any]],
+    candidate: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    independence_signature = validate_development_independence(
+        discovery, candidate
+    )
+    fairness_basis, warning = validate_pair_fairness(
+        discovery,
+        candidate,
+        phase_label="Candidate development",
+        expected_baseline_digest=config["baselineDigest"],
+        expected_candidate_digest=config["candidateDigest"],
+        allow_weak_fairness=False,
+        require_job_retry_fairness=True,
+    )
+    qualification = qualification_summary(candidate)
+    evaluable = all(item["evaluable"] for item in candidate)
+    passed_trials = sum(item["outcome"] == "success" for item in candidate)
+    pass_rate = passed_trials / len(candidate) if evaluable else None
+    minimum_pass_rate = config["development"]["minimumPassRate"]
+    pass_rate_eligible = pass_rate is not None and pass_rate >= minimum_pass_rate
+    candidate_errors = sum(item["error"] is not None for item in candidate)
+    required_rewards_complete = qualification["missingRequiredRewards"] == 0
+    provenance_verified = all(
+        item["skillIdentity"]["promotionEligible"]
+        for item in [*discovery, *candidate]
+    )
+    candidate_qualified = qualification["passed"]
+    blockers = []
+    if not evaluable:
+        blockers.append("candidate-not-evaluable")
+    if candidate_errors:
+        blockers.append("candidate-errors")
+    if not candidate_qualified:
+        blockers.append("candidate-unqualified")
+    if pass_rate is not None and not pass_rate_eligible:
+        blockers.append("development-pass-rate-below-minimum")
+    if not provenance_verified:
+        blockers.append("unverified-development-provenance")
+    passed = not blockers
+    evidence_keys = (
+        "evidenceId",
+        "taskName",
+        "taskChecksum",
+        "agent",
+        "agentVersion",
+        "model",
+        "reward",
+        "reportedReward",
+        "primaryRewardMissing",
+        "requiredRewards",
+        "qualificationPassed",
+        "qualificationFailures",
+        "evaluable",
+        "evaluationFailure",
+        "verifierDiagnostics",
+        "evidenceClass",
+        "actionability",
+        "evidenceEligible",
+        "outcome",
+        "error",
+        "usage",
+        "artifactDirectory",
+        "resultPath",
+        "lockPath",
+        "jobRetry",
+        "jobRetryDigest",
+        "skillIdentity",
+    )
+    return {
+        "schemaVersion": SCHEMA_VERSION,
+        "source": "harbor",
+        "phase": "development",
+        "status": "complete",
+        "decision": (
+            "not-evaluable" if not evaluable else "pass" if passed else "fail"
+        ),
+        "passed": passed,
+        "evaluable": evaluable,
+        "fairnessBasis": fairness_basis,
+        "warning": warning,
+        "attemptIndependenceVerified": True,
+        "attemptIndependenceSignature": independence_signature,
+        "discoveryReplaySignature": stable_digest(fairness_cells(discovery)),
+        "candidateReplaySignature": stable_digest(fairness_cells(candidate)),
+        "candidateDigest": config["candidateDigest"],
+        "uniqueTrials": len({item["trialId"] for item in candidate}),
+        "uniqueTasks": len({item["taskChecksum"] for item in candidate}),
+        "passedTrials": passed_trials,
+        "candidatePassRate": pass_rate,
+        "minimumPassRate": minimum_pass_rate,
+        "passRateEligible": pass_rate_eligible,
+        "candidateErrors": candidate_errors,
+        "candidateQualified": candidate_qualified,
+        "requiredRewardsComplete": required_rewards_complete,
+        "provenanceVerified": provenance_verified,
+        "qualification": qualification,
+        "blockers": blockers,
+        "candidateEvidence": [
+            {key: public_record(item)[key] for key in evidence_keys}
+            for item in candidate
+        ],
+    }
 
 
 def validate_holdout_isolation(
@@ -1849,53 +2337,18 @@ def holdout_gate(
     candidate: list[dict[str, Any]],
     config: dict[str, Any],
 ) -> dict[str, Any]:
-    baseline_signature = fairness_cells(baseline)
-    candidate_signature = fairness_cells(candidate)
-    if set(baseline_signature) != set(candidate_signature):
-        raise ValueError(
-            "Holdout jobs are not comparable: task/checksum/agent/version/model cells differ."
-        )
-    for cell in baseline_signature:
-        left = baseline_signature[cell]
-        right = candidate_signature[cell]
-        if left["attempts"] != right["attempts"]:
-            raise ValueError(f"Holdout attempt-count drift in cell {cell}.")
-        if left["configSignatures"] != right["configSignatures"]:
-            raise ValueError(f"Holdout TrialConfig drift beyond the target skill in cell {cell}.")
-        if left["artifactsSignatures"] != right["artifactsSignatures"]:
-            raise ValueError(f"Holdout trial artifact-config drift in cell {cell}.")
-
-    lock_available = all(item["lockSignature"] for item in baseline + candidate)
-    if lock_available:
-        expected_baseline_digest = directory_digest(config["baselineSkill"])
-        expected_candidate_digest = config.get("candidateDigest")
-        if expected_candidate_digest is None:
-            raise ValueError("Candidate digest is required for a locked holdout gate.")
-        for label, values, expected in (
-            ("baseline", baseline, expected_baseline_digest),
-            ("candidate", candidate, expected_candidate_digest),
-        ):
-            mismatches = [
-                item["evidenceId"]
-                for item in values
-                if item["targetSkillDigests"] != [expected]
-            ]
-            if mismatches:
-                raise ValueError(
-                    f"Locked {label} holdout trials do not contain exactly the expected target skill digest: {mismatches}"
-                )
-        for cell in baseline_signature:
-            if baseline_signature[cell]["lockSignatures"] != candidate_signature[cell]["lockSignatures"]:
-                raise ValueError(f"Holdout trial-lock drift beyond the target skill in cell {cell}.")
-        fairness_basis = "trial-lock-and-result"
-        warning = None
-    elif not config["holdout"]["allowWeakFairness"]:
-        raise ValueError(
-            "Holdout comparison requires trial lock.json files. Set allowWeakFairness only for explicitly limited legacy evidence."
-        )
-    else:
-        fairness_basis = "trial-result-and-config"
-        warning = "Trial locks were unavailable; replay-setting parity could not be fully verified."
+    expected_candidate_digest = config.get("candidateDigest")
+    if expected_candidate_digest is None:
+        raise ValueError("Candidate digest is required for a holdout gate.")
+    fairness_basis, warning = validate_pair_fairness(
+        baseline,
+        candidate,
+        phase_label="Holdout",
+        expected_baseline_digest=config["baselineDigest"],
+        expected_candidate_digest=expected_candidate_digest,
+        allow_weak_fairness=config["holdout"]["allowWeakFairness"],
+        require_job_retry_fairness=config["configSchemaVersion"] == 2,
+    )
 
     baseline_cells = comparison_cells(baseline)
     candidate_cells = comparison_cells(candidate)
@@ -1964,6 +2417,7 @@ def holdout_gate(
         and required_rewards_complete
         and candidate_qualified
         and config.get("developmentEvidencePromotionEligible", False)
+        and config.get("candidateDevelopmentPassed", True)
     )
     return {
         "schemaVersion": SCHEMA_VERSION,
@@ -1986,6 +2440,27 @@ def holdout_gate(
         ),
         "fairnessBasis": fairness_basis,
         "warning": warning,
+        **(
+            {
+                "retryContractVerified": True,
+                "baselineRetryPolicyDigests": sorted(
+                    {
+                        item["jobRetryDigest"]
+                        for item in baseline
+                        if item.get("jobRetryDigest") is not None
+                    }
+                ),
+                "candidateRetryPolicyDigests": sorted(
+                    {
+                        item["jobRetryDigest"]
+                        for item in candidate
+                        if item.get("jobRetryDigest") is not None
+                    }
+                ),
+            }
+            if config["configSchemaVersion"] == 2
+            else {}
+        ),
         "baselineMeanReward": baseline_mean,
         "candidateMeanReward": candidate_mean,
         "meanGain": mean_gain,
@@ -2092,9 +2567,32 @@ def render_report(run: dict[str, Any]) -> str:
         f"- Candidate: `{run['consolidation']['candidateSkill']}`",
         f"- Candidate digest: `{run['consolidation']['candidateDigest']}`",
         "",
-        "## Holdout gate",
-        "",
     ]
+    development = run.get("developmentGate")
+    if development is not None:
+        lines.extend(["## Candidate development gate", ""])
+        if development["status"] == "complete":
+            pass_rate = development["candidatePassRate"]
+            lines.extend(
+                [
+                    f"- Decision: **{development['decision']}**",
+                    f"- Fairness basis: `{development['fairnessBasis']}`",
+                    f"- Unique trials: {development['uniqueTrials']}",
+                    f"- Unique task checksums: {development['uniqueTasks']}",
+                    (
+                        f"- Candidate pass rate: {pass_rate:.1%}"
+                        if pass_rate is not None
+                        else "- Candidate pass rate: null"
+                    ),
+                    f"- Minimum pass rate: {development['minimumPassRate']:.1%}",
+                    f"- Candidate qualified: {'yes' if development['candidateQualified'] else 'no'}",
+                    f"- Blockers: {', '.join(development['blockers']) or 'none'}",
+                ]
+            )
+        else:
+            lines.append(f"- {development['reason']}")
+        lines.append("")
+    lines.extend(["## Holdout gate", ""])
     if holdout["status"] == "complete":
         lines.append(f"- Fairness basis: `{holdout['fairnessBasis']}`")
         if holdout.get("evaluable", True):
@@ -2166,6 +2664,7 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
                     phase="discovery",
                     baseline_skill=config["baselineSkill"],
                     candidate_skill=staged_baseline,
+                    require_zero_retries=config["configSchemaVersion"] == 2,
                 )
             )
         )
@@ -2180,6 +2679,7 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
         include_feedback=True,
         require_lock=config["harbor"]["requireDiscoveryLocks"],
         allow_legacy_identity_alias=analyze_only,
+        require_zero_retry_contract=config["configSchemaVersion"] == 2,
     )
     trace_pool = build_trace_pool(records)
     proposals = load_proposals(config["proposals"]["path"])
@@ -2192,8 +2692,23 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
     ]
     candidate, consolidation = materialize_candidate(config, state)
     config["candidateDigest"] = consolidation["candidateDigest"]
+    development_records: list[dict[str, Any]] = []
+    development_gate: dict[str, Any] | None = None
 
     if analyze_only:
+        if config["configSchemaVersion"] == 2:
+            development_gate = {
+                "schemaVersion": SCHEMA_VERSION,
+                "source": "harbor",
+                "phase": "development",
+                "status": "not-run",
+                "decision": "not-evaluated",
+                "passed": False,
+                "reason": (
+                    "analyze-only excludes candidate development and all holdout "
+                    "reads and executions."
+                ),
+            }
         gate = {
             "schemaVersion": SCHEMA_VERSION,
             "source": "harbor",
@@ -2203,61 +2718,128 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
             "reason": "analyze-only excludes all holdout reads and executions.",
         }
     else:
-        baseline_paths = list(config["holdout"]["baselineArtifacts"])
-        candidate_paths = list(config["holdout"]["candidateArtifacts"])
-        if config["holdout"]["baselineJobConfigs"]:
-            baseline_paths.extend(
-                asyncio.run(
-                    execute_jobs(
-                        config["holdout"]["baselineJobConfigs"],
-                        output=output,
-                        phase="holdout-baseline",
-                        baseline_skill=config["baselineSkill"],
-                        candidate_skill=staged_baseline,
+        if config["configSchemaVersion"] == 2:
+            development_paths = list(
+                config["development"]["candidateArtifacts"]
+            )
+            if config["development"]["candidateJobConfigs"]:
+                development_paths.extend(
+                    asyncio.run(
+                        execute_jobs(
+                            config["development"]["candidateJobConfigs"],
+                            output=output,
+                            phase="development-candidate",
+                            baseline_skill=config["baselineSkill"],
+                            candidate_skill=candidate,
+                            require_zero_retries=True,
+                        )
                     )
                 )
-            )
-        if config["holdout"]["candidateJobConfigs"]:
-            candidate_paths.extend(
-                asyncio.run(
-                    execute_jobs(
-                        config["holdout"]["candidateJobConfigs"],
-                        output=output,
-                        phase="holdout-candidate",
-                        baseline_skill=config["baselineSkill"],
-                        candidate_skill=candidate,
-                    )
-                )
-            )
-        if baseline_paths or candidate_paths:
-            if not baseline_paths or not candidate_paths:
-                raise ValueError("Holdout requires both baseline and candidate artifacts or job configs.")
-            baseline = load_artifacts(
-                baseline_paths,
-                config=config,
-                expected_skill_digest=config["baselineDigest"],
-                include_feedback=False,
-                require_lock=not config["holdout"]["allowWeakFairness"],
-            )
-            candidate_records = load_artifacts(
-                candidate_paths,
+            development_records = load_artifacts(
+                development_paths,
                 config=config,
                 expected_skill_digest=config["candidateDigest"],
                 include_feedback=False,
-                require_lock=not config["holdout"]["allowWeakFairness"],
+                require_lock=True,
+                require_zero_retry_contract=True,
             )
-            validate_holdout_isolation(records, baseline, candidate_records)
-            validate_phase_profile(records, [*baseline, *candidate_records])
-            gate = holdout_gate(baseline, candidate_records, config)
+            development_gate = candidate_development_gate(
+                records, development_records, config
+            )
+            config["candidateDevelopmentPassed"] = development_gate["passed"]
         else:
+            config["candidateDevelopmentPassed"] = True
+
+        if config["configSchemaVersion"] == 2 and not config[
+            "candidateDevelopmentPassed"
+        ]:
             gate = {
                 "schemaVersion": SCHEMA_VERSION,
                 "source": "harbor",
                 "status": "not-run",
                 "decision": "not-evaluated",
                 "promoted": False,
-                "reason": "No holdout artifacts or job configs were configured.",
+                "reason": (
+                    "Candidate development did not pass; holdout artifacts and "
+                    "job configs were not opened."
+                ),
+                "developmentDecision": development_gate["decision"],
             }
+        else:
+            baseline_paths = list(config["holdout"]["baselineArtifacts"])
+            candidate_paths = list(config["holdout"]["candidateArtifacts"])
+            if config["holdout"]["baselineJobConfigs"]:
+                baseline_paths.extend(
+                    asyncio.run(
+                        execute_jobs(
+                            config["holdout"]["baselineJobConfigs"],
+                            output=output,
+                            phase="holdout-baseline",
+                            baseline_skill=config["baselineSkill"],
+                            candidate_skill=staged_baseline,
+                            require_zero_retries=(
+                                config["configSchemaVersion"] == 2
+                            ),
+                        )
+                    )
+                )
+            if config["holdout"]["candidateJobConfigs"]:
+                candidate_paths.extend(
+                    asyncio.run(
+                        execute_jobs(
+                            config["holdout"]["candidateJobConfigs"],
+                            output=output,
+                            phase="holdout-candidate",
+                            baseline_skill=config["baselineSkill"],
+                            candidate_skill=candidate,
+                            require_zero_retries=(
+                                config["configSchemaVersion"] == 2
+                            ),
+                        )
+                    )
+                )
+            if baseline_paths or candidate_paths:
+                if not baseline_paths or not candidate_paths:
+                    raise ValueError(
+                        "Holdout requires both baseline and candidate artifacts or job configs."
+                    )
+                baseline = load_artifacts(
+                    baseline_paths,
+                    config=config,
+                    expected_skill_digest=config["baselineDigest"],
+                    include_feedback=False,
+                    require_lock=not config["holdout"]["allowWeakFairness"],
+                    require_zero_retry_contract=(
+                        config["configSchemaVersion"] == 2
+                    ),
+                )
+                candidate_records = load_artifacts(
+                    candidate_paths,
+                    config=config,
+                    expected_skill_digest=config["candidateDigest"],
+                    include_feedback=False,
+                    require_lock=not config["holdout"]["allowWeakFairness"],
+                    require_zero_retry_contract=(
+                        config["configSchemaVersion"] == 2
+                    ),
+                )
+                development_evidence = [*records, *development_records]
+                validate_holdout_isolation(
+                    development_evidence, baseline, candidate_records
+                )
+                validate_phase_profile(
+                    development_evidence, [*baseline, *candidate_records]
+                )
+                gate = holdout_gate(baseline, candidate_records, config)
+            else:
+                gate = {
+                    "schemaVersion": SCHEMA_VERSION,
+                    "source": "harbor",
+                    "status": "not-run",
+                    "decision": "not-evaluated",
+                    "promoted": False,
+                    "reason": "No holdout artifacts or job configs were configured.",
+                }
 
     generated_at = datetime.now(timezone.utc).isoformat()
     run = {
@@ -2275,9 +2857,14 @@ def run_distillation(config: dict[str, Any], *, analyze_only: bool) -> dict[str,
         "consolidation": consolidation,
         "holdoutGate": gate,
     }
+    if config["configSchemaVersion"] == 2:
+        run["configSchemaVersion"] = 2
+        run["developmentGate"] = development_gate
     write_json(output / "trace-pool.json", trace_pool)
     write_json(output / "proposal-state.json", state)
     write_json(output / "consolidation.json", consolidation)
+    if development_gate is not None:
+        write_json(output / "development-gate.json", development_gate)
     write_json(output / "holdout-gate.json", gate)
     write_json(output / "run.json", run)
     (output / "report.md").write_text(render_report(run), encoding="utf-8")
@@ -2316,6 +2903,24 @@ def main() -> None:
                 "holdoutGate": str(config["outputDirectory"] / "holdout-gate.json"),
                 "reportMarkdown": str(config["outputDirectory"] / "report.md"),
             }
+            if config["configSchemaVersion"] == 2:
+                development = run["developmentGate"]
+                result.update(
+                    {
+                        "configSchemaVersion": 2,
+                        "candidateDigest": run["consolidation"]["candidateDigest"],
+                        "developmentDecision": development["decision"],
+                        "developmentGate": str(
+                            config["outputDirectory"] / "development-gate.json"
+                        ),
+                        "developmentDiscoverySignature": development.get(
+                            "discoveryReplaySignature"
+                        ),
+                        "developmentCandidateSignature": development.get(
+                            "candidateReplaySignature"
+                        ),
+                    }
+                )
     except (ValueError, OSError) as error:
         raise SystemExit(str(error)) from error
     print(json.dumps(result, indent=2))

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Skill Arena Population Search (Deprecated)"
-  short_description: "Legacy Skill Arena population search"
-  default_prompt: "Use $skill-arena-population-search only to reproduce a legacy search; use $harbor-population-search for new work."

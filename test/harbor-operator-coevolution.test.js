@@ -44,6 +44,57 @@ function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]),
+    );
+  }
+  return value;
+}
+
+function stableDigest(value) {
+  return `sha256:${sha256(JSON.stringify(canonicalize(value)))}`;
+}
+
+function generationSealPayload(log) {
+  const payload = Object.fromEntries([
+    "schemaVersion",
+    "source",
+    "evolutionId",
+    "generation",
+    "generationId",
+    "evolutionProfileDigest",
+    "candidateRanking",
+    "operatorRanking",
+    "breedingPlan",
+    "holdoutPromotion",
+  ].map((key) => [key, log[key]]));
+  for (const key of [
+    "phase",
+    "requestedPhase",
+    "decision",
+    "diagnosticOnly",
+    "chainEligible",
+    "holdoutOpened",
+    "promotion",
+    "selectedDevelopment",
+    "holdoutReleaseBinding",
+    "developmentEvidenceIdentity",
+    "developmentEvidenceIdentityDigest",
+    "repairPlan",
+  ]) {
+    if (Object.hasOwn(log, key)) payload[key] = log[key];
+  }
+  if (Object.hasOwn(log, "phase")
+      && Object.hasOwn(log, "holdoutUsedForDevelopmentSelection")) {
+    payload.holdoutUsedForDevelopmentSelection =
+      log.holdoutUsedForDevelopmentSelection;
+  }
+  return payload;
+}
+
 async function computeSkillDigest(directory) {
   const files = [];
   async function visit(current) {
@@ -477,6 +528,90 @@ function runDevelopmentAnalysis(configPath, outputDirectory) {
     ],
     { cwd: path.resolve("."), encoding: "utf8", timeout: 60000 },
   );
+}
+
+function runDevelopmentChainAnalysis(configPath, outputDirectory) {
+  return spawnSync(
+    "uv",
+    [
+      "run",
+      script,
+      configPath,
+      "--analyze-only",
+      "--phase",
+      "development-chain",
+      "--output-dir",
+      outputDirectory,
+    ],
+    { cwd: path.resolve("."), encoding: "utf8", timeout: 60000 },
+  );
+}
+
+function configureNextGeneration(fixture, previousLog, previousLogPath) {
+  const successorByParent = new Map(
+    previousLog.breedingPlan.operators
+      .filter((operator) => operator.origin === "survivor")
+      .map((operator) => [operator.parentOperatorIds[0], operator.operatorId]),
+  );
+  for (const candidate of fixture.config.candidates) {
+    if (candidate.operatorId) {
+      const successor = successorByParent.get(candidate.operatorId);
+      assert.ok(successor, `missing successor for ${candidate.operatorId}`);
+      candidate.operatorId = successor;
+    }
+  }
+  fixture.config.evolution.generation = previousLog.generation + 1;
+  fixture.config.evolution.generationId = "generation-002";
+  fixture.config.evolution.previousGenerationLog = previousLogPath;
+  fixture.config.operators = previousLog.breedingPlan.operators;
+}
+
+async function rebuildGeneratedCandidateJobs(fixture, root, labelPrefix) {
+  for (const candidate of fixture.config.candidates) {
+    if (!candidate.operatorId) continue;
+    const sourceDirectory = candidate.jobDirectory;
+    const trialResults = [];
+    for (const entry of await fs.readdir(sourceDirectory, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const resultPath = path.join(sourceDirectory, entry.name, "result.json");
+      trialResults.push(JSON.parse(await fs.readFile(resultPath, "utf8")));
+    }
+    trialResults.sort((left, right) => left.trial_name.localeCompare(right.trial_name));
+    const lock = JSON.parse(
+      await fs.readFile(path.join(sourceDirectory, "lock.json"), "utf8"),
+    );
+    const rebuilt = await createJob({
+      root,
+      label: `${labelPrefix}-${candidate.candidateId}`,
+      skill: candidate.skill,
+      rewards: trialResults.map((trial) => trial.verifier_result?.rewards?.reward ?? 0),
+      requiredRewards: trialResults.map((trial) => Object.fromEntries(
+        Object.entries(trial.verifier_result?.rewards ?? {})
+          .filter(([key]) => key !== "reward"),
+      )),
+      omitPrimaryRewardIndices: trialResults.flatMap((trial, index) => (
+        Object.hasOwn(trial.verifier_result?.rewards ?? {}, "reward") ? [] : [index]
+      )),
+      taskNames: trialResults.map((trial) => trial.task_name),
+      taskChecksums: trialResults.map((trial) => trial.task_checksum),
+      exceptionIndex: trialResults.findIndex((trial) => trial.exception_info !== null),
+      separateTaskLockDigest: lock.trials.some(
+        (trial, index) => trial.task.digest !== trialResults[index].task_checksum,
+      ),
+    });
+    candidate.jobDirectory = rebuilt;
+    fixture.jobs.set(candidate.candidateId, rebuilt);
+  }
+}
+
+async function copyGeneratedCandidateJobs(fixture, destinationRoot) {
+  for (const candidate of fixture.config.candidates) {
+    if (!candidate.operatorId) continue;
+    const destination = path.join(destinationRoot, candidate.candidateId);
+    await fs.cp(candidate.jobDirectory, destination, { recursive: true });
+    candidate.jobDirectory = destination;
+    fixture.jobs.set(candidate.candidateId, destination);
+  }
 }
 
 function runReportOnlyAnalysis(configPath, outputDirectory) {
@@ -947,17 +1082,142 @@ test("Harbor operator coevolution rejects inter-generation profile drift", {
     assert.match(sealed.evolutionProfileDigest, /^sha256:[0-9a-f]{64}$/);
     assert.match(sealed.generationSeal, /^sha256:[0-9a-f]{64}$/);
 
-    fixture.config.evolution.generation = 1;
-    fixture.config.evolution.generationId = "generation-002";
-    fixture.config.evolution.previousGenerationLog = previousLog;
-    fixture.config.operators = sealed.breedingPlan.operators;
-    const operatorMap = new Map([
-      ["op-a", sealed.breedingPlan.operators[0].operatorId],
-      ["op-b", sealed.breedingPlan.operators[1].operatorId],
-    ]);
-    for (const candidate of fixture.config.candidates) {
-      if (candidate.operatorId) candidate.operatorId = operatorMap.get(candidate.operatorId);
+    assert.equal(sealed.phase, "full");
+    assert.equal(sealed.requestedPhase, "full");
+    assert.equal(sealed.diagnosticOnly, false);
+    assert.equal(sealed.chainEligible, true);
+    assert.equal(sealed.holdoutOpened, true);
+    assert.equal(sealed.promotion, true);
+    assert.equal(sealed.holdoutUsedForDevelopmentSelection, false);
+    assert.equal(sealed.selectedDevelopment.candidateId, "strong-child-a");
+    assert.equal(sealed.holdoutReleaseBinding.candidateId, "strong-child-a");
+    assert.equal(
+      sealed.holdoutReleaseBinding.holdoutDeclarationDigest,
+      sealed.evolutionProfile.holdoutDeclarationDigest,
+    );
+    assert.match(
+      sealed.developmentEvidenceIdentityDigest,
+      /^sha256:[0-9a-f]{64}$/,
+    );
+    assert.equal(
+      sealed.developmentEvidenceIdentity.candidates.length,
+      fixture.config.candidates.length,
+    );
+    configureNextGeneration(fixture, sealed, previousLog);
+    await rebuildGeneratedCandidateJobs(fixture, root, "generation-002");
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const compatible = runAnalysis(
+      fixture.configPath,
+      path.join(root, "compatible-output"),
+    );
+    assert.equal(compatible.status, 0, compatible.stderr);
+
+    const tamperedReleasePath = path.join(root, "tampered-release-log.json");
+    const tamperedRelease = structuredClone(sealed);
+    tamperedRelease.holdoutReleaseBinding.candidateId = "strong-child-b";
+    tamperedRelease.generationSeal = stableDigest(
+      generationSealPayload(tamperedRelease),
+    );
+    await fs.writeFile(
+      tamperedReleasePath,
+      JSON.stringify(tamperedRelease, null, 2),
+      "utf8",
+    );
+    fixture.config.evolution.previousGenerationLog = tamperedReleasePath;
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const tamperedReleaseResult = runAnalysis(
+      fixture.configPath,
+      path.join(root, "tampered-release-output"),
+    );
+    assert.notEqual(tamperedReleaseResult.status, 0);
+    assert.match(
+      tamperedReleaseResult.stderr,
+      /invalid final holdout release candidate binding/i,
+    );
+
+    const historicalLogPath = path.join(root, "historical-full-log.json");
+    const historical = structuredClone(sealed);
+    for (const key of [
+      "phase",
+      "requestedPhase",
+      "diagnosticOnly",
+      "chainEligible",
+      "holdoutOpened",
+      "promotion",
+      "selectedDevelopment",
+      "holdoutReleaseBinding",
+      "holdoutUsedForDevelopmentSelection",
+      "developmentEvidenceIdentity",
+      "developmentEvidenceIdentityDigest",
+    ]) delete historical[key];
+    delete historical.evolutionProfile.holdoutDeclaration;
+    delete historical.evolutionProfile.holdoutDeclarationDigest;
+    historical.evolutionProfileDigest = stableDigest(historical.evolutionProfile);
+    for (const operator of historical.breedingPlan.operators) {
+      delete operator.instructionContract;
     }
+    historical.generationSeal = stableDigest(generationSealPayload(historical));
+    await fs.writeFile(
+      historicalLogPath,
+      JSON.stringify(historical, null, 2),
+      "utf8",
+    );
+    const frozenHoldout = structuredClone(fixture.config.holdout);
+    const historicalMustNotOpen = path.join(root, "historical-must-not-open");
+    fixture.config.evolution.previousGenerationLog = historicalLogPath;
+    fixture.config.holdout.baseline.jobDirectory = path.join(
+      historicalMustNotOpen,
+      "baseline",
+    );
+    fixture.config.holdout.candidate.jobDirectory = path.join(
+      historicalMustNotOpen,
+      "candidate",
+    );
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const historicalSuccessor = runAnalysis(
+      fixture.configPath,
+      path.join(root, "historical-successor-output"),
+    );
+    assert.notEqual(historicalSuccessor.status, 0);
+    assert.match(
+      historicalSuccessor.stderr,
+      /generated-child freshness cannot be proven/i,
+    );
+    await assert.rejects(fs.stat(historicalMustNotOpen), /ENOENT/);
+    fixture.config.holdout = frozenHoldout;
+
+    const disguisedLog = path.join(root, "new-log-without-phase.json");
+    const disguised = structuredClone(sealed);
+    delete disguised.phase;
+    delete disguised.requestedPhase;
+    delete disguised.chainEligible;
+    await fs.writeFile(disguisedLog, JSON.stringify(disguised, null, 2), "utf8");
+    fixture.config.evolution.previousGenerationLog = disguisedLog;
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const disguisedResult = runAnalysis(
+      fixture.configPath,
+      path.join(root, "disguised-output"),
+    );
+    assert.notEqual(disguisedResult.status, 0);
+    assert.match(disguisedResult.stderr, /not chain-eligible|genuinely historical/i);
+
+    fixture.config.evolution.previousGenerationLog = previousLog;
     fixture.config.harbor.passThreshold = 0.9;
     await fs.writeFile(
       fixture.configPath,
@@ -2324,6 +2584,20 @@ test("complementary repair emits a diagnostic same-parent crossover plan without
       fs.stat(path.join(root, "must-not-open", "baseline")),
       /ENOENT/,
     );
+
+    const chainAttempt = runDevelopmentChainAnalysis(
+      fixture.configPath,
+      path.join(root, "chain-output"),
+    );
+    assert.notEqual(chainAttempt.status, 0);
+    assert.match(
+      chainAttempt.stderr,
+      /Development-chain requires a qualified development winner/i,
+    );
+    await assert.rejects(
+      fs.stat(path.join(root, "chain-output", "repair-plan.json")),
+      /ENOENT/,
+    );
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
@@ -2651,6 +2925,457 @@ test("development phase seals a qualified winner without reading holdout jobs", 
     assert.equal(holdout.promoted, false);
     assert.match(log.generationSeal, /^sha256:[0-9a-f]{64}$/);
     await assert.rejects(fs.stat(path.join(output, "repair-plan.json")), /ENOENT/);
+
+    const previousLogPath = path.join(output, "operator-coevolution-log.json");
+    configureNextGeneration(fixture, log, previousLogPath);
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const successor = runDevelopmentChainAnalysis(
+      fixture.configPath,
+      path.join(root, "rejected-successor"),
+    );
+    assert.notEqual(successor.status, 0);
+    assert.match(successor.stderr, /not chain-eligible/i);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("explicit development-chain seeds a full successor without opening first-generation holdout", {
+  skip: !uvAvailable,
+}, async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "harbor-operator-development-chain-"));
+  try {
+    const fixture = await createFixture(root);
+    const sourceHoldout = structuredClone(fixture.config.holdout);
+    const frozenHoldoutRoot = path.join(root, "frozen-holdout");
+    const frozenBaselinePath = path.join(frozenHoldoutRoot, "baseline");
+    const frozenCandidatePath = path.join(frozenHoldoutRoot, "candidate");
+    fixture.config.holdout.baseline.jobDirectory = frozenBaselinePath;
+    fixture.config.holdout.candidate.jobDirectory = frozenCandidatePath;
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+
+    const dryRun = spawnSync(
+      "uv",
+      [
+        "run",
+        script,
+        fixture.configPath,
+        "--dry-run",
+        "--phase",
+        "development-chain",
+      ],
+      { cwd: path.resolve("."), encoding: "utf8", timeout: 60000 },
+    );
+    assert.equal(dryRun.status, 0, dryRun.stderr);
+    assert.equal(JSON.parse(dryRun.stdout).phase, "development-chain");
+
+    fixture.config.holdout.candidate.candidateId = "weak-child-b";
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+
+    const firstOutput = path.join(root, "first-output");
+    const first = runDevelopmentChainAnalysis(fixture.configPath, firstOutput);
+    assert.equal(first.status, 0, first.stderr);
+    const firstResult = JSON.parse(first.stdout);
+    const firstLogPath = path.join(
+      firstOutput,
+      "operator-coevolution-log.json",
+    );
+    const firstLog = JSON.parse(await fs.readFile(firstLogPath, "utf8"));
+    const unopened = await readOutput(firstOutput, "holdout-promotion.json");
+    const report = await fs.readFile(path.join(firstOutput, "report.md"), "utf8");
+
+    assert.equal(firstResult.phase, "development");
+    assert.equal(firstResult.requestedPhase, "development-chain");
+    assert.equal(firstResult.chainEligible, true);
+    assert.equal(firstResult.holdoutOpened, false);
+    assert.equal(firstResult.promotion, false);
+    assert.equal(firstLog.phase, "development");
+    assert.equal(firstLog.requestedPhase, "development-chain");
+    assert.equal(firstLog.diagnosticOnly, false);
+    assert.equal(firstLog.chainEligible, true);
+    assert.equal(firstLog.holdoutOpened, false);
+    assert.equal(firstLog.promotion, false);
+    assert.equal(firstLog.selectedDevelopment.qualified, true);
+    assert.equal(firstLog.selectedDevelopment.candidateId, "strong-child-a");
+    assert.equal(firstLog.evolutionProfile.holdoutLock, null);
+    assert.equal(
+      firstLog.evolutionProfile.holdoutDeclaration.schemaVersion,
+      2,
+    );
+    assert.equal(
+      Object.hasOwn(
+        firstLog.evolutionProfile.holdoutDeclaration.candidateSlot,
+        "candidateId",
+      ),
+      false,
+    );
+    assert.equal(
+      path.basename(
+        firstLog.evolutionProfile.holdoutDeclaration.candidateSlot.jobDirectory,
+      ),
+      "candidate",
+    );
+    assert.equal(Object.hasOwn(firstLog, "holdoutReleaseBinding"), false);
+    assert.match(
+      firstLog.evolutionProfile.holdoutDeclarationDigest,
+      /^sha256:[0-9a-f]{64}$/,
+    );
+    assert.equal(firstLog.breedingPlan.diagnosticOnly, false);
+    assert.equal(firstLog.breedingPlan.chainEligible, true);
+    assert.equal(
+      firstLog.breedingPlan.operatorCount,
+      firstLog.breedingPlan.operators.length,
+    );
+    assert.ok(firstLog.breedingPlan.operators.length >= 2);
+    assert.match(
+      firstLog.developmentEvidenceIdentityDigest,
+      /^sha256:[0-9a-f]{64}$/,
+    );
+    assert.ok(firstLog.developmentEvidenceIdentity.candidates.every(
+      (candidate) => candidate.jobId && candidate.jobResultDigest
+        && candidate.trials.every((trial) => trial.trialId && trial.resultDigest),
+    ));
+    assert.ok(firstLog.breedingPlan.operators.every(
+      (operator) => operator.instructionContract.mode === "exact-text-v1"
+        && /^sha256:[0-9a-f]{64}$/.test(
+          operator.instructionContract.instructionDigest,
+        ),
+    ));
+    assert.match(firstLog.generationSeal, /^sha256:[0-9a-f]{64}$/);
+    assert.equal(unopened.opened, false);
+    assert.equal(unopened.chainEligible, false);
+    assert.match(report, /Chain eligible: true/i);
+    await assert.rejects(fs.stat(frozenHoldoutRoot), /ENOENT/);
+
+    configureNextGeneration(fixture, firstLog, firstLogPath);
+    fixture.config.holdout.candidate.candidateId = "strong-child-a";
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const reusedEvidence = runAnalysis(
+      fixture.configPath,
+      path.join(root, "reused-evidence-output"),
+    );
+    assert.notEqual(reusedEvidence.status, 0);
+    assert.match(reusedEvidence.stderr, /not fresh and disjoint/i);
+    await assert.rejects(fs.stat(frozenHoldoutRoot), /ENOENT/);
+
+    await copyGeneratedCandidateJobs(
+      fixture,
+      path.join(root, "copied-generation-002"),
+    );
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const copiedEvidence = runAnalysis(
+      fixture.configPath,
+      path.join(root, "copied-evidence-output"),
+    );
+    assert.notEqual(copiedEvidence.status, 0);
+    assert.match(
+      copiedEvidence.stderr,
+      /not fresh and disjoint.*jobId|not fresh and disjoint.*ResultDigest/i,
+    );
+    await assert.rejects(fs.stat(frozenHoldoutRoot), /ENOENT/);
+
+    await rebuildGeneratedCandidateJobs(fixture, root, "generation-002");
+    const baseline = fixture.config.candidates.find(
+      (candidate) => candidate.candidateId === "baseline",
+    );
+    const baselineJob = baseline.jobDirectory;
+    const hybridBaselineJob = path.join(root, "hybrid-baseline-copy");
+    await fs.cp(baselineJob, hybridBaselineJob, { recursive: true });
+    baseline.jobDirectory = hybridBaselineJob;
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const hybridReference = runAnalysis(
+      fixture.configPath,
+      path.join(root, "hybrid-reference-output"),
+    );
+    assert.notEqual(hybridReference.status, 0);
+    assert.match(
+      hybridReference.stderr,
+      /without being the same root reference.*identical evidence identity/i,
+    );
+    await assert.rejects(fs.stat(frozenHoldoutRoot), /ENOENT/);
+    baseline.jobDirectory = baselineJob;
+
+    for (const origin of ["survivor", "mutation-plan", "crossover-plan"]) {
+      const operator = fixture.config.operators.find(
+        (candidateOperator) => candidateOperator.origin === origin,
+      );
+      assert.ok(operator, `missing ${origin} operator`);
+      const instruction = operator.instruction;
+      operator.instruction = `${instruction} Tampered realization.`;
+      await fs.writeFile(
+        fixture.configPath,
+        JSON.stringify(fixture.config, null, 2),
+        "utf8",
+      );
+      const tamperedInstruction = runAnalysis(
+        fixture.configPath,
+        path.join(root, `tampered-${origin}-instruction-output`),
+      );
+      assert.notEqual(tamperedInstruction.status, 0);
+      assert.match(
+        tamperedInstruction.stderr,
+        /instruction differs from the sealed exact-text breeding-plan contract/i,
+      );
+      await assert.rejects(fs.stat(frozenHoldoutRoot), /ENOENT/);
+      operator.instruction = instruction;
+    }
+
+    const tamperedIdentityLogPath = path.join(
+      root,
+      "tampered-evidence-identity-log.json",
+    );
+    const tamperedIdentityLog = structuredClone(firstLog);
+    tamperedIdentityLog.developmentEvidenceIdentity.candidates
+      .find((candidate) => candidate.evidenceClass === "generated-child")
+      .jobId = crypto.randomUUID();
+    await fs.writeFile(
+      tamperedIdentityLogPath,
+      JSON.stringify(tamperedIdentityLog, null, 2),
+      "utf8",
+    );
+    fixture.config.evolution.previousGenerationLog = tamperedIdentityLogPath;
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const tamperedIdentity = runAnalysis(
+      fixture.configPath,
+      path.join(root, "tampered-evidence-identity-output"),
+    );
+    assert.notEqual(tamperedIdentity.status, 0);
+    assert.match(tamperedIdentity.stderr, /generation seal is invalid/i);
+    await assert.rejects(fs.stat(frozenHoldoutRoot), /ENOENT/);
+
+    const tamperedSelectionLogPath = path.join(
+      root,
+      "tampered-holdout-selection-log.json",
+    );
+    const tamperedSelectionLog = structuredClone(firstLog);
+    tamperedSelectionLog.holdoutUsedForDevelopmentSelection = true;
+    await fs.writeFile(
+      tamperedSelectionLogPath,
+      JSON.stringify(tamperedSelectionLog, null, 2),
+      "utf8",
+    );
+    fixture.config.evolution.previousGenerationLog = tamperedSelectionLogPath;
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const tamperedSelection = runAnalysis(
+      fixture.configPath,
+      path.join(root, "tampered-selection-output"),
+    );
+    assert.notEqual(tamperedSelection.status, 0);
+    assert.match(tamperedSelection.stderr, /generation seal is invalid/i);
+    await assert.rejects(fs.stat(frozenHoldoutRoot), /ENOENT/);
+
+    const legacyV1LogPath = path.join(root, "legacy-v1-declaration-log.json");
+    const legacyV1Log = structuredClone(firstLog);
+    const v2Declaration = legacyV1Log.evolutionProfile.holdoutDeclaration;
+    legacyV1Log.evolutionProfile.holdoutDeclaration = {
+      schemaVersion: 1,
+      baseline: v2Declaration.baseline,
+      candidate: {
+        candidateId: firstLog.selectedDevelopment.candidateId,
+        ...v2Declaration.candidateSlot,
+      },
+      promotionPolicy: v2Declaration.promotionPolicy,
+    };
+    legacyV1Log.evolutionProfile.holdoutDeclarationDigest = stableDigest(
+      legacyV1Log.evolutionProfile.holdoutDeclaration,
+    );
+    legacyV1Log.evolutionProfileDigest = stableDigest(
+      legacyV1Log.evolutionProfile,
+    );
+    legacyV1Log.generationSeal = stableDigest(
+      generationSealPayload(legacyV1Log),
+    );
+    await fs.writeFile(
+      legacyV1LogPath,
+      JSON.stringify(legacyV1Log, null, 2),
+      "utf8",
+    );
+    fixture.config.evolution.previousGenerationLog = legacyV1LogPath;
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const legacyV1Result = runAnalysis(
+      fixture.configPath,
+      path.join(root, "legacy-v1-output"),
+    );
+    assert.notEqual(legacyV1Result.status, 0);
+    assert.match(
+      legacyV1Result.stderr,
+      /schemaVersion 2.*cannot seed deferred release/i,
+    );
+    await assert.rejects(fs.stat(frozenHoldoutRoot), /ENOENT/);
+    fixture.config.evolution.previousGenerationLog = firstLogPath;
+
+    const newWinnerId = "generation-002-champion";
+    const newWinner = fixture.config.candidates.find(
+      (candidate) => candidate.candidateId === "strong-child-a",
+    );
+    const newWinnerSkill = await createSkill(root, newWinnerId, 8);
+    const newWinnerJob = await createJob({
+      root,
+      label: "generation-002-champion-development",
+      skill: newWinnerSkill,
+      rewards: [1, 1],
+    });
+    fixture.jobs.delete(newWinner.candidateId);
+    fixture.skills.delete(newWinner.candidateId);
+    newWinner.candidateId = newWinnerId;
+    newWinner.skill = newWinnerSkill;
+    newWinner.jobDirectory = newWinnerJob;
+    fixture.jobs.set(newWinnerId, newWinnerJob);
+    fixture.skills.set(newWinnerId, newWinnerSkill);
+    fixture.config.holdout.candidate.candidateId = newWinnerId;
+
+    const driftedHoldoutRoot = path.join(root, "drifted-holdout");
+    fixture.config.holdout.candidate.jobDirectory = path.join(
+      driftedHoldoutRoot,
+      "candidate",
+    );
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const holdoutDrift = runAnalysis(
+      fixture.configPath,
+      path.join(root, "holdout-drift-output"),
+    );
+    assert.notEqual(holdoutDrift.status, 0);
+    assert.match(holdoutDrift.stderr, /holdout declaration drifted/i);
+    await assert.rejects(fs.stat(driftedHoldoutRoot), /ENOENT/);
+    await assert.rejects(fs.stat(frozenHoldoutRoot), /ENOENT/);
+
+    fixture.config.holdout.candidate.jobDirectory = frozenCandidatePath;
+    fixture.config.harbor.passThreshold = 0.9;
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const drifted = runAnalysis(
+      fixture.configPath,
+      path.join(root, "drifted-output"),
+    );
+    assert.notEqual(drifted.status, 0);
+    assert.match(drifted.stderr, /profile drifted from the previous generation/i);
+    await assert.rejects(fs.stat(frozenHoldoutRoot), /ENOENT/);
+
+    fixture.config.harbor.passThreshold = 1;
+    await fs.mkdir(frozenHoldoutRoot, { recursive: true });
+    await fs.cp(
+      sourceHoldout.baseline.jobDirectory,
+      frozenBaselinePath,
+      { recursive: true },
+    );
+    const finalCandidateSource = await createJob({
+      root,
+      label: "generation-002-champion-holdout",
+      skill: newWinnerSkill,
+      rewards: [0.9, 0.9],
+      taskName: "fixture/holdout",
+      taskChecksum: `sha256:${sha256("holdout-task")}`,
+    });
+    await fs.cp(
+      finalCandidateSource,
+      frozenCandidatePath,
+      { recursive: true },
+    );
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const finalOutput = path.join(root, "final-output");
+    const final = runAnalysis(fixture.configPath, finalOutput);
+    assert.equal(final.status, 0, final.stderr);
+    const finalResult = JSON.parse(final.stdout);
+    const finalHoldout = await readOutput(finalOutput, "holdout-promotion.json");
+    const finalLog = await readOutput(finalOutput, "operator-coevolution-log.json");
+    assert.equal(finalResult.decision, "promote");
+    assert.equal(finalHoldout.promoted, true);
+    assert.equal(finalLog.generation, 1);
+    assert.equal(finalLog.generationId, "generation-002");
+    assert.equal(finalLog.phase, "full");
+    assert.equal(finalLog.requestedPhase, "full");
+    assert.equal(finalLog.diagnosticOnly, false);
+    assert.equal(finalLog.chainEligible, true);
+    assert.equal(finalLog.holdoutOpened, true);
+    assert.equal(finalLog.promotion, true);
+    assert.equal(finalLog.selectedDevelopment.candidateId, newWinnerId);
+    assert.equal(finalHoldout.candidateId, newWinnerId);
+    assert.equal(finalLog.holdoutReleaseBinding.candidateId, newWinnerId);
+    assert.equal(
+      finalLog.holdoutReleaseBinding.developmentSkillDigest,
+      finalLog.selectedDevelopment.skillDigest,
+    );
+    assert.equal(
+      finalLog.holdoutReleaseBinding.holdoutCandidateSkillDigest,
+      finalLog.selectedDevelopment.skillDigest,
+    );
+    assert.equal(
+      finalLog.holdoutReleaseBinding.holdoutDeclarationDigest,
+      finalLog.evolutionProfile.holdoutDeclarationDigest,
+    );
+    assert.match(
+      finalLog.holdoutReleaseBinding.candidateEvidenceIdentityDigest,
+      /^sha256:[0-9a-f]{64}$/,
+    );
+    assert.equal(finalLog.holdoutUsedForDevelopmentSelection, false);
+    assert.notEqual(finalLog.evolutionProfile.holdoutLock, null);
+    const firstGenerated = firstLog.developmentEvidenceIdentity.candidates.filter(
+      (candidate) => candidate.evidenceClass === "generated-child",
+    );
+    const finalGenerated = finalLog.developmentEvidenceIdentity.candidates.filter(
+      (candidate) => candidate.evidenceClass === "generated-child",
+    );
+    const priorJobIds = new Set(firstGenerated.map((candidate) => candidate.jobId));
+    const priorJobResultDigests = new Set(
+      firstGenerated.map((candidate) => candidate.jobResultDigest),
+    );
+    const priorTrialIds = new Set(
+      firstGenerated.flatMap((candidate) => candidate.trials.map((trial) => trial.trialId)),
+    );
+    assert.ok(finalGenerated.every((candidate) => !priorJobIds.has(candidate.jobId)));
+    assert.ok(finalGenerated.every(
+      (candidate) => !priorJobResultDigests.has(candidate.jobResultDigest),
+    ));
+    assert.ok(finalGenerated.every(
+      (candidate) => candidate.trials.every((trial) => !priorTrialIds.has(trial.trialId)),
+    ));
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
@@ -2717,6 +3442,13 @@ test("development seals a qualified winner with insufficient established operato
     assert.equal(breeding.operatorCount, 0);
     assert.deepEqual(breeding.operators, []);
 
+    const chain = runDevelopmentChainAnalysis(
+      fixture.configPath,
+      path.join(root, "chain-output"),
+    );
+    assert.notEqual(chain.status, 0);
+    assert.match(chain.stderr, /Need 2 established operators/i);
+
     const full = runAnalysis(fixture.configPath, path.join(root, "full-output"));
     assert.notEqual(full.status, 0);
     assert.match(full.stderr, /Need 2 established operators/i);
@@ -2724,6 +3456,101 @@ test("development seals a qualified winner with insufficient established operato
       fs.stat(path.join(root, "invalid-holdout", "candidate")),
       /ENOENT/,
     );
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("an exact prior survivor may reuse evidence only after becoming unattributed", {
+  skip: !uvAvailable,
+}, async () => {
+  const root = await fs.mkdtemp(path.join(
+    os.tmpdir(),
+    "harbor-operator-survivor-reuse-",
+  ));
+  try {
+    const fixture = await createFixture(root);
+    fixture.config.coevolution.minimumOperatorTrials = 1;
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const firstOutput = path.join(root, "first-output");
+    const first = runDevelopmentChainAnalysis(fixture.configPath, firstOutput);
+    assert.equal(first.status, 0, first.stderr);
+    const firstLogPath = path.join(
+      firstOutput,
+      "operator-coevolution-log.json",
+    );
+    const firstLog = JSON.parse(await fs.readFile(firstLogPath, "utf8"));
+    configureNextGeneration(fixture, firstLog, firstLogPath);
+
+    const secondPlaceId = firstLog.candidateRanking.survivors[1];
+    assert.notEqual(secondPlaceId, firstLog.selectedDevelopment.candidateId);
+    const secondPlace = fixture.config.candidates.find(
+      (candidate) => candidate.candidateId === secondPlaceId,
+    );
+    const secondPlaceParent = secondPlace.parentCandidateId;
+    const secondPlaceOperator = secondPlace.operatorId;
+    delete secondPlace.parentCandidateId;
+    delete secondPlace.operatorId;
+    await rebuildGeneratedCandidateJobs(
+      fixture,
+      root,
+      "second-place-generation-002",
+    );
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+    const rejectedSecondPlace = runAnalysis(
+      fixture.configPath,
+      path.join(root, "rejected-second-place-output"),
+    );
+    assert.notEqual(rejectedSecondPlace.status, 0);
+    assert.match(
+      rejectedSecondPlace.stderr,
+      /exact selectedDevelopment winner/i,
+    );
+
+    secondPlace.parentCandidateId = secondPlaceParent;
+    secondPlace.operatorId = secondPlaceOperator;
+    await rebuildGeneratedCandidateJobs(
+      fixture,
+      root,
+      "selected-generation-002",
+    );
+    const survivor = fixture.config.candidates.find(
+      (candidate) => candidate.candidateId === firstLog.selectedDevelopment.candidateId,
+    );
+    assert.ok(survivor);
+    const previousIdentity = firstLog.developmentEvidenceIdentity.candidates.find(
+      (candidate) => candidate.candidateId === survivor.candidateId,
+    );
+    survivor.jobDirectory = previousIdentity.jobDirectory;
+    delete survivor.parentCandidateId;
+    delete survivor.operatorId;
+    await fs.writeFile(
+      fixture.configPath,
+      JSON.stringify(fixture.config, null, 2),
+      "utf8",
+    );
+
+    const secondOutput = path.join(root, "second-output");
+    const second = runAnalysis(fixture.configPath, secondOutput);
+    assert.equal(second.status, 0, second.stderr);
+    const secondLog = await readOutput(
+      secondOutput,
+      "operator-coevolution-log.json",
+    );
+    const currentIdentity = secondLog.developmentEvidenceIdentity.candidates.find(
+      (candidate) => candidate.candidateId === survivor.candidateId,
+    );
+    assert.equal(currentIdentity.evidenceClass, "reference-or-survivor");
+    assert.equal(currentIdentity.jobId, previousIdentity.jobId);
+    assert.equal(currentIdentity.jobResultDigest, previousIdentity.jobResultDigest);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

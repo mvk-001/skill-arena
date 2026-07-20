@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -12,8 +13,7 @@ const script = path.resolve(
   "distill_harbor_traces.py",
 );
 const fixtureJob = path.resolve(
-  "evaluations",
-  "harbor-report-parity-poc",
+  "test",
   "fixtures",
   "harbor-jobs",
   "no-skill",
@@ -186,6 +186,69 @@ async function prepareDiscoveryJob(root, jobName, options = {}) {
   return { directory, results };
 }
 
+async function prepareCandidateDevelopmentJob(
+  root,
+  jobName,
+  discoveryDirectory,
+  lockedCandidate,
+  options = {},
+) {
+  const directory = path.join(root, jobName);
+  await fs.cp(discoveryDirectory, directory, { recursive: true });
+  const candidateJobId = randomUUID();
+  const configPath = path.join(directory, "config.json");
+  const config = JSON.parse(await fs.readFile(configPath, "utf8"));
+  config.job_name = jobName;
+  await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
+
+  const directories = await trialDirectories(directory);
+  for (let index = 0; index < directories.length; index += 1) {
+    const resultPath = path.join(directories[index], "result.json");
+    const result = JSON.parse(await fs.readFile(resultPath, "utf8"));
+    result.source = jobName;
+    if (!options.preserveAttemptIdentity) {
+      result.id = randomUUID();
+      result.trial_name = `${result.trial_name}__candidate-${index}`;
+      result.config.trial_name = result.trial_name;
+      result.config.job_id = candidateJobId;
+      result.started_at = `2026-07-14T00:00:${String(index).padStart(2, "0")}Z`;
+      result.finished_at = `2026-07-14T00:01:${String(index).padStart(2, "0")}Z`;
+      result.trial_uri = `file:///synthetic/${jobName}/${index}`;
+    }
+    result.exception_info = null;
+    const reward = options.rewards?.[index] ?? 1;
+    result.verifier_result = { rewards: { reward } };
+    for (const [key, value] of Object.entries(options.requiredRewards ?? {})) {
+      result.verifier_result.rewards[key] = value;
+    }
+    if (options.missingRewardTrials?.includes(index)) {
+      result.verifier_result = null;
+    }
+    const diagnostics = options.diagnosticsByTrial?.[index];
+    if (diagnostics !== undefined) {
+      const verifierDirectory = path.join(directories[index], "verifier");
+      await fs.mkdir(verifierDirectory, { recursive: true });
+      await fs.writeFile(
+        path.join(verifierDirectory, "diagnostics.json"),
+        JSON.stringify(diagnostics, null, 2),
+        "utf8",
+      );
+    }
+    await fs.writeFile(resultPath, JSON.stringify(result, null, 2), "utf8");
+  }
+  const jobResultPath = path.join(directory, "result.json");
+  const jobResult = JSON.parse(await fs.readFile(jobResultPath, "utf8"));
+  if (!options.preserveAttemptIdentity) {
+    jobResult.id = candidateJobId;
+    jobResult.started_at = "2026-07-14T00:00:00Z";
+    jobResult.finished_at = "2026-07-14T00:02:00Z";
+  }
+  jobResult.stats.n_errored_trials = 0;
+  await fs.writeFile(jobResultPath, JSON.stringify(jobResult, null, 2), "utf8");
+  await attachTraceJobLock(directory, lockedCandidate);
+  return directory;
+}
+
 async function attachTraceJobLock(directory, lockedSkill) {
   const configSource = lockedSkill.configSource ?? lockedSkill.source;
   const configPath = path.join(directory, "config.json");
@@ -257,6 +320,7 @@ async function attachTraceJobLock(directory, lockedSkill) {
       n_concurrent_trials: 2,
       retry: {
         max_retries: 0,
+        include_exceptions: null,
         exclude_exceptions: [
           "VerifierTimeoutError",
           "AgentTimeoutError",
@@ -399,6 +463,7 @@ async function prepareHoldoutJob(
       n_concurrent_trials: 2,
       retry: {
         max_retries: 0,
+        include_exceptions: null,
         exclude_exceptions: [
           "VerifierTimeoutError",
           "AgentTimeoutError",
@@ -484,7 +549,7 @@ async function writeProposals(root, discoveryName, discoveryResults) {
 async function writeConfig(root, values) {
   const configPath = path.join(root, values.name + ".json");
   const config = {
-    schemaVersion: 1,
+    schemaVersion: values.schemaVersion ?? 1,
     run: {
       id: values.name,
       baselineSkill: values.baseline,
@@ -517,6 +582,7 @@ async function writeConfig(root, values) {
       requireNoErrors: values.requireNoErrors ?? true,
     },
   };
+  if (values.development) config.development = values.development;
   await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
   return configPath;
 }
@@ -554,9 +620,116 @@ test("Harbor trace distillation dry-run and doctor do not create output", {
     assert.equal(dry.status, 0, dry.stderr);
     const dryPlan = JSON.parse(dry.stdout);
     assert.equal(dryPlan.harborVersion, "0.18.0");
+    assert.equal("configSchemaVersion" in dryPlan, false);
     assert.deepEqual(dryPlan.requiredRewardThresholds, {});
     assert.equal(dryPlan.stagedBaselineSkill, stagedSkill(output, "baseline"));
     assert.equal(dryPlan.candidateSkill, stagedSkill(output, "candidate"));
+
+    const v1WithDevelopment = JSON.parse(await fs.readFile(config, "utf8"));
+    v1WithDevelopment.development = {
+      candidateArtifacts: [path.join(root, "candidate-development")],
+      candidateJobConfigs: [],
+      minimumPassRate: 1,
+    };
+    const v1WithDevelopmentPath = path.join(root, "trace-plan-v1-development.json");
+    await fs.writeFile(
+      v1WithDevelopmentPath,
+      JSON.stringify(v1WithDevelopment, null, 2),
+      "utf8",
+    );
+    const rejectedV1Development = runScript(v1WithDevelopmentPath, "--dry-run");
+    assert.notEqual(rejectedV1Development.status, 0);
+    assert.match(rejectedV1Development.stderr, /development block requires schemaVersion 2/i);
+
+    const v2Config = structuredClone(v1WithDevelopment);
+    v2Config.schemaVersion = 2;
+    const v2Path = path.join(root, "trace-plan-v2.json");
+    await fs.writeFile(v2Path, JSON.stringify(v2Config, null, 2), "utf8");
+    const v2Dry = runScript(v2Path, "--dry-run");
+    assert.equal(v2Dry.status, 0, v2Dry.stderr);
+    const v2Plan = JSON.parse(v2Dry.stdout);
+    assert.equal(v2Plan.configSchemaVersion, 2);
+    assert.deepEqual(v2Plan.development, {
+      candidateArtifactCount: 1,
+      candidateJobConfigCount: 0,
+      minimumPassRate: 1,
+    });
+
+    const retriedJobConfigPath = path.join(root, "retried-job-config.json");
+    const retriedJobConfig = JSON.parse(
+      await fs.readFile(path.join(fixtureJob, "config.json"), "utf8"),
+    );
+    retriedJobConfig.retry = { max_retries: 1 };
+    retriedJobConfig.agents = retriedJobConfig.agents.map((agent) => ({
+      ...agent,
+      skills: [baseline],
+    }));
+    await fs.writeFile(
+      retriedJobConfigPath,
+      JSON.stringify(retriedJobConfig, null, 2),
+      "utf8",
+    );
+
+    const retriedDevelopmentConfig = structuredClone(v2Config);
+    retriedDevelopmentConfig.development.candidateArtifacts = [];
+    retriedDevelopmentConfig.development.candidateJobConfigs = [
+      retriedJobConfigPath,
+    ];
+    const retriedDevelopmentConfigPath = path.join(
+      root,
+      "trace-plan-retried-development.json",
+    );
+    await fs.writeFile(
+      retriedDevelopmentConfigPath,
+      JSON.stringify(retriedDevelopmentConfig, null, 2),
+      "utf8",
+    );
+    const rejectedRetriedDevelopmentConfig = runScript(
+      retriedDevelopmentConfigPath,
+      "--dry-run",
+    );
+    assert.notEqual(rejectedRetriedDevelopmentConfig.status, 0);
+    assert.match(
+      rejectedRetriedDevelopmentConfig.stderr,
+      /retry\.max_retries must be 0/i,
+    );
+
+    const retriedDiscoveryConfig = structuredClone(v2Config);
+    retriedDiscoveryConfig.discovery.jobConfigs = [retriedJobConfigPath];
+    const retriedDiscoveryConfigPath = path.join(
+      root,
+      "trace-plan-retried-discovery.json",
+    );
+    await fs.writeFile(
+      retriedDiscoveryConfigPath,
+      JSON.stringify(retriedDiscoveryConfig, null, 2),
+      "utf8",
+    );
+    const rejectedRetriedDiscoveryConfig = runScript(
+      retriedDiscoveryConfigPath,
+      "--dry-run",
+    );
+    assert.notEqual(rejectedRetriedDiscoveryConfig.status, 0);
+    assert.match(
+      rejectedRetriedDiscoveryConfig.stderr,
+      /retry\.max_retries must be 0/i,
+    );
+
+    const invalidV2 = structuredClone(v2Config);
+    invalidV2.development.minimumPassRate = 1.01;
+    const invalidV2Path = path.join(root, "trace-plan-invalid-v2.json");
+    await fs.writeFile(invalidV2Path, JSON.stringify(invalidV2, null, 2), "utf8");
+    const rejectedInvalidV2 = runScript(invalidV2Path, "--dry-run");
+    assert.notEqual(rejectedInvalidV2.status, 0);
+    assert.match(rejectedInvalidV2.stderr, /minimumPassRate must be between 0 and 1/i);
+
+    const emptyV2 = structuredClone(v2Config);
+    emptyV2.development.candidateArtifacts = [];
+    const emptyV2Path = path.join(root, "trace-plan-empty-v2.json");
+    await fs.writeFile(emptyV2Path, JSON.stringify(emptyV2, null, 2), "utf8");
+    const rejectedEmptyV2 = runScript(emptyV2Path, "--dry-run");
+    assert.notEqual(rejectedEmptyV2.status, 0);
+    assert.match(rejectedEmptyV2.stderr, /requires at least one development candidate/i);
 
     const nonFinitePath = path.join(root, "trace-plan-non-finite.json");
     const nonFiniteConfig = (await fs.readFile(config, "utf8")).replace(
@@ -595,6 +768,92 @@ test("Harbor trace distillation dry-run and doctor do not create output", {
     assert.equal(doctor.status, 0, doctor.stderr);
     assert.equal(JSON.parse(doctor.stdout).checks.jobConfigs, 0);
     await assert.rejects(fs.stat(output), /ENOENT/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("candidate development JobConfigs execute with zero retries and staged-skill substitution", {
+  skip: !uvAvailable,
+}, async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "harbor-trace-development-job-config-"),
+  );
+  try {
+    const baseline = await createBaseline(root);
+    const candidate = path.join(root, "candidate-skill");
+    await fs.cp(baseline, candidate, { recursive: true });
+    const configPath = path.join(root, "candidate-development-job.json");
+    const jobConfig = JSON.parse(
+      await fs.readFile(path.join(fixtureJob, "config.json"), "utf8"),
+    );
+    jobConfig.retry = { max_retries: 0 };
+    jobConfig.agents = jobConfig.agents.map((agent) => ({
+      ...agent,
+      skills: [baseline],
+    }));
+    await fs.writeFile(configPath, JSON.stringify(jobConfig, null, 2), "utf8");
+
+    const output = path.join(root, "output");
+    const harness = [
+      "import asyncio, importlib.util, json, sys",
+      "from pathlib import Path",
+      "spec = importlib.util.spec_from_file_location('trace_distiller', sys.argv[1])",
+      "module = importlib.util.module_from_spec(spec)",
+      "spec.loader.exec_module(module)",
+      "class FakeJob:",
+      "    captured = []",
+      "    ran = False",
+      "    def __init__(self):",
+      "        self.job_dir = Path(sys.argv[5]) / 'fake-harbor-job'",
+      "        self.job_dir.mkdir(parents=True, exist_ok=True)",
+      "    @classmethod",
+      "    async def create(cls, config):",
+      "        cls.captured.append(config)",
+      "        return cls()",
+      "    async def run(self):",
+      "        type(self).ran = True",
+      "module.Job = FakeJob",
+      "paths = asyncio.run(module.execute_jobs([Path(sys.argv[2])], output=Path(sys.argv[5]), phase='development-candidate', baseline_skill=Path(sys.argv[3]), candidate_skill=Path(sys.argv[4]), require_zero_retries=True))",
+      "config = FakeJob.captured[0]",
+      "print(json.dumps({'ran': FakeJob.ran, 'skills': [[str(skill) for skill in agent.skills] for agent in config.agents], 'jobName': config.job_name, 'jobsDir': str(config.jobs_dir), 'maxRetries': config.retry.max_retries, 'returnedPath': str(paths[0])}))",
+    ].join("\n");
+    const completed = spawnSync(
+      "uv",
+      [
+        "run",
+        "--with",
+        "harbor==0.18.0",
+        "--with",
+        "PyYAML>=6,<7",
+        "python",
+        "-c",
+        harness,
+        script,
+        configPath,
+        baseline,
+        candidate,
+        output,
+      ],
+      {
+        cwd: path.resolve("."),
+        encoding: "utf8",
+        timeout: 120000,
+      },
+    );
+    assert.equal(completed.status, 0, completed.stderr);
+    const captured = JSON.parse(completed.stdout);
+    assert.equal(captured.ran, true);
+    assert.equal(captured.maxRetries, 0);
+    assert.match(captured.jobName, /^development-candidate-01-/);
+    assert.equal(captured.jobsDir, path.join(output, "harbor-jobs"));
+    assert.equal(captured.returnedPath, path.join(output, "fake-harbor-job"));
+    assert.ok(
+      captured.skills.every(
+        (skills) =>
+          skills.length === 1 && path.resolve(skills[0]) === path.resolve(candidate),
+      ),
+    );
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
@@ -778,6 +1037,76 @@ test("Harbor discovery normalization and consolidation preserve evidence scope",
       ),
       "preserved\n",
     );
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("schema v2 analyze-only verifies discovery retry locks and defers later inputs", {
+  skip: !uvAvailable,
+}, async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "harbor-trace-v2-analyze-"),
+  );
+  try {
+    const baseline = await createBaseline(root);
+    const discovery = await prepareDiscoveryJob(root, "v2-analyze-discovery");
+    const canonicalBaseline = await canonicalSkillCopy(
+      root,
+      baseline,
+      "canonical-v2-analyze-baseline",
+    );
+    await attachTraceJobLock(discovery.directory, {
+      source: canonicalBaseline,
+      digest: computeSkillDigest(canonicalBaseline),
+    });
+    const proposals = await writeProposals(
+      root,
+      "v2-analyze-discovery",
+      discovery.results,
+    );
+    const output = path.join(root, "output");
+    const developmentSentinel = path.join(
+      root,
+      "DEVELOPMENT-SENTINEL-does-not-exist",
+    );
+    const config = await writeConfig(root, {
+      name: "v2-analyze",
+      schemaVersion: 2,
+      baseline,
+      output,
+      discovery: discovery.directory,
+      proposals,
+      development: {
+        candidateArtifacts: [developmentSentinel],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+      holdoutBaseline: path.join(root, "HOLDOUT-SENTINEL-does-not-exist"),
+      holdoutCandidate: path.join(
+        root,
+        "HOLDOUT-SENTINEL-candidate-does-not-exist",
+      ),
+    });
+
+    const completed = runScript(config, "--analyze-only");
+    assert.equal(completed.status, 0, completed.stderr);
+    const receipt = JSON.parse(completed.stdout);
+    const developmentGate = JSON.parse(
+      await fs.readFile(path.join(output, "development-gate.json"), "utf8"),
+    );
+    const tracePoolText = await fs.readFile(
+      path.join(output, "trace-pool.json"),
+      "utf8",
+    );
+    assert.equal(developmentGate.status, "not-run");
+    assert.equal(developmentGate.decision, "not-evaluated");
+    assert.match(developmentGate.reason, /excludes candidate development/i);
+    assert.equal(receipt.configSchemaVersion, 2);
+    assert.equal(receipt.developmentDecision, "not-evaluated");
+    assert.equal(receipt.developmentDiscoverySignature, null);
+    assert.equal(receipt.developmentCandidateSignature, null);
+    assert.doesNotMatch(tracePoolText, /DEVELOPMENT-SENTINEL|HOLDOUT-SENTINEL/);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
@@ -993,6 +1322,13 @@ test("Harbor import-only holdout remains separate and gates the candidate", {
 
     const completed = runScript(config);
     assert.equal(completed.status, 0, completed.stderr);
+    const receipt = JSON.parse(completed.stdout);
+    assert.equal("configSchemaVersion" in receipt, false);
+    assert.equal("developmentGate" in receipt, false);
+    await assert.rejects(
+      fs.access(path.join(output, "development-gate.json")),
+      { code: "ENOENT" },
+    );
     const gate = JSON.parse(
       await fs.readFile(path.join(output, "holdout-gate.json"), "utf8"),
     );
@@ -1129,6 +1465,712 @@ test("Harbor import-only holdout remains separate and gates the candidate", {
     const multisetDrift = runScript(multisetConfig);
     assert.notEqual(multisetDrift.status, 0);
     assert.match(multisetDrift.stderr, /trial-lock drift/i);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("schema v2 validates the candidate on discovery cases before opening holdout", {
+  skip: !uvAvailable,
+}, async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "harbor-trace-development-"));
+  try {
+    const baseline = await createBaseline(root);
+    const discovery = await prepareDiscoveryJob(root, "development-baseline");
+    const canonicalBaseline = await canonicalSkillCopy(
+      root,
+      baseline,
+      "canonical-development-baseline",
+    );
+    await attachTraceJobLock(discovery.directory, {
+      source: canonicalBaseline,
+      digest: computeSkillDigest(canonicalBaseline),
+    });
+    const proposals = await writeProposals(
+      root,
+      "development-baseline",
+      discovery.results,
+    );
+
+    const previewOutput = path.join(root, "preview-output");
+    const previewConfig = await writeConfig(root, {
+      name: "development-preview",
+      baseline,
+      output: previewOutput,
+      discovery: discovery.directory,
+      proposals,
+    });
+    const preview = runScript(previewConfig, "--analyze-only");
+    assert.equal(preview.status, 0, preview.stderr);
+    const previewCandidate = stagedSkill(previewOutput, "candidate");
+    const candidateLock = {
+      source: previewCandidate,
+      digest: computeSkillDigest(previewCandidate),
+    };
+    const development = await prepareCandidateDevelopmentJob(
+      root,
+      "development-candidate",
+      discovery.directory,
+      candidateLock,
+    );
+    const holdoutBaseline = await prepareHoldoutJob(
+      root,
+      "development-holdout-baseline",
+      0,
+      {
+        source: canonicalBaseline,
+        digest: computeSkillDigest(canonicalBaseline),
+      },
+    );
+    const holdoutCandidate = await prepareHoldoutJob(
+      root,
+      "development-holdout-candidate",
+      1,
+      candidateLock,
+    );
+    const output = path.join(root, "output");
+    const config = await writeConfig(root, {
+      name: "development-gated",
+      schemaVersion: 2,
+      baseline,
+      output,
+      discovery: discovery.directory,
+      proposals,
+      development: {
+        candidateArtifacts: [development],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+      holdoutBaseline,
+      holdoutCandidate,
+      allowWeakFairness: false,
+    });
+
+    const completed = runScript(config);
+    assert.equal(completed.status, 0, completed.stderr);
+    const receipt = JSON.parse(completed.stdout);
+    const developmentGate = JSON.parse(
+      await fs.readFile(path.join(output, "development-gate.json"), "utf8"),
+    );
+    const holdoutGate = JSON.parse(
+      await fs.readFile(path.join(output, "holdout-gate.json"), "utf8"),
+    );
+    const run = JSON.parse(await fs.readFile(path.join(output, "run.json"), "utf8"));
+    assert.equal(run.configSchemaVersion, 2);
+    assert.deepEqual(run.developmentGate, developmentGate);
+    assert.equal(developmentGate.decision, "pass");
+    assert.equal(developmentGate.passed, true);
+    assert.equal(developmentGate.fairnessBasis, "trial-lock-and-result");
+    assert.equal(developmentGate.attemptIndependenceVerified, true);
+    assert.match(
+      developmentGate.attemptIndependenceSignature,
+      /^sha256:[a-f0-9]{64}$/,
+    );
+    assert.equal(developmentGate.uniqueTrials, 4);
+    assert.equal(developmentGate.uniqueTasks, 3);
+    assert.equal(developmentGate.candidatePassRate, 1);
+    assert.equal(developmentGate.minimumPassRate, 1);
+    assert.equal(developmentGate.candidateQualified, true);
+    assert.deepEqual(developmentGate.blockers, []);
+    assert.equal(
+      developmentGate.discoveryReplaySignature,
+      developmentGate.candidateReplaySignature,
+    );
+    assert.match(developmentGate.discoveryReplaySignature, /^sha256:[a-f0-9]{64}$/);
+    assert.equal(receipt.configSchemaVersion, 2);
+    assert.equal(receipt.candidateDigest, developmentGate.candidateDigest);
+    assert.equal(receipt.developmentDecision, "pass");
+    assert.equal(
+      receipt.developmentGate,
+      path.join(output, "development-gate.json"),
+    );
+    assert.equal(
+      receipt.developmentDiscoverySignature,
+      developmentGate.discoveryReplaySignature,
+    );
+    assert.equal(
+      receipt.developmentCandidateSignature,
+      developmentGate.candidateReplaySignature,
+    );
+    assert.ok(
+      developmentGate.candidateEvidence.every(
+        (item) =>
+          !("feedback" in item) &&
+          item.skillIdentity.promotionEligible &&
+          item.jobRetry.maxRetries === 0 &&
+          /^sha256:[a-f0-9]{64}$/.test(item.jobRetryDigest),
+      ),
+    );
+    assert.equal(holdoutGate.decision, "promote");
+    assert.equal(holdoutGate.retryContractVerified, true);
+    assert.equal(holdoutGate.baselineRetryPolicyDigests.length, 1);
+    assert.deepEqual(
+      holdoutGate.baselineRetryPolicyDigests,
+      holdoutGate.candidateRetryPolicyDigests,
+    );
+    const tracePoolText = await fs.readFile(path.join(output, "trace-pool.json"), "utf8");
+    const proposalStateText = await fs.readFile(
+      path.join(output, "proposal-state.json"),
+      "utf8",
+    );
+    assert.doesNotMatch(tracePoolText, /development-candidate/);
+    assert.doesNotMatch(proposalStateText, /development-candidate/);
+
+    const noopProposals = path.join(root, "noop-proposals.json");
+    await fs.writeFile(
+      noopProposals,
+      JSON.stringify({ proposals: [] }, null, 2),
+      "utf8",
+    );
+    const directReuseConfig = await writeConfig(root, {
+      name: "development-direct-artifact-reuse",
+      schemaVersion: 2,
+      baseline,
+      output: path.join(root, "output-direct-artifact-reuse"),
+      discovery: discovery.directory,
+      proposals: noopProposals,
+      development: {
+        candidateArtifacts: [discovery.directory],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+      holdoutBaseline: path.join(root, "HOLDOUT-DIRECT-REUSE-MUST-NOT-OPEN"),
+      holdoutCandidate: path.join(
+        root,
+        "HOLDOUT-DIRECT-REUSE-CANDIDATE-MUST-NOT-OPEN",
+      ),
+    });
+    const directReuse = runScript(directReuseConfig);
+    assert.notEqual(directReuse.status, 0);
+    assert.match(
+      directReuse.stderr,
+      /independent attempts; reused job artifact directory/i,
+    );
+    assert.equal(
+      computeSkillDigest(
+        stagedSkill(path.join(root, "output-direct-artifact-reuse"), "candidate"),
+      ),
+      computeSkillDigest(baseline),
+    );
+
+    const relabelledReuse = path.join(
+      root,
+      "development-copied-relabelled-reuse",
+    );
+    await fs.cp(discovery.directory, relabelledReuse, { recursive: true });
+    const relabelledJobId = randomUUID();
+    const relabelledConfigPath = path.join(relabelledReuse, "config.json");
+    const relabelledJobConfig = JSON.parse(
+      await fs.readFile(relabelledConfigPath, "utf8"),
+    );
+    relabelledJobConfig.job_name = "development-copied-relabelled-reuse";
+    await fs.writeFile(
+      relabelledConfigPath,
+      JSON.stringify(relabelledJobConfig, null, 2),
+      "utf8",
+    );
+    const relabelledRootResultPath = path.join(relabelledReuse, "result.json");
+    const relabelledRootResult = JSON.parse(
+      await fs.readFile(relabelledRootResultPath, "utf8"),
+    );
+    relabelledRootResult.id = relabelledJobId;
+    await fs.writeFile(
+      relabelledRootResultPath,
+      JSON.stringify(relabelledRootResult, null, 2),
+      "utf8",
+    );
+    for (const [index, trialDirectory] of (
+      await trialDirectories(relabelledReuse)
+    ).entries()) {
+      const resultPath = path.join(trialDirectory, "result.json");
+      const result = JSON.parse(await fs.readFile(resultPath, "utf8"));
+      result.id = randomUUID();
+      result.source = "development-copied-relabelled-reuse";
+      result.trial_name = `${result.trial_name}__relabelled-${index}`;
+      result.config.trial_name = result.trial_name;
+      result.config.job_id = relabelledJobId;
+      result.trial_uri = `file:///synthetic/relabelled/${index}`;
+      await fs.writeFile(resultPath, JSON.stringify(result, null, 2), "utf8");
+    }
+    const relabelledReuseConfig = await writeConfig(root, {
+      name: "development-relabelled-artifact-reuse",
+      schemaVersion: 2,
+      baseline,
+      output: path.join(root, "output-relabelled-artifact-reuse"),
+      discovery: discovery.directory,
+      proposals: noopProposals,
+      development: {
+        candidateArtifacts: [relabelledReuse],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+      holdoutBaseline: path.join(
+        root,
+        "HOLDOUT-RELABELLED-REUSE-MUST-NOT-OPEN",
+      ),
+      holdoutCandidate: path.join(
+        root,
+        "HOLDOUT-RELABELLED-REUSE-CANDIDATE-MUST-NOT-OPEN",
+      ),
+    });
+    const relabelled = runScript(relabelledReuseConfig);
+    assert.notEqual(relabelled.status, 0);
+    assert.match(
+      relabelled.stderr,
+      /independent attempts; reused attempt evidence fingerprint/i,
+    );
+
+    async function rejectHoldoutRetryArtifact({
+      label,
+      side,
+      mutate,
+      expected,
+    }) {
+      const source = side === "baseline" ? holdoutBaseline : holdoutCandidate;
+      const mutated = path.join(root, `holdout-${side}-${label}`);
+      await fs.cp(source, mutated, { recursive: true });
+      await mutate(mutated);
+      const scenarioConfig = await writeConfig(root, {
+        name: `development-holdout-${side}-${label}`,
+        schemaVersion: 2,
+        baseline,
+        output: path.join(root, `output-holdout-${side}-${label}`),
+        discovery: discovery.directory,
+        proposals,
+        development: {
+          candidateArtifacts: [development],
+          candidateJobConfigs: [],
+          minimumPassRate: 1,
+        },
+        holdoutBaseline: side === "baseline" ? mutated : holdoutBaseline,
+        holdoutCandidate: side === "candidate" ? mutated : holdoutCandidate,
+        allowWeakFairness: false,
+      });
+      const rejected = runScript(scenarioConfig);
+      assert.notEqual(rejected.status, 0, label);
+      assert.match(rejected.stderr, expected, label);
+    }
+
+    await rejectHoldoutRetryArtifact({
+      label: "retry-positive",
+      side: "baseline",
+      mutate: async (directory) => {
+        const lockPath = path.join(directory, "lock.json");
+        const lock = JSON.parse(await fs.readFile(lockPath, "utf8"));
+        lock.retry.max_retries = 1;
+        await fs.writeFile(lockPath, JSON.stringify(lock, null, 2), "utf8");
+      },
+      expected: /retry\.max_retries must be 0/i,
+    });
+    await rejectHoldoutRetryArtifact({
+      label: "retry-missing-field",
+      side: "candidate",
+      mutate: async (directory) => {
+        const lockPath = path.join(directory, "lock.json");
+        const lock = JSON.parse(await fs.readFile(lockPath, "utf8"));
+        delete lock.retry.include_exceptions;
+        await fs.writeFile(lockPath, JSON.stringify(lock, null, 2), "utf8");
+      },
+      expected: /retry is missing required fields: include_exceptions/i,
+    });
+    await rejectHoldoutRetryArtifact({
+      label: "retry-config-lock-drift",
+      side: "baseline",
+      mutate: async (directory) => {
+        const lockPath = path.join(directory, "lock.json");
+        const lock = JSON.parse(await fs.readFile(lockPath, "utf8"));
+        lock.retry.wait_multiplier = 2;
+        await fs.writeFile(lockPath, JSON.stringify(lock, null, 2), "utf8");
+      },
+      expected: /JobConfig and JobLock retry drift/i,
+    });
+    await rejectHoldoutRetryArtifact({
+      label: "retry-count",
+      side: "candidate",
+      mutate: async (directory) => {
+        const resultPath = path.join(directory, "result.json");
+        const result = JSON.parse(await fs.readFile(resultPath, "utf8"));
+        result.stats.n_retries = 1;
+        await fs.writeFile(resultPath, JSON.stringify(result, null, 2), "utf8");
+      },
+      expected: /reports 1 built-in retries/i,
+    });
+
+    const retriedHoldoutJobConfigPath = path.join(
+      root,
+      "holdout-job-config-retry-positive.json",
+    );
+    const retriedHoldoutJobConfig = JSON.parse(
+      await fs.readFile(path.join(holdoutBaseline, "config.json"), "utf8"),
+    );
+    retriedHoldoutJobConfig.retry = { max_retries: 1 };
+    await fs.writeFile(
+      retriedHoldoutJobConfigPath,
+      JSON.stringify(retriedHoldoutJobConfig, null, 2),
+      "utf8",
+    );
+    for (const side of ["baseline", "candidate"]) {
+      const jobConfigScenario = await writeConfig(root, {
+        name: `development-holdout-${side}-job-config-retry-positive`,
+        schemaVersion: 2,
+        baseline,
+        output: path.join(
+          root,
+          `output-holdout-${side}-job-config-retry-positive`,
+        ),
+        discovery: discovery.directory,
+        proposals,
+        development: {
+          candidateArtifacts: [development],
+          candidateJobConfigs: [],
+          minimumPassRate: 1,
+        },
+        holdoutBaseline: side === "candidate" ? holdoutBaseline : null,
+        holdoutCandidate: side === "baseline" ? holdoutCandidate : null,
+        allowWeakFairness: false,
+      });
+      const jobConfigValue = JSON.parse(
+        await fs.readFile(jobConfigScenario, "utf8"),
+      );
+      jobConfigValue.holdout[`${side}JobConfigs`] = [
+        retriedHoldoutJobConfigPath,
+      ];
+      await fs.writeFile(
+        jobConfigScenario,
+        JSON.stringify(jobConfigValue, null, 2),
+        "utf8",
+      );
+      const rejected = runScript(jobConfigScenario);
+      assert.notEqual(rejected.status, 0, side);
+      assert.match(rejected.stderr, /retry\.max_retries must be 0/i, side);
+    }
+
+    const driftedDevelopment = path.join(root, "development-candidate-drift");
+    await fs.cp(development, driftedDevelopment, { recursive: true });
+    const driftedTrial = (await trialDirectories(driftedDevelopment))[0];
+    const driftedResultPath = path.join(driftedTrial, "result.json");
+    const driftedResult = JSON.parse(await fs.readFile(driftedResultPath, "utf8"));
+    driftedResult.task_checksum = "sha256:unexpected-development-case";
+    await fs.writeFile(
+      driftedResultPath,
+      JSON.stringify(driftedResult, null, 2),
+      "utf8",
+    );
+    const driftedConfig = await writeConfig(root, {
+      name: "development-drifted",
+      schemaVersion: 2,
+      baseline,
+      output: path.join(root, "output-drifted"),
+      discovery: discovery.directory,
+      proposals,
+      development: {
+        candidateArtifacts: [driftedDevelopment],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+    });
+    const rejectedDrift = runScript(driftedConfig);
+    assert.notEqual(rejectedDrift.status, 0);
+    assert.match(rejectedDrift.stderr, /Candidate development jobs are not comparable/i);
+
+    const lockDriftDevelopment = path.join(
+      root,
+      "development-candidate-lock-drift",
+    );
+    await fs.cp(development, lockDriftDevelopment, { recursive: true });
+    const lockDriftTrial = (await trialDirectories(lockDriftDevelopment))[0];
+    const lockDriftPath = path.join(lockDriftTrial, "lock.json");
+    const lockDrift = JSON.parse(await fs.readFile(lockDriftPath, "utf8"));
+    lockDrift.timeout_multiplier = 2;
+    await fs.writeFile(lockDriftPath, JSON.stringify(lockDrift, null, 2), "utf8");
+    const lockDriftConfig = await writeConfig(root, {
+      name: "development-lock-drifted",
+      schemaVersion: 2,
+      baseline,
+      output: path.join(root, "output-lock-drifted"),
+      discovery: discovery.directory,
+      proposals,
+      development: {
+        candidateArtifacts: [lockDriftDevelopment],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+    });
+    const rejectedLockDrift = runScript(lockDriftConfig);
+    assert.notEqual(rejectedLockDrift.status, 0);
+    assert.match(rejectedLockDrift.stderr, /Candidate development trial-lock drift/i);
+
+    const retriedDevelopment = path.join(
+      root,
+      "development-candidate-built-in-retry",
+    );
+    await fs.cp(development, retriedDevelopment, { recursive: true });
+    const retriedLockPath = path.join(retriedDevelopment, "lock.json");
+    const retriedLock = JSON.parse(await fs.readFile(retriedLockPath, "utf8"));
+    retriedLock.retry.max_retries = 1;
+    await fs.writeFile(
+      retriedLockPath,
+      JSON.stringify(retriedLock, null, 2),
+      "utf8",
+    );
+    const retriedConfig = await writeConfig(root, {
+      name: "development-built-in-retry",
+      schemaVersion: 2,
+      baseline,
+      output: path.join(root, "output-built-in-retry"),
+      discovery: discovery.directory,
+      proposals,
+      development: {
+        candidateArtifacts: [retriedDevelopment],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+    });
+    const rejectedRetry = runScript(retriedConfig);
+    assert.notEqual(rejectedRetry.status, 0);
+    assert.match(rejectedRetry.stderr, /retry\.max_retries must be 0/i);
+
+    const incompleteRetryDevelopment = path.join(
+      root,
+      "development-candidate-incomplete-retry",
+    );
+    await fs.cp(development, incompleteRetryDevelopment, { recursive: true });
+    const incompleteRetryLockPath = path.join(
+      incompleteRetryDevelopment,
+      "lock.json",
+    );
+    const incompleteRetryLock = JSON.parse(
+      await fs.readFile(incompleteRetryLockPath, "utf8"),
+    );
+    delete incompleteRetryLock.retry.include_exceptions;
+    await fs.writeFile(
+      incompleteRetryLockPath,
+      JSON.stringify(incompleteRetryLock, null, 2),
+      "utf8",
+    );
+    const incompleteRetryConfig = await writeConfig(root, {
+      name: "development-incomplete-retry",
+      schemaVersion: 2,
+      baseline,
+      output: path.join(root, "output-incomplete-retry"),
+      discovery: discovery.directory,
+      proposals,
+      development: {
+        candidateArtifacts: [incompleteRetryDevelopment],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+    });
+    const rejectedIncompleteRetry = runScript(incompleteRetryConfig);
+    assert.notEqual(rejectedIncompleteRetry.status, 0);
+    assert.match(
+      rejectedIncompleteRetry.stderr,
+      /retry is missing required fields: include_exceptions/i,
+    );
+
+    const retryDriftDevelopment = path.join(
+      root,
+      "development-candidate-retry-drift",
+    );
+    await fs.cp(development, retryDriftDevelopment, { recursive: true });
+    const retryDriftLockPath = path.join(retryDriftDevelopment, "lock.json");
+    const retryDriftLock = JSON.parse(
+      await fs.readFile(retryDriftLockPath, "utf8"),
+    );
+    retryDriftLock.retry.wait_multiplier = 2;
+    await fs.writeFile(
+      retryDriftLockPath,
+      JSON.stringify(retryDriftLock, null, 2),
+      "utf8",
+    );
+    const retryDriftJobConfigPath = path.join(
+      retryDriftDevelopment,
+      "config.json",
+    );
+    const retryDriftJobConfig = JSON.parse(
+      await fs.readFile(retryDriftJobConfigPath, "utf8"),
+    );
+    retryDriftJobConfig.retry = retryDriftLock.retry;
+    await fs.writeFile(
+      retryDriftJobConfigPath,
+      JSON.stringify(retryDriftJobConfig, null, 2),
+      "utf8",
+    );
+    const retryDriftConfig = await writeConfig(root, {
+      name: "development-retry-drift",
+      schemaVersion: 2,
+      baseline,
+      output: path.join(root, "output-retry-drift"),
+      discovery: discovery.directory,
+      proposals,
+      development: {
+        candidateArtifacts: [retryDriftDevelopment],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+    });
+    const rejectedRetryDrift = runScript(retryDriftConfig);
+    assert.notEqual(rejectedRetryDrift.status, 0);
+    assert.match(
+      rejectedRetryDrift.stderr,
+      /Candidate development JobLock retry drift/i,
+    );
+
+    const retryCountDevelopment = path.join(
+      root,
+      "development-candidate-retry-count",
+    );
+    await fs.cp(development, retryCountDevelopment, { recursive: true });
+    const retryCountResultPath = path.join(retryCountDevelopment, "result.json");
+    const retryCountResult = JSON.parse(
+      await fs.readFile(retryCountResultPath, "utf8"),
+    );
+    retryCountResult.stats.n_retries = 1;
+    await fs.writeFile(
+      retryCountResultPath,
+      JSON.stringify(retryCountResult, null, 2),
+      "utf8",
+    );
+    const retryCountConfig = await writeConfig(root, {
+      name: "development-retry-count",
+      schemaVersion: 2,
+      baseline,
+      output: path.join(root, "output-retry-count"),
+      discovery: discovery.directory,
+      proposals,
+      development: {
+        candidateArtifacts: [retryCountDevelopment],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+    });
+    const rejectedRetryCount = runScript(retryCountConfig);
+    assert.notEqual(rejectedRetryCount.status, 0);
+    assert.match(rejectedRetryCount.stderr, /reports 1 built-in retries/i);
+
+    const retriedDiscovery = path.join(root, "development-discovery-retried");
+    await fs.cp(discovery.directory, retriedDiscovery, { recursive: true });
+    const retriedDiscoveryLockPath = path.join(retriedDiscovery, "lock.json");
+    const retriedDiscoveryLock = JSON.parse(
+      await fs.readFile(retriedDiscoveryLockPath, "utf8"),
+    );
+    retriedDiscoveryLock.retry.max_retries = 1;
+    await fs.writeFile(
+      retriedDiscoveryLockPath,
+      JSON.stringify(retriedDiscoveryLock, null, 2),
+      "utf8",
+    );
+    const retriedDiscoveryConfig = await writeConfig(root, {
+      name: "development-retried-discovery",
+      schemaVersion: 2,
+      baseline,
+      output: path.join(root, "output-retried-discovery"),
+      discovery: retriedDiscovery,
+      proposals,
+      development: {
+        candidateArtifacts: [development],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+    });
+    const rejectedRetriedDiscovery = runScript(retriedDiscoveryConfig);
+    assert.notEqual(rejectedRetriedDiscovery.status, 0);
+    assert.match(rejectedRetriedDiscovery.stderr, /retry\.max_retries must be 0/i);
+
+    const failedDevelopment = await prepareCandidateDevelopmentJob(
+      root,
+      "development-candidate-failed",
+      discovery.directory,
+      candidateLock,
+      { rewards: [0, 1, 1, 1] },
+    );
+    const holdoutSentinel = path.join(root, "HOLDOUT-SENTINEL-must-not-open");
+    const failedOutput = path.join(root, "output-failed");
+    const failedConfig = await writeConfig(root, {
+      name: "development-failed",
+      schemaVersion: 2,
+      baseline,
+      output: failedOutput,
+      discovery: discovery.directory,
+      proposals,
+      development: {
+        candidateArtifacts: [failedDevelopment],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+      holdoutBaseline: holdoutSentinel,
+      holdoutCandidate: holdoutSentinel + "-candidate",
+    });
+    const deferredHoldoutConfig = JSON.parse(
+      await fs.readFile(failedConfig, "utf8"),
+    );
+    deferredHoldoutConfig.holdout.baselineJobConfigs = [
+      retriedHoldoutJobConfigPath,
+    ];
+    deferredHoldoutConfig.holdout.candidateJobConfigs = [
+      retriedHoldoutJobConfigPath,
+    ];
+    await fs.writeFile(
+      failedConfig,
+      JSON.stringify(deferredHoldoutConfig, null, 2),
+      "utf8",
+    );
+    const failed = runScript(failedConfig);
+    assert.equal(failed.status, 0, failed.stderr);
+    const failedGate = JSON.parse(
+      await fs.readFile(path.join(failedOutput, "development-gate.json"), "utf8"),
+    );
+    const unopenedHoldout = JSON.parse(
+      await fs.readFile(path.join(failedOutput, "holdout-gate.json"), "utf8"),
+    );
+    assert.equal(failedGate.decision, "fail");
+    assert.equal(failedGate.passed, false);
+    assert.equal(failedGate.candidatePassRate, 0.75);
+    assert.deepEqual(failedGate.blockers, [
+      "development-pass-rate-below-minimum",
+    ]);
+    assert.equal(unopenedHoldout.status, "not-run");
+    assert.equal(unopenedHoldout.developmentDecision, "fail");
+    assert.match(unopenedHoldout.reason, /holdout artifacts and job configs were not opened/i);
+
+    const unavailableDevelopment = await prepareCandidateDevelopmentJob(
+      root,
+      "development-candidate-unavailable",
+      discovery.directory,
+      candidateLock,
+      { missingRewardTrials: [0] },
+    );
+    const unavailableOutput = path.join(root, "output-unavailable");
+    const unavailableConfig = await writeConfig(root, {
+      name: "development-unavailable",
+      schemaVersion: 2,
+      baseline,
+      output: unavailableOutput,
+      discovery: discovery.directory,
+      proposals,
+      development: {
+        candidateArtifacts: [unavailableDevelopment],
+        candidateJobConfigs: [],
+        minimumPassRate: 1,
+      },
+      holdoutBaseline: holdoutSentinel,
+      holdoutCandidate: holdoutSentinel + "-candidate",
+    });
+    const unavailable = runScript(unavailableConfig);
+    assert.equal(unavailable.status, 0, unavailable.stderr);
+    const unavailableGate = JSON.parse(
+      await fs.readFile(
+        path.join(unavailableOutput, "development-gate.json"),
+        "utf8",
+      ),
+    );
+    assert.equal(unavailableGate.decision, "not-evaluable");
+    assert.equal(unavailableGate.candidatePassRate, null);
+    assert.ok(unavailableGate.blockers.includes("candidate-not-evaluable"));
+    assert.equal(
+      unavailableGate.blockers.includes("development-pass-rate-below-minimum"),
+      false,
+    );
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

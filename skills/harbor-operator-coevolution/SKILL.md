@@ -60,23 +60,40 @@ uv run <skill-root>/scripts/harbor_operator_coevolution.py generation.yaml --doc
 uv run <skill-root>/scripts/harbor_operator_coevolution.py generation.yaml
 ~~~
 
-   To execute or analyze development without resolving, validating, loading, or
-   running either holdout job, use the explicitly separated phase:
+   To execute or analyze development as a terminal receipt without resolving,
+   validating, loading, or running either holdout job, use the explicitly
+   separated phase:
 
 ~~~powershell
 uv run <skill-root>/scripts/harbor_operator_coevolution.py generation.yaml --phase development
 ~~~
 
+   To keep holdout equally closed while making a normal, fully qualified and
+   fully breedable development generation eligible to seed the next generation,
+   use the separate opt-in phase:
+
+~~~powershell
+uv run <skill-root>/scripts/harbor_operator_coevolution.py generation.yaml --phase development-chain
+~~~
+
    To analyze already completed native jobs without launching agents, provide
    `jobDirectory` for every entry used by the selected phase, then add
-   `--analyze-only`. The development phase seals the selected candidate ID and
+   `--analyze-only`. Plain `development` seals the selected candidate ID and
    digest, marks promotion false and `chainEligible: false`, and does not open
-   the frozen holdout declarations. Legacy artifacts whose source basename
-   differs from `frontmatter.name` remain analyzable, but are explicitly
+   the frozen holdout declarations. `development-chain` performs the same
+   holdout-free analysis but requires a qualified winner and enough established,
+   credit-eligible operators for a normal breeding plan; only then does its
+   sealed generation log record `chainEligible: true`. It seals the winner
+   separately from an opaque schema-v2 holdout declaration. That declaration
+   freezes the baseline ID/reference, an ID-free candidate-slot reference, and
+   the promotion policy; it does not predict the eventual release candidate.
+   The paths may be absent, and this step neither resolves nor reads their
+   targets. Legacy artifacts whose
+   source basename differs from `frontmatter.name` remain analyzable, but are explicitly
    exploratory and can never pass promotion. A canonical-looking path that is
    not the exact declared candidate source is likewise `source-mismatch`
    exploratory evidence.
-   Development can still seal a qualified winner when fewer than
+   Plain `development` can still seal a qualified winner when fewer than
    `operatorSurvivors` operators are established. It preserves operator ranking
    and credit diagnostics but emits an empty, non-chainable breeding plan with
    reason `insufficient-established-operators`. Full mode remains fail-closed.
@@ -97,12 +114,20 @@ uv run <skill-root>/scripts/harbor_operator_report_only.py generation.yaml `
    reward values, and qualification failures in `generation-evidence.json`,
    then inspect `candidate-ranking.json`,
    `operator-ranking.json`, `breeding-plan.json`, `holdout-promotion.json`, and
-   `operator-coevolution-log.json`. Realize each mutation or crossover plan as a
-   new, attributable operator instruction before the next generation.
-   After a completed full run, point the next config's
-   `evolution.previousGenerationLog` at that log so the sealed Harbor, scoring,
-   evaluation, and promotion profile cannot drift. Development-only and repair
-   logs are receipts with `chainEligible: false`, not predecessor logs.
+   `operator-coevolution-log.json`. Treat every breeding-plan `instruction` as
+   the exact next-generation operator text bound by its
+   `instructionContract`; mutation and crossover plan text is not a placeholder
+   that may be rewritten while retaining the same operator ID.
+   After a completed full run or successful `development-chain` run, point the
+   next config's `evolution.previousGenerationLog` at that log so the sealed
+   Harbor, scoring, evaluation, and promotion profile cannot drift. Run fresh
+   Harbor jobs for every newly attributed child; copying or relabeling a prior
+   generated-child job is not a new realization. Plain
+   `development` and repair logs are receipts with `chainEligible: false`, not
+   predecessor logs. A final `full` generation may follow a
+   `development-chain` predecessor: it validates the prior development profile
+   and breeding lineage before resolving holdout, then runs its own development
+   selection before opening holdout once.
    When complementary repair activates, inspect `repair-plan.json` instead.
    It is a diagnostic-only same-parent crossover/mutation proposal, not a
    breeding, fitness, credit, survival, promotion, or holdout decision.
@@ -209,13 +234,65 @@ uv run <skill-root>/scripts/harbor_operator_report_only.py generation.yaml `
 - Holdout identity is not sufficient by itself: the selected development
   record must also be canonical, non-exploratory, and promotion-eligible.
 - Holdout path resolution and validation are deferred until after a qualified
-  development candidate is selected. `--phase development` and an
-  all-unqualified complementary-repair branch return first. They retain frozen
-  holdout declarations in the input schema but never resolve or load them.
+  development candidate is selected. `--phase development`,
+  `--phase development-chain`, and an all-unqualified complementary-repair
+  branch return first. They retain frozen holdout declarations in the input
+  schema but never resolve or load them.
+- Treat `development-chain` as an explicit strict mode, not an alias for plain
+  development. It requires a qualified development winner and a complete normal
+  breeding plan. It seals that generation's winner separately and never
+  requires the raw holdout candidate ID to predict it. An all-unqualified,
+  complementary-repair, or insufficient-operator result cannot become
+  chain-eligible.
 - For every generation after zero, require the immediate sealed predecessor
   from the same `evolution.id`; require a fresh `generationId`, the exact prior
-  breeding-plan operator IDs, origins, and parent lineages, plus an unchanged
-  declared and observed evaluation profile.
+  breeding-plan operator IDs, origins, parent lineages, and exact sealed
+  instruction text, plus an unchanged declared and observed evaluation profile.
+- Seal `developmentEvidenceIdentity` and its digest in every newly emitted log.
+  For each candidate it binds the job directory, root JobResult UUID/path/
+  digest, config and lock digests, and every TrialResult UUID/path/digest along
+  with task identity. A successor's generated children must be disjoint from
+  every predecessor candidate across job directories, job UUIDs, result paths,
+  result digests, trial UUIDs, and trial result paths/digests. Changing only an
+  operator label, copying a job tree, or replaying prior result artifacts fails
+  before holdout is resolved.
+- Permit cross-generation evidence reuse only for an unattributed candidate
+  whose candidate ID, skill digest, and complete freshness-identity set are
+  unchanged and whose predecessor was either also an unattributed root
+  reference or exactly `selectedDevelopment` (not merely another ranked
+  survivor). Reject partial/hybrid identity reuse. Fully disjoint fresh
+  reevaluations of those roots or the selected winner remain allowed. Never
+  apply this exception to a candidate attributed to a current operator.
+- Accept a development-only predecessor only when its sealed log records
+  `phase: development`, `requestedPhase: development-chain`,
+  `chainEligible: true`, a qualified selected candidate, a normal breeding
+  plan, false promotion, and an unopened holdout. Validate its development
+  profile projection before a successor resolves holdout. Historical full logs
+  without phase or chain fields remain recognizable and their historical seal
+  shape remains verifiable, but they cannot seed a new generation when they do
+  not contain the job/trial identity evidence needed to prove fresh generated
+  children. Newly emitted full
+  logs use explicit `phase: full`, `requestedPhase: full`,
+  `chainEligible: true`, `holdoutOpened: true`, and promotion markers.
+- Require every explicit predecessor to seal
+  `holdoutUsedForDevelopmentSelection: false`; its selected development record
+  must match the first qualified ranking survivor and skill digest. Its normal
+  breeding plan must be non-diagnostic and chain-eligible, with an
+  `operatorCount` equal to the length of its unique operator list. Every planned
+  operator must carry an `exact-text-v1` instruction contract whose digest
+  matches the sealed instruction, and the successor must use that text exactly.
+- Bind every successful `development-chain` predecessor to a canonical opaque
+  schema-v2 holdout declaration and its digest. Canonicalize the raw
+  `jobConfig` and `jobDirectory` path strings lexically relative to the
+  generation config; do not resolve symlinks, require existence, inspect, or
+  load either target. A successor must present the same baseline ID/reference,
+  ID-free candidate-slot reference, and promotion policy. Its development
+  winner ID may change. Only `full` requires the raw holdout candidate ID to
+  equal the current winner, immediately before resolving the frozen candidate
+  slot. The full log seals `holdoutReleaseBinding` with that ID and skill
+  digest, the declaration/slot digests, and the observed candidate holdout
+  job/result/trial identity. Development logs must omit this binding. Legacy
+  candidate-bound declaration v1 logs fail closed as predecessors.
 - Treat any analyze-only legacy skill basename as exploratory evidence. Keep it
   available for ranking, trace diagnosis, operator credit, and breeding, but
   never mark its identity promotion-eligible or promote it on holdout.
@@ -224,15 +301,22 @@ uv run <skill-root>/scripts/harbor_operator_report_only.py generation.yaml `
 - Keep operator text general and free of benchmark answers or holdout facts.
 - Configure `operatorSurvivors` to at least two, and set `nextOperatorCount`
   greater than or equal to it. Full breeding requires that many eligible
-  operators; development-only may seal a winner without breeding when the
-  observed population falls short.
+  operators; plain `development` may seal a winner without breeding when the
+  observed population falls short, while `development-chain` fails closed.
 
 ## Output
 
 The output directory contains deterministic JSON strategy artifacts plus a
 concise `report.md`. A normal full run writes ranking, breeding, holdout, and
-sealed coevolution artifacts. Development-only output records an unopened
-holdout and seals the selected candidate/digest with `chainEligible: false`.
+sealed coevolution artifacts and explicitly marks the log as a chain-eligible
+full phase with an opened holdout and Boolean promotion decision.
+Development-only output records an unopened
+holdout. Plain `development` seals the selected candidate/digest with
+`chainEligible: false`; successful `development-chain` seals the same
+development evidence with `chainEligible: true` in the generation log while
+the unopened holdout artifact remains non-chainable. Its evolution profile
+contains `holdoutDeclaration` and `holdoutDeclarationDigest`; these commit the
+future release identity without observing the referenced jobs.
 If the candidate winner exists but the operator population is insufficient,
 its breeding plan is diagnostic, empty, and non-chainable.
 An all-unqualified opt-in run additionally writes `repair-plan.json`, whose

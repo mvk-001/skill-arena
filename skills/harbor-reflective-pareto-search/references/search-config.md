@@ -153,12 +153,40 @@ The analyzer validates:
 - optional lock.json through Harbor JobLock
 - root result.json through Harbor JobResult
 - every direct trial result.json through Harbor TrialResult
+- the all-or-none set of direct trial lock.json files through Harbor TrialLock
 
 A completed job must contain at least one trial. Each TrialResult configured
 trial name and task identity, agent/model/skill, runtime settings, and observed
 agent/model must bind to the root JobConfig and the corresponding JobLock
 multiset. The lock/result trial counts and per-task/checksum/agent/model attempt
 counts must exactly match root `n_attempts`.
+
+Harbor 0.18 computes the deprecated `TrialResult.task_checksum` with `dirhash`
+and the durable `TrialLock.task.digest` with the Packager content-hash
+algorithm. Their values are intentionally not transformed or compared as if
+they used one algorithm. Result `task_id` must equal the configured TaskConfig
+identity, including local path or package/Git identity and ref. That declaration
+then binds by name, type, source, normalized path, Git URL, resolved Git commit,
+and any digest-pinned package ref to its TrialLock. When direct trial locks
+exist, every trial must have one and their exact multiset must equal the root
+JobLock. An adjacent lock may bind a symbolic or omitted configured Git ref to
+the lock's resolved 40- or 64-hex commit, or a mutable package ref to the lock's
+durable package digest.
+
+The compatibility path for older root-only jobs fails closed unless task
+identity is durable from the declaration itself: a Git task must declare the
+same resolved commit stored in the lock, and a package task must use a
+digest-pinned ref equal to the lock digest. Local tasks remain eligible.
+Root-only association matches task identity, agent, model, and the complete
+comparable runtime identity. Canonical-identical locks may satisfy
+repeated-attempt multiplicity, but multiple non-identical matches are ambiguous
+and rejected.
+This is a matching-environment limitation: Harbor 0.18's root `TaskLock` does
+not retain the requested symbolic Git ref or mutable package ref, so adjacency
+is the only native evidence that binds those declarations to their resolutions.
+Canonical root-lock comparison keeps the resolved Git commits and Packager task
+digests fixed across candidates, while TrialResult checksums continue to
+identify case vectors and development/holdout overlap.
 
 Feedback paths are discovered rather than assumed:
 

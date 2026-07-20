@@ -119,14 +119,24 @@ It rejects incomplete jobs, candidate config drift, lock drift beyond skill
 provenance, missing selected rewards without an exception, mismatched case
 sets, and development/holdout name or checksum overlap. It rejects zero-trial
 jobs and binds every TrialResult configured task/name, agent, model, skill,
-runtime setting, observed identity, attempt count, and lock entry. Missing required rewards remain
-explicitly null and make the candidate ineligible rather than becoming numeric
-zeros. Provider and infrastructure failures preserve `reportedReward`, but use
-null for the semantic `reward`, affected means, and holdout gain when the
-corresponding comparison is unavailable. The development archive also seals the
-search id, generation, Harbor job profiles, reward/gate policy, promotion rules,
-baseline digest, selected-candidate digest, and case names/checksums reconstructed
-from `candidateResults` before holdout.
+runtime setting, observed identity, attempt count, and lock entry. Harbor 0.18's
+deprecated `TrialResult.task_checksum` dirhash and its Packager-derived
+`TrialLock.task.digest` are distinct algorithms and must not be equated. The
+analyzer binds result task IDs and configured task declarations to the
+corresponding per-trial/root locks, while canonical lock comparison preserves
+the durable task digests across candidates. A symbolic or omitted Git commit
+and a non-digest package ref require a complete set of adjacent per-trial locks;
+Harbor's root lock alone does not preserve enough information to prove which
+mutable declaration produced a resolved commit or digest. Root-only association
+uses the full runtime identity, allows identical duplicate locks only as exact
+multiplicity, and rejects ambiguous non-identical matches. Missing required
+rewards remain explicitly null and make the candidate ineligible rather than
+becoming numeric zeros. Provider and infrastructure failures preserve
+`reportedReward`, but use null for the semantic `reward`, affected means, and
+holdout gain when the corresponding comparison is unavailable. The development
+archive also seals the search id, generation, Harbor job profiles, reward/gate
+policy, promotion rules, baseline digest, selected-candidate digest, and case
+names/checksums reconstructed from `candidateResults` before holdout.
 
 ## Guardrails
 

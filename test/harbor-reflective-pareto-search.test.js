@@ -16,16 +16,15 @@ const script = path.join(
 );
 const fixtureRoot = path.join(
   root,
-  "evaluations",
-  "harbor-report-parity-poc",
+  "test",
   "fixtures",
   "harbor-jobs",
 );
 const jobTemplate = path.join(
   root,
-  "evaluations",
-  "harbor-report-parity-poc",
-  "jobs",
+  "test",
+  "fixtures",
+  "job-configs",
   "skill.yaml",
 );
 
@@ -258,16 +257,16 @@ async function attachJobLock(jobDirectory, skill, {
         "utf8",
       );
     }
-    const taskLeaf = result.task_name.split("/").at(-1);
-    trials.push({
+    const taskLeaf = path.basename(result.config.task.path);
+    const trialLock = {
       schema_version: 1,
       task: {
         name: taskLeaf,
         type: "local",
-        digest: /^sha256:[0-9a-f]{64}$/.test(result.task_checksum)
-          ? result.task_checksum
-          : `sha256:${sha256(result.task_checksum)}`,
-        source: "synthetic-pareto-test",
+        // Harbor 0.18 uses Packager.compute_content_hash() for TrialLock.task,
+        // not the deprecated dirhash value stored in TrialResult.task_checksum.
+        digest: `sha256:${sha256(`packager:${result.config.task.path}`)}`,
+        source: result.config.task.source ?? null,
         path: result.config.task.path,
       },
       install_only: false,
@@ -299,7 +298,13 @@ async function attachJobLock(jobDirectory, skill, {
         extra_allowed_hosts: [],
       },
       verifier: { disable: false },
-    });
+    };
+    trials.push(trialLock);
+    await fs.writeFile(
+      path.join(jobDirectory, entry.name, "lock.json"),
+      JSON.stringify(trialLock, null, 2),
+      "utf8",
+    );
   }
   await fs.writeFile(
     path.join(jobDirectory, "lock.json"),
@@ -349,6 +354,133 @@ async function preparePromotableJob(source, destination, skill, replacements = [
   await normalizeJobSourcePaths(destination);
   await attachJobLock(destination, skill);
   return destination;
+}
+
+async function prepareLockedAnalyzeCase(prefix) {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
+  const baselineSkill = path.join(temp, "baseline-source", "example-skill");
+  const candidateSkill = path.join(temp, "candidate-source", "example-skill");
+  const baselineJob = path.join(temp, "baseline-job");
+  const candidateJob = path.join(temp, "candidate-job");
+  await writeSkill(baselineSkill);
+  await writeSkill(candidateSkill, "Preserve the verified general repair.");
+  await fs.cp(path.join(fixtureRoot, "no-skill"), baselineJob, { recursive: true });
+  await fs.cp(path.join(fixtureRoot, "skill"), candidateJob, { recursive: true });
+  await attachJobLock(baselineJob, baselineSkill);
+  await attachJobLock(candidateJob, candidateSkill);
+  const configPath = path.join(temp, "config.json");
+  await fs.writeFile(configPath, JSON.stringify(configFor({
+    output: path.join(temp, "run"),
+    baselineSkill,
+    candidateSkill,
+    baselineJob,
+    candidateJob,
+  }), null, 2));
+  return { temp, baselineJob, candidateJob, configPath };
+}
+
+async function jobTrialDirectories(jobDirectory) {
+  return (await fs.readdir(jobDirectory, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+async function rewriteJobTaskBinding(jobDirectory, {
+  kind,
+  gitCommitId = null,
+  lockedGitCommitId = null,
+  gitUrl = "https://example.invalid/tasks.git",
+  packageName = "fixture/marker-write",
+  packageRef = null,
+  packageDigest = `sha256:${sha256("package-content")}`,
+}) {
+  const rootLockPath = path.join(jobDirectory, "lock.json");
+  const rootLock = JSON.parse(await fs.readFile(rootLockPath, "utf8"));
+  const entries = await jobTrialDirectories(jobDirectory);
+  for (const [index, entry] of entries.entries()) {
+    const resultPath = path.join(jobDirectory, entry.name, "result.json");
+    const trialLockPath = path.join(jobDirectory, entry.name, "lock.json");
+    const result = JSON.parse(await fs.readFile(resultPath, "utf8"));
+    let taskLock;
+    if (kind === "git") {
+      const taskPath = result.config.task.path;
+      result.config.task = {
+        path: taskPath,
+        git_url: gitUrl,
+        git_commit_id: gitCommitId,
+        overwrite: false,
+        download_dir: null,
+        source: null,
+      };
+      result.task_id = {
+        git_url: gitUrl,
+        git_commit_id: gitCommitId,
+        path: taskPath,
+      };
+      taskLock = {
+        ...rootLock.trials[index].task,
+        name: path.basename(taskPath),
+        type: "git",
+        source: null,
+        path: taskPath,
+        git_url: gitUrl,
+        git_commit_id: lockedGitCommitId,
+      };
+    } else if (kind === "package") {
+      const [org, ...nameParts] = packageName.split("/");
+      const name = nameParts.join("/");
+      result.config.task = {
+        path: null,
+        git_url: null,
+        git_commit_id: null,
+        name: packageName,
+        ref: packageRef,
+        overwrite: false,
+        download_dir: null,
+        source: null,
+      };
+      result.task_id = { org, name, ref: packageRef };
+      taskLock = {
+        name: packageName,
+        type: "package",
+        digest: packageDigest,
+        source: null,
+        path: null,
+        git_url: null,
+        git_commit_id: null,
+      };
+    } else {
+      throw new Error(`Unknown task binding kind: ${kind}`);
+    }
+    rootLock.trials[index].task = taskLock;
+    await fs.writeFile(resultPath, JSON.stringify(result, null, 2), "utf8");
+    const trialLock = JSON.parse(await fs.readFile(trialLockPath, "utf8"));
+    trialLock.task = taskLock;
+    await fs.writeFile(trialLockPath, JSON.stringify(trialLock, null, 2), "utf8");
+  }
+  await fs.writeFile(rootLockPath, JSON.stringify(rootLock, null, 2), "utf8");
+}
+
+async function removePerTrialLocks(jobDirectory, indexes = null) {
+  const entries = await jobTrialDirectories(jobDirectory);
+  const selected = indexes ?? entries.map((_, index) => index);
+  for (const index of selected) {
+    await fs.rm(path.join(jobDirectory, entries[index].name, "lock.json"));
+  }
+}
+
+async function rewriteResolvedGitLocks(jobDirectory, commitId) {
+  const rootLockPath = path.join(jobDirectory, "lock.json");
+  const rootLock = JSON.parse(await fs.readFile(rootLockPath, "utf8"));
+  const entries = await jobTrialDirectories(jobDirectory);
+  for (const [index, entry] of entries.entries()) {
+    rootLock.trials[index].task.git_commit_id = commitId;
+    const trialLockPath = path.join(jobDirectory, entry.name, "lock.json");
+    const trialLock = JSON.parse(await fs.readFile(trialLockPath, "utf8"));
+    trialLock.task.git_commit_id = commitId;
+    await fs.writeFile(trialLockPath, JSON.stringify(trialLock, null, 2), "utf8");
+  }
+  await fs.writeFile(rootLockPath, JSON.stringify(rootLock, null, 2), "utf8");
 }
 
 async function writeMatchingJobTemplate(directory, jobDirectory) {
@@ -409,6 +541,269 @@ test("Harbor reflective Pareto search builds an archive from native jobs", async
       item.exploratory === true,
   ));
   assert.equal(archive.limitations.length, 1);
+});
+
+test("Harbor reflective Pareto binds Harbor 0.18 task identities without equating digest algorithms", async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), "harbor-pareto-task-lock-"));
+  const baselineSkill = path.join(temp, "baseline-source", "example-skill");
+  const candidateSkill = path.join(temp, "candidate-source", "example-skill");
+  const baselineJob = path.join(temp, "baseline-job");
+  const candidateJob = path.join(temp, "candidate-job");
+  await writeSkill(baselineSkill);
+  await writeSkill(candidateSkill, "Preserve the verified general repair.");
+  await fs.cp(path.join(fixtureRoot, "no-skill"), baselineJob, { recursive: true });
+  await fs.cp(path.join(fixtureRoot, "skill"), candidateJob, { recursive: true });
+  await attachJobLock(baselineJob, baselineSkill);
+  await attachJobLock(candidateJob, candidateSkill);
+
+  const config = configFor({
+    output: path.join(temp, "run"),
+    baselineSkill,
+    candidateSkill,
+    baselineJob,
+    candidateJob,
+  });
+  const configPath = path.join(temp, "config.json");
+  await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+
+  const trialEntry = (await fs.readdir(candidateJob, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .sort((left, right) => left.name.localeCompare(right.name))[0];
+  const resultPath = path.join(candidateJob, trialEntry.name, "result.json");
+  const trialLockPath = path.join(candidateJob, trialEntry.name, "lock.json");
+  const rootLockPath = path.join(candidateJob, "lock.json");
+  const originalResult = JSON.parse(await fs.readFile(resultPath, "utf8"));
+  const originalTrialLock = JSON.parse(await fs.readFile(trialLockPath, "utf8"));
+  assert.notEqual(
+    originalTrialLock.task.digest,
+    `sha256:${sha256(originalResult.task_checksum)}`,
+  );
+
+  const completed = run(configPath, "--analyze-only");
+  assert.equal(completed.status, 0, completed.stderr);
+
+  const identityDrifts = [
+    {
+      label: "name/path",
+      mutate: (result) => {
+        result.config.task.path = "C:/fixture/tampered-task";
+        result.task_id.path = "C:/fixture/tampered-task";
+      },
+    },
+    {
+      label: "source",
+      mutate: (result) => { result.config.task.source = "tampered-source"; },
+    },
+    {
+      label: "git identity",
+      mutate: (result) => {
+        result.config.task.git_url = "https://example.invalid/tasks.git";
+        result.config.task.git_commit_id = "0123456789abcdef";
+        result.task_id = {
+          git_url: result.config.task.git_url,
+          git_commit_id: result.config.task.git_commit_id,
+          path: result.config.task.path,
+        };
+      },
+    },
+    {
+      label: "package ref",
+      mutate: (result) => {
+        result.config.task = {
+          path: null,
+          git_url: null,
+          git_commit_id: null,
+          name: "fixture/tampered-task",
+          ref: "v2",
+          overwrite: false,
+          download_dir: null,
+          source: null,
+        };
+        result.task_id = { org: "fixture", name: "tampered-task", ref: "v2" };
+      },
+    },
+  ];
+  for (const scenario of identityDrifts) {
+    const drift = JSON.parse(JSON.stringify(originalResult));
+    scenario.mutate(drift);
+    await fs.writeFile(resultPath, JSON.stringify(drift, null, 2), "utf8");
+    const rejected = run(configPath, "--analyze-only");
+    assert.notEqual(rejected.status, 0, scenario.label);
+    assert.match(rejected.stderr, /configured task identity differs/i, scenario.label);
+  }
+  await fs.writeFile(resultPath, JSON.stringify(originalResult, null, 2), "utf8");
+
+  const tamperedDigest = `sha256:${sha256("tampered-packager-digest")}`;
+  const trialLock = JSON.parse(JSON.stringify(originalTrialLock));
+  trialLock.task.digest = tamperedDigest;
+  await fs.writeFile(trialLockPath, JSON.stringify(trialLock, null, 2), "utf8");
+  const rootLock = JSON.parse(await fs.readFile(rootLockPath, "utf8"));
+  const rootTrial = rootLock.trials.find(
+    (item) => item.task.path === originalTrialLock.task.path,
+  );
+  rootTrial.task.digest = tamperedDigest;
+  await fs.writeFile(rootLockPath, JSON.stringify(rootLock, null, 2), "utf8");
+  const digestDrift = run(configPath, "--analyze-only");
+  assert.notEqual(digestDrift.status, 0);
+  assert.match(digestDrift.stderr, /locks drift/i);
+});
+
+test("Harbor reflective Pareto accepts adjacent symbolic Git locks and rejects resolved-commit tampering", async () => {
+  const {
+    baselineJob,
+    candidateJob,
+    configPath,
+  } = await prepareLockedAnalyzeCase("harbor-pareto-symbolic-git-");
+  const resolvedCommit = "a".repeat(40);
+  for (const job of [baselineJob, candidateJob]) {
+    await rewriteJobTaskBinding(job, {
+      kind: "git",
+      gitCommitId: "main",
+      lockedGitCommitId: resolvedCommit,
+    });
+  }
+
+  const completed = run(configPath, "--analyze-only");
+  assert.equal(completed.status, 0, completed.stderr);
+
+  // A coordinated root/direct-lock edit still changes the canonical evaluation
+  // input and must fail the cross-candidate lock comparison.
+  await rewriteResolvedGitLocks(candidateJob, "b".repeat(40));
+  const rejected = run(configPath, "--analyze-only");
+  assert.notEqual(rejected.status, 0);
+  assert.match(rejected.stderr, /locks drift/i);
+});
+
+test("Harbor reflective Pareto accepts durable root-only Git and package identities with duplicate multiplicity", async () => {
+  const packageDigest = `sha256:${sha256("root-only-package-content")}`;
+  const scenarios = [
+    {
+      label: "resolved Git",
+      binding: {
+        kind: "git",
+        gitCommitId: "c".repeat(40),
+        lockedGitCommitId: "c".repeat(40),
+      },
+    },
+    {
+      label: "digest-pinned package",
+      binding: {
+        kind: "package",
+        packageRef: packageDigest,
+        packageDigest,
+      },
+    },
+  ];
+  for (const scenario of scenarios) {
+    const {
+      baselineJob,
+      candidateJob,
+      configPath,
+    } = await prepareLockedAnalyzeCase("harbor-pareto-root-durable-");
+    for (const job of [baselineJob, candidateJob]) {
+      await rewriteJobTaskBinding(job, scenario.binding);
+      await removePerTrialLocks(job);
+    }
+    const completed = run(configPath, "--analyze-only");
+    assert.equal(completed.status, 0, `${scenario.label}: ${completed.stderr}`);
+  }
+});
+
+test("Harbor reflective Pareto uses full runtime identity for root-only association", async () => {
+  const {
+    baselineJob,
+    candidateJob,
+    configPath,
+  } = await prepareLockedAnalyzeCase("harbor-pareto-root-runtime-");
+  for (const job of [baselineJob, candidateJob]) {
+    await removePerTrialLocks(job);
+    const entries = await jobTrialDirectories(job);
+    const resultPath = path.join(job, entries[0].name, "result.json");
+    const result = JSON.parse(await fs.readFile(resultPath, "utf8"));
+    result.config.timeout_multiplier = 2;
+    await fs.writeFile(resultPath, JSON.stringify(result, null, 2), "utf8");
+
+    const rootLockPath = path.join(job, "lock.json");
+    const rootLock = JSON.parse(await fs.readFile(rootLockPath, "utf8"));
+    rootLock.trials[0].timeout_multiplier = 2;
+    rootLock.trials.reverse();
+    await fs.writeFile(rootLockPath, JSON.stringify(rootLock, null, 2), "utf8");
+  }
+
+  // The two attempts for each agent share task identity. Reversing the root
+  // lock order exercises runtime-aware association instead of greedy pairing.
+  const completed = run(configPath, "--analyze-only");
+  assert.equal(completed.status, 0, completed.stderr);
+});
+
+test("Harbor reflective Pareto fails closed on partial and ambiguous root-only locks", async () => {
+  {
+    const {
+      baselineJob,
+      configPath,
+    } = await prepareLockedAnalyzeCase("harbor-pareto-partial-lock-");
+    await removePerTrialLocks(baselineJob, [0]);
+    const rejected = run(configPath, "--analyze-only");
+    assert.notEqual(rejected.status, 0);
+    assert.match(rejected.stderr, /partial set of per-trial locks/i);
+  }
+
+  {
+    const {
+      baselineJob,
+      candidateJob,
+      configPath,
+    } = await prepareLockedAnalyzeCase("harbor-pareto-ambiguous-lock-");
+    for (const job of [baselineJob, candidateJob]) {
+      await removePerTrialLocks(job);
+      const rootLockPath = path.join(job, "lock.json");
+      const rootLock = JSON.parse(await fs.readFile(rootLockPath, "utf8"));
+      rootLock.trials[0].task.digest = `sha256:${sha256("ambiguous-task")}`;
+      await fs.writeFile(rootLockPath, JSON.stringify(rootLock, null, 2), "utf8");
+    }
+    const rejected = run(configPath, "--analyze-only");
+    assert.notEqual(rejected.status, 0);
+    assert.match(rejected.stderr, /ambiguous across non-identical TrialLocks/i);
+  }
+});
+
+test("Harbor reflective Pareto requires adjacent locks for mutable Git and package refs", async () => {
+  const scenarios = [
+    {
+      label: "symbolic Git",
+      binding: {
+        kind: "git",
+        gitCommitId: "release",
+        lockedGitCommitId: "d".repeat(40),
+      },
+    },
+    {
+      label: "mutable package ref",
+      binding: {
+        kind: "package",
+        packageRef: "latest",
+        packageDigest: `sha256:${sha256("latest-package-content")}`,
+      },
+    },
+  ];
+  for (const scenario of scenarios) {
+    const {
+      baselineJob,
+      candidateJob,
+      configPath,
+    } = await prepareLockedAnalyzeCase("harbor-pareto-root-mutable-");
+    for (const job of [baselineJob, candidateJob]) {
+      await rewriteJobTaskBinding(job, scenario.binding);
+      await removePerTrialLocks(job);
+    }
+    const rejected = run(configPath, "--analyze-only");
+    assert.notEqual(rejected.status, 0, scenario.label);
+    assert.match(
+      rejected.stderr,
+      /cannot durably bind a mutable Git\/package task identity/i,
+      scenario.label,
+    );
+  }
 });
 
 test("Harbor reflective Pareto plans name-preserving isolated staging for development and holdout", async () => {

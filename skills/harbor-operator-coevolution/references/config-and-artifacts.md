@@ -77,16 +77,46 @@ digest and logical name still match the source. The input JobConfig is not
 rewritten on disk.
 
 The default `--phase full` preserves the development-then-holdout workflow.
-`--phase development` executes or analyzes only candidate development jobs. In
-that phase, dry-run and doctor also skip holdout JobConfig loading. The holdout
-mapping remains a frozen required declaration, but its paths need not exist and
-are never resolved, validated, loaded, or executed. Development output seals
-the selected candidate ID and skill digest, records an unopened holdout,
-`promotion: false`, and `chainEligible: false`.
+`--phase development` executes or analyzes only candidate development jobs and
+produces a terminal receipt. `--phase development-chain` uses the same
+holdout-free boundary but opts a normal, fully qualified and fully breedable
+development generation into predecessor eligibility. In both development
+phases, dry-run and doctor skip holdout JobConfig loading. The holdout mapping
+remains a frozen required declaration, but its paths need not exist and are
+never resolved, validated, loaded, or executed.
+
+For `development-chain`, the runner projects that raw declaration into an
+opaque schema-v2 commitment. It records the baseline candidate ID and
+reference, an ID-free `candidateSlot` containing the declared `jobConfig` and
+`jobDirectory` strings, and the normalized promotion policy. The raw
+`holdout.candidate.candidateId` is intentionally excluded because a later
+generation may produce a different winner. Relative paths are canonicalized
+lexically against the generation config directory; absolute paths are
+normalized lexically. This calculation does not resolve symlinks, test
+existence, inspect directories, or read either target. The profile seals both
+`holdoutDeclaration` and its
+`holdoutDeclarationDigest`, so an absent target can be materialized later at
+the exact declared location without exposing holdout during development.
+
+Plain `development` seals the selected candidate ID and skill digest, records
+an unopened holdout, `promotion: false`, and `chainEligible: false`.
+`development-chain` requires a qualified selected candidate and enough
+established, credit-eligible operators to produce the complete normal breeding
+plan. It seals the selected development winner separately and does not require
+the raw holdout candidate ID to predict that winner. On success, only the sealed
+generation log and command result record `chainEligible: true`;
+`holdout-promotion.json`
+remains an explicitly unopened, non-promoting holdout artifact. An
+all-unqualified, complementary-repair, identity-mismatched, or insufficient-
+operator result cannot complete `development-chain`.
 
 During an actual full execution or analysis, holdout paths also remain
 unresolved until development has produced a qualified selected candidate and
-confirmed that the declared holdout candidate matches it. Consequently, an
+confirmed that the raw `holdout.candidate.candidateId` matches it. The runner
+then resolves the already frozen candidate-slot path and seals a
+`holdoutReleaseBinding` containing the selected ID and skill digest, full
+declaration and slot digests, and observed candidate holdout job/result/trial
+identity. Consequently, an
 all-unqualified complementary-repair run can safely return its diagnostic plan
 even when the frozen holdout paths are absent or otherwise invalid. Explicit
 full dry-run and doctor operations still preflight the full declared workflow.
@@ -98,7 +128,7 @@ lowercase letters, digits, or interior hyphens, and not a Windows reserved
 device name. `operatorSurvivors` must be at least 2, and
 `nextOperatorCount` must be at least `operatorSurvivors`. Analyze-only always
 requires a completed `jobDirectory` for every development candidate; full mode
-also requires both holdout sides, while development mode reads neither.
+also requires both holdout sides, while both development modes read neither.
 
 Generated children attributed to one operator must have distinct bundle
 digests. Two child IDs that point to byte-identical skill bundles under the
@@ -120,13 +150,72 @@ For every generation after zero, set `evolution.previousGenerationLog` to the
 immediately preceding `operator-coevolution-log.json`; generation zero forbids
 the field. The runner validates the schema, source, `evolutionId`, consecutive
 generation number, distinct `generationId`, generation seal, and profile
-digest. It requires an exact match for Harbor version, reward and qualification
-policy, operator-credit policy, promotion policy, declared and observed
-evaluation profile, and comparable development/holdout locks. Current operator
-IDs, origins, and `parentOperatorIds` must realize the prior sealed breeding
-plan exactly. A previous log with `chainEligible: false` is rejected; therefore
-development-only and complementary-repair receipts cannot seed a later
-generation.
+digest. Current operator IDs, origins, and `parentOperatorIds` must realize the
+prior sealed breeding plan exactly. The operator `instruction` must also equal
+the prior plan text exactly. Each normal plan entry carries an
+`instructionContract` with mode `exact-text-v1` and a digest of that text;
+mutation-plan and crossover-plan instructions are concrete contracts, not
+free-form realization prompts.
+
+A historical full log without phase or chain fields retains its compatibility
+path only when it also has the historical profile shape without an opaque
+holdout-declaration commitment. The historical seal remains verifiable, but a
+log that predates `developmentEvidenceIdentity` cannot seed a new generation
+because fresh generated-child evidence cannot be proven. Every newly emitted
+full log records
+`phase: full`, `requestedPhase: full`, `diagnosticOnly: false`,
+`chainEligible: true`, `holdoutOpened: true`, and its Boolean promotion result.
+A phased development log is accepted only when it was produced by the
+explicit `development-chain` mode and its seal binds `chainEligible: true`, a
+qualified selected candidate, false diagnostic/promotion state, and an unopened
+holdout projection. Plain development, complementary repair, and report-only
+logs remain rejected as predecessors.
+
+Every explicit predecessor seal also binds
+`holdoutUsedForDevelopmentSelection: false`. The selected development identity
+must equal the first qualified candidate survivor and its ranking digest. The
+breeding plan must be normal, non-diagnostic, chain-eligible, contain unique
+operator IDs, report an `operatorCount` equal to its operator-list length, and
+seal the exact-text instruction contract for every entry.
+
+Every newly emitted generation log also contains
+`developmentEvidenceIdentity` and `developmentEvidenceIdentityDigest`. The
+identity projection covers every development candidate and binds its
+attribution, skill digest, resolved job directory, root JobResult UUID/path/
+digest, config digest, lock digest, and the UUID/path/digest and task identity
+of every TrialResult. The projection is part of `generationSeal`.
+
+For a successor, every candidate with `operatorId` must use fresh evidence that
+is disjoint from all predecessor evidence by job directory, job UUID, root
+result path/digest, trial UUID, and trial result path/digest. A new directory
+containing copied result files therefore fails even though its path changed.
+An unattributed row may reuse evidence only when its candidate ID, skill digest,
+and complete freshness-identity set are unchanged and the predecessor row was
+either an unattributed root reference or exactly `selectedDevelopment`. A
+second-place or lower ranked survivor does not receive this exception. Partial
+reuse, such as a new job path combined with old trial UUIDs, is rejected. This
+narrow rule supports the study's baseline/reference and selected-winner
+reevaluations without permitting a current operator to claim prior attempts. A
+fully disjoint, genuinely fresh reevaluation remains valid.
+
+Before a successor full run resolves either holdout reference, it validates the
+previous log, breeding lineage, and the Harbor, scoring, evaluation, promotion,
+observed-profile, development-lock projection, exact operator instructions,
+and cross-generation job/trial freshness. A full predecessor must
+still match the final full profile exactly after holdout is loaded. A
+`development-chain` predecessor has no observed holdout lock, so the successor
+first requires an exact match to the sealed opaque holdout declaration and its
+digest, then compares the development projection and seals its newly observed
+holdout lock in the full-generation log. Changing the baseline ID/reference,
+candidate-slot reference, or any promotion-policy field is rejected before the
+new target can be resolved. Changing the eventual candidate ID is permitted
+between development generations; final full development binds it before opening
+the slot. The original paths may be populated after the development generation;
+substituting different paths is drift. Candidate-bound schema-v1 declarations
+cannot migrate into this deferred-release contract and fail closed. This
+supports a chain such as generation zero `development-chain` followed by
+generation one `full`: both generations run development, a new generation-one
+candidate may win, and only the second generation opens holdout.
 
 Every job must contain exactly one agent and one local skill, and each
 candidate must have its own job. Root candidates omit both `parentCandidateId`
@@ -150,19 +239,29 @@ profile shape and classification behavior.
 
 ## Development-only and complementary repair artifacts
 
-Development-only mode writes the normal development evidence, candidate and
-operator rankings, breeding plan when normal survivors exist, an explicitly
+Both development modes write the normal development evidence, candidate and
+operator rankings, a breeding plan when normal survivors exist, an explicitly
 unopened `holdout-promotion.json`, a sealed `operator-coevolution-log.json`, and
-`report.md`. The log records `phase: development`, the selected candidate ID
-and skill digest, `promotion: false`, and `chainEligible: false`. It is a phase
-receipt, not a completed full-generation predecessor.
+`report.md`. Both logs record `phase: development`, the selected candidate ID
+and skill digest, `promotion: false`, and `holdoutOpened: false`.
+
+Plain `development` records `requestedPhase: development` and
+`chainEligible: false`; it is a phase receipt, not a completed predecessor.
+Successful `development-chain` records
+`requestedPhase: development-chain` and `chainEligible: true`. Its generation
+log may be the immediate predecessor of another `development-chain` or `full`
+generation. Its evolution profile also records the opaque
+`holdoutDeclaration` and `holdoutDeclarationDigest`. The separate unopened
+holdout artifact remains non-chainable because it contains no release evidence;
+predecessor validation consumes the sealed generation log.
 
 A qualified development winner does not require a complete operator survivor
-population merely to be sealed. When fewer than `operatorSurvivors` operators
-are established and credit-eligible, development mode preserves their complete
-ranking and credit fields but writes an empty diagnostic breeding plan with
-`reason: insufficient-established-operators` and `chainEligible: false`. The
-same evidence in full mode still aborts before any holdout path is resolved.
+population merely to be sealed by plain `development`. When fewer than
+`operatorSurvivors` operators are established and credit-eligible, that mode
+preserves their complete ranking and credit fields but writes an empty
+diagnostic breeding plan with `reason: insufficient-established-operators` and
+`chainEligible: false`. The same evidence in `development-chain` or full mode
+aborts before any holdout path is resolved.
 
 When every candidate is unqualified, the default remains fail-closed. Setting
 `coevolution.complementaryRepair: true` changes only that terminal branch. It

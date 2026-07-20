@@ -1,13 +1,13 @@
 ---
 name: harbor-trace-distillation
-description: Distill completed Harbor job and trial artifacts into an evidence-cited skill update, then gate it on separate Harbor holdout evidence. Use when Codex needs to normalize Harbor rewards, errors, ATIF trajectories, agent logs, and verifier output; consolidate recurring lessons directly from Harbor; execute optional Harbor discovery or holdout jobs; or audit that every accepted skill patch has diverse trial and task support.
+description: Distill completed Harbor job and trial artifacts into an evidence-cited skill update, validate the candidate on the discovery cohort, then gate it on separate Harbor holdout evidence. Use when Codex needs to normalize Harbor rewards, errors, ATIF trajectories, agent logs, and verifier output; consolidate recurring lessons directly from Harbor; execute optional Harbor discovery, candidate-development, or holdout jobs; or audit that every accepted skill patch has diverse trial and task support.
 ---
 
 # Harbor Trace Distillation
 
-Use Harbor 0.18.0 as the execution and evidence surface. Keep discovery and
-holdout separate, preserve raw Harbor artifacts, and change only the copied
-candidate bundle.
+Use Harbor 0.18.0 as the execution and evidence surface. Keep discovery,
+candidate development, and holdout roles explicit, preserve raw Harbor
+artifacts, and change only the copied candidate bundle.
 
 Runtime: use uv and Python 3.12 or newer. In commands, `<skill-root>` means
 this installed skill directory.
@@ -33,15 +33,17 @@ required.
 uv run <skill-root>/scripts/distill_harbor_traces.py <config.yaml> --dry-run
 ~~~
 
-5. Check declared credentials and any Docker-backed job configs without model
-   calls:
+5. Check declared credentials and Docker-backed pre-release job configs without
+   model calls. Under schema 2, holdout JobConfigs remain deferred until the
+   candidate-development gate passes:
 
 ~~~powershell
 uv run <skill-root>/scripts/distill_harbor_traces.py <config.yaml> --doctor
 ~~~
 
 6. Import discovery artifacts and evaluate any supplied proposal JSON without
-   executing configured jobs or reading holdout:
+   executing configured jobs or reading candidate-development or holdout
+   inputs:
 
 ~~~powershell
 uv run <skill-root>/scripts/distill_harbor_traces.py <config.yaml> --analyze-only
@@ -55,7 +57,11 @@ uv run <skill-root>/scripts/distill_harbor_traces.py <config.yaml> --analyze-onl
    establish the cause or a safe edit. If bounded trajectory, output, log, or
    verifier evidence does not support a diagnosis, keep the candidate
    unchanged. Re-run analyze-only until the accepted set is coherent.
-8. Run the full import/execution and separate holdout gate:
+8. For a promotion-capable run, use config `schemaVersion: 2`. Declare native
+   candidate-development artifacts or JobConfigs over the same cases as
+   discovery and an explicit minimum pass rate. The runner freezes the
+   materialized candidate digest, validates the candidate with metric-only
+   evidence, and opens holdout only after that gate passes. Then run:
 
 ~~~powershell
 uv run <skill-root>/scripts/distill_harbor_traces.py <config.yaml>
@@ -63,9 +69,10 @@ uv run <skill-root>/scripts/distill_harbor_traces.py <config.yaml>
 
 9. Inspect `trace-pool.json`, `proposal-state.json`, `consolidation.json`, the
    staged `baseline/skills/<name>/` and `candidate/skills/<name>/` bundles,
-   `holdout-gate.json`, and `report.md`. Promote only when the holdout decision
-   is `promote` and ordinary skill validation still passes. The script never
-   overwrites the source skill.
+   `development-gate.json`, `holdout-gate.json`, and `report.md`. Promote only
+   when candidate development passes, the holdout decision is `promote`, and
+   ordinary skill validation still passes. The script never overwrites the
+   source skill.
 
 ## Rules
 
@@ -107,17 +114,47 @@ uv run <skill-root>/scripts/distill_harbor_traces.py <config.yaml>
   self-contained. Reject a root that is itself a symbolic link, junction, or
   other filesystem reparse point as well as links nested inside the bundle;
   resolve every proposal destination inside the copied candidate bundle.
+- Config schema 1 remains the legacy direct discovery-to-holdout contract and
+  cannot contain a `development` block. Config schema 2 requires candidate
+  development and fails closed before holdout. This version boundary prevents
+  an older runner from silently ignoring the new gate.
+- Candidate development must reuse the exact discovery task/checksum,
+  agent/version/model, attempt, TrialConfig, artifact-config, and TrialLock
+  multisets while locking the frozen candidate digest instead of the baseline
+  digest. It must nevertheless consist of physically and evidentially new
+  attempts: job directories and IDs, evidence IDs, trial UUIDs/names/URIs,
+  result and lock paths, raw result artifacts, and label-independent attempt
+  fingerprints must be disjoint from discovery. Copying or relabeling discovery
+  artifacts is not candidate validation. Weak fairness is never accepted for
+  this phase.
+- Under schema 2, every supplied or executed discovery, candidate-development,
+  baseline-holdout, and candidate-holdout JobConfig must use Harbor built-in
+  `max_retries: 0`. Imported evidence must be a whole job artifact whose root
+  JobLock records every retry field, matches the JobConfig retry policy, and
+  reports zero actual retries. Paired phases require matching canonical retry
+  digest multisets. A lone trial artifact cannot prove this contract. Holdout
+  retry inputs remain unopened until candidate development passes.
+- Keep candidate-development normalization metric-only and outside the trace
+  pool and proposal state. Do not use the candidate's reevaluation as another
+  patch opportunity inside the same run.
+- A candidate passes development only when every trial is evaluable and
+  qualified, no trial errors, every required reward is present and at or above
+  threshold, and the primary-reward pass rate meets the configured minimum. A
+  provider/infrastructure or missing-primary-reward outcome makes the aggregate
+  pass rate null and the gate `not-evaluable`.
 - Do not expose holdout rewards, task names, trajectories, verifier output, or
-  errors to the distillation stage. Holdout is read only after the candidate is
-  materialized.
+  errors to the distillation stage. In schema 2, holdout artifacts and
+  JobConfigs, including their retry policies, are read only after the frozen
+  candidate passes development.
 - Require matching task checksums, attempts, agent/version/model cells, and
   replay settings for holdout comparison. Missing locks require an explicit
   weak-fairness opt-in and are reported as a limitation.
 - Compare lock, TrialConfig, and artifact signatures as sorted multisets, not
   sets. Repeated signatures retain their multiplicity, so `A,A,B` cannot pass
   as equivalent to `A,B,B`.
-- Require discovery and holdout to be disjoint by both task name and checksum,
-  and require the exact discovery agent/version/model profile on holdout.
+- Require holdout to be disjoint from both baseline discovery and candidate
+  development by task name and checksum, and require the exact development
+  agent/version/model profile on holdout.
 - Promotion always requires every discovery trial to have canonical verified
   lock provenance. `requireDiscoveryLocks: false` keeps older unlocked evidence
   inspectable in analyze-only mode; it does not make that evidence promotable.

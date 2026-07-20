@@ -172,6 +172,26 @@ task attempts respectively. One final release evaluates a shared baseline and
 at most one selected bundle per strategy on the 6 holdout plus 10 hard tasks,
 for at most 80 final task attempts with baseline reuse.
 
+### Trace-distillation development binding
+
+Trace distillation uses config schema 2 of `harbor-trace-distillation`. The 24
+baseline discovery trials remain the only proposal evidence. After
+consolidation, the runner freezes the child digest and evaluates that candidate
+on the exact same 24 task/checksum/profile/replay cells through
+`development.candidateArtifacts` or `development.candidateJobConfigs`, with
+`minimumPassRate: 1`. Those 24 candidate trials must be genuinely new attempts;
+shared or copied job directories, trial identities, result/lock paths, or
+equivalent attempt evidence fail closed even when the child equals the
+baseline. Candidate-development normalization is metric-only and cannot feed
+another patch in the same run. Both 24-trial sides use complete root JobLocks
+whose retry policy matches the JobConfig, fixes Harbor built-in retries at
+zero, and yields matching retry-policy digests. The 6 holdout and 10 hard tasks
+are not opened unless this development gate passes. Once opened, both final
+sides use the same complete zero-retry JobConfig/JobLock/stats contract and
+must remain disjoint from both 24-trial sides. This clarifies how the existing
+48-attempt protocol budget maps to the generic evolver; it does not revise any
+historical result, lock, or protocol value.
+
 ## Reproduce and verify
 
 From the Skill Arena repository root:

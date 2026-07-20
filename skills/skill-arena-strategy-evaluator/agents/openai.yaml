@@ -1,4 +1,0 @@
-interface:
-  display_name: "Strategy Evaluator (Deprecated)"
-  short_description: "Legacy Skill Arena strategy comparison"
-  default_prompt: "Use $skill-arena-strategy-evaluator only to reproduce a legacy study; use $harbor-evolve-skill or a Harbor-native strategy for new work."
