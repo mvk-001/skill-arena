@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Meta-Skill Evolution"
+  short_description: "Replay source-bound meta-policy ledgers"
+  default_prompt: "Use $harbor-metaskill-evolution to verify an append-only development meta-skill ledger without running Harbor or opening holdout evidence."

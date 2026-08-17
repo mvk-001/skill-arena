@@ -2,7 +2,7 @@
 # requires-python = ">=3.12"
 # dependencies = ["harbor==0.18.0", "gepa==0.1.2"]
 # ///
-"""Evolve one SKILL.md with Harbor trials and GEPA, then gate on holdout."""
+"""Evolve one SKILL.md with Harbor, validate a frozen winner, then gate holdout."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import asyncio
 import hashlib
 import itertools
 import json
+import math
 import os
 import re
 import shutil
@@ -62,8 +63,8 @@ agent trajectories, and execution errors from development tasks:
 
 Propose a drop-in replacement for the complete SKILL.md. Preserve its YAML
 frontmatter name exactly. Generalize from recurring evidence, preserve behavior
-that passed, avoid task-specific answers, and do not refer to hidden holdout
-cases. Return only the complete SKILL.md inside one fenced block.
+that passed, avoid task-specific answers, and do not refer to hidden validation
+or holdout cases. Return only the complete SKILL.md inside one fenced block.
 """
 
 
@@ -265,14 +266,20 @@ def normalize_config(
     config_path: Path, output_override: Path | None = None
 ) -> dict[str, Any]:
     raw = load_yaml(config_path)
-    if raw.get("schemaVersion") != 1:
-        raise ValueError("schemaVersion must be 1.")
+    if raw.get("schemaVersion") != 2:
+        raise ValueError(
+            "schemaVersion must be 2 so independent validation cannot be "
+            "silently used by the optimizer."
+        )
     directory = config_path.resolve().parent
     evolution = require_mapping(raw.get("evolution"), "evolution")
     harbor = require_mapping(raw.get("harbor"), "harbor")
     agent = require_mapping(harbor.get("agent"), "harbor.agent")
     splits_raw = require_mapping(raw.get("splits"), "splits")
     gepa = require_mapping(raw.get("gepa", {}), "gepa")
+    validation_gate = require_mapping(
+        raw.get("validationGate", {}), "validationGate"
+    )
     promotion = require_mapping(raw.get("promotion", {}), "promotion")
 
     baseline_skill = resolve_path(
@@ -288,7 +295,7 @@ def normalize_config(
 
     splits = {
         name: load_split(directory, splits_raw.get(name), f"splits.{name}")
-        for name in ("train", "validation", "holdout")
+        for name in ("evolution", "validation", "holdout")
     }
     validate_disjoint_splits(splits)
 
@@ -329,6 +336,7 @@ def normalize_config(
                 harbor.get("rewardKey", "reward"), "harbor.rewardKey"
             ),
             "requiredEnv": required_env,
+            "validationAttempts": int(harbor.get("validationAttempts", 2)),
             "holdoutAttempts": int(harbor.get("holdoutAttempts", 2)),
         },
         "gepa": {
@@ -345,6 +353,13 @@ def normalize_config(
             ),
             "seed": int(gepa.get("seed", 0)),
         },
+        "validationGate": {
+            "minimumMeanGain": float(validation_gate.get("minimumMeanGain", 0)),
+            "allowTaskRegressions": bool(
+                validation_gate.get("allowTaskRegressions", False)
+            ),
+            "requireNoErrors": bool(validation_gate.get("requireNoErrors", True)),
+        },
         "promotion": {
             "minimumMeanGain": float(promotion.get("minimumMeanGain", 0)),
             "allowTaskRegressions": bool(promotion.get("allowTaskRegressions", False)),
@@ -353,10 +368,18 @@ def normalize_config(
     }
     if normalized["harbor"]["concurrency"] < 1:
         raise ValueError("harbor.concurrency must be at least 1.")
+    if normalized["harbor"]["validationAttempts"] < 1:
+        raise ValueError("harbor.validationAttempts must be at least 1.")
     if normalized["harbor"]["holdoutAttempts"] < 1:
         raise ValueError("harbor.holdoutAttempts must be at least 1.")
     if normalized["gepa"]["maxMetricCalls"] < 1:
         raise ValueError("gepa.maxMetricCalls must be at least 1.")
+    for location, rules in (
+        ("validationGate", normalized["validationGate"]),
+        ("promotion", normalized["promotion"]),
+    ):
+        if not math.isfinite(rules["minimumMeanGain"]):
+            raise ValueError(f"{location}.minimumMeanGain must be finite.")
     if output_directory == baseline_skill or output_directory.is_relative_to(
         baseline_skill
     ):
@@ -374,7 +397,7 @@ def normalize_config(
 
 def public_plan(config: dict[str, Any]) -> dict[str, Any]:
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "evolutionId": config["id"],
         "baselineSkill": str(config["baselineSkill"]),
         "baselineDigest": compute_skill_digest(config["baselineSkill"]),
@@ -402,9 +425,19 @@ def public_plan(config: dict[str, Any]) -> dict[str, Any]:
             ]
             for name, examples in config["splits"].items()
         },
+        "evaluationBoundary": {
+            "evolutionDatasetSplit": "evolution",
+            "validationDatasetSplit": "validation",
+            "validationOptimizerVisible": False,
+            "candidateFreezeBeforeValidation": True,
+            "holdoutRequiresValidationPass": True,
+        },
         "budget": {
             "maxMetricCalls": config["gepa"]["maxMetricCalls"],
             "maxCandidateProposals": config["gepa"]["maxCandidateProposals"],
+            "validationAttemptsPerCandidatePerTask": config["harbor"][
+                "validationAttempts"
+            ],
             "holdoutAttemptsPerCandidatePerTask": config["harbor"]["holdoutAttempts"],
         },
     }
@@ -877,7 +910,7 @@ async def gepa_evaluator(candidate: str, example: HarborTaskExample):
     }
 
 
-async def evaluate_holdout(
+async def evaluate_frozen_candidate_gate(
     candidate: str,
     examples: list[HarborTaskExample],
     attempts: int,
@@ -895,10 +928,10 @@ def mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
 
-def summarize_holdout(
+def summarize_comparison(
     baseline: list[dict[str, Any]],
     candidate: list[dict[str, Any]],
-    config: dict[str, Any],
+    rules: dict[str, Any],
 ) -> dict[str, Any]:
     baseline_by_task: dict[str, list[float]] = {}
     candidate_by_task: dict[str, list[float]] = {}
@@ -933,8 +966,7 @@ def summarize_holdout(
         for item in baseline + candidate
         if not item.get("skillProvenance", {}).get("verified", False)
     )
-    rules = config["promotion"]
-    promoted = (
+    passed = (
         candidate_mean - baseline_mean >= rules["minimumMeanGain"]
         and (rules["allowTaskRegressions"] or not regressions)
         and (not rules["requireNoErrors"] or candidate_errors == 0)
@@ -949,15 +981,57 @@ def summarize_holdout(
         "provenanceVerified": provenance_failures == 0,
         "regressedTasks": regressions,
         "perTask": per_task,
-        "promotionRules": rules,
-        "promoted": promoted,
+        "rules": rules,
+        "passed": passed,
+    }
+
+
+def summarize_validation(
+    baseline: list[dict[str, Any]],
+    candidate: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "status": "complete",
+        "optimizerVisible": False,
+        **summarize_comparison(baseline, candidate, config["validationGate"]),
+    }
+
+
+def summarize_holdout(
+    baseline: list[dict[str, Any]],
+    candidate: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    comparison = summarize_comparison(baseline, candidate, config["promotion"])
+    return {
+        "status": "complete",
+        "opened": True,
+        **comparison,
+        "promotionRules": comparison["rules"],
+        "promoted": comparison["passed"],
+    }
+
+
+def sealed_holdout() -> dict[str, Any]:
+    return {
+        "status": "sealed",
+        "opened": False,
+        "reason": "independent-validation-failed",
+        "promoted": False,
     }
 
 
 def summarize_preserved_provenance(output_directory: Path) -> dict[str, Any]:
     phases: dict[str, dict[str, int | bool]] = {}
     trials_root = output_directory / "harbor-trials"
-    for phase in ("development", "holdout-baseline", "holdout-candidate"):
+    for phase in (
+        "development",
+        "validation-baseline",
+        "validation-candidate",
+        "holdout-baseline",
+        "holdout-candidate",
+    ):
         evidence_files = (
             sorted((trials_root / phase).glob("*/evaluation.json"))
             if (trials_root / phase).is_dir()
@@ -984,13 +1058,12 @@ def summarize_preserved_provenance(output_directory: Path) -> dict[str, Any]:
         "phases": phases,
         "verifiedTrials": verified,
         "totalTrials": total,
-        "allTrialsVerified": total > 0
-        and verified == total
-        and all(bool(row["allVerified"]) for row in phases.values()),
+        "allTrialsVerified": total > 0 and verified == total,
     }
 
 
 def render_report(run: dict[str, Any]) -> str:
+    validation = run["validation"]
     holdout = run["holdout"]
     decision = "PROMOTE" if holdout["promoted"] else "KEEP BASELINE"
     lines = [
@@ -1014,14 +1087,14 @@ def render_report(run: dict[str, Any]) -> str:
         f"- Agent/model: `{run['agent']}` / `{run['model']}`",
         f"- GEPA candidates: {run['gepa']['candidateCount']}",
         f"- GEPA metric calls: {run['gepa']['metricCalls']}",
-        f"- Best validation score: {run['gepa']['bestValidationScore']:.3f}",
+        f"- Best evolution score: {run['gepa']['bestEvolutionScore']:.3f}",
         "",
-        "## Holdout gate",
+        "## Independent validation gate",
         "",
         "| Task | Baseline mean | Candidate mean | Delta |",
         "| --- | ---: | ---: | ---: |",
     ]
-    for row in holdout["perTask"]:
+    for row in validation["perTask"]:
         lines.append(
             f"| {row['taskName']} | {row['baselineMeanReward']:.3f} | "
             f"{row['candidateMeanReward']:.3f} | {row['delta']:+.3f} |"
@@ -1029,13 +1102,51 @@ def render_report(run: dict[str, Any]) -> str:
     lines.extend(
         [
             "",
-            f"Overall baseline: {holdout['baselineMeanReward']:.3f}",
-            f"Overall candidate: {holdout['candidateMeanReward']:.3f}",
-            f"Mean gain: {holdout['meanGain']:+.3f}",
-            f"Candidate errors: {holdout['candidateErrors']}",
-            f"Provenance failures: {holdout['provenanceFailures']}",
-            f"Regressed tasks: {', '.join(holdout['regressedTasks']) or 'none'}",
+            f"Validation decision: {'PASS' if validation['passed'] else 'FAIL'}",
+            f"Overall baseline: {validation['baselineMeanReward']:.3f}",
+            f"Overall candidate: {validation['candidateMeanReward']:.3f}",
+            f"Mean gain: {validation['meanGain']:+.3f}",
+            f"Candidate errors: {validation['candidateErrors']}",
+            f"Provenance failures: {validation['provenanceFailures']}",
+            f"Regressed tasks: {', '.join(validation['regressedTasks']) or 'none'}",
             "",
+            "## Holdout gate",
+            "",
+        ]
+    )
+    if not holdout["opened"]:
+        lines.extend(
+            [
+                "Holdout remained sealed because independent validation failed.",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "| Task | Baseline mean | Candidate mean | Delta |",
+                "| --- | ---: | ---: | ---: |",
+            ]
+        )
+        for row in holdout["perTask"]:
+            lines.append(
+                f"| {row['taskName']} | {row['baselineMeanReward']:.3f} | "
+                f"{row['candidateMeanReward']:.3f} | {row['delta']:+.3f} |"
+            )
+        lines.extend(
+            [
+                "",
+                f"Overall baseline: {holdout['baselineMeanReward']:.3f}",
+                f"Overall candidate: {holdout['candidateMeanReward']:.3f}",
+                f"Mean gain: {holdout['meanGain']:+.3f}",
+                f"Candidate errors: {holdout['candidateErrors']}",
+                f"Provenance failures: {holdout['provenanceFailures']}",
+                f"Regressed tasks: {', '.join(holdout['regressedTasks']) or 'none'}",
+                "",
+            ]
+        )
+    lines.extend(
+        [
             "The source skill was not modified. Promote the candidate bundle only after reviewing this report and its preserved Harbor trial artifacts.",
             "",
         ]
@@ -1091,8 +1202,8 @@ def run_evolution(config: dict[str, Any]) -> dict[str, Any]:
     result = optimize_anything(
         seed_candidate=config["baselineText"],
         evaluator=gepa_evaluator,
-        dataset=config["splits"]["train"],
-        valset=config["splits"]["validation"],
+        dataset=config["splits"]["evolution"],
+        valset=config["splits"]["evolution"],
         objective=config["objective"],
         background=config["background"],
         config=GEPAConfig(
@@ -1123,18 +1234,60 @@ def run_evolution(config: dict[str, Any]) -> dict[str, Any]:
     candidate_artifact_provenance = create_candidate_bundle(
         candidate, candidate_directory, _RUNTIME
     )
+    frozen_candidate_digest = compute_skill_digest(candidate_directory)
 
     _RUNTIME.queue = TrialQueue(n_concurrent=config["harbor"]["concurrency"])
-    holdout = config["splits"]["holdout"]
-    attempts = config["harbor"]["holdoutAttempts"]
-    baseline_results = asyncio.run(
-        evaluate_holdout(config["baselineText"], holdout, attempts, "holdout-baseline")
+    validation = config["splits"]["validation"]
+    validation_attempts = config["harbor"]["validationAttempts"]
+    validation_baseline_results = asyncio.run(
+        evaluate_frozen_candidate_gate(
+            config["baselineText"],
+            validation,
+            validation_attempts,
+            "validation-baseline",
+        )
     )
     _RUNTIME.queue = TrialQueue(n_concurrent=config["harbor"]["concurrency"])
-    candidate_results = asyncio.run(
-        evaluate_holdout(candidate, holdout, attempts, "holdout-candidate")
+    validation_candidate_results = asyncio.run(
+        evaluate_frozen_candidate_gate(
+            candidate,
+            validation,
+            validation_attempts,
+            "validation-candidate",
+        )
     )
-    holdout_summary = summarize_holdout(baseline_results, candidate_results, config)
+    validation_summary = summarize_validation(
+        validation_baseline_results, validation_candidate_results, config
+    )
+
+    holdout_baseline_results: list[dict[str, Any]] = []
+    holdout_candidate_results: list[dict[str, Any]] = []
+    if validation_summary["passed"]:
+        holdout = config["splits"]["holdout"]
+        holdout_attempts = config["harbor"]["holdoutAttempts"]
+        _RUNTIME.queue = TrialQueue(n_concurrent=config["harbor"]["concurrency"])
+        holdout_baseline_results = asyncio.run(
+            evaluate_frozen_candidate_gate(
+                config["baselineText"],
+                holdout,
+                holdout_attempts,
+                "holdout-baseline",
+            )
+        )
+        _RUNTIME.queue = TrialQueue(n_concurrent=config["harbor"]["concurrency"])
+        holdout_candidate_results = asyncio.run(
+            evaluate_frozen_candidate_gate(
+                candidate,
+                holdout,
+                holdout_attempts,
+                "holdout-candidate",
+            )
+        )
+        holdout_summary = summarize_holdout(
+            holdout_baseline_results, holdout_candidate_results, config
+        )
+    else:
+        holdout_summary = sealed_holdout()
     source_digest_at_completion = compute_skill_digest(_RUNTIME.source_skill)
     if source_digest_at_completion != _RUNTIME.source_digest:
         raise RuntimeError(
@@ -1143,10 +1296,16 @@ def run_evolution(config: dict[str, Any]) -> dict[str, Any]:
             f"{source_digest_at_completion}. Refusing to finalize promotion evidence."
         )
     verify_frozen_baseline(_RUNTIME, "before finalizing the run")
+    candidate_digest_at_completion = compute_skill_digest(candidate_directory)
+    if candidate_digest_at_completion != frozen_candidate_digest:
+        raise RuntimeError(
+            "Selected candidate changed after it was frozen and before validation "
+            f"completed: {frozen_candidate_digest} != {candidate_digest_at_completion}."
+        )
     provenance_summary = summarize_preserved_provenance(output)
     generated_at = datetime.now(timezone.utc).isoformat()
     run = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "source": "harbor-gepa",
         "evolutionId": config["id"],
         "generatedAt": generated_at,
@@ -1156,7 +1315,7 @@ def run_evolution(config: dict[str, Any]) -> dict[str, Any]:
         "baselineSnapshotDigest": _RUNTIME.baseline_digest,
         "baselineSnapshotProvenance": baseline_snapshot_provenance,
         "candidateSkill": str(candidate_directory),
-        "candidateDigest": compute_skill_digest(candidate_directory),
+        "candidateDigest": frozen_candidate_digest,
         "candidateArtifactProvenance": candidate_artifact_provenance,
         "skillProvenance": {
             **provenance_summary,
@@ -1181,13 +1340,26 @@ def run_evolution(config: dict[str, Any]) -> dict[str, Any]:
             "candidateCount": result.num_candidates,
             "metricCalls": result.total_metric_calls,
             "bestIndex": result.best_idx,
-            "bestValidationScore": result.val_aggregate_scores[result.best_idx],
+            "bestEvolutionScore": result.val_aggregate_scores[result.best_idx],
             "runDirectory": result.run_dir,
+        },
+        "evaluationBoundary": {
+            "evolutionDatasetSplit": "evolution",
+            "validationDatasetSplit": "validation",
+            "validationOptimizerVisible": False,
+            "candidateDigestFrozenBeforeValidation": frozen_candidate_digest,
+            "candidateDigestAfterValidation": candidate_digest_at_completion,
+            "holdoutOpened": validation_summary["passed"],
+        },
+        "validation": validation_summary,
+        "validationTrials": {
+            "baseline": validation_baseline_results,
+            "candidate": validation_candidate_results,
         },
         "holdout": holdout_summary,
         "holdoutTrials": {
-            "baseline": baseline_results,
-            "candidate": candidate_results,
+            "baseline": holdout_baseline_results,
+            "candidate": holdout_candidate_results,
         },
     }
     (output / "run.json").write_text(json.dumps(run, indent=2) + "\n", encoding="utf-8")
@@ -1217,9 +1389,15 @@ def main() -> None:
             run = run_evolution(config)
             result = {
                 "mode": "live",
-                "decision": "promote"
-                if run["holdout"]["promoted"]
-                else "keep-baseline",
+                "decision": (
+                    "promote"
+                    if run["holdout"]["promoted"]
+                    else (
+                        "validation-rejected"
+                        if not run["validation"]["passed"]
+                        else "keep-baseline"
+                    )
+                ),
                 "candidateSkill": run["candidateSkill"],
                 "runJson": str(config["outputDirectory"] / "run.json"),
                 "reportMarkdown": str(config["outputDirectory"] / "report.md"),

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Organize Evaluations"
+  short_description: "Track private Harbor studies and safe indexes"
+  default_prompt: "Use $harbor-organize-evaluations to organize my private Harbor evidence and publish only Git-safe indexes and reviewed result tables."

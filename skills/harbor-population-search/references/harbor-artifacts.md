@@ -2,6 +2,15 @@
 
 Use a completed Harbor job directory as the evidence boundary.
 
+At the study level, development jobs are the optimizer-visible evolution
+dataset and the configured holdout job is the mandatory independent validation
+dataset when it is the first unseen cohort. Declare and freeze both before the
+first generation, but do not execute or inspect validation artifacts until one
+development winner and its bundle digest are fixed. A study may reserve a
+further holdout after that gate. Validation is one-way: its result cannot feed
+another generation, ranking, repair-parent choice, or candidate mutation in the
+same study. A later unbiased gate requires fresh validation.
+
 ## Required job files
 
 - config.json: validate as Harbor JobConfig. Candidate jobs may differ only in

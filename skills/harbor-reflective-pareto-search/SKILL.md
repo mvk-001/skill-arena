@@ -17,6 +17,21 @@ Its executable and reference are included here, dependencies are declared in
 the executable's PEP 723 metadata, and no Skill Arena repository module is
 required.
 
+## Evolution/validation boundary
+
+Before starting generation zero, freeze a development dataset for Pareto
+reflection and a disjoint, optimizer-invisible validation dataset. Plan that
+validation stage before the evolution stage starts. The configured
+`harbor.holdoutJob` normally serves as this bundle's independent validation
+dataset; a study may reserve an additional holdout after it. Keep the declared
+job and its artifacts unopened until one development archive member and its
+skill digest are frozen.
+
+Validation is a one-way acceptance gate. Never use its rewards, task
+identities, diagnostics, or trajectories to change, merge, rank, or reselect a
+candidate in the same study. If it fails, preserve the candidate and evidence;
+another unbiased evolution claim requires a new study with fresh validation.
+
 ## Workflow
 
 1. Read [references/search-config.md](references/search-config.md) completely.
@@ -100,7 +115,7 @@ It also requires canonical locked provenance for the selected development and
 both holdout jobs, plus an observed development job signature that exactly
 matches the declared `harbor.developmentJob` profile.
 10. Promote candidate-skill only when promotion.json says promote and ordinary
-    validation and tests for that copied bundle also pass.
+    structural validation and tests for that copied bundle also pass.
 
 ## Evidence contract
 
@@ -154,8 +169,8 @@ names/checksums reconstructed from `candidateResults` before holdout.
 - Set Harbor retry.max_retries to zero. Repeated attempts are part of the fixed
   job design; retries must not inflate evidence.
 - Keep holdout invisible to reflection and archive selection.
-- Treat validation or development as optimizer-visible evidence, never as the
-  final promotion claim.
+- Treat only development as optimizer-visible evidence. Never relabel an
+  optimizer-visible cohort as independent validation.
 - Keep diagnostic excerpts bounded and review artifacts for secrets before
   sharing them.
 - Reject name changes and validate copied bundles after every mutation or

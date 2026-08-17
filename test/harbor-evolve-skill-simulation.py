@@ -129,7 +129,7 @@ def main() -> None:
         )
 
         task_paths = {}
-        for split in ("train", "validation", "holdout"):
+        for split in ("evolution", "validation", "holdout"):
             task_path = root / split
             task_path.mkdir()
             task_paths[split] = module.HarborTaskExample(
@@ -149,7 +149,7 @@ def main() -> None:
             "skillName": "simulation-skill",
             "outputDirectory": output,
             "splits": {
-                "train": [task_paths["train"]],
+                "evolution": [task_paths["evolution"]],
                 "validation": [task_paths["validation"]],
                 "holdout": [task_paths["holdout"]],
             },
@@ -161,6 +161,7 @@ def main() -> None:
                 "concurrency": 2,
                 "rewardKey": "reward",
                 "requiredEnv": [],
+                "validationAttempts": 2,
                 "holdoutAttempts": 2,
             },
             "gepa": {
@@ -170,6 +171,11 @@ def main() -> None:
                 "reflectionModel": "openai/simulated",
                 "seed": 0,
             },
+            "validationGate": {
+                "minimumMeanGain": 2 if mode == "validation-fail" else 0,
+                "allowTaskRegressions": False,
+                "requireNoErrors": True,
+            },
             "promotion": {
                 "minimumMeanGain": 0,
                 "allowTaskRegressions": False,
@@ -177,7 +183,15 @@ def main() -> None:
             },
         }
 
-        def fake_optimize_anything(*, seed_candidate, evaluator, dataset, config, **_):
+        def fake_optimize_anything(
+            *, seed_candidate, evaluator, dataset, valset, config, **_
+        ):
+            assert [example.task_name for example in dataset] == [
+                "simulation/evolution"
+            ]
+            assert [example.task_name for example in valset] == [
+                "simulation/evolution"
+            ]
             run_directory = Path(config.engine.run_dir)
             run_directory.mkdir(parents=True)
             asyncio.run(evaluator(seed_candidate, dataset[0]))
@@ -208,11 +222,38 @@ def main() -> None:
 
         result = module.run_evolution(config)
 
+        if mode == "validation-fail":
+            assert result["validation"]["passed"] is False
+            assert result["holdout"]["opened"] is False
+            assert result["holdout"]["promoted"] is False
+            assert result["holdoutTrials"] == {"baseline": [], "candidate": []}
+            assert not (output / "harbor-trials" / "holdout-baseline").exists()
+            assert result["skillProvenance"]["verifiedTrials"] == 6
+            print(
+                json.dumps(
+                    {
+                        "status": "validation-rejected",
+                        "holdoutOpened": result["holdout"]["opened"],
+                        "validationOptimizerVisible": result["evaluationBoundary"][
+                            "validationOptimizerVisible"
+                        ],
+                        "verifiedIdentityTrials": result["skillProvenance"][
+                            "verifiedTrials"
+                        ],
+                    }
+                )
+            )
+            return
+
+        assert result["validation"]["passed"] is True
+        assert result["validation"]["optimizerVisible"] is False
         assert result["holdout"]["promoted"] is True
         assert result["holdout"]["baselineMeanReward"] == 0.0
         assert result["holdout"]["candidateMeanReward"] == 1.0
         assert len(result["holdoutTrials"]["baseline"]) == 2
         assert len(result["holdoutTrials"]["candidate"]) == 2
+        assert len(result["validationTrials"]["baseline"]) == 2
+        assert len(result["validationTrials"]["candidate"]) == 2
         assert (baseline / "SKILL.md").read_text(encoding="utf-8") == baseline_text
         assert (output / "candidate-skill" / "reference.txt").read_text(
             encoding="utf-8"
@@ -229,16 +270,16 @@ def main() -> None:
         ]
         assert result["skillProvenance"]["sourceUnchanged"] is True
         assert result["skillProvenance"]["allTrialsVerified"] is True
-        assert result["skillProvenance"]["verifiedTrials"] == 6
-        assert result["skillProvenance"]["totalTrials"] == 6
+        assert result["skillProvenance"]["verifiedTrials"] == 10
+        assert result["skillProvenance"]["totalTrials"] == 10
         evaluated_skills = [Path(value) for value in FakeTrialQueue.evaluated_skills]
-        assert len(evaluated_skills) == 6
+        assert len(evaluated_skills) == 10
         assert {path.name for path in evaluated_skills} == {"simulation-skill"}
         assert {path.parent.name for path in evaluated_skills} == {"skills"}
         evaluation_files = sorted(
             (output / "harbor-trials").glob("*/*/evaluation.json")
         )
-        assert len(evaluation_files) == 6
+        assert len(evaluation_files) == 10
         for evaluation_file in evaluation_files:
             evidence = json.loads(evaluation_file.read_text(encoding="utf-8"))
             provenance = evidence["skillProvenance"]
@@ -255,6 +296,12 @@ def main() -> None:
                     "decision": "promote",
                     "developmentTrials": len(
                         list((output / "harbor-trials" / "development").iterdir())
+                    ),
+                    "validationBaselineTrials": len(
+                        result["validationTrials"]["baseline"]
+                    ),
+                    "validationCandidateTrials": len(
+                        result["validationTrials"]["candidate"]
                     ),
                     "holdoutBaselineTrials": len(result["holdoutTrials"]["baseline"]),
                     "holdoutCandidateTrials": len(result["holdoutTrials"]["candidate"]),

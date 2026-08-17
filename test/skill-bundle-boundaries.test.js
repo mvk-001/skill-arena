@@ -9,11 +9,32 @@ import {
   EXPECTED_SKILLS,
 } from "../scripts/check-skill-bundles.js";
 
-test("the repository contains exactly the seven maintained atomic Harbor skills", () => {
+test("the repository contains exactly the eleven maintained atomic Harbor skills", () => {
   const result = checkSkillBundles({ skillsRoot: path.resolve("skills") });
 
   assert.deepEqual(result.errors, []);
   assert.deepEqual(result.checkedBundles, [...EXPECTED_SKILLS]);
+});
+
+test("every evolution bundle declares the independent validation boundary", () => {
+  const evolutionSkills = [
+    "harbor-evolve-skill",
+    "harbor-operator-coevolution",
+    "harbor-population-search",
+    "harbor-reflective-pareto-search",
+    "harbor-trace-distillation",
+  ];
+
+  for (const skill of evolutionSkills) {
+    const markdown = fs.readFileSync(
+      path.resolve("skills", skill, "SKILL.md"),
+      "utf8",
+    );
+    assert.match(markdown, /^## Evolution\/validation boundary$/m, skill);
+    assert.match(markdown, /optimizer-(?:invisible|visible)/i, skill);
+    assert.match(markdown, /before .*evolution|before .*generation|before .*distillation/i, skill);
+    assert.match(markdown, /fresh\s+validation/i, skill);
+  }
 });
 
 test("the bundle check rejects name drift and escaping or missing resources", () => {

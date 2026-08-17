@@ -11,8 +11,12 @@ const defaultSkillsRoot = path.join(projectRoot, "skills");
 
 export const EXPECTED_SKILLS = Object.freeze([
   "harbor-evolve-skill",
+  "harbor-maximize-knowledge-expertise",
+  "harbor-metaskill-evolution",
   "harbor-operator-coevolution",
+  "harbor-organize-evaluations",
   "harbor-population-search",
+  "harbor-realize-skill-candidate",
   "harbor-reflective-pareto-search",
   "harbor-resume-external-failures",
   "harbor-run-results",

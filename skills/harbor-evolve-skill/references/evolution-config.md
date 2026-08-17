@@ -8,7 +8,7 @@ Paths resolve from the YAML directory. A split entry may point to one Harbor
 task directory or to a dataset directory whose direct children are tasks.
 
 ~~~yaml
-schemaVersion: 1
+schemaVersion: 2
 
 evolution:
   id: example-skill-harbor-evolution
@@ -28,6 +28,7 @@ harbor:
   environment: docker
   concurrency: 4
   rewardKey: reward
+  validationAttempts: 2
   holdoutAttempts: 2
   requiredEnv:
     - OPENAI_API_KEY
@@ -40,12 +41,17 @@ gepa:
   seed: 0
 
 splits:
-  train:
-    - tasks/train
+  evolution:
+    - tasks/evolution
   validation:
     - tasks/validation
   holdout:
     - tasks/holdout
+
+validationGate:
+  minimumMeanGain: 0
+  allowTaskRegressions: false
+  requireNoErrors: true
 
 promotion:
   minimumMeanGain: 0
@@ -55,14 +61,22 @@ promotion:
 
 ## Split meaning
 
-- train: GEPA samples these tasks for feedback-guided proposals.
-- validation: GEPA evaluates candidates here and selects its best candidate.
-- holdout: invisible to GEPA; evaluated only after selection against both
-  baseline and candidate.
+- evolution: the only optimizer-visible dataset. GEPA samples it for
+  feedback-guided proposals and evaluates candidates on it for selection.
+- validation: invisible to GEPA; evaluated only after selection against both
+  the unchanged baseline and the digest-frozen candidate.
+- holdout: invisible to GEPA and validation; opened only when the frozen
+  candidate passes independent validation.
 
 The validator rejects repeated task names and identical task content across
-splits. Keep enough task-family diversity in each split to avoid choosing a
-candidate from one narrow behavior.
+splits. This is a byte-level control, so also review for semantic duplicates.
+Keep enough task-family diversity in the evolution dataset to avoid choosing a
+candidate from one narrow behavior, and keep validation representative enough
+to detect evolution-dataset overfitting.
+
+Schema 2 is mandatory. Schema 1 used `validation` as GEPA's selection set and
+is rejected so an older optimizer-visible boundary cannot be mistaken for
+independent validation.
 
 ## Harbor task requirements
 
@@ -76,7 +90,7 @@ Every task must satisfy Harbor's current task model:
   answers that can be copied into the skill
 
 Multi-reward tasks may choose another rewardKey, but the selected value must be
-numeric for every completed development and holdout trial.
+numeric for every completed evolution, validation, and holdout trial.
 
 ## Candidate boundary
 
@@ -125,10 +139,24 @@ no legacy/exploratory identity mode because this workflow creates new live
 trials. Each `evaluation.json` preserves the candidate text digest and complete
 identity evidence for audit.
 
-## Promotion gate
+## Independent validation and promotion gates
 
-After GEPA selection, Harbor runs the unchanged baseline and candidate for the
-same number of attempts on every holdout task.
+GEPA receives the evolution examples as both its feedback dataset and its
+internal selection set. After GEPA returns one winner, the runner validates its
+text, copies the complete candidate bundle, and freezes its digest before
+opening validation. It runs the unchanged baseline and that one candidate for
+`validationAttempts` on every validation task. The validation gate uses its own
+minimum gain, task-regression, error, and provenance rules.
+
+Validation evidence cannot trigger a mutation, candidate reranking, or
+reselection in the same run. On failure the runner writes the candidate and
+validation evidence, leaves holdout unopened, and returns
+`validation-rejected`. Reusing that validation feedback for a later evolution
+consumes its independence; a later unbiased gate requires a fresh validation
+dataset.
+
+Only after validation passes does Harbor run the unchanged baseline and frozen
+candidate for the same number of attempts on every holdout task.
 
 Promotion requires:
 
@@ -147,5 +175,6 @@ This workflow adapts the official
 [Harbor + GEPA cookbook](https://github.com/harbor-framework/harbor-cookbook/tree/main/harbor_cookbook/gepa):
 Harbor supplies isolated trials, rewards, and rich side information; GEPA uses
 reflective candidate mutation and Pareto-aware selection. The local adaptation
-evolves a complete SKILL.md rather than a prompt template and adds a separate
-baseline-versus-candidate holdout gate.
+evolves a complete SKILL.md rather than a prompt template, adds an independent
+baseline-versus-frozen-candidate validation gate, and defers the final holdout
+until that gate passes.

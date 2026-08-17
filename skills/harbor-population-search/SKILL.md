@@ -18,6 +18,22 @@ Its executable and reference are included here, dependencies are declared in
 the executable's PEP 723 metadata, and no Skill Arena repository module is
 required.
 
+## Evolution/validation boundary
+
+Before any live development generation, freeze two disjoint study inputs: the
+development dataset used for mutation and ranking, and an independent
+validation dataset that is unavailable to those activities. Plan the
+validation stage before starting evolution and record the selected candidate
+bundle by digest before opening it. In this bundle, `--holdout-template`
+normally supplies that first optimizer-invisible validation dataset; a study
+may reserve an additional holdout after it.
+
+Never turn validation rewards, task identities, diagnostics, or trajectories
+into another mutation or ranking pass in the same study. A failed gate consumes
+that validation cohort. Preserve the result and use a fresh validation dataset
+in a new study for another unbiased claim. A development-only invocation is an
+intermediate receipt, not a completed evolution methodology.
+
 ## Inputs
 
 Require:
@@ -57,6 +73,7 @@ Run the dependency and input check without writing output:
       --candidate baseline=/path/to/baseline-skill \
       --candidate candidate-01=/path/to/candidate-skill \
       --baseline baseline \
+      --holdout-template harbor-validation.yaml \
       --output /path/to/search-run \
       --doctor
 
@@ -78,6 +95,7 @@ Run live evaluation by omitting the mode flag:
       --pass-threshold 1 \
       --minimum-development-pass-rate 1 \
       --required-reward mechanical_qualification_gate=1 \
+      --holdout-template harbor-validation.yaml \
       --output /path/to/search-run
 
 The script freezes every candidate under an isolated
@@ -163,9 +181,10 @@ is always non-promotable. A digest mismatch is never a legacy exception.
 Prefer jobs created by this script, which freeze and inject each candidate
 before Harbor execution.
 
-## Gate on Holdout
+## Gate on Independent Validation / Holdout
 
-For a live run, add --holdout-template. Harbor evaluates only the preserved
+For a live run, declare `--holdout-template` before development starts. Harbor
+keeps it deferred and evaluates only the preserved
 baseline and the development winner after selection. Each role is copied to
 `holdout/generation-NNN/attempt-NNN/<role>/skills/<frontmatter-name>/` before
 its native JobConfig is written, preserving the same installed identity and

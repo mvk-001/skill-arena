@@ -1,6 +1,6 @@
 ---
 name: harbor-evolve-skill
-description: Evolve a skill's SKILL.md with Harbor trials and GEPA reflective Pareto search, then gate promotion on untouched Harbor holdout tasks. Use when Codex needs evaluation-guided skill improvement from rewards, verifier diagnostics, execution errors, and agent trajectories; needs to validate train/validation/holdout isolation; or needs a reproducible candidate bundle and promotion report without using Skill Arena.
+description: Evolve a skill's SKILL.md with Harbor trials and GEPA reflective Pareto search, freeze the selected candidate, validate it on an optimizer-invisible dataset, then gate promotion on untouched Harbor holdout tasks. Use when Codex needs evaluation-guided skill improvement from rewards, verifier diagnostics, execution errors, and agent trajectories; needs to enforce evolution/validation/holdout isolation at run start; or needs a reproducible candidate bundle and promotion report without using Skill Arena.
 ---
 
 # Harbor Evolve Skill
@@ -12,6 +12,15 @@ promote only after a separate holdout comparison.
 Runtime: use uv and Python 3.12 or newer. The bundled script pins Harbor 0.18.0
 and GEPA 0.1.2 in inline metadata. In commands, <skill-root> means this
 installed skill directory.
+
+## Evolution/validation boundary
+
+Before the live command starts, schema 2 requires byte-disjoint evolution,
+validation, and holdout datasets. Only evolution is optimizer-visible. The
+runner freezes one selected candidate by digest before validation, prevents
+validation from entering GEPA, and keeps holdout sealed unless validation
+passes. A validation failure is terminal for that run; another unbiased attempt
+requires fresh validation.
 
 ## Method
 
@@ -29,18 +38,23 @@ its reward. It returns verified reward plus bounded verifier, trajectory, and
 agent-output evidence to GEPA. GEPA reflects on this evidence, proposes
 candidate text, and preserves Pareto-useful candidates across cases.
 
-Training evidence drives proposals. Validation cases select among candidates.
-Holdout tasks remain absent from reflection and run only after optimization
-against both the unchanged baseline and selected candidate.
+The `evolution` dataset drives both proposals and candidate selection. GEPA
+never receives the independent `validation` dataset. After selection, the
+runner freezes the candidate bundle by digest, compares it with the unchanged
+baseline on validation, and opens holdout only if that one-way gate passes.
+Neither validation nor holdout can become another proposal or selection loop.
 
 ## Workflow
 
 1. Read [references/evolution-config.md](references/evolution-config.md)
    completely before authoring or changing a run.
-2. Freeze the baseline skill and Harbor tasks. Use three non-overlapping splits:
-   train, validation, and holdout. Keep canonical answers in tests or verifier
-   code, never in task instructions or the skill.
-3. Write an evolution YAML and validate the plan without Docker or model calls:
+2. Freeze the baseline skill and Harbor tasks. Use three non-overlapping
+   datasets: evolution, validation, and holdout. Validation must be semantically
+   independent, not just byte-distinct. Keep canonical answers in tests or
+   verifier code, never in task instructions or the skill.
+3. Write a schema-2 evolution YAML and validate the plan without Docker or
+   model calls. Dry-run rejects a missing split or any repeated task identity or
+   content before evolution starts:
 
 ~~~powershell
 uv run <skill-root>/scripts/evolve_skill_with_harbor.py <evolution.yaml> --dry-run
@@ -62,10 +76,12 @@ uv run <skill-root>/scripts/evolve_skill_with_harbor.py <evolution.yaml>
 Use a new output directory for every run. The script refuses a non-empty
 destination and never mutates the source skill.
 
-6. Inspect report.md, run.json, the GEPA run directory, and failed Harbor trial
-   evidence. Review candidate-skill/SKILL.md for benchmark leakage, unnecessary
-   complexity, stale links, and consistency with its unchanged bundled
-   resources.
+6. Inspect report.md, run.json, the GEPA run directory, validation gate, and
+   failed Harbor trial evidence. Confirm
+   `evaluationBoundary.validationOptimizerVisible` is false and that the
+   candidate digest before and after validation is identical. Review
+   candidate-skill/SKILL.md for benchmark leakage, unnecessary complexity,
+   stale links, and consistency with its unchanged bundled resources.
 7. Promote candidate-skill only when the holdout decision is promote and all
    ordinary skill validation/tests still pass. Otherwise keep the baseline and
    preserve the run as evidence.
@@ -73,10 +89,17 @@ destination and never mutates the source skill.
 ## Guardrails
 
 - Do not edit the skill and benchmark in the same evolution run.
-- Do not expose holdout task names, instructions, verifier output, rewards, or
-  trajectories to reflection.
-- Treat validation as optimizer-visible selection evidence, not holdout.
-- Keep train, validation, and holdout disjoint by both task name and content.
+- Do not expose validation or holdout task instructions, verifier output,
+  rewards, or trajectories to reflection.
+- Use only the evolution dataset for GEPA feedback and selection. Validation is
+  a post-selection acceptance gate for one frozen candidate, never optimizer
+  input.
+- Keep evolution, validation, and holdout disjoint by both task name and
+  content, and review them for semantic near-duplicates that byte digests cannot
+  detect.
+- If validation fails, keep holdout sealed and do not revise or reselect a
+  candidate against that result in the same run. A later unbiased attempt needs
+  a new output directory and fresh validation dataset.
 - Preserve the baseline directory and every bundled resource. This method
   evolves SKILL.md only; use a separately reviewed workflow for scripts,
   references, or assets.
@@ -94,8 +117,8 @@ destination and never mutates the source skill.
   values into TrialConfig.
 - Disable evaluation caching during search. Use the declared metric-call and
   candidate-proposal budgets.
-- Prefer at least two holdout attempts per candidate/task; raise the count when
-  decisions are consequential or agent variance is high.
+- Prefer at least two validation and holdout attempts per candidate/task; raise
+  the counts when decisions are consequential or agent variance is high.
 - Reject candidate frontmatter name changes and SKILL.md files over 500 lines.
 - Never call a validation winner promoted until the independent holdout gate
   passes.
@@ -112,6 +135,8 @@ One live run preserves:
 ├── gepa/
 ├── harbor-trials/
 │   ├── development/
+│   ├── validation-baseline/
+│   ├── validation-candidate/
 │   ├── holdout-baseline/
 │   └── holdout-candidate/
 ├── run.json
@@ -122,8 +147,8 @@ Every trial directory contains `skills/<name>` plus `evaluation.json` with the
 candidate SKILL.md digest, staged bundle digest, configured sources, locked
 name/source/digest, and verification status. `run.json` records exact package
 versions, source/snapshot/candidate digests, aggregate provenance counts, split
-task names, optimizer counts, every holdout result, per-task regressions, and
-the promotion decision.
+task names, optimizer counts, validation and holdout release state, every gate
+result, per-task regressions, and the promotion decision.
 
 ## Validation
 

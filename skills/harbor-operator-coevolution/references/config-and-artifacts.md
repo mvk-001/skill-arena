@@ -66,6 +66,18 @@ holdout:
   requireNoErrors: true
 ~~~
 
+At the study level, the candidate job configs comprise the optimizer-visible
+evolution dataset and the `holdout` mapping is the mandatory independent
+validation dataset when it is the first unseen cohort. Declare and freeze both
+before generation zero. The opaque holdout commitment supports that ordering:
+development phases bind the future validation location without resolving or
+reading it, and full mode opens it only after selecting and digest-binding one
+development winner. A study may reserve another holdout after this validation.
+
+The validation result is terminal for the current study. Do not use it for
+operator credit, breeding, complementary repair, ranking, or a later
+generation. Another unbiased gate requires a new study with fresh validation.
+
 For `--analyze-only`, replace each `jobConfig` used by the selected phase with
 `jobDirectory`. A live run loads each selected native config with Harbor
 `JobConfig`, resolves its local paths, and

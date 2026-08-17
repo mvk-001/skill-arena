@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "studyId": "harbor-next-skill-comparison-20260720",
+  "kind": "append-only-contract-and-tracked-evidence-snapshot",
+  "status": "complete-descriptive-no-replay",
+  "sealedAt": "2026-07-20T00:00:00Z",
+  "purpose": "Compare the lifecycle role and available tracked evidence for two new digest-sealed Harbor skills against the maintained Harbor skill portfolio without generating candidates or opening evaluation data.",
+  "resultPath": "evaluations/harbor-next-skill-comparison/results/20260720/evidence-ledger.json",
+  "studyLockPath": "evaluations/harbor-next-skill-comparison/locks/study-lock.json",
+  "comparisonSet": [
+    "harbor-run-results",
+    "harbor-resume-external-failures",
+    "harbor-realize-skill-candidate",
+    "harbor-population-search",
+    "harbor-trace-distillation",
+    "harbor-reflective-pareto-search",
+    "harbor-operator-coevolution",
+    "harbor-evolve-skill",
+    "harbor-metaskill-evolution"
+  ],
+  "evidenceBoundary": {
+    "allowedRepositoryEvidenceRoles": [
+      "development",
+      "discovery-smoke",
+      "prospective-development-contract"
+    ],
+    "forbiddenRepositoryEvidenceRoles": [
+      "holdout",
+      "hard"
+    ],
+    "trackedFilesOnly": true,
+    "ignoredNativeJobsAllowed": false,
+    "candidateGenerationAllowed": false,
+    "candidateSelectionAllowed": false,
+    "promotionAllowed": false,
+    "historicalMutationAllowed": false,
+    "fieldImportPolicy": "Only exact JSON pointers declared in the result ledger are imported as observations. Narrative sources are hash-bound but supply no machine score.",
+    "developmentHoldoutRule": "No holdout or hard metric, task content, answer, verifier input, trajectory, or candidate decision is an input to this snapshot."
+  },
+  "repositoryReplay": {
+    "status": "not-run",
+    "harborInvocations": 0,
+    "modelExecutions": 0,
+    "candidateAuthoringCalls": 0,
+    "reason": "This is a contract and tracked-evidence audit, not a new evaluation run."
+  },
+  "paperContext": [
+    {
+      "arxivId": "2607.13104v1",
+      "title": "Self-Improvements in Modern Agentic Systems: A Survey",
+      "use": "design-context-only",
+      "numericFiguresImported": []
+    },
+    {
+      "arxivId": "2607.05297v1",
+      "title": "MetaSkill-Evolve",
+      "use": "design-context-only",
+      "numericFiguresImported": []
+    }
+  ],
+  "newBundleContracts": [
+    {
+      "bundleId": "harbor-realize-skill-candidate",
+      "path": "skills/harbor-realize-skill-candidate",
+      "status": "sealed",
+      "digestAlgorithm": "sha256-tree-v1",
+      "treeSha256": "f788c14a992e941dd2f5ea3374f48f971bed28d8bc8876d6c19e3f27b0c5ccf2",
+      "fileCount": 4,
+      "totalBytes": 65487,
+      "contractRole": "Evaluator-independent realization of one bound development mutation from a digest-frozen parent into an isolated, validated, digest-sealed candidate with provenance receipts; trusted validation effects remain unverified.",
+      "reason": "The stable four-file contract is tree-digest sealed for comparison; the seal does not claim execution, fitness, selection, or promotion evidence."
+    },
+    {
+      "bundleId": "harbor-metaskill-evolution",
+      "path": "skills/harbor-metaskill-evolution",
+      "status": "sealed",
+      "digestAlgorithm": "sha256-tree-v1",
+      "treeSha256": "d467e6538138830feaf97a16eac8fd15774ac51eb78c997e4be11e70135a4804",
+      "fileCount": 4,
+      "totalBytes": 91053,
+      "contractRole": "Deterministic analysis-only replay of SHA-bound, hash-chained development ledgers for task-skill nodes and five typed meta-policy bundles; no execution, generation, selection, promotion, configured holdout input, reproduction, or causal claim, with semantic holdout absence unverified.",
+      "reason": "The stable four-file analysis contract is tree-digest sealed for comparison; no repository replay or meta-productivity result is inferred from the seal."
+    }
+  ],
+  "treeDigestContract": {
+    "algorithmId": "sha256-tree-v1",
+    "algorithm": "SHA-256 over relative-path UTF-8, NUL, file bytes, NUL for every regular file",
+    "fileOrder": "ascending unsigned UTF-8 byte order of forward-slash relative paths",
+    "linksOrJunctionsAllowed": false,
+    "omissions": []
+  },
+  "identifiabilityPolicy": {
+    "causalGain": "A selected development delta is descriptive unless a predeclared design identifies candidate-attributable effects with comparable lineage, cohorts, execution profile, and call accounting.",
+    "metaProductivity": "Requires repeated attributable generations and a predeclared quality-gain-per-resource measure over candidate-producing procedures.",
+    "missingEvidenceDisposition": "not-identifiable",
+    "scoreImputationAllowed": false
+  },
+  "appendOnlyPolicy": {
+    "historicalEvaluationFilesMayBeEdited": false,
+    "publishedResultMayBeOverwritten": false,
+    "correctionMethod": "Create a new dated result with explicit provenance."
+  },
+  "validation": {
+    "command": "node evaluations/harbor-next-skill-comparison/scripts/verify-study.mjs",
+    "testCommand": "node --test test/harbor-next-skill-comparison.test.js",
+    "digestInspectionCommand": "node evaluations/harbor-next-skill-comparison/scripts/verify-study.mjs --print-new-skill-digests"
+  }
+}

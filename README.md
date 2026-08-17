@@ -1,13 +1,14 @@
 # Harbor Skill Evolution
 
-[![Harbor 0.18.0](https://img.shields.io/badge/Harbor-0.18.0-652f6c)](./skills/harbor-run-results/SKILL.md) [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776ab?logo=python&logoColor=white)](https://www.python.org/) [![7 atomic skills](https://img.shields.io/badge/skills-7_atomic-007298)](#skills)
+[![Harbor 0.18.0](https://img.shields.io/badge/Harbor-0.18.0-652f6c)](./skills/harbor-run-results/SKILL.md) [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776ab?logo=python&logoColor=white)](https://www.python.org/) [![11 atomic skills](https://img.shields.io/badge/skills-11_atomic-007298)](#skills)
 
-Seven self-contained skills evaluate, report, recover, and evolve agent skills
-directly from native Harbor jobs. There is no Skill Arena runtime, Promptfoo
-translation layer, or duplicate evolution implementation.
+Eleven self-contained skills organize, plan, evaluate, report, recover,
+materialize, and evolve agent skills around one native Harbor evidence surface.
+There is no Skill Arena runtime, Promptfoo translation layer, or duplicate
+evaluation implementation.
 
 Each bundle owns its executable contract and dependencies. The repository also
-preserves two versioned evolution studies and their public, sanitized evidence.
+preserves three versioned studies and their public, sanitized evidence.
 
 ## Install
 
@@ -39,50 +40,73 @@ need, then start a new Codex task so they are discovered.
 
 ## Skills
 
-Use `harbor-run-results`, optionally add recovery, and choose one evolver for a
-declared development stage.
+Use `harbor-organize-evaluations` to freeze study splits and track the ordered
+lifecycle, `harbor-run-results` for native evaluation and reports, optionally
+add recovery, use the realizer when a mutation plan needs a sealed child, and
+choose one evolver for a declared development stage. Every evolution must also
+declare an independent, optimizer-invisible validation dataset and downstream
+validation stage before it starts. Use MetaSkill replay only after comparable
+branch evidence exists. Keep datasets and raw evaluation artifacts local: the
+organizer's Git allowlist exposes only its publication indexes and explicitly
+reviewed aggregate result tables.
 
 | Skill | Use it for |
 | --- | --- |
-| [`harbor-run-results`](./skills/harbor-run-results/SKILL.md) | Validate or execute a native `JobConfig`, inspect completed jobs, compare baseline and treatment, and write `final-report.md` plus `final-report.json`. Start here. |
+| [`harbor-organize-evaluations`](./skills/harbor-organize-evaluations/SKILL.md) | Freeze dataset manifests, require development plus sealed validation before evolution starts, bind the frozen candidate and release validation/holdout in order, and expose only Git-safe indexes and reviewed aggregate result tables. Start here for a multi-stage study. |
+| [`harbor-run-results`](./skills/harbor-run-results/SKILL.md) | Validate or execute a native `JobConfig`, inspect completed jobs, compare baseline and treatment, and write `final-report.md` plus `final-report.json`. Start here for one job or comparison. |
 | [`harbor-resume-external-failures`](./skills/harbor-resume-external-failures/SKILL.md) | Retry only cells proven unavailable because of an external provider, authentication, environment, evaluator, or infrastructure failure. It is not an optimizer. |
 | [`harbor-population-search`](./skills/harbor-population-search/SKILL.md) | Rank a baseline and several real alternatives with one trusted scalar objective. |
 | [`harbor-trace-distillation`](./skills/harbor-trace-distillation/SKILL.md) | Consolidate recurring, independently supported lessons from completed success and failure traces. |
 | [`harbor-reflective-pareto-search`](./skills/harbor-reflective-pareto-search/SKILL.md) | Preserve complementary candidates when case-level strengths conflict and verified local feedback exists. |
 | [`harbor-operator-coevolution`](./skills/harbor-operator-coevolution/SKILL.md) | Learn which mutation instructions improve their own parents after several attributable generations. |
-| [`harbor-evolve-skill`](./skills/harbor-evolve-skill/SKILL.md) | Let GEPA rewrite complete `SKILL.md` text from training feedback and select on validation before holdout. |
+| [`harbor-evolve-skill`](./skills/harbor-evolve-skill/SKILL.md) | Let GEPA rewrite and select complete `SKILL.md` text on evolution data, then validate one frozen winner before opening holdout. |
+| [`harbor-maximize-knowledge-expertise`](./skills/harbor-maximize-knowledge-expertise/SKILL.md) | Bind a knowledge skill and sanitized development evidence, classify multi-dimensional expertise gaps, and emit exact benchmark-agnostic mutation portfolios without scoring or opening holdout. |
+| [`harbor-realize-skill-candidate`](./skills/harbor-realize-skill-candidate/SKILL.md) | Turn a frozen parent plus an exact mutation contract into a complete, validated, digest-sealed candidate bundle without granting the realizer evaluation or selection authority. |
+| [`harbor-metaskill-evolution`](./skills/harbor-metaskill-evolution/SKILL.md) | Replay branch-local task and five-policy meta-state from digest-bound development evidence, then compute hard-gated productivity and identity-partitioned frontier decisions without a configured holdout input. |
 
 Read the chosen `SKILL.md` before authoring its config. It defines exact
 inputs, commands, modes, evidence checks, outputs, and validation.
 
 ## Common workflow
 
-1. Freeze the baseline bundle and digest, development and holdout tasks,
+1. Initialize an ordered study; register disjoint discovery, development,
+   validation, and optional holdout dataset locks; and declare skill-owned
+   stages and dependencies with `harbor-organize-evaluations`.
+2. Freeze the baseline bundle and digest, development, validation, and holdout tasks,
    `JobConfig`, agent/model profile, attempts, rewards, hard gates, budget, and
    promotion policy.
-2. Validate with `--dry-run` and `--doctor` before any model call. A plain
+3. Validate with `--dry-run` and `--doctor` before any model call. A plain
    Harbor config can be checked with:
 
    ```bash
    uvx --from harbor==0.18.0 harbor run --config <job.yaml> --print-config
    ```
 
-3. Reuse complete, provenance-valid jobs through `--analyze-only`, `--skip-run`,
+4. Reuse complete, provenance-valid jobs through `--analyze-only`, `--skip-run`,
    or reporting-only operation instead of rerunning them.
-4. Keep Harbor's built-in retry count at zero. Use selective recovery only for
+5. Keep Harbor's built-in retry count at zero. Use selective recovery only for
    independently proven external failures; never retry semantic failures to
    search for a better score.
-5. Run one evolution mechanism against development evidence. Preserve every
-   candidate, rejection, lineage edge, cost, and native job.
-6. Open holdout once for the unchanged baseline and one frozen development
-   winner. Never feed holdout evidence back into mutation or selection.
-7. Promote only when holdout policy and ordinary bundle validation pass;
+6. When a mutation plan needs a complete child bundle, use the candidate
+   realizer to bind the frozen parent, exact instruction, allowed paths, and
+   validation evidence before evaluation.
+7. Start one evolution mechanism only after the organizer accepts its
+   development-only stage and already-planned downstream validation gate.
+   Preserve every candidate, rejection, lineage edge, cost, and native job.
+8. Bind the selected candidate bundle by digest, release validation exactly
+   once, and compare only the unchanged baseline and frozen winner. Never feed
+   validation evidence back into mutation, ranking, or reselection; use fresh
+   validation in a new study after a failed gate.
+9. If an additional holdout is declared, release it only after completed
+   validation. Never feed holdout evidence back into mutation or selection.
+10. Promote only when the independent gate, optional holdout policy, and
+   ordinary bundle validation pass;
    otherwise retain the baseline.
 
 A minimal native config is available at
 [`test/fixtures/job-configs/skill.yaml`](./test/fixtures/job-configs/skill.yaml).
 
-## Preserved evolution evidence
+## Preserved study evidence
 
 - [`evaluations/harbor-evolution-comparison/`](./evaluations/harbor-evolution-comparison/)
   is the closed four-strategy study: 24 eligible jobs, 78 trials, frozen
@@ -92,6 +116,10 @@ A minimal native config is available at
   preserves the Q003 study and append-only meta-evolution history. Its README
   records which generations are sealed, unevaluated, or prospective; do not
   describe them all as completed or promotable.
+- [`evaluations/harbor-next-skill-comparison/`](./evaluations/harbor-next-skill-comparison/)
+  is the append-only contract and evidence assessment for the candidate
+  realizer and MetaSkill adaptation. It distinguishes verified compatibility
+  from hypotheses that prior evidence cannot identify.
 
 Raw native jobs remain ignored under `.tmp/harbor-evolution-comparison/` and
 `.tmp/knowledge-consult-evolution/` because they may contain credentials,
@@ -115,9 +143,9 @@ npm run skills:check
 npm test
 ```
 
-`npm test` covers the seven bundles, native reporting fixtures, sealed recovery
-contracts, and both evolution studies. The slow environment-dependent V2–V5
-recovery audit is separate:
+`npm test` covers the eleven bundles, native reporting fixtures, sealed recovery
+contracts, and the versioned evolution studies. The slow environment-dependent
+V2–V5 recovery audit is separate:
 
 ```bash
 node --test test/audit/*.test.js

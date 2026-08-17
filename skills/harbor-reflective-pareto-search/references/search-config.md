@@ -49,6 +49,17 @@ promotion:
   requireNoErrors: true
 ~~~
 
+At the study level, `developmentJob` is the evolution dataset and `holdoutJob`
+is the mandatory independent validation dataset for this bundle. Declare and
+freeze both before generation zero, but do not resolve or inspect validation
+artifacts during reflection. The selected archive member and skill digest must
+be fixed before the holdout phase opens that dataset. A study may add a further
+post-validation holdout outside this bundle.
+
+The validation result is terminal for the current search: do not use it to
+author another child, change the Pareto archive, or reselect a winner. Another
+unbiased gate requires fresh validation in a new study.
+
 For analysis of existing jobs, add jobDirectory to every development candidate.
 For holdout analysis, add holdoutJobDirectory to the baseline and selected
 candidate.
@@ -217,7 +228,7 @@ Candidate, case, and archive outputs report diagnostics availability, provider
 failure, infrastructure failure, and evaluable-trial counts. Tasks without this
 artifact retain their ordinary reward semantics and are not rejected.
 
-## Holdout gate
+## Independent validation / holdout gate
 
 The holdout phase requires a selected development archive member and rejects
 any task name or checksum observed during development. Before executing or analyzing

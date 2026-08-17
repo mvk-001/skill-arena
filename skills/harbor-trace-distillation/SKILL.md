@@ -17,6 +17,22 @@ Its executable and reference are included here, dependencies are declared in
 the executable's PEP 723 metadata, and no Skill Arena repository module is
 required.
 
+## Evolution/validation boundary
+
+Before starting distillation, freeze the discovery/development dataset used to
+author and check the candidate and a separate optimizer-invisible validation
+dataset. Plan the validation stage before evolution starts. In schema 2, the
+configured `holdout` inputs normally serve as this bundle's independent
+validation dataset; candidate development is a replay gate over evolution
+cases and does not satisfy that independence. A study may reserve an additional
+holdout after validation.
+
+Freeze and digest-bind the materialized candidate before opening validation.
+Never use validation rewards, task identities, diagnostics, or trajectories as
+new proposal evidence in the same run. If validation rejects the candidate,
+preserve the result; another unbiased attempt requires a new study with fresh
+validation.
+
 ## Workflow
 
 1. Read
@@ -137,6 +153,9 @@ uv run <skill-root>/scripts/distill_harbor_traces.py <config.yaml>
 - Keep candidate-development normalization metric-only and outside the trace
   pool and proposal state. Do not use the candidate's reevaluation as another
   patch opportunity inside the same run.
+- Treat the post-freeze holdout phase as independent validation when it is the
+  first optimizer-invisible cohort. Do not feed its result back into proposal
+  authoring, consolidation, or candidate development.
 - A candidate passes development only when every trial is evaluable and
   qualified, no trial errors, every required reward is present and at or above
   threshold, and the primary-reward pass rate meets the configured minimum. A

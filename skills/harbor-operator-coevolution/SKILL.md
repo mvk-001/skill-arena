@@ -18,6 +18,22 @@ Its executable and reference are included here, dependencies are declared in
 the executable's PEP 723 metadata, and no Skill Arena repository module is
 required.
 
+## Evolution/validation boundary
+
+Before generation zero, freeze a development dataset for candidate ranking and
+operator credit plus a disjoint, optimizer-invisible validation dataset. Plan
+the validation stage before evolution starts. This bundle's deferred `holdout`
+declaration normally supplies that independent validation dataset; a study may
+reserve an additional holdout afterward. Its lexical commitment may be created
+up front, but neither the coevolution analyzer nor candidate author may resolve
+or inspect the referenced validation inputs before the selected development
+candidate and digest are frozen.
+
+Validation is a one-way gate. Never use its rewards, task identities,
+diagnostics, or trajectories for operator credit, breeding, repair, candidate
+ranking, or reselection in the same study. If it fails, preserve the result and
+start a new study with fresh validation for another unbiased claim.
+
 ## Workflow
 
 1. Read [references/config-and-artifacts.md](references/config-and-artifacts.md)
@@ -228,6 +244,9 @@ uv run <skill-root>/scripts/harbor_operator_report_only.py generation.yaml `
   holdout rewards for candidate ranking, operator credit, or breeding. Holdout
   cannot promote an unqualified candidate or either side when a configured
   reward or classified non-evaluable diagnostic result is unavailable.
+- When the configured holdout is the study's first unseen cohort, treat it as
+  independent validation and as consumed after release. It cannot seed another
+  coevolution generation.
 - Require the same Harbor version and agent/model/attempt/retry/environment/
   timeout profile across development and holdout, and seal that profile across
   generations with `evolution.previousGenerationLog`.

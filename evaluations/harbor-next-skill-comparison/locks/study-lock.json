@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "studyId": "harbor-next-skill-comparison-20260720",
+  "algorithm": "sha256-file-bytes-v1",
+  "bindingAlgorithm": "sha256-nul-delimited-study-lock-v1",
+  "files": [
+    {
+      "role": "protocol",
+      "path": "evaluations/harbor-next-skill-comparison/protocol.json",
+      "sha256": "c7b421bc0170faeb0970d8f418b0dca21baa1e6a4060910968bcfb063510ab9a"
+    },
+    {
+      "role": "evidence-ledger",
+      "path": "evaluations/harbor-next-skill-comparison/results/20260720/evidence-ledger.json",
+      "sha256": "887fd24a6c79d848aa9e36d1359e05cfc18dd1ae885e0f423d014b06cf00eb8c"
+    }
+  ],
+  "bindingSha256": "620b146f7a86313fe113714b6c255f2d9082c33b6eeda992a927c0c71eb111da"
+}

@@ -1,0 +1,744 @@
+{
+  "schemaVersion": 1,
+  "studyId": "harbor-next-skill-comparison-20260720",
+  "resultId": "harbor-next-skill-contract-evidence-snapshot-20260720",
+  "status": "complete-descriptive-no-replay",
+  "evidenceUse": "contract-comparison-and-descriptive-development-only",
+  "repositoryReplay": {
+    "status": "not-run",
+    "harborInvocations": 0,
+    "modelExecutions": 0
+  },
+  "paperReportedEvidence": {
+    "use": "design-context-only",
+    "numericFiguresImported": [],
+    "repositoryReplayClaims": []
+  },
+  "sources": [
+    {
+      "sourceId": "contract-harbor-run-results",
+      "class": "tracked-skill-contract",
+      "path": "skills/harbor-run-results/SKILL.md",
+      "sha256": "0a0d1a84a916b6d2dcdacddcfaee21e2a4651f84c91e26c20bf75ce98b7e2559"
+    },
+    {
+      "sourceId": "contract-harbor-resume-external-failures",
+      "class": "tracked-skill-contract",
+      "path": "skills/harbor-resume-external-failures/SKILL.md",
+      "sha256": "09d611f32ad7a648569d852bc1a27ce46f0da047276ffc8c8e9fc514e1f26793"
+    },
+    {
+      "sourceId": "contract-harbor-population-search",
+      "class": "tracked-skill-contract",
+      "path": "skills/harbor-population-search/SKILL.md",
+      "sha256": "e42ec4cfb423c28dc742d6ea13628c6b7e8a9a9340f32049f707535ae99a897c"
+    },
+    {
+      "sourceId": "contract-harbor-trace-distillation",
+      "class": "tracked-skill-contract",
+      "path": "skills/harbor-trace-distillation/SKILL.md",
+      "sha256": "77cfd9096b054f3ed9ae85dd0725971d8b7ebbe3003ab82beb349eec49c03e48"
+    },
+    {
+      "sourceId": "contract-harbor-reflective-pareto-search",
+      "class": "tracked-skill-contract",
+      "path": "skills/harbor-reflective-pareto-search/SKILL.md",
+      "sha256": "0a82846727a1b336efd8c1009646cccb6aca3ac54e0a08f6136a940d9d6f0144"
+    },
+    {
+      "sourceId": "contract-harbor-operator-coevolution",
+      "class": "tracked-skill-contract",
+      "path": "skills/harbor-operator-coevolution/SKILL.md",
+      "sha256": "98a5fc081b4c56923ccad0ec522e3d84f8ab660ccea5ae2e0dfe55dd5e343c3a"
+    },
+    {
+      "sourceId": "contract-harbor-evolve-skill",
+      "class": "tracked-skill-contract",
+      "path": "skills/harbor-evolve-skill/SKILL.md",
+      "sha256": "c6bdde6d2e3b4e76565562eb17c563f1ebdbe120b389f2e9dba96dd6b5e32aec"
+    },
+    {
+      "sourceId": "harbor-evolution-protocol",
+      "class": "tracked-historical-protocol",
+      "path": "evaluations/harbor-evolution-comparison/protocol.yaml",
+      "sha256": "c1bf7ac88f3f0edd52c34f4b4d4e7ccff659a0607f75d8e0c121a188f44ad5e8"
+    },
+    {
+      "sourceId": "harbor-evolution-summary",
+      "class": "tracked-repository-result",
+      "path": "evaluations/harbor-evolution-comparison/results/20260716/summary.json",
+      "sha256": "d5a985ecd95d4c49aa775eb6b55d6cb16b3e10b6132f21e4054d8cf999956cb7"
+    },
+    {
+      "sourceId": "harbor-evolution-report",
+      "class": "tracked-repository-narrative-result",
+      "path": "evaluations/harbor-evolution-comparison/results/20260716/report.md",
+      "sha256": "c78db8032f94d7ef22258b1ce63b80e719251a41edc137d1ff8c46f765bd91e7"
+    },
+    {
+      "sourceId": "knowledge-q003-pilot",
+      "class": "tracked-repository-result",
+      "path": "evaluations/knowledge-consult-evolution/results/q003-qualification-pilot.json",
+      "sha256": "89a4255b7fb0bb4db77ec2f18eb1023fb69d43ca6a4e2c2cc13dce23ceabdb82"
+    },
+    {
+      "sourceId": "knowledge-g005-pareto-state",
+      "class": "tracked-repository-result",
+      "path": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/pareto-state.json",
+      "sha256": "88c7e96ffae5341c7b3e786aca9e631140e2440e58455ca0789dc8fb3d1f5ab1"
+    },
+    {
+      "sourceId": "knowledge-g005-candidate-lock",
+      "class": "tracked-historical-development-candidate-lock",
+      "path": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/candidate-lock.json",
+      "sha256": "de346888cf0fb4a897d5163f92f5c6da13c3f33f3139aee95e38b18115bf01ed"
+    },
+    {
+      "sourceId": "knowledge-g005-candidate-manifest",
+      "class": "tracked-historical-development-realization-manifest",
+      "path": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/candidates/relevance-first-facet-coverage/candidate-manifest.json",
+      "sha256": "13cb5c30adfd07358fcc267da2e62dbdb6d02dd5d19622544995e73bf907680e"
+    },
+    {
+      "sourceId": "knowledge-g005-operator-realization",
+      "class": "tracked-historical-development-operator-realization",
+      "path": "evaluations/knowledge-consult-evolution/meta-evolution/generation-005/candidates/relevance-first-facet-coverage/operator-realization.json",
+      "sha256": "43e57322df82831f2c1139e1f56dd6c4a916f539d6432f77cc86fbaf75f64f45"
+    },
+    {
+      "sourceId": "knowledge-g006-protocol",
+      "class": "tracked-prospective-development-contract",
+      "path": "evaluations/knowledge-consult-evolution/meta-evolution/generation-006/protocol.json",
+      "sha256": "e81f6cd4dc4aa038ab14182685d0c43e756002078c8bafa1d65bef36569c0d3f"
+    }
+  ],
+  "contractComparison": [
+    {
+      "bundleId": "harbor-run-results",
+      "contractBasis": "sealed-maintained-contract",
+      "contractSourceRef": "contract-harbor-run-results",
+      "lifecycleRole": "native-harbor-execution-validation-comparison-and-reporting",
+      "candidateMaterialization": "none",
+      "selectionAuthority": "comparison-report-only",
+      "repositoryObservationRefs": [],
+      "causalGain": "not-applicable-helper-contract",
+      "metaProductivity": "not-applicable"
+    },
+    {
+      "bundleId": "harbor-resume-external-failures",
+      "contractBasis": "sealed-maintained-contract",
+      "contractSourceRef": "contract-harbor-resume-external-failures",
+      "lifecycleRole": "selective-recovery-of-independently-proven-external-failures",
+      "candidateMaterialization": "none",
+      "selectionAuthority": "no-semantic-reselection",
+      "repositoryObservationRefs": [],
+      "causalGain": "not-applicable-helper-contract",
+      "metaProductivity": "not-applicable"
+    },
+    {
+      "bundleId": "harbor-realize-skill-candidate",
+      "contractBasis": "sealed-new-contract",
+      "contractSourceRef": "protocol:newBundleContracts/harbor-realize-skill-candidate",
+      "lifecycleRole": "realize-one-mutation-proposal-as-an-isolated-auditable-candidate",
+      "candidateMaterialization": "primary-output",
+      "selectionAuthority": "none",
+      "repositoryObservationRefs": [],
+      "historicalCompatibilityRefs": [
+        "knowledge-g005-realization-primitives"
+      ],
+      "causalGain": "not-identifiable",
+      "metaProductivity": "not-applicable",
+      "contractInputs": [
+        "json-configuration",
+        "digest-frozen-parent-bundle",
+        "optional-digest-bound-development-evidence"
+      ],
+      "contractOutputs": [
+        "mutation-contract.json",
+        "isolated-baseline-and-candidate-trees",
+        "validation.json",
+        "candidate-manifest.json",
+        "operator-realization.json"
+      ],
+      "nonGoals": [
+        "realizer-core-run-harbor-or-call-models",
+        "score-candidates",
+        "select-candidates",
+        "promote-candidates",
+        "install-candidates",
+        "realizer-core-inspect-holdout-or-hard-evidence",
+        "verify-trusted-validation-holdout-or-external-effects"
+      ]
+    },
+    {
+      "bundleId": "harbor-population-search",
+      "contractBasis": "sealed-maintained-contract",
+      "contractSourceRef": "contract-harbor-population-search",
+      "lifecycleRole": "scalar-population-evaluation-and-development-selection",
+      "candidateMaterialization": "candidate-bundles-are-external-inputs",
+      "selectionAuthority": "development-selection-with-separate-promotion-gate",
+      "repositoryObservationRefs": [
+        "hec-population-development"
+      ],
+      "causalGain": "not-identifiable",
+      "metaProductivity": "not-applicable"
+    },
+    {
+      "bundleId": "harbor-trace-distillation",
+      "contractBasis": "sealed-maintained-contract",
+      "contractSourceRef": "contract-harbor-trace-distillation",
+      "lifecycleRole": "evidence-cited-trace-distillation-and-development-gating",
+      "candidateMaterialization": "isolated-candidate-copy",
+      "selectionAuthority": "development-selection-with-separate-promotion-gate",
+      "repositoryObservationRefs": [
+        "hec-trace-development"
+      ],
+      "causalGain": "not-identifiable",
+      "metaProductivity": "not-applicable"
+    },
+    {
+      "bundleId": "harbor-reflective-pareto-search",
+      "contractBasis": "sealed-maintained-contract",
+      "contractSourceRef": "contract-harbor-reflective-pareto-search",
+      "lifecycleRole": "case-level-reflection-pareto-archive-and-development-selection",
+      "candidateMaterialization": "isolated-candidate-copies",
+      "selectionAuthority": "pareto-development-selection-with-separate-promotion-gate",
+      "repositoryObservationRefs": [
+        "hec-pareto-development"
+      ],
+      "causalGain": "not-identifiable",
+      "metaProductivity": "not-applicable"
+    },
+    {
+      "bundleId": "harbor-operator-coevolution",
+      "contractBasis": "sealed-maintained-contract",
+      "contractSourceRef": "contract-harbor-operator-coevolution",
+      "lifecycleRole": "parent-child-operator-credit-across-repeated-generations",
+      "candidateMaterialization": "operator-produced-candidate-lineage",
+      "selectionAuthority": "candidate-and-operator-development-selection-with-separate-promotion-gate",
+      "repositoryObservationRefs": [
+        "hec-operator-development"
+      ],
+      "causalGain": "not-identifiable",
+      "metaProductivity": "not-identifiable"
+    },
+    {
+      "bundleId": "harbor-evolve-skill",
+      "contractBasis": "sealed-maintained-contract",
+      "contractSourceRef": "contract-harbor-evolve-skill",
+      "lifecycleRole": "integrated-gepa-reflective-pareto-skill-md-evolution",
+      "candidateMaterialization": "isolated-candidate-bundle",
+      "selectionAuthority": "development-selection-with-separate-promotion-gate",
+      "repositoryObservationRefs": [],
+      "causalGain": "not-identifiable",
+      "metaProductivity": "not-applicable"
+    },
+    {
+      "bundleId": "harbor-metaskill-evolution",
+      "contractBasis": "sealed-new-contract",
+      "contractSourceRef": "protocol:newBundleContracts/harbor-metaskill-evolution",
+      "lifecycleRole": "deterministic-analysis-only-replay-of-hash-chained-five-policy-development-lineage",
+      "candidateMaterialization": "none",
+      "selectionAuthority": "reports-a-hard-gated-analysis-frontier-without-promotion-authority",
+      "repositoryObservationRefs": [],
+      "historicalCompatibilityRefs": [
+        "hec-operator-development",
+        "knowledge-g006-prospective-protocol"
+      ],
+      "causalGain": "not-identifiable",
+      "metaProductivity": "not-identifiable",
+      "contractInputs": [
+        "hash-chained-jsonl-development-ledger",
+        "sha256-verified-public-harbor-native-development-summary-or-projection-json",
+        "json-pointer-bound-utility-and-hard-gate-fields",
+        "task-profile-and-metric-comparability-digests"
+      ],
+      "contractOutputs": [
+        "deterministic-json-analysis-report",
+        "verification-receipt-for-dag-productivity-gates-frontier-novelty-budget-and-frozen-meta-pairs"
+      ],
+      "policyRoles": [
+        "analyzer",
+        "retriever",
+        "allocator",
+        "proposer",
+        "evolver"
+      ],
+      "nonGoals": [
+        "run-harbor-or-call-models",
+        "score-or-normalize-raw-trials",
+        "author-or-mutate-object-level-candidates",
+        "promote-or-install-candidates",
+        "count-external-or-non-evaluable-observations-as-productivity",
+        "inspect-holdout-or-hard-evidence-during-generation-or-selection"
+      ]
+    }
+  ],
+  "repositoryObservations": [
+    {
+      "observationId": "hec-baseline-development",
+      "sourceRef": "harbor-evolution-summary",
+      "evidenceRole": "development",
+      "interpretation": "descriptive-repository-observation",
+      "selectors": [
+        {
+          "pointer": "/baseline_aggregates/development_mean",
+          "expected": 0.8143255
+        }
+      ]
+    },
+    {
+      "observationId": "hec-population-development",
+      "sourceRef": "harbor-evolution-summary",
+      "evidenceRole": "development",
+      "interpretation": "descriptive-only-not-causal",
+      "selectors": [
+        {
+          "pointer": "/strategy_aggregates/population_search/candidate_development_mean",
+          "expected": 0.8542920833333334
+        },
+        {
+          "pointer": "/strategy_aggregates/population_search/selected_development_mean",
+          "expected": 0.8643255
+        },
+        {
+          "pointer": "/strategy_aggregates/population_search/selected_development_delta_mean",
+          "expected": 0.04999999999999993
+        },
+        {
+          "pointer": "/strategy_aggregates/population_search/development_improved_subjects",
+          "expected": 1
+        },
+        {
+          "pointer": "/strategy_aggregates/population_search/development_regressed_subjects",
+          "expected": 1
+        },
+        {
+          "pointer": "/strategy_aggregates/population_search/development_tied_subjects",
+          "expected": 1
+        },
+        {
+          "pointer": "/strategy_aggregates/population_search/selected_children",
+          "expected": 1
+        },
+        {
+          "pointer": "/strategy_aggregates/population_search/candidate_development_usage/jobs",
+          "expected": 3
+        },
+        {
+          "pointer": "/strategy_aggregates/population_search/candidate_development_usage/trials",
+          "expected": 12
+        },
+        {
+          "pointer": "/strategy_aggregates/population_search/candidate_development_usage/cost_usd",
+          "expected": 0.2364705
+        },
+        {
+          "pointer": "/strategy_aggregates/population_search/mean_candidate_bundle_byte_delta",
+          "expected": 1125.3333333333333
+        }
+      ]
+    },
+    {
+      "observationId": "hec-trace-development",
+      "sourceRef": "harbor-evolution-summary",
+      "evidenceRole": "development",
+      "interpretation": "descriptive-only-not-causal",
+      "selectors": [
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/candidate_development_mean",
+          "expected": 0.97374575
+        },
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/selected_development_mean",
+          "expected": 0.9809921666666667
+        },
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/selected_development_delta_mean",
+          "expected": 0.16666666666666663
+        },
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/development_improved_subjects",
+          "expected": 2
+        },
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/development_regressed_subjects",
+          "expected": 1
+        },
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/development_tied_subjects",
+          "expected": 0
+        },
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/selected_children",
+          "expected": 2
+        },
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/candidate_development_usage/jobs",
+          "expected": 3
+        },
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/candidate_development_usage/trials",
+          "expected": 12
+        },
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/candidate_development_usage/cost_usd",
+          "expected": 0.266967
+        },
+        {
+          "pointer": "/strategy_aggregates/trace_distillation/mean_candidate_bundle_byte_delta",
+          "expected": 2021
+        }
+      ]
+    },
+    {
+      "observationId": "hec-pareto-development",
+      "sourceRef": "harbor-evolution-summary",
+      "evidenceRole": "development",
+      "interpretation": "descriptive-only-not-causal",
+      "selectors": [
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/candidate_development_mean",
+          "expected": 0.92336575
+        },
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/selected_development_mean",
+          "expected": 0.949174
+        },
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/selected_development_delta_mean",
+          "expected": 0.13484849999999993
+        },
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/development_improved_subjects",
+          "expected": 2
+        },
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/development_regressed_subjects",
+          "expected": 1
+        },
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/development_tied_subjects",
+          "expected": 0
+        },
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/selected_children",
+          "expected": 2
+        },
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/candidate_development_usage/jobs",
+          "expected": 3
+        },
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/candidate_development_usage/trials",
+          "expected": 12
+        },
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/candidate_development_usage/cost_usd",
+          "expected": 0.24088005
+        },
+        {
+          "pointer": "/strategy_aggregates/reflective_pareto_search/mean_candidate_bundle_byte_delta",
+          "expected": 1289.3333333333333
+        }
+      ]
+    },
+    {
+      "observationId": "hec-operator-development",
+      "sourceRef": "harbor-evolution-summary",
+      "evidenceRole": "development",
+      "interpretation": "descriptive-child-observation-only-operator-meta-productivity-not-identifiable",
+      "selectors": [
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/candidate_development_mean",
+          "expected": 0.8942003333333334
+        },
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/selected_development_mean",
+          "expected": 0.9309921666666666
+        },
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/selected_development_delta_mean",
+          "expected": 0.11666666666666659
+        },
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/development_improved_subjects",
+          "expected": 1
+        },
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/development_regressed_subjects",
+          "expected": 2
+        },
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/development_tied_subjects",
+          "expected": 0
+        },
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/selected_children",
+          "expected": 1
+        },
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/candidate_development_usage/jobs",
+          "expected": 3
+        },
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/candidate_development_usage/trials",
+          "expected": 12
+        },
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/candidate_development_usage/cost_usd",
+          "expected": 0.3171393
+        },
+        {
+          "pointer": "/strategy_aggregates/operator_coevolution/mean_candidate_bundle_byte_delta",
+          "expected": 994.6666666666666
+        }
+      ]
+    },
+    {
+      "observationId": "knowledge-q003-exploratory-pilot",
+      "sourceRef": "knowledge-q003-pilot",
+      "evidenceRole": "discovery-smoke",
+      "interpretation": "exploratory-diagnostic-only-not-ranking-or-causal-evidence",
+      "selectors": [
+        {
+          "pointer": "/status",
+          "expected": "complete-no-winner-exploratory"
+        },
+        {
+          "pointer": "/causalComparisonAllowed",
+          "expected": false
+        },
+        {
+          "pointer": "/notStrategyRanking",
+          "expected": true
+        },
+        {
+          "pointer": "/evidenceUse",
+          "expected": "exploratory-diagnostic-only"
+        },
+        {
+          "pointer": "/task/split",
+          "expected": "discovery-smoke"
+        },
+        {
+          "pointer": "/aggregateUsage/candidateTrials",
+          "expected": 8
+        },
+        {
+          "pointer": "/aggregateUsage/evaluableTrials",
+          "expected": 4
+        }
+      ]
+    },
+    {
+      "observationId": "knowledge-g005-unevaluated-child",
+      "sourceRef": "knowledge-g005-pareto-state",
+      "evidenceRole": "development",
+      "interpretation": "state-only-no-child-performance-estimate",
+      "selectors": [
+        {
+          "pointer": "/promotionDecision",
+          "expected": "not-evaluated"
+        },
+        {
+          "pointer": "/children/0/status",
+          "expected": "unevaluated-development-child"
+        },
+        {
+          "pointer": "/children/0/q018Score",
+          "expected": null
+        }
+      ]
+    },
+    {
+      "observationId": "knowledge-g005-realization-primitives",
+      "sourceRefs": [
+        "knowledge-g005-candidate-lock",
+        "knowledge-g005-candidate-manifest",
+        "knowledge-g005-operator-realization"
+      ],
+      "evidenceRole": "development",
+      "interpretation": "historical-compatible-realization-primitives-only-not-execution-by-new-bundle",
+      "selectors": [
+        {
+          "sourceRef": "knowledge-g005-candidate-lock",
+          "pointer": "/schemaVersion",
+          "expected": 1
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-lock",
+          "pointer": "/generationId",
+          "expected": "generation-005"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-lock",
+          "pointer": "/candidate/candidateId",
+          "expected": "relevance-first-facet-coverage"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-lock",
+          "pointer": "/candidate/tree/sha256",
+          "expected": "65a91e9ba9846be54bdad82b6192bb030eb235a549d8f7cabb315798b7a970ae"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-lock",
+          "pointer": "/parent/candidateId",
+          "expected": "extractive-one-shot-answer"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-lock",
+          "pointer": "/parent/tree/sha256",
+          "expected": "cb62d43009dac20f85da7a801ead6c707b83a20787412aa82076642da3974536"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-lock",
+          "pointer": "/provenance/candidateManifest/fileSha256",
+          "expected": "13cb5c30adfd07358fcc267da2e62dbdb6d02dd5d19622544995e73bf907680e"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-lock",
+          "pointer": "/provenance/operatorRealization/fileSha256",
+          "expected": "43e57322df82831f2c1139e1f56dd6c4a916f539d6432f77cc86fbaf75f64f45"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-manifest",
+          "pointer": "/schemaVersion",
+          "expected": 2
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-manifest",
+          "pointer": "/candidateId",
+          "expected": "relevance-first-facet-coverage"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-manifest",
+          "pointer": "/operatorId",
+          "expected": "q018-relevance-first-facet-coverage"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-manifest",
+          "pointer": "/parentCandidateId",
+          "expected": "extractive-one-shot-answer"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-manifest",
+          "pointer": "/skill/treeSha256",
+          "expected": "65a91e9ba9846be54bdad82b6192bb030eb235a549d8f7cabb315798b7a970ae"
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-manifest",
+          "pointer": "/verification/modelCalls",
+          "expected": 0
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-manifest",
+          "pointer": "/verification/harborCalls",
+          "expected": 0
+        },
+        {
+          "sourceRef": "knowledge-g005-candidate-manifest",
+          "pointer": "/verification/promotionStatus",
+          "expected": "unevaluated-development-child"
+        },
+        {
+          "sourceRef": "knowledge-g005-operator-realization",
+          "pointer": "/schemaVersion",
+          "expected": 2
+        },
+        {
+          "sourceRef": "knowledge-g005-operator-realization",
+          "pointer": "/candidateId",
+          "expected": "relevance-first-facet-coverage"
+        },
+        {
+          "sourceRef": "knowledge-g005-operator-realization",
+          "pointer": "/operatorId",
+          "expected": "q018-relevance-first-facet-coverage"
+        },
+        {
+          "sourceRef": "knowledge-g005-operator-realization",
+          "pointer": "/parentCandidateId",
+          "expected": "extractive-one-shot-answer"
+        },
+        {
+          "sourceRef": "knowledge-g005-operator-realization",
+          "pointer": "/candidateTreeSha256",
+          "expected": "65a91e9ba9846be54bdad82b6192bb030eb235a549d8f7cabb315798b7a970ae"
+        },
+        {
+          "sourceRef": "knowledge-g005-operator-realization",
+          "pointer": "/promotion/status",
+          "expected": "not-evaluated"
+        },
+        {
+          "sourceRef": "knowledge-g005-operator-realization",
+          "pointer": "/promotion/developmentValidationRequired",
+          "expected": true
+        }
+      ]
+    },
+    {
+      "observationId": "knowledge-g006-prospective-protocol",
+      "sourceRef": "knowledge-g006-protocol",
+      "evidenceRole": "prospective-development-contract",
+      "interpretation": "prospective-contract-not-result-evidence",
+      "selectors": [
+        {
+          "pointer": "/executionAuthorization/protocolAloneAuthorizesLiveCalls",
+          "expected": false
+        },
+        {
+          "pointer": "/executionAuthorization/runtimeMaterializedAtProtocolSeal",
+          "expected": false
+        },
+        {
+          "pointer": "/executionAuthorization/harborOrModelCallsAtProtocolSeal",
+          "expected": 0
+        }
+      ]
+    }
+  ],
+  "conclusions": [
+    {
+      "conclusionId": "realizer-historical-compatibility",
+      "question": "Do tracked prior studies contain primitives compatible with harbor-realize-skill-candidate?",
+      "disposition": "compatible-primitives-only",
+      "reason": "Generation 005 tracks mutually bound candidate-lock, candidate-manifest, and operator-realization artifacts, but those ad hoc historical primitives cannot retroactively prove execution by the new realizer contract."
+    },
+    {
+      "conclusionId": "realizer-causal-gain",
+      "question": "Does harbor-realize-skill-candidate improve object-level skill quality?",
+      "disposition": "not-identifiable",
+      "reason": "No tracked repository execution binds the sealed realizer contract to a candidate, comparable parent, and development result."
+    },
+    {
+      "conclusionId": "metaskill-causal-gain",
+      "question": "Does harbor-metaskill-evolution improve object-level skill quality causally?",
+      "disposition": "not-identifiable",
+      "reason": "No tracked repository execution exists for the sealed contract; the compatible one-generation operator observation is descriptive and generation 006 is prospective only."
+    },
+    {
+      "conclusionId": "metaskill-meta-productivity",
+      "question": "What is harbor-metaskill-evolution meta-productivity?",
+      "disposition": "not-identifiable",
+      "reason": "Tracked evidence lacks repeated attributable metaskill generations and a predeclared gain-per-resource measure."
+    },
+    {
+      "conclusionId": "operator-meta-productivity",
+      "question": "Did the historical operator-coevolution observation establish operator meta-productivity?",
+      "disposition": "not-identifiable",
+      "reason": "The historical fairness budget supplied one applied operator per subject, so the tracked analyzer correctly treated coevolution as underidentified."
+    }
+  ],
+  "futureEvaluationRequirements": [
+    "seal-each-new-skill-contract-and-all-composed-bundle-digests-before-authorship-or-evaluation",
+    "predeclare-object-level-quality-and-meta-productivity-metrics",
+    "bind-parent-operator-realizer-candidate-task-profile-and-result-lineage",
+    "use-repeated-attributable-generations-with-comparable-development-cohorts",
+    "account-for-candidate-authoring-harbor-model-token-cost-and-wall-clock-resources",
+    "keep-harbor-built-in-retries-at-zero-and-preserve-first-evaluable-semantics",
+    "keep-promotion-evidence-untouched-until-development-selection-is-frozen",
+    "publish-null-or-not-identifiable-when-evidence-is-unavailable-or-underidentified"
+  ]
+}

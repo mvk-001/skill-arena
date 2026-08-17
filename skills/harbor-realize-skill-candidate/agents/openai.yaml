@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Candidate Realizer"
+  short_description: "Materialize and seal mutation-bound skill candidates"
+  default_prompt: "Use $harbor-realize-skill-candidate to materialize and seal a candidate skill from a frozen parent and mutation contract."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harbor Knowledge Expertise Maximizer"
+  short_description: "Plan evidence-bound knowledge skill evolution"
+  default_prompt: "Use $harbor-maximize-knowledge-expertise to plan and validate an evidence-bound evolution portfolio for this knowledge skill."

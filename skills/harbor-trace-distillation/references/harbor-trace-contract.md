@@ -51,6 +51,19 @@ Config schema 2 requires at least one candidate-development artifact or
 JobConfig and an explicit finite `minimumPassRate` in 0..1. An older runner
 rejects schema 2 instead of silently ignoring the gate.
 
+At the study level, discovery plus candidate development are the
+optimizer-visible evolution dataset. The `holdout` block is the mandatory
+independent validation dataset when it is the first unseen cohort; a study may
+reserve a further holdout afterward. Declare and freeze both datasets before
+evolution starts, while keeping validation paths and artifacts unopened until
+the materialized candidate digest is fixed and the candidate-development gate
+passes. Candidate development replays evolution cases, so it is not
+independent validation.
+
+The validation result is terminal for this run. It must not enter the trace
+pool, proposal state, consolidation, or another candidate-development pass. A
+new unbiased attempt requires a new study and fresh validation data.
+
 `discovery.jobConfigs` and all later job-config lists are optional when their
 phase has completed artifacts. In live mode the script validates each file
 with Harbor `JobConfig`, assigns a fresh job name and jobs directory below the

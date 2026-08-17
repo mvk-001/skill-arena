@@ -57,7 +57,7 @@ function runDry(configPath) {
 
 function configFor(root, tasks) {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     evolution: {
       id: "harbor-evolve-dry-run",
       baselineSkill,
@@ -74,6 +74,7 @@ function configFor(root, tasks) {
       environment: "docker",
       concurrency: 2,
       rewardKey: "reward",
+      validationAttempts: 2,
       holdoutAttempts: 2,
       requiredEnv: [],
     },
@@ -85,9 +86,14 @@ function configFor(root, tasks) {
       seed: 7,
     },
     splits: {
-      train: [tasks.train],
+      evolution: [tasks.evolution],
       validation: [tasks.validation],
       holdout: [tasks.holdout],
+    },
+    validationGate: {
+      minimumMeanGain: 0,
+      allowTaskRegressions: false,
+      requireNoErrors: true,
     },
     promotion: {
       minimumMeanGain: 0,
@@ -110,13 +116,13 @@ async function createAliasedSkill(root, logicalName) {
   return skill;
 }
 
-test("Harbor evolution dry-run validates isolated train, validation, and holdout tasks", {
+test("Harbor evolution dry-run seals validation outside the optimizer", {
   skip: !uvAvailable,
 }, async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "harbor-evolve-plan-"));
   try {
     const tasks = {
-      train: await createTask(tempDirectory, "train", "train-case"),
+      evolution: await createTask(tempDirectory, "evolution", "evolution-case"),
       validation: await createTask(tempDirectory, "validation", "validation-case"),
       holdout: await createTask(tempDirectory, "holdout", "holdout-case"),
     };
@@ -141,11 +147,18 @@ test("Harbor evolution dry-run validates isolated train, validation, and holdout
         ]),
       ),
       {
-        train: ["skill-tests/train-case"],
+        evolution: ["skill-tests/evolution-case"],
         validation: ["skill-tests/validation-case"],
         holdout: ["skill-tests/holdout-case"],
       },
     );
+    assert.deepEqual(plan.evaluationBoundary, {
+      evolutionDatasetSplit: "evolution",
+      validationDatasetSplit: "validation",
+      validationOptimizerVisible: false,
+      candidateFreezeBeforeValidation: true,
+      holdoutRequiresValidationPass: true,
+    });
     await assert.rejects(fs.stat(path.join(tempDirectory, "output")), /ENOENT/);
   } finally {
     await fs.rm(tempDirectory, { recursive: true, force: true });
@@ -157,11 +170,11 @@ test("Harbor evolution dry-run rejects split leakage", {
 }, async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "harbor-evolve-leak-"));
   try {
-    const train = await createTask(tempDirectory, "train", "train-case");
+    const evolution = await createTask(tempDirectory, "evolution", "evolution-case");
     const holdout = await createTask(tempDirectory, "holdout", "holdout-case");
     const config = configFor(tempDirectory, {
-      train,
-      validation: train,
+      evolution,
+      validation: evolution,
       holdout,
     });
     const configPath = path.join(tempDirectory, "evolution.yaml");
@@ -169,7 +182,30 @@ test("Harbor evolution dry-run rejects split leakage", {
 
     const completed = runDry(configPath);
     assert.notEqual(completed.status, 0);
-    assert.match(completed.stderr, /occurs in both train and validation/i);
+    assert.match(completed.stderr, /occurs in both evolution and validation/i);
+  } finally {
+    await fs.rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test("Harbor evolution rejects the optimizer-visible schema 1 boundary", {
+  skip: !uvAvailable,
+}, async () => {
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "harbor-evolve-v1-"));
+  try {
+    const tasks = {
+      evolution: await createTask(tempDirectory, "evolution", "evolution-case"),
+      validation: await createTask(tempDirectory, "validation", "validation-case"),
+      holdout: await createTask(tempDirectory, "holdout", "holdout-case"),
+    };
+    const config = configFor(tempDirectory, tasks);
+    config.schemaVersion = 1;
+    const configPath = path.join(tempDirectory, "evolution.yaml");
+    await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
+
+    const completed = runDry(configPath);
+    assert.notEqual(completed.status, 0);
+    assert.match(completed.stderr, /schemaVersion must be 2.*independent validation/i);
   } finally {
     await fs.rm(tempDirectory, { recursive: true, force: true });
   }
@@ -189,7 +225,11 @@ test("Harbor evolution rejects unsafe logical names before staging", {
     );
     try {
       const tasks = {
-        train: await createTask(tempDirectory, "train", "train-case"),
+        evolution: await createTask(
+          tempDirectory,
+          "evolution",
+          "evolution-case",
+        ),
         validation: await createTask(
           tempDirectory,
           "validation",
@@ -227,11 +267,34 @@ test("Harbor evolution simulated lifecycle preserves baseline and gates on holdo
   assert.deepEqual(JSON.parse(completed.stdout), {
     decision: "promote",
     developmentTrials: 2,
+    validationBaselineTrials: 2,
+    validationCandidateTrials: 2,
     holdoutBaselineTrials: 2,
     holdoutCandidateTrials: 2,
     aliasSourceBasename: "baseline",
     stagedSkillBasenames: ["simulation-skill"],
     stagedParentBasenames: ["skills"],
+    verifiedIdentityTrials: 10,
+  });
+});
+
+test("Harbor evolution leaves holdout sealed when independent validation fails", {
+  skip: !uvAvailable,
+}, () => {
+  const completed = spawnSync(
+    "uv",
+    ["run", simulation, script, "validation-fail"],
+    {
+      cwd: path.resolve("."),
+      encoding: "utf8",
+      timeout: 60000,
+    },
+  );
+  assert.equal(completed.status, 0, completed.stderr);
+  assert.deepEqual(JSON.parse(completed.stdout), {
+    status: "validation-rejected",
+    holdoutOpened: false,
+    validationOptimizerVisible: false,
     verifiedIdentityTrials: 6,
   });
 });
