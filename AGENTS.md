@@ -10,7 +10,7 @@ All repository artifacts must be written in English.
 
 ## Sources of truth
 
-1. `README.md` defines the shared workflow and repository map.
+1. `README.md` is the project overview; `docs/getting-started.md` defines the shared workflow and `docs/repository-guide.md` defines the repository map.
 2. Each `skills/harbor-*/SKILL.md` defines that bundle's executable contract.
 3. `evaluations/*/README.md`, protocols, locks, and results define each study.
 4. `docs/research-foundations.md` records research provenance and adaptation
@@ -93,3 +93,12 @@ study locks and public evidence remain unchanged unless the task explicitly
 creates a new append-only version. Run `node --test test/audit/*.test.js` only
 in the matching WSL/Linux evidence environment; it verifies slow historical
 V2–V5 contracts that depend on that runtime.
+
+## Repository organization and documentation
+
+- Keep `README.md` as an overview: purpose, critical boundaries, first useful action, and links into `docs/README.md`.
+- Put detailed procedures and reference material in `docs/`; update its index with every addition or move.
+- Follow the [repository guide](docs/repository-guide.md) for file placement, validation, and data boundaries.
+- Preserve existing canonical specs, ADRs, skill bundles, and evidence paths; do not reorganize sealed or generated data as documentation.
+- Preserve prior work, stage explicit paths, and verify links, relevant checks, and the diff before an authorized push.
+- Build tools must not delete authored documentation. Keep transient output and credentials outside tracked source.
