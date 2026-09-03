@@ -1,6 +1,6 @@
 # Harbor Skill Evolution
 
-Independently copyable skills for running, inspecting, recovering, and improving skills with native Harbor jobs. The repository also preserves versioned studies and research provenance for the evaluation and evolution workflow.
+Independently copyable skills for authoring evaluation datasets and for running, inspecting, recovering, and improving skills with native Harbor jobs. The repository also preserves versioned studies and research provenance for the evaluation and evolution workflow.
 
 The former Skill Arena CLI is historical. Native job evidence, frozen candidates, independent validation, and optional sealed holdout gates define the maintained workflow.
 

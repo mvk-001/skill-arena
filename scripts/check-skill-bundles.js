@@ -10,6 +10,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const defaultSkillsRoot = path.join(projectRoot, "skills");
 
 export const EXPECTED_SKILLS = Object.freeze([
+  "harbor-author-evaluation-datasets",
   "harbor-evolve-skill",
   "harbor-maximize-knowledge-expertise",
   "harbor-metaskill-evolution",

@@ -2,10 +2,11 @@
 
 Run commands from the repository root unless a different working directory is shown.
 
-[![Harbor 0.18.0](https://img.shields.io/badge/Harbor-0.18.0-652f6c)](./skills/harbor-run-results/SKILL.md) [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776ab?logo=python&logoColor=white)](https://www.python.org/) [![11 atomic skills](https://img.shields.io/badge/skills-11_atomic-007298)](#skills)
+[![Harbor 0.18.0](https://img.shields.io/badge/Harbor-0.18.0-652f6c)](../skills/harbor-run-results/SKILL.md) [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776ab?logo=python&logoColor=white)](https://www.python.org/) [![12 atomic skills](https://img.shields.io/badge/skills-12_atomic-007298)](#skills)
 
-Eleven self-contained skills organize, plan, evaluate, report, recover,
-materialize, and evolve agent skills around one native Harbor evidence surface.
+Twelve self-contained skills author datasets, organize, plan, evaluate, report,
+recover, materialize, and evolve agent skills around one native Harbor evidence
+surface.
 There is no Skill Arena runtime, Promptfoo translation layer, or duplicate
 evaluation implementation.
 
@@ -42,18 +43,20 @@ need, then start a new Codex task so they are discovered.
 
 ## Skills
 
-Use `harbor-organize-evaluations` to freeze study splits and track the ordered
-lifecycle, `harbor-run-results` for native evaluation and reports, optionally
-add recovery, use the realizer when a mutation plan needs a sealed child, and
-choose one evolver for a declared development stage. Every evolution must also
-declare an independent, optimizer-invisible validation dataset and downstream
-validation stage before it starts. Use MetaSkill replay only after comparable
-branch evidence exists. Keep datasets and raw evaluation artifacts local: the
-organizer's Git allowlist exposes only its publication indexes and explicitly
-reviewed aggregate result tables.
+Use `harbor-author-evaluation-datasets` to design leakage-resistant native task
+roots, then use `harbor-organize-evaluations` to freeze study splits and track
+the ordered lifecycle, `harbor-run-results` for native evaluation and reports,
+optionally add recovery, use the realizer when a mutation plan needs a sealed
+child, and choose one evolver for a declared development stage. Every evolution
+must also declare an independent, optimizer-invisible validation dataset and
+downstream validation stage before it starts. Use MetaSkill replay only after
+comparable branch evidence exists. Keep datasets and raw evaluation artifacts
+local: the organizer's Git allowlist exposes only its publication indexes and
+explicitly reviewed aggregate result tables.
 
 | Skill | Use it for |
 | --- | --- |
+| [`harbor-author-evaluation-datasets`](../skills/harbor-author-evaluation-datasets/SKILL.md) | Define semantic task families, assign group-disjoint splits, materialize deterministic seeded response-surface variants, audit adapters and verifiers, and render publication-safe cross-run Markdown plus static SVGs from finalized native reports. Start here when the datasets do not already exist. |
 | [`harbor-organize-evaluations`](../skills/harbor-organize-evaluations/SKILL.md) | Freeze dataset manifests, require development plus sealed validation before evolution starts, bind the frozen candidate and release validation/holdout in order, and expose only Git-safe indexes and reviewed aggregate result tables. Start here for a multi-stage study. |
 | [`harbor-run-results`](../skills/harbor-run-results/SKILL.md) | Validate or execute a native `JobConfig`, inspect completed jobs, compare baseline and treatment, and write `final-report.md` plus `final-report.json`. Start here for one job or comparison. |
 | [`harbor-resume-external-failures`](../skills/harbor-resume-external-failures/SKILL.md) | Retry only cells proven unavailable because of an external provider, authentication, environment, evaluator, or infrastructure failure. It is not an optimizer. |
@@ -71,39 +74,54 @@ inputs, commands, modes, evidence checks, outputs, and validation.
 
 ## Common workflow
 
-1. Initialize an ordered study; register disjoint discovery, development,
+1. Before study initialization, use `harbor-author-evaluation-datasets` to
+   define source and scenario families, assign families to splits, materialize
+   seeded nuisance variants, test reference and shortcut solutions, audit
+   leakage, and freeze separate native Harbor roots. Keep sealed cohort plans,
+   seeds, prompts, solutions, and verifiers outside the evolution workspace.
+2. Initialize an ordered study; register disjoint discovery, development,
    validation, and optional holdout dataset locks; and declare skill-owned
    stages and dependencies with `harbor-organize-evaluations`.
-2. Freeze the baseline bundle and digest, development, validation, and holdout tasks,
-   `JobConfig`, agent/model profile, attempts, rewards, hard gates, budget, and
-   promotion policy.
-3. Validate with `--dry-run` and `--doctor` before any model call. A plain
+3. Freeze the baseline bundle and digest, development, validation, and holdout
+   tasks, `JobConfig`, agent/model profile, attempts, rewards, hard gates,
+   budget, and promotion policy.
+4. Validate with `--dry-run` and `--doctor` before any model call. A plain
    Harbor config can be checked with:
 
    ```bash
    uvx --from harbor==0.18.0 harbor run --config <job.yaml> --print-config
    ```
 
-4. Reuse complete, provenance-valid jobs through `--analyze-only`, `--skip-run`,
+5. Reuse complete, provenance-valid jobs through `--analyze-only`, `--skip-run`,
    or reporting-only operation instead of rerunning them.
-5. Keep Harbor's built-in retry count at zero. Use selective recovery only for
+6. Keep Harbor's built-in retry count at zero. Use selective recovery only for
    independently proven external failures; never retry semantic failures to
    search for a better score.
-6. When a mutation plan needs a complete child bundle, use the candidate
+7. When a mutation plan needs a complete child bundle, use the candidate
    realizer to bind the frozen parent, exact instruction, allowed paths, and
    validation evidence before evaluation.
-7. Start one evolution mechanism only after the organizer accepts its
+8. Start one evolution mechanism only after the organizer accepts its
    development-only stage and already-planned downstream validation gate.
    Preserve every candidate, rejection, lineage edge, cost, and native job.
-8. Bind the selected candidate bundle by digest, release validation exactly
+9. Bind the selected candidate bundle by digest, release validation exactly
    once, and compare only the unchanged baseline and frozen winner. Never feed
    validation evidence back into mutation, ranking, or reselection; use fresh
    validation in a new study after a failed gate.
-9. If an additional holdout is declared, release it only after completed
+10. If an additional holdout is declared, release it only after completed
    validation. Never feed holdout evidence back into mutation or selection.
-10. Promote only when the independent gate, optional holdout policy, and
+11. Promote only when the independent gate, optional holdout policy, and
    ordinary bundle validation pass;
    otherwise retain the baseline.
+12. After the owning release boundary permits aggregate publication, pass only
+    finalized schema-version-1 `final-report.json` files to
+    `consolidate_harbor_reports.py`. Review its quality, resource, and
+    efficiency SVGs together: pass rate or reward never compensates silently
+    for increased tokens, reported cost, agent time, wall time, or errors.
+
+The report consolidator records source hashes and observation coverage, keeps
+cached input as a subset of input tokens, and leaves missing cost or timing as
+`n/a`. Its aggregate views do not establish comparability when task locks,
+hardware, model, agent, attempts, or cache policy differ.
 
 A minimal native config is available at
 [`test/fixtures/job-configs/skill.yaml`](../test/fixtures/job-configs/skill.yaml).
@@ -145,7 +163,7 @@ npm run skills:check
 npm test
 ```
 
-`npm test` covers the eleven bundles, native reporting fixtures, sealed recovery
+`npm test` covers the twelve bundles, native reporting fixtures, sealed recovery
 contracts, and the versioned evolution studies. The slow environment-dependent
 V2–V5 recovery audit is separate:
 

@@ -2,7 +2,7 @@
 
 ## Scope
 
-This repository maintains eleven independently copyable Harbor skills and three
+This repository maintains twelve independently copyable Harbor skills and three
 versioned studies. It does not maintain the former Skill Arena CLI,
 Promptfoo adapters, or `skill-arena-*` workflows.
 
@@ -22,8 +22,9 @@ owning `SKILL.md`.
 
 ## Preservation boundaries
 
-- Keep these eleven bundles atomic and self-contained:
-  `harbor-organize-evaluations`, `harbor-run-results`,
+- Keep these twelve bundles atomic and self-contained:
+  `harbor-author-evaluation-datasets`, `harbor-organize-evaluations`,
+  `harbor-run-results`,
   `harbor-resume-external-failures`,
   `harbor-population-search`, `harbor-trace-distillation`,
   `harbor-reflective-pareto-search`, `harbor-operator-coevolution`,
@@ -38,8 +39,8 @@ owning `SKILL.md`.
 - Never merge ignored native jobs from `.tmp`. They may contain credentials,
   private verifier inputs, model reasoning, answers, and machine-local paths.
   Never delete those trees as part of repository cleanup.
-- Preserve the development/holdout boundary. Do not expose holdout evidence to
-  candidate generation or selection.
+- Preserve the development/validation/holdout boundary. Do not expose sealed
+  validation or holdout evidence to candidate generation or selection.
 
 ## Evolution and independent validation
 
@@ -102,3 +103,10 @@ V2–V5 contracts that depend on that runtime.
 - Preserve existing canonical specs, ADRs, skill bundles, and evidence paths; do not reorganize sealed or generated data as documentation.
 - Preserve prior work, stage explicit paths, and verify links, relevant checks, and the diff before an authorized push.
 - Build tools must not delete authored documentation. Keep transient output and credentials outside tracked source.
+
+## Update Access Scope
+
+- Writable project root: `C:\Users\villa\dev\skill-arena`.
+- Agents may create, modify, move, or delete files only inside this root and its descendants when the task requires it.
+- Treat paths outside this root as read-only unless the user explicitly authorizes a broader scope.
+- A reference to another repository or shared tool does not grant write access to it.

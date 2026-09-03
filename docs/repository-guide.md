@@ -1,6 +1,6 @@
 # Harbor Skill Evolution: repository guide
 
-Independently copyable skills for running, inspecting, recovering, and improving skills with native Harbor jobs. The repository also preserves versioned studies and research provenance for the evaluation and evolution workflow.
+Independently copyable skills for authoring evaluation datasets and for running, inspecting, recovering, and improving skills with native Harbor jobs. The repository also preserves versioned studies and research provenance for the evaluation and evolution workflow.
 
 ## Layout
 

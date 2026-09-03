@@ -9,7 +9,7 @@ import {
   EXPECTED_SKILLS,
 } from "../scripts/check-skill-bundles.js";
 
-test("the repository contains exactly the eleven maintained atomic Harbor skills", () => {
+test("the repository contains exactly the twelve maintained atomic Harbor skills", () => {
   const result = checkSkillBundles({ skillsRoot: path.resolve("skills") });
 
   assert.deepEqual(result.errors, []);
