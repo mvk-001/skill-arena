@@ -12,4 +12,6 @@ evaluation and evolution workflow.
 - [Agent instructions](../AGENTS.md)
 - [Research foundations](research-foundations.md)
 - [Methodology review and method selection](methodology-review.md)
+- [Organizer dataset portfolios and leakage review](../skills/harbor-organize-evaluations/references/study-design-and-leakage.md)
+- [Decision: seal organizer preparation before execution](../.specs/adr/2026-09-04-organizer-dataset-portfolios-and-leakage-review.md)
 - [Architecture decisions](../.specs/adr/)

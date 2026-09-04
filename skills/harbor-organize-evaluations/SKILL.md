@@ -1,6 +1,6 @@
 ---
 name: harbor-organize-evaluations
-description: Organize append-only Harbor evaluation studies with frozen discovery, development, sealed validation, and holdout dataset manifests; ordered skill-owned stages; SHA-256-bound evidence pointers; explicit validation and holdout release; progressively regenerated status; and a Git-safe allowlist that exposes only publication indexes and reviewed aggregate result tables. Use when Codex needs to initialize or audit a Harbor study, require an independent validation dataset before evolution starts, manage test splits without leaking validation or holdout into evolution, coordinate harbor-run-results and Harbor evolution skills, resume a multi-generation comparison, or keep evaluation artifacts out of GitHub while publishing progress and comparisons.
+description: Organize Harbor studies with multiple public development and private verification datasets, a frozen protocol and baseline, curator-reviewed leakage controls, ordered skill-owned stages, one-way validation gates, and Git-safe publication. Use to prepare or audit an evaluation or evolution methodology, prevent private feedback and task shortcuts from entering training or skill selection, or coordinate native Harbor owners without implementing another optimizer or scorer.
 ---
 
 # Harbor Organize Evaluations
@@ -17,6 +17,24 @@ existing job needs no new evolution study. Before an evolution study starts,
 record its hypothesis, baseline, primary outcome, hard gates, fixed resource
 budget, development stopping rule, and independent acceptance rule in its
 private protocol. Reference the owning skill for executable fields.
+
+Read [references/study-design-and-leakage.md](references/study-design-and-leakage.md)
+before preparing a new study. It defines the dataset portfolio, method-selection
+procedure, curator review, filename and question-pattern controls, and private
+verification policy. Request native task roots and review evidence from the
+dataset curator; use `harbor-author-evaluation-datasets` when available for that
+work. This organizer registers the finished artifacts and does not author tasks
+or change the evolution skills.
+
+Each split may contain many separately named datasets. Public means visible to
+the optimizer: use `discovery` for smoke or diagnosis and `development` for
+training, skill evaluation, method comparison, and candidate selection. Private
+means unavailable to that optimizer: use `validation` only to check one frozen
+candidate against the unchanged baseline, with optional `holdout` as a further
+gate. These are access roles, not permission to publish task files. Register
+additional domains, difficulty bands, robustness suites, or transfer cohorts as
+new dataset IDs in the appropriate split; do not reduce the study to one public
+file and one private file or merge away their identities.
 
 Stage completion records that work finished; it does not establish that the
 candidate passed. Have the owning evaluator interpret the frozen acceptance
@@ -40,7 +58,9 @@ evaluator authority, or the truth of a declared acceptance outcome.
      --comparison-profile "<stable profile id>"
    ~~~
 
-3. Register every dataset before execution. `development` is the
+3. Register every dataset before execution. Curate independent task families
+   before splitting and review the realized filename and question surfaces as
+   described in the design reference. `development` is the
    optimizer-visible evolution dataset. `validation` is a mandatory,
    independent post-selection dataset for every evolution and remains sealed;
    `holdout` is an optional additional final gate. The command reads sealed
@@ -48,35 +68,72 @@ evaluator authority, or the truth of a declared acceptance outcome.
 
    ~~~powershell
    python <skill-root>/scripts/manage_harbor_evaluations.py add-dataset <study-dir> `
-     --dataset-id development-v1 --split development --source <dataset-dir>
-    python <skill-root>/scripts/manage_harbor_evaluations.py add-dataset <study-dir> `
-      --dataset-id validation-v1 --split validation --source <validation-dir>
-    python <skill-root>/scripts/manage_harbor_evaluations.py add-dataset <study-dir> `
-      --dataset-id holdout-v1 --split holdout --source <holdout-dir>
+     --dataset-id development-a --split development --source <dataset-dir>
+   python <skill-root>/scripts/manage_harbor_evaluations.py add-dataset <study-dir> `
+     --dataset-id development-b --split development --source <second-dataset-dir>
+   python <skill-root>/scripts/manage_harbor_evaluations.py add-dataset <study-dir> `
+     --dataset-id validation-a --split validation --source <validation-dir>
+   python <skill-root>/scripts/manage_harbor_evaluations.py add-dataset <study-dir> `
+     --dataset-id validation-b --split validation --source <second-validation-dir>
+   python <skill-root>/scripts/manage_harbor_evaluations.py add-dataset <study-dir> `
+     --dataset-id holdout-v1 --split holdout --source <holdout-dir>
    ~~~
 
    Registration rejects overlapping source trees, task IDs, or task digests
-   across every split. Any later dataset drift makes verification fail.
+   across every split. Any later dataset drift makes verification fail. Each ID
+   identifies a disjoint, immutable cohort. Use neutral IDs for private cohorts.
 
 4. Add stages in execution order. Before an evolution can start, its
    development-only stage and a downstream validation stage that depends on it
    must both exist:
 
    ~~~powershell
-    python <skill-root>/scripts/manage_harbor_evaluations.py add-stage <study-dir> `
-      --stage-id evolve-g001 `
-      --kind evolution `
-      --owner-skill harbor-reflective-pareto-search `
-      --dataset-id development-v1
-    python <skill-root>/scripts/manage_harbor_evaluations.py add-stage <study-dir> `
-      --stage-id validate-g001 `
-      --kind validation `
-      --owner-skill harbor-run-results `
-      --dataset-id validation-v1 `
-      --depends-on evolve-g001
+   python <skill-root>/scripts/manage_harbor_evaluations.py add-stage <study-dir> `
+     --stage-id evolve-g001 `
+     --kind evolution `
+     --owner-skill harbor-reflective-pareto-search `
+     --dataset-id development-a `
+     --dataset-id development-b
+   python <skill-root>/scripts/manage_harbor_evaluations.py add-stage <study-dir> `
+     --stage-id validate-g001 `
+     --kind validation `
+     --owner-skill harbor-run-results `
+     --dataset-id validation-a `
+     --dataset-id validation-b `
+     --depends-on evolve-g001
+   python <skill-root>/scripts/manage_harbor_evaluations.py add-stage <study-dir> `
+     --stage-id holdout-gate --kind holdout --owner-skill harbor-run-results `
+     --dataset-id holdout-v1 --depends-on validate-g001
    ~~~
 
-5. Transition the ready stage to `running`, perform the work with its owning
+   Omit both holdout registration and its stage when no additional gate is
+   needed. Repeat `--dataset-id` to bind multiple datasets; the owning runner
+   must support the declared portfolio or supply separate planned native jobs.
+   Freeze dataset-specific metrics, weights, repetitions, mandatory gates, and
+   a single combined decision in the protocol. Private results cannot choose
+   the method, winning dataset, weight, or candidate.
+
+5. Seal the design before any stage runs. Use the curator's private review
+   directory containing `review.json` and its supporting evidence; the exact
+   receipt is defined in the design reference. Hash it mechanically without
+   displaying sealed task identities or reading private review findings into
+   the optimizer's context:
+
+   ~~~powershell
+   python <skill-root>/scripts/manage_harbor_evaluations.py seal-design <study-dir> `
+     --protocol <private-protocol-file> `
+     --baseline <unchanged-baseline-artifact> `
+     --review <private-curator-review-directory>
+   ~~~
+
+   New studies use study schema 2. Execution requires this one-time seal, exact
+   review coverage of all locked tasks, disjoint declared independence groups,
+   six supported quality checks, and planned gates covering every private
+   dataset. Baseline, protocol, and review drift fail verification. Schema 1
+   studies remain auditable with their legacy guarantees; never rewrite their
+   evidence to imply a retrospective review.
+
+6. Transition the ready stage to `running`, perform the work with its owning
    Harbor skill, and bind the resulting native job, report, candidate, lock,
    or decision by digest. Starting an `evolution` stage fails unless it uses
    only `development`, an independent `validation` dataset is registered, and
@@ -84,21 +141,21 @@ evaluator authority, or the truth of a declared acceptance outcome.
 
    ~~~powershell
    python <skill-root>/scripts/manage_harbor_evaluations.py transition <study-dir> `
-      --stage-id evolve-g001 --status running
-    python <skill-root>/scripts/manage_harbor_evaluations.py record-evidence <study-dir> `
-      --evidence-id candidate-g001 `
-      --stage-id evolve-g001 `
-      --kind candidate --role lineage --visibility private `
-      --path <frozen-candidate-bundle>
-    python <skill-root>/scripts/manage_harbor_evaluations.py transition <study-dir> `
-      --stage-id evolve-g001 --status completed
+     --stage-id evolve-g001 --status running
+   python <skill-root>/scripts/manage_harbor_evaluations.py record-evidence <study-dir> `
+     --evidence-id candidate-g001 `
+     --stage-id evolve-g001 `
+     --kind candidate --role lineage --visibility private `
+     --path <frozen-candidate-bundle>
+   python <skill-root>/scripts/manage_harbor_evaluations.py transition <study-dir> `
+     --stage-id evolve-g001 --status completed
    ~~~
 
    Use `blocked` only while external work is genuinely unavailable. Create a
    separate recovery stage owned by `harbor-resume-external-failures`; never
    rewrite the failed stage or ledger history.
 
-6. After the completed evolution records the frozen candidate with evidence
+7. After the completed evolution records the frozen candidate with evidence
    kind `candidate`, release validation exactly once:
 
    ~~~powershell
@@ -108,13 +165,17 @@ evaluator authority, or the truth of a declared acceptance outcome.
      --candidate-evidence <frozen-candidate-bundle>
    ~~~
 
-   Run only the planned validation stage against that digest. Validation may
+   Run all planned validation gates against that same digest and the sealed
+   baseline. All gates must descend from the frozen selection. Validation may
    accept or reject the candidate, but it cannot mutate, rank, or reselect a
    candidate in the same study. Once released, the dataset is consumed: a
-   later evolution requires a new study with fresh sealed validation.
+   later evolution requires a new study with fresh sealed validation. A binary
+   pass/fail or progress signal is feedback too; never inspect it after each
+   generation and then tune again. Keep raw private results in the evaluator's
+   isolated context and publish only the reviewed final aggregate decision.
 
-7. If the study declares an additional holdout, release it only after the
-   completed validation gate is digest-bound:
+8. If the study declares an additional holdout, release it only after every
+   planned validation gate completes and the joint acceptance decision passes:
 
    ~~~powershell
    python <skill-root>/scripts/manage_harbor_evaluations.py release-holdout <study-dir> `
@@ -127,7 +188,7 @@ evaluator authority, or the truth of a declared acceptance outcome.
    holdout stage can run and no holdout evidence can be recorded before this
    event.
 
-8. Inspect the regenerated `status.md` or print the current snapshot:
+9. Inspect the regenerated `status.md` or print the current snapshot:
 
    ~~~powershell
    python <skill-root>/scripts/manage_harbor_evaluations.py status <study-dir> `
@@ -135,7 +196,7 @@ evaluator authority, or the truth of a declared acceptance outcome.
    python <skill-root>/scripts/manage_harbor_evaluations.py verify <study-dir> --render
    ~~~
 
-9. Publish only the generated `publication/index.json`,
+10. Publish only the generated `publication/index.json`,
    `publication/index.md`, and explicitly reviewed aggregate tables named
    `publication/tables/<id>.table.csv`, `.table.tsv`, or `.table.md`. After
    adding a table, refresh and verify:
@@ -190,6 +251,13 @@ evaluator authority, or the truth of a declared acceptance outcome.
 - Do not add datasets after any stage starts. Evolution stages bind only
   `development`. Validation stages bind only `validation` and cannot run before
   the selected candidate bundle is digest-bound and explicitly released.
+- For schema 2, do not add datasets or private evaluation/comparison gates
+  after design sealing. Selective external-failure recovery may append a stage
+  under its existing owner contract and must explicitly bind the original
+  split. It does not authorize another evaluable attempt or a new candidate.
+- Treat filename distributions, prompt skeletons, answer ordering, fixtures,
+  and reference solutions as possible shortcuts. Byte disjointness and opaque
+  group labels are checks on declared evidence, not proof of semantic quality.
 - Never feed validation results into mutation, candidate ranking, or reselection
   in the same study. After release, treat that validation dataset as consumed;
   use a new study and a fresh validation dataset for another unbiased claim.

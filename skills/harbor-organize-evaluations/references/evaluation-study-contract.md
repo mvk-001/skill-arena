@@ -8,6 +8,7 @@ ranking, or promotion policy.
 
 - [Study layout](#study-layout)
 - [Dataset registration](#dataset-registration)
+- [Design sealing](#design-sealing)
 - [Stage graph](#stage-graph)
 - [Evidence and privacy](#evidence-and-privacy)
 - [Git-safe publication](#git-safe-publication)
@@ -45,6 +46,11 @@ Initialization refuses a non-empty destination and creates:
 - `comparisonProfile`
 - `createdAt`
 
+New studies use study schema 2 and require design sealing before execution.
+Schema 1 studies remain readable and retain their legacy ordering requirements;
+they cannot acquire a retrospective seal. Dataset locks and ledger envelopes
+retain schema 1. No historical evidence is migrated or rewritten automatically.
+
 Use `comparisonProfile` as a stable identity for the declared task cohort,
 agent, model, metric, attempts, retry policy, and hard gates. Detailed field
 contracts remain in the owning Harbor skill or study protocol.
@@ -71,6 +77,14 @@ Supported splits are:
 | `validation` | No | One-way evaluation of one frozen development winner |
 | `holdout` | No | Final unchanged-baseline versus frozen-winner gate |
 
+Every split may have multiple independently registered datasets. The derived
+`access` is `public` for discovery/development and `private` for
+validation/holdout; `optimizerVisible` states the same boundary as a boolean.
+Access is not publication visibility or proof of Internet/pretraining exposure.
+Bind several datasets to a stage by repeating `--dataset-id`; bind one registered
+dataset to several stages without copying or re-registering its task roots.
+Keep per-dataset outcomes and the predeclared combined rule in native reports.
+
 Registration computes SHA-256 over canonical relative file names, byte sizes,
 and file digests. The lock records the source, aggregate tree digest, file and
 byte counts, and each task's relative ID and tree digest.
@@ -82,6 +96,7 @@ The script rejects:
 - identical task content across datasets
 - links, junctions, reparse points, devices, sockets, and non-regular files
 - dataset registration after any stage leaves `planned`
+- dataset registration after design sealing, even if all stages are planned
 - later source, task inventory, file count, byte count, or digest drift
 
 These checks prove byte-level separation under the declared sources. They do
@@ -92,6 +107,60 @@ holdout instructions, tests, verifier output, solutions, task names, or
 artifacts while authoring or selecting candidates. Registration hashes their
 bytes mechanically. Derived status exposes only dataset IDs, counts, and
 aggregate digests.
+
+## Design Sealing
+
+Read [Study Design and Leakage Review](study-design-and-leakage.md) for the
+curator's procedure, supported checks, exact private receipt schema, statistical
+planning, and research basis. Before any schema 2 stage runs:
+
+~~~powershell
+python <skill-root>/scripts/manage_harbor_evaluations.py seal-design <study> `
+  --protocol <private-protocol-file> `
+  --baseline <unchanged-baseline-file-or-directory> `
+  --review <private-review-directory>
+~~~
+
+The review directory contains `review.json` and non-empty supporting files for
+provenance/contamination, group isolation, surface cues, verifier quality,
+coverage/power, and access isolation. Every check must pass. The curator binds
+every registered dataset and task by ID and digest, assigns opaque independence
+group IDs, and supplies the supporting audit evidence. Shared groups are allowed
+within one dataset but rejected across datasets. This catches declared family
+overlap even when task names and file bytes differ; it does not discover missing
+family relationships or judge whether the supporting narrative is correct.
+
+`design_sealed` records `protocol`, `baseline`, and `review` artifact metadata
+(source, type, SHA-256, file count, byte count), `datasetDigests` for the complete
+portfolio, and ordered `gateStageIds` for all planned private evaluation and
+comparison stages. Recovery stages are not acceptance gates. The seal requires
+at least one dataset and stage, all stages still planned, a gate of the matching
+kind covering every validation and holdout dataset, and downstream validation
+for every evolution stage. All validation gates need a common evolution
+selection ancestor; all holdout gates need a common pre-holdout selection
+ancestor. Disconnected private gates fail during preparation, before any run.
+
+The event is appended only after review validation succeeds. The protocol must
+be a non-empty file; the baseline a non-empty artifact; the review a regular
+directory whose supporting paths stay inside it. A missing or failed receipt,
+task or dataset digest mismatch, missing task coverage, or declared group overlap
+fails without appending a seal. All raw preparation artifacts remain private and
+outside Git, including when their source paths are outside the study directory.
+
+Sealing is one-time. Datasets and private evaluation/comparison stages cannot be
+added afterward. Other bookkeeping remains append-only within the frozen
+protocol; changes to the methodology, population, or acceptance rule need a new
+study. External-failure recovery may append a stage under its owning skill's
+existing first-evaluable contract and bind the original split explicitly.
+Recovery cannot mix visible, validation, and holdout datasets or add a new
+scoreable attempt.
+
+The whole review directory is digest-checked whenever its declarations are
+replayed. Deep verification also checks the protocol and baseline. Starting a
+stage or releasing a private gate performs deep source verification before
+appending its event. Private-stage evidence cannot be labeled `development`. The
+script does not enforce operating-system access isolation, authenticate a
+reviewer, estimate statistical power, or inspect private prompts for shortcuts.
 
 ## Stage Graph
 
@@ -110,6 +179,12 @@ planned/running/blocked -> stopped
 digest-bound evidence artifact. A stage may run only after all dependencies are
 completed. Validation- and holdout-bound stages additionally require their
 separate release events.
+
+Schema 2 additionally requires a sealed design. No optimizer-visible work,
+candidate realization, meta-analysis, or recovery without an explicit dataset
+may start or resume after either private release. This also covers ordinary
+evaluation studies that open holdout without an evolution stage. Private recovery must
+use its original sealed split and cannot feed its diagnostics into optimization.
 
 Use these owner and kind combinations:
 
@@ -248,11 +323,22 @@ candidate file or directory already recorded on that stage with evidence kind
 validation once. Validation stages and validation evidence are rejected before
 the event.
 
+For schema 2, every planned validation gate must still be planned and depend
+transitively on the same selected evolution stage. Finish or stop all other
+active work before release. The release consumes the entire validation portfolio
+for that candidate; it is not a separate candidate-selection opportunity per
+dataset. Stopping a planned private gate does not remove its requirement.
+
 Release is one-way. No evolution stage may start after validation release in
 the same study. A failed validation result may inform a later investigation,
 but another unbiased gate requires a new study and a fresh sealed validation
 dataset. This prevents repeated candidate tuning against a consumed validation
 cohort.
+
+Even a binary progress signal is private feedback. Repeated checkpoints cannot
+use it for early stopping or further optimization. Record consumption with the
+curator across studies: this local organizer cannot detect reuse in another
+study or prove absence from model pretraining.
 
 ## Holdout Release
 
@@ -263,6 +349,15 @@ Registering a holdout dataset does not release it. `release-holdout` requires:
    validation stage
 3. a selection evidence file or directory already recorded on that stage
 4. an exact digest of that selection evidence
+
+For schema 2, every planned validation gate must be completed, and every planned
+holdout gate must remain planned and depend on the selected pre-holdout stage.
+Finish or stop all other active work before opening holdout, including in
+ordinary evaluation studies without evolution.
+The owner must first accept the combined validation result according to the
+frozen protocol. Completion alone is not a passing outcome, and the script does
+not calculate or interpret that acceptance. With separate validation jobs,
+record the joint decision on the final validation stage before completing it.
 
 For studies without evolution, a completed evaluation or comparison stage may
 still supply the selection. The release is a single append-only event.
@@ -295,6 +390,7 @@ Event types are:
 - `study_initialized`
 - `dataset_registered`
 - `stage_added`
+- `design_sealed`
 - `stage_transitioned`
 - `evidence_recorded`
 - `validation_released`
@@ -311,6 +407,7 @@ The derived snapshot reports:
 - immutable study identity
 - event count and current ledger head
 - public dataset summaries
+- schema 2 design readiness and source-path-free protocol, baseline, and review digests
 - whether validation and holdout are independently sealed or released
 - stage totals by status
 - completion and terminal percentages

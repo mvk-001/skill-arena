@@ -23,12 +23,21 @@ from typing import Any, Iterator
 
 
 SCHEMA_VERSION = 1
+STUDY_SCHEMA_VERSION = 2
 ZERO_SHA256 = "0" * 64
 ID_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
 UTC_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 SPLITS = ("discovery", "development", "validation", "holdout")
 EVOLUTION_VISIBLE_SPLITS = frozenset({"discovery", "development"})
+DESIGN_REVIEW_CHECKS = (
+    "provenanceAndContamination",
+    "groupIsolation",
+    "surfaceCues",
+    "verifierQuality",
+    "coverageAndPower",
+    "accessIsolation",
+)
 EVOLUTION_EVALUATION_BOUNDARY = {
     "evolutionDatasetSplit": "development",
     "validationDatasetSplit": "validation",
@@ -546,7 +555,7 @@ def build_state(root: Path, *, verify_sources: bool = False) -> dict[str, Any]:
     study_path = root / "study.json"
     study_raw = study_path.read_bytes()
     study = load_json_bytes(study_raw, str(study_path))
-    if not isinstance(study, dict) or study.get("schemaVersion") != SCHEMA_VERSION:
+    if not isinstance(study, dict) or study.get("schemaVersion") not in (1, STUDY_SCHEMA_VERSION):
         raise ContractError("study.json has an unsupported schema")
 
     state: dict[str, Any] = {
@@ -557,6 +566,7 @@ def build_state(root: Path, *, verify_sources: bool = False) -> dict[str, Any]:
         "stages": {},
         "stageOrder": [],
         "evidence": {},
+        "designSeal": None,
         "validationRelease": None,
         "holdoutRelease": None,
     }
@@ -577,7 +587,7 @@ def build_state(root: Path, *, verify_sources: bool = False) -> dict[str, Any]:
         elif event_type == "dataset_registered":
             _apply_dataset_event(root, state, payload, verify_sources=verify_sources)
         elif event_type == "stage_added":
-            validate_stage_definition(payload, state["datasets"], state["stages"])
+            validate_stage_addition(state, payload)
             stage = {
                 **payload,
                 "order": len(state["stageOrder"]) + 1,
@@ -591,6 +601,8 @@ def build_state(root: Path, *, verify_sources: bool = False) -> dict[str, Any]:
             _apply_transition(state, payload)
         elif event_type == "evidence_recorded":
             _apply_evidence(state, payload, verify_sources=verify_sources)
+        elif event_type == "design_sealed":
+            _apply_design_seal(state, payload, verify_sources=verify_sources)
         elif event_type == "validation_released":
             _apply_validation_release(state, payload, verify_sources=verify_sources)
         elif event_type == "holdout_released":
@@ -622,6 +634,8 @@ def _apply_dataset_event(
         raise ContractError(f"duplicate dataset id: {dataset_id}")
     if any(stage["status"] != "planned" for stage in state["stages"].values()):
         raise ContractError("datasets cannot be registered after study execution starts")
+    if state["designSeal"] is not None:
+        raise ContractError("datasets cannot be registered after design sealing")
     lock_path = (root / payload["lockFile"]).resolve()
     expected_parent = (root / "datasets").resolve()
     if lock_path.parent != expected_parent or lock_path.name != f"{dataset_id}.lock.json":
@@ -652,11 +666,11 @@ def _apply_dataset_event(
         for task in lock["tasks"]:
             if task["taskId"].casefold() in existing_ids:
                 raise ContractError(
-                    f"task id overlaps {existing['datasetId']}: {task['taskId']}"
+                    f"task id overlaps {existing['datasetId']}: {dataset_id}"
                 )
             if task["sha256"] in existing_digests:
                 raise ContractError(
-                    f"task content overlaps {existing['datasetId']}: {task['taskId']}"
+                    f"task content overlaps {existing['datasetId']}: {dataset_id}"
                 )
     if verify_sources:
         current = hash_tree(source)
@@ -734,6 +748,165 @@ def _evolution_start_blockers(
     return blockers
 
 
+def _requires_design(state: dict[str, Any]) -> bool:
+    return state["study"]["schemaVersion"] >= STUDY_SCHEMA_VERSION
+
+
+def validate_stage_addition(state: dict[str, Any], payload: dict[str, Any]) -> None:
+    validate_stage_definition(payload, state["datasets"], state["stages"])
+    if _requires_design(state) and payload["kind"] == "recovery":
+        splits = {state["datasets"][item]["split"] for item in payload["datasetIds"]}
+        if ("validation" in splits or "holdout" in splits) and len(splits) > 1:
+            raise ContractError("recovery cannot mix sealed and optimizer-visible datasets or private splits")
+    if state["designSeal"] is not None and payload["kind"] != "recovery" and (
+        _stage_uses_validation(state, payload) or _stage_uses_holdout(state, payload)
+    ):
+        raise ContractError("sealed-dataset stages must be planned before design sealing")
+
+
+def _validate_design_review(state: dict[str, Any], artifact: dict[str, Any]) -> None:
+    """Check a curator's private receipt, never infer semantic quality from task text."""
+    if artifact.get("artifactType") != "directory":
+        raise ContractError("design review must be a directory with review.json and evidence files")
+    _verify_artifact(artifact, "design review")
+    review_root = Path(artifact["source"])
+    review = load_json(review_root / "review.json")
+    if not isinstance(review, dict) or review.get("schemaVersion") != 1:
+        raise ContractError("unsupported design review schema")
+    if not isinstance(review.get("reviewer"), str) or not review["reviewer"].strip():
+        raise ContractError("design review requires a reviewer identity")
+    checks = review.get("checks")
+    if not isinstance(checks, dict) or set(checks) != set(DESIGN_REVIEW_CHECKS):
+        raise ContractError("design review must include all six required quality checks")
+    for name in DESIGN_REVIEW_CHECKS:
+        check = checks[name]
+        if not isinstance(check, dict) or check.get("status") != "pass":
+            raise ContractError(f"design review check must pass before sealing: {name}")
+        relative = check.get("evidenceFile")
+        if not isinstance(relative, str) or not relative or Path(relative).is_absolute():
+            raise ContractError(f"design review evidenceFile must be relative: {name}")
+        evidence_path = (review_root / relative).resolve()
+        if review_root.resolve() not in evidence_path.parents or evidence_path.name == "review.json":
+            raise ContractError(f"design review evidenceFile must identify supporting evidence: {name}")
+        _validate_regular_node(evidence_path, directory=False)
+        if not evidence_path.stat().st_size:
+            raise ContractError(f"design review evidenceFile is empty: {name}")
+    reviews = review.get("datasets")
+    if not isinstance(reviews, list) or len(reviews) != len(state["datasets"]):
+        raise ContractError("design review must cover every registered dataset exactly once")
+    seen_datasets: set[str] = set()
+    group_datasets: dict[str, str] = {}
+    for dataset_review in reviews:
+        if not isinstance(dataset_review, dict):
+            raise ContractError("design review dataset entry must be an object")
+        dataset_id = dataset_review.get("datasetId")
+        if not isinstance(dataset_id, str) or dataset_id not in state["datasets"] or dataset_id in seen_datasets:
+            raise ContractError("design review contains an unknown or repeated dataset")
+        seen_datasets.add(dataset_id)
+        dataset = state["datasets"][dataset_id]
+        if dataset_review.get("datasetSha256") != dataset["sha256"]:
+            raise ContractError(f"design review dataset digest does not match: {dataset_id}")
+        tasks = dataset_review.get("tasks")
+        expected = {task["taskId"]: task["sha256"] for task in dataset["tasks"]}
+        if not isinstance(tasks, list) or len(tasks) != len(expected):
+            raise ContractError(f"design review must cover every task exactly once: {dataset_id}")
+        seen_tasks: set[str] = set()
+        for task in tasks:
+            if not isinstance(task, dict):
+                raise ContractError(f"design review task entry must be an object: {dataset_id}")
+            task_id = task.get("taskId")
+            if not isinstance(task_id, str) or task_id not in expected or task_id in seen_tasks:
+                raise ContractError(f"design review contains an unknown or repeated task: {dataset_id}")
+            seen_tasks.add(task_id)
+            if task.get("taskSha256") != expected[task_id]:
+                raise ContractError(f"design review task digest does not match: {dataset_id}")
+            groups = task.get("groupIds")
+            if (not isinstance(groups, list) or not groups
+                    or any(not isinstance(group, str) or not ID_PATTERN.fullmatch(group) for group in groups)
+                    or len(set(groups)) != len(groups)):
+                raise ContractError(f"each task needs unique opaque groupIds: {dataset_id}")
+            for group in groups:
+                prior = group_datasets.setdefault(group, dataset_id)
+                if prior != dataset_id:
+                    raise ContractError(f"declared independence group overlaps datasets: {prior}, {dataset_id}")
+
+
+def _planned_gate_ids(state: dict[str, Any]) -> list[str]:
+    return [stage_id for stage_id in state["stageOrder"]
+            if state["stages"][stage_id]["kind"] != "recovery" and (
+                _stage_uses_validation(state, state["stages"][stage_id])
+                or _stage_uses_holdout(state, state["stages"][stage_id]))]
+
+
+def _validate_gate_coverage(state: dict[str, Any]) -> None:
+    for split in ("validation", "holdout"):
+        expected = {key for key, dataset in state["datasets"].items() if dataset["split"] == split}
+        bound = {dataset_id for stage in state["stages"].values()
+                 if stage["kind"] == split and stage["status"] != "stopped"
+                 for dataset_id in stage["datasetIds"]}
+        if expected != bound:
+            raise ContractError(f"every registered {split} dataset needs a planned {split} stage")
+    for stage in state["stages"].values():
+        if stage["kind"] == "evolution":
+            blockers = _evolution_start_blockers(state, stage)
+            if blockers:
+                raise ContractError("cannot seal evolution design: " + "; ".join(blockers))
+    evolution_ids = [stage["stageId"] for stage in state["stages"].values() if stage["kind"] == "evolution"]
+    validation_gates = [stage_id for stage_id in _planned_gate_ids(state)
+                        if _stage_uses_validation(state, state["stages"][stage_id])]
+    if validation_gates and not any(
+        all(_stage_depends_on(state, gate_id, evolution_id) for gate_id in validation_gates)
+        for evolution_id in evolution_ids
+    ):
+        raise ContractError("all private validation gates need a common evolution selection ancestor before sealing")
+    holdout_gates = [stage_id for stage_id in _planned_gate_ids(state)
+                     if _stage_uses_holdout(state, state["stages"][stage_id])]
+    selection_kinds = {"validation"} if evolution_ids else {"evaluation", "comparison"}
+    selection_ids = [stage["stageId"] for stage in state["stages"].values()
+                     if stage["kind"] in selection_kinds and not _stage_uses_holdout(state, stage)]
+    if holdout_gates and not any(
+        all(_stage_depends_on(state, gate_id, selection_id) for gate_id in holdout_gates)
+        for selection_id in selection_ids
+    ):
+        raise ContractError("all private holdout gates need a common pre-holdout selection ancestor before sealing")
+
+
+def _apply_design_seal(
+    state: dict[str, Any], payload: dict[str, Any], *, verify_sources: bool
+) -> None:
+    _require_fields(payload, ("protocol", "baseline", "review", "datasetDigests", "gateStageIds"), "design_sealed")
+    if not _requires_design(state):
+        raise ContractError("legacy studies cannot acquire a new design retrospectively; initialize a new study")
+    if state["designSeal"] is not None:
+        raise ContractError("study design can be sealed only once")
+    if not state["datasets"] or not state["stages"]:
+        raise ContractError("register datasets and stages before design sealing")
+    if any(stage["status"] != "planned" for stage in state["stages"].values()):
+        raise ContractError("design must be sealed before study execution starts")
+    expected_digests = {key: dataset["sha256"] for key, dataset in state["datasets"].items()}
+    if payload["datasetDigests"] != expected_digests or payload["gateStageIds"] != _planned_gate_ids(state):
+        raise ContractError("design seal must bind all dataset digests and sealed-dataset stages")
+    _validate_gate_coverage(state)
+    _validate_design_review(state, payload["review"])
+    if payload["protocol"].get("artifactType") != "file" or not payload["protocol"].get("byteCount"):
+        raise ContractError("design protocol must be a non-empty file")
+    if not payload["baseline"].get("byteCount"):
+        raise ContractError("design baseline must be a non-empty artifact")
+    if verify_sources:
+        for name in ("protocol", "baseline"):
+            _verify_artifact(payload[name], f"design {name}")
+    state["designSeal"] = payload
+
+
+def _consumed_private_gate_blocks(state: dict[str, Any], stage: dict[str, Any]) -> bool:
+    released = state["validationRelease"] is not None or state["holdoutRelease"] is not None
+    return bool(_requires_design(state) and released and (
+        any(state["datasets"][item]["split"] in EVOLUTION_VISIBLE_SPLITS for item in stage["datasetIds"])
+        or stage["kind"] in {"evolution", "realization", "meta-analysis"}
+        or (stage["kind"] == "recovery" and not stage["datasetIds"])
+    ))
+
+
 def _apply_transition(state: dict[str, Any], payload: dict[str, Any]) -> None:
     _require_fields(payload, ("stageId", "fromStatus", "toStatus", "note"), "stage_transitioned")
     stage_id = payload["stageId"]
@@ -759,6 +932,10 @@ def _apply_transition(state: dict[str, Any], payload: dict[str, Any]) -> None:
             raise ContractError(
                 f"{stage_id} cannot start evolution: " + "; ".join(blockers)
             )
+    if target == "running" and _requires_design(state) and state["designSeal"] is None:
+        raise ContractError("seal-design is required before study execution starts")
+    if target == "running" and _consumed_private_gate_blocks(state, stage):
+        raise ContractError("optimizer-visible work cannot resume after private release; use a new study with fresh private verification data")
     if target == "running" and _stage_uses_validation(state, stage):
         if state["validationRelease"] is None:
             raise ContractError(f"{stage_id} cannot run before validation release")
@@ -807,6 +984,13 @@ def _apply_evidence(
         raise ContractError(f"unsupported evidence visibility: {payload['visibility']}")
     if payload["kind"] == "native-job" and payload["visibility"] != "private":
         raise ContractError("native Harbor jobs must remain private")
+    if _requires_design(state) and payload["role"] in {"validation", "holdout"}:
+        if not _stage_uses_split(state, stage, payload["role"]):
+            raise ContractError("sealed evidence roles require a stage bound to that split")
+    if _requires_design(state) and payload["role"] == "development" and (
+        _stage_uses_validation(state, stage) or _stage_uses_holdout(state, stage)
+    ):
+        raise ContractError("private gate evidence cannot be labeled development")
     if (
         payload["role"] == "validation" or _stage_uses_validation(state, stage)
     ) and state["validationRelease"] is None:
@@ -882,6 +1066,17 @@ def _apply_validation_release(
             "validation release requires every other evolution stage to be terminal: "
             f"{unfinished_evolution}"
         )
+    if _requires_design(state):
+        if state["designSeal"] is None:
+            raise ContractError("validation release requires a sealed design")
+        for stage_id in state["designSeal"]["gateStageIds"]:
+            gate = state["stages"][stage_id]
+            if _stage_uses_validation(state, gate) and (
+                gate["status"] != "planned" or not _stage_depends_on(state, stage_id, selected_stage_id)
+            ):
+                raise ContractError("all planned validation gates must depend on the frozen selection and remain planned")
+        if any(stage["status"] in {"running", "blocked"} for stage in state["stages"].values()):
+            raise ContractError("finish or stop all active work before validation release")
     if verify_sources:
         _verify_artifact(payload, "validation candidate evidence")
     state["validationRelease"] = payload
@@ -942,6 +1137,18 @@ def _apply_holdout_release(
         )
     if not any(dataset["split"] == "holdout" for dataset in state["datasets"].values()):
         raise ContractError("holdout release requires a registered holdout dataset")
+    if _requires_design(state):
+        if state["designSeal"] is None:
+            raise ContractError("holdout release requires a sealed design")
+        gates = [state["stages"][item] for item in state["designSeal"]["gateStageIds"]]
+        if any(_stage_uses_validation(state, gate) and gate["status"] != "completed" for gate in gates):
+            raise ContractError("holdout release requires every planned validation gate to complete")
+        if any(_stage_uses_holdout(state, gate) and (
+                gate["status"] != "planned"
+                or not _stage_depends_on(state, gate["stageId"], selected_stage_id)) for gate in gates):
+            raise ContractError("all planned holdout gates must depend on the selected gate and remain planned")
+        if any(stage["status"] in {"running", "blocked"} for stage in state["stages"].values()):
+            raise ContractError("finish or stop all active work before holdout release")
     if verify_sources:
         _verify_artifact(payload, "holdout selection evidence")
     state["holdoutRelease"] = payload
@@ -967,6 +1174,8 @@ def register_dataset(root: Path, args: argparse.Namespace) -> dict[str, Any]:
             raise ContractError(f"duplicate dataset id: {dataset_id}")
         if any(stage["status"] != "planned" for stage in state["stages"].values()):
             raise ContractError("datasets cannot be registered after study execution starts")
+        if state["designSeal"] is not None:
+            raise ContractError("datasets cannot be registered after design sealing")
         for existing in state["datasets"].values():
             if _paths_overlap(source, Path(existing["source"])):
                 raise ContractError(f"dataset source overlaps {existing['datasetId']}")
@@ -975,11 +1184,11 @@ def register_dataset(root: Path, args: argparse.Namespace) -> dict[str, Any]:
             for task in tasks:
                 if task["taskId"].casefold() in existing_ids:
                     raise ContractError(
-                        f"task id overlaps {existing['datasetId']}: {task['taskId']}"
+                        f"task id overlaps {existing['datasetId']}: {dataset_id}"
                     )
                 if task["sha256"] in existing_digests:
                     raise ContractError(
-                        f"task content overlaps {existing['datasetId']}: {task['taskId']}"
+                        f"task content overlaps {existing['datasetId']}: {dataset_id}"
                     )
         lock_raw = write_json_exclusive(lock_path, lock)
         event = append_event(
@@ -1012,7 +1221,7 @@ def add_stage(root: Path, args: argparse.Namespace) -> dict[str, Any]:
         payload["evaluationBoundary"] = dict(EVOLUTION_EVALUATION_BOUNDARY)
     with study_lock(root):
         state = build_state(root)
-        validate_stage_definition(payload, state["datasets"], state["stages"])
+        validate_stage_addition(state, payload)
         event = append_event(
             root, state, "stage_added", payload, timestamp(args.recorded_at)
         )
@@ -1023,7 +1232,7 @@ def add_stage(root: Path, args: argparse.Namespace) -> dict[str, Any]:
 
 def transition_stage(root: Path, args: argparse.Namespace) -> dict[str, Any]:
     with study_lock(root):
-        state = build_state(root)
+        state = build_state(root, verify_sources=args.status == "running")
         if args.stage_id not in state["stages"]:
             raise ContractError(f"unknown stage: {args.stage_id}")
         stage = state["stages"][args.stage_id]
@@ -1041,6 +1250,24 @@ def transition_stage(root: Path, args: argparse.Namespace) -> dict[str, Any]:
         new_state = build_state(root)
         render_status(root, new_state)
     return {"ok": True, "event": event, "stage": public_stage(new_state["stages"][args.stage_id])}
+
+
+def seal_design(root: Path, args: argparse.Namespace) -> dict[str, Any]:
+    with study_lock(root):
+        state = build_state(root, verify_sources=True)
+        payload = {
+            "protocol": hash_artifact(Path(args.protocol)),
+            "baseline": hash_artifact(Path(args.baseline)),
+            "review": hash_artifact(Path(args.review)),
+            "datasetDigests": {key: dataset["sha256"] for key, dataset in state["datasets"].items()},
+            "gateStageIds": _planned_gate_ids(state),
+        }
+        preview = json.loads(json.dumps(state))
+        _apply_design_seal(preview, payload, verify_sources=True)
+        append_event(root, state, "design_sealed", payload, timestamp(args.recorded_at))
+        new_state = build_state(root)
+        render_status(root, new_state)
+    return {"ok": True, "design": public_design(new_state)}
 
 
 def record_evidence(root: Path, args: argparse.Namespace) -> dict[str, Any]:
@@ -1075,7 +1302,7 @@ def release_validation(root: Path, args: argparse.Namespace) -> dict[str, Any]:
         **artifact,
     }
     with study_lock(root):
-        state = build_state(root)
+        state = build_state(root, verify_sources=True)
         preview = json.loads(json.dumps(state))
         _apply_validation_release(preview, payload, verify_sources=False)
         event = append_event(
@@ -1099,7 +1326,7 @@ def release_holdout(root: Path, args: argparse.Namespace) -> dict[str, Any]:
         **artifact,
     }
     with study_lock(root):
-        state = build_state(root)
+        state = build_state(root, verify_sources=True)
         preview = json.loads(json.dumps(state))
         _apply_holdout_release(preview, payload, verify_sources=False)
         event = append_event(
@@ -1118,10 +1345,24 @@ def public_dataset(dataset: dict[str, Any]) -> dict[str, Any]:
     return {
         "datasetId": dataset["datasetId"],
         "split": dataset["split"],
+        "access": "public" if dataset["split"] in EVOLUTION_VISIBLE_SPLITS else "private",
+        "optimizerVisible": dataset["split"] in EVOLUTION_VISIBLE_SPLITS,
         "sha256": dataset["sha256"],
         "taskCount": len(dataset["tasks"]),
         "fileCount": dataset["fileCount"],
         "byteCount": dataset["byteCount"],
+    }
+
+
+def public_design(state: dict[str, Any]) -> dict[str, Any]:
+    seal = state["designSeal"]
+    return {
+        "required": _requires_design(state),
+        "sealed": seal is not None,
+        "protocolSha256": seal["protocol"]["sha256"] if seal else None,
+        "baselineSha256": seal["baseline"]["sha256"] if seal else None,
+        "reviewSha256": seal["review"]["sha256"] if seal else None,
+        "gateStageIds": seal["gateStageIds"] if seal else [],
     }
 
 
@@ -1442,6 +1683,8 @@ def status_snapshot(state: dict[str, Any]) -> dict[str, Any]:
                 stage
                 for stage in stages
                 if stage["status"] == "planned"
+                and (not _requires_design(state) or state["designSeal"] is not None)
+                and not _consumed_private_gate_blocks(state, stage)
                 and all(
                     state["stages"][dependency]["status"] == "completed"
                     for dependency in stage["dependsOn"]
@@ -1490,6 +1733,7 @@ def status_snapshot(state: dict[str, Any]) -> dict[str, Any]:
             "headSha256": state["headSha256"],
         },
         "datasets": datasets,
+        "design": public_design(state),
         "validation": {
             "datasetCount": validation_count,
             "released": state["validationRelease"] is not None,
@@ -1544,6 +1788,13 @@ def status_markdown(snapshot: dict[str, Any]) -> str:
             f"head `{snapshot['ledger']['headSha256']}`"
         ),
         (
+            "- Design: protocol, baseline, and curator review sealed"
+            if snapshot["design"]["sealed"] else (
+                "- Design: run seal-design before execution"
+                if snapshot["design"]["required"] else "- Design: legacy schema 1; no reviewed design seal"
+            )
+        ),
+        (
             "- Validation: released for the frozen candidate"
             if snapshot["validation"]["released"]
             else "- Validation: sealed and unavailable to evolution"
@@ -1556,17 +1807,17 @@ def status_markdown(snapshot: dict[str, Any]) -> str:
         "",
         "## Datasets",
         "",
-        "| Dataset | Split | Tasks | SHA-256 |",
-        "| --- | --- | ---: | --- |",
+        "| Dataset | Split | Optimizer access | Tasks | SHA-256 |",
+        "| --- | --- | --- | ---: | --- |",
     ]
     for dataset in snapshot["datasets"]:
         lines.append(
-            "| {datasetId} | {split} | {taskCount} | `{sha256}` |".format(
+            "| {datasetId} | {split} | {access} | {taskCount} | `{sha256}` |".format(
                 **{key: markdown_escape(value) for key, value in dataset.items()}
             )
         )
     if not snapshot["datasets"]:
-        lines.append("| _None_ |  | 0 |  |")
+        lines.append("| _None_ |  |  | 0 |  |")
 
     lines.extend(
         [
@@ -1640,7 +1891,7 @@ def initialize_study(args: argparse.Namespace) -> dict[str, Any]:
     validate_id(args.study_id, "study id")
     created_at = timestamp(args.recorded_at)
     study = {
-        "schemaVersion": SCHEMA_VERSION,
+        "schemaVersion": STUDY_SCHEMA_VERSION,
         "studyId": args.study_id,
         "title": args.title,
         "objective": args.objective,
@@ -1739,6 +1990,15 @@ def build_parser() -> argparse.ArgumentParser:
     stage_parser.add_argument("--depends-on", action="append")
     add_common_recorded_at(stage_parser)
 
+    design_parser = subparsers.add_parser(
+        "seal-design", help="freeze the protocol, baseline, private quality review, and dataset gate plan"
+    )
+    design_parser.add_argument("study_root")
+    design_parser.add_argument("--protocol", required=True)
+    design_parser.add_argument("--baseline", required=True)
+    design_parser.add_argument("--review", required=True, help="private directory containing review.json and supporting evidence")
+    add_common_recorded_at(design_parser)
+
     transition_parser = subparsers.add_parser(
         "transition", help="append a legal stage status transition"
     )
@@ -1810,6 +2070,8 @@ def main(argv: list[str] | None = None) -> int:
                 result = add_stage(root, args)
             elif args.command == "transition":
                 result = transition_stage(root, args)
+            elif args.command == "seal-design":
+                result = seal_design(root, args)
             elif args.command == "record-evidence":
                 result = record_evidence(root, args)
             elif args.command == "release-validation":
