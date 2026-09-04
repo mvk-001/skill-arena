@@ -31,6 +31,27 @@ Validation is a one-way acceptance gate. Never use its rewards, task
 identities, diagnostics, or trajectories to change, merge, rank, or reselect a
 candidate in the same study. If it fails, preserve the candidate and evidence;
 another unbiased evolution claim requires a new study with fresh validation.
+Creation of the output's `holdout/` directory records an attempted release.
+Further development or holdout invocations reject that output, including an
+unfinished or failed release; continuation also checks the prior archive's
+standard output location. Read existing reports without rerunning the search.
+These local checks do not authenticate cohort freshness across copied archives
+or unrelated output directories; the study organizer owns that boundary.
+
+## Search decisions
+
+Use a Pareto archive when candidate strengths conflict across comparable
+development cases. Archive membership preserves an option; it is neither a
+promotion decision nor proof of a distinct reusable mechanism. Inspect the
+cases responsible for non-dominance, propose a supported change, and reevaluate
+every merge as a new complete candidate.
+
+Predeclare the archive-to-finalist rule, generation/call budget, and plateau
+condition in the private study protocol. This runner does not enforce a total
+campaign budget. Select one finalist using development evidence only; do not
+open validation for each archive member. If no qualified member remains,
+preserve the baseline and diagnose development evidence while the independent
+gate remains unopened.
 
 ## Workflow
 

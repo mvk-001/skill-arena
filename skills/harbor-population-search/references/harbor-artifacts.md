@@ -161,6 +161,14 @@ zero or the candidate id differs from the baseline id.
 
 ## Cross-generation contract
 
+For multiple development generations, freeze the independent validation
+commitment in the study protocol before generation zero and omit the holdout
+template flag during intermediate invocations. Supply it for the final
+selection only: a supplied template releases holdout automatically for a
+qualified, content-changing winner. The CLI's holdout contract starts when the
+template is first supplied, so it does not replace the organizer's earlier
+dataset lock or protocol commitment.
+
 `search-contract.json` freezes the logical name, baseline content digest,
 normalized development JobConfig fingerprint, reward key, pass threshold,
 required rewards, minimum development pass rate, minimum holdout gain, and
@@ -177,5 +185,14 @@ Materialize each holdout invocation under
 execution and seal the generation, baseline digest, winner id/digest, config
 fingerprints, reward thresholds, and promotion policy. Create `result.json`
 exactly once after staging or analysis. Never reuse role paths across attempts:
-this preserves failed evidence and permits both same-generation retries and a
-new winner in a later generation without overwriting history.
+this preserves failed evidence. An executed, imported, or unfinished attempt
+terminates further search invocations in that output tree. Only an artifact-only
+staged attempt can be completed, using analyze-only with the same generation,
+baseline, full candidate digest/job mapping, and unchanged development results.
+All attempts are checked for consumption before staged-completion checks.
+
+This runner does not authorize retries. Proven external recovery belongs to
+the selective recovery workflow, with the frozen candidate, immutable cap, and
+first-evaluable semantics; do not rerun this search to select again or finalize
+such recovery. Native reporting can inspect the resulting evidence. Creating
+a new directory does not establish fresh independent validation.

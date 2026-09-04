@@ -11,6 +11,22 @@ authoring and preflight only. `harbor-organize-evaluations` remains the owner of
 dataset locks, stage ordering, validation and holdout release, and publication.
 In commands, `<skill-root>` means this installed skill directory.
 
+## Design decisions
+
+Choose the unit of independence before the task count: multiple surfaces or
+attempts from one semantic family test robustness, not additional independent
+coverage. Predeclare how families and strata contribute to the reported
+outcome so a prolific generator cannot dominate the claim. Distinguish a
+coverage minimum from evidence that the benchmark represents its target
+population.
+
+For each competency, include a valid alternative and a plausible wrong
+solution that differ on that competency. If a verifier cannot distinguish
+them, repair the task/verifier contract before sealing. More variants cannot
+repair an invalid outcome measure. Stop authoring when the declared coverage,
+reproducibility, shortcut, and leakage checks pass; leave execution and
+promotion to their owners.
+
 ## Workflow
 
 1. Read

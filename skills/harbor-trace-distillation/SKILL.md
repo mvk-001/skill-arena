@@ -33,6 +33,21 @@ new proposal evidence in the same run. If validation rejects the candidate,
 preserve the result; another unbiased attempt requires a new study with fresh
 validation.
 
+## Distillation decisions
+
+Separate an observed failure, its proposed cause, and the reusable instruction
+that could address it. Check successful traces and counterexamples before
+consolidating a lesson; a low reward alone cannot establish the cause. Group
+evidence by semantic family as well as trial and task checksum: the executable
+two-task minimum does not prove that two generated variants are independent.
+
+Prefer the smallest coherent patch set whose evidence explains both the
+failure and why passing behavior should survive. Remove redundant or
+conflicting proposals rather than accumulating a rule per trace. Candidate
+development checks the frozen patch on known cases; it cannot establish
+generalization. If support is insufficient, preserve the unchanged candidate
+and report the missing evidence instead of manufacturing a lesson.
+
 ## Workflow
 
 1. Read

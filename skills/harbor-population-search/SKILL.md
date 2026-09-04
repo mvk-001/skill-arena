@@ -34,6 +34,21 @@ that validation cohort. Preserve the result and use a fresh validation dataset
 in a new study for another unbiased claim. A development-only invocation is an
 intermediate receipt, not a completed evolution methodology.
 
+## Search decisions
+
+Use this method when one predeclared scalar reward orders otherwise qualified
+candidates meaningfully. Put non-compensating requirements in required-reward
+gates; use Pareto search when important case strengths conflict. Give each
+content-changing child a mechanism, supporting development evidence, expected
+effect, and preservation check for passing cases. An unsupported mechanism is
+a reason to retain the baseline.
+
+Freeze the generation/call budget and plateau rule in the study protocol
+before inspecting scores; this CLI does not enforce a campaign-wide budget.
+Continue development only while validation is unopened. Freeze one qualified
+finalist before releasing it. A deterministic ranking is reproducible selection,
+not a confidence estimate or proof that small score differences generalize.
+
 ## Inputs
 
 Require:
@@ -183,8 +198,14 @@ before Harbor execution.
 
 ## Gate on Independent Validation / Holdout
 
-For a live run, declare `--holdout-template` before development starts. Harbor
-keeps it deferred and evaluates only the preserved
+Declare and digest-bind the independent validation template in the study
+protocol before development starts. For a multi-generation search, omit
+`--holdout-template` from intermediate invocations and keep their results
+explicitly staged. Supply it only for the final generation or frozen offline
+completion: this flag releases the gate within that invocation once a changed,
+qualified winner exists. The runner freezes its holdout contract when the flag
+is first supplied; the organizer owns the earlier study-level commitment.
+Harbor evaluates only the preserved
 baseline and the development winner after selection. Each role is copied to
 `holdout/generation-NNN/attempt-NNN/<role>/skills/<frontmatter-name>/` before
 its native JobConfig is written, preserving the same installed identity and
@@ -192,8 +213,12 @@ isolating holdout inputs. Every invocation gets a new attempt directory. Its
 immutable `attempt.json` seals the generation, selected winner id and content
 digest, baseline digest, evaluation fingerprints, and promotion policy before
 Harbor runs; its `result.json` is created once after analysis. A failed or
-non-evaluable attempt therefore remains inspectable while a retry or later
-generation uses a new path instead of overwriting it.
+non-evaluable attempt remains inspectable and is terminal for this search.
+Once a live or imported holdout attempt exists, the runner rejects subsequent
+search, ranking, or holdout invocations before writing output. An unfinished
+attempt also fails closed. An artifact-only `staged` attempt may be completed
+with `--analyze-only` for the same generation, candidate digests, development
+jobs, and unchanged development evidence; it cannot select a new population.
 
 For offline analysis, also provide:
 
@@ -236,10 +261,11 @@ agent, model, and attempt multiset so mutable local task paths cannot drift
 behind an unchanged JobConfig. The first provided holdout template similarly
 writes `holdout-contract.json`, and the first completed release writes
 `holdout-signatures.json`; use a new output directory to change any contract.
-Holdout attempts remain append-only beneath their generation, so a provider
-failure can be retried and a later generation can evaluate a different winner
-without replacing earlier manifests, native configs, candidate results, or
-release decisions.
+Holdout attempts remain append-only beneath their generation. Use the recovery
+skill only for independently proven external failures of the frozen pair;
+this runner does not reopen a consumed gate or finalize recovery by reranking.
+Inspect existing receipts directly or with the native reporter. A new output
+path alone does not make a consumed dataset fresh.
 
 ## Outputs
 

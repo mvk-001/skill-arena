@@ -169,14 +169,14 @@ the prior plan text exactly. Each normal plan entry carries an
 mutation-plan and crossover-plan instructions are concrete contracts, not
 free-form realization prompts.
 
-A historical full log without phase or chain fields retains its compatibility
-path only when it also has the historical profile shape without an opaque
-holdout-declaration commitment. The historical seal remains verifiable, but a
-log that predates `developmentEvidenceIdentity` cannot seed a new generation
-because fresh generated-child evidence cannot be proven. Every newly emitted
-full log records
+A full log is a terminal receipt, including historical full logs that once
+reported `chainEligible: true`. The runner rejects an opened or unproven
+unopened predecessor before creating output, reading new jobs, or invoking
+Harbor; dry-run and doctor enforce the same boundary. Historical bytes and
+seals remain unchanged and inspectable. Every newly emitted full log records
 `phase: full`, `requestedPhase: full`, `diagnosticOnly: false`,
-`chainEligible: true`, `holdoutOpened: true`, and its Boolean promotion result.
+`chainEligible: false`, `holdoutOpened: true`, and its Boolean promotion result.
+Its breeding plan also records `chainEligible: false`.
 A phased development log is accepted only when it was produced by the
 explicit `development-chain` mode and its seal binds `chainEligible: true`, a
 qualified selected candidate, false diagnostic/promotion state, and an unopened
@@ -213,9 +213,9 @@ fully disjoint, genuinely fresh reevaluation remains valid.
 Before a successor full run resolves either holdout reference, it validates the
 previous log, breeding lineage, and the Harbor, scoring, evaluation, promotion,
 observed-profile, development-lock projection, exact operator instructions,
-and cross-generation job/trial freshness. A full predecessor must
-still match the final full profile exactly after holdout is loaded. A
-`development-chain` predecessor has no observed holdout lock, so the successor
+and cross-generation job/trial freshness. Only a qualified, unopened
+`development-chain` receipt can be a predecessor. It has no observed holdout
+lock, so the successor
 first requires an exact match to the sealed opaque holdout declaration and its
 digest, then compares the development projection and seals its newly observed
 holdout lock in the full-generation log. Changing the baseline ID/reference,

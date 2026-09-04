@@ -34,6 +34,21 @@ diagnostics, or trajectories for operator credit, breeding, repair, candidate
 ranking, or reselection in the same study. If it fails, preserve the result and
 start a new study with fresh validation for another unbiased claim.
 
+## Coevolution decisions
+
+Use operator coevolution only when multiple distinct child realizations can
+support operator credit. If evidence supports one child or one repair
+hypothesis, use a simpler development method first. Keep candidate quality
+separate from operator credit: compare the child with its own evaluated
+parent, then inspect preserved cases and competing causes of the change.
+
+Declare the operator-establishment threshold, evaluation budget, and stopping
+rule before observing improvements. Distinct child digests and minimum trials
+are lower bounds on support, not proof of independent mechanisms or causal
+operator superiority. Report parent, task-family, and generation coverage when
+available. Use `development-chain` for repeated generations and `full` only
+for the final frozen decision; an opened gate ends the chain.
+
 ## Workflow
 
 1. Read [references/config-and-artifacts.md](references/config-and-artifacts.md)
@@ -134,8 +149,8 @@ uv run <skill-root>/scripts/harbor_operator_report_only.py generation.yaml `
    the exact next-generation operator text bound by its
    `instructionContract`; mutation and crossover plan text is not a placeholder
    that may be rewritten while retaining the same operator ID.
-   After a completed full run or successful `development-chain` run, point the
-   next config's `evolution.previousGenerationLog` at that log so the sealed
+   After a successful `development-chain` run, point the next config's
+   `evolution.previousGenerationLog` at that log so the sealed
    Harbor, scoring, evaluation, and promotion profile cannot drift. Run fresh
    Harbor jobs for every newly attributed child; copying or relabeling a prior
    generated-child job is not a new realization. Plain
@@ -286,13 +301,12 @@ uv run <skill-root>/scripts/harbor_operator_report_only.py generation.yaml `
   `phase: development`, `requestedPhase: development-chain`,
   `chainEligible: true`, a qualified selected candidate, a normal breeding
   plan, false promotion, and an unopened holdout. Validate its development
-  profile projection before a successor resolves holdout. Historical full logs
-  without phase or chain fields remain recognizable and their historical seal
-  shape remains verifiable, but they cannot seed a new generation when they do
-  not contain the job/trial identity evidence needed to prove fresh generated
-  children. Newly emitted full
-  logs use explicit `phase: full`, `requestedPhase: full`,
-  `chainEligible: true`, `holdoutOpened: true`, and promotion markers.
+  profile projection before a successor resolves holdout. Full logs, including historical receipts previously marked
+  chain-eligible, cannot seed a new generation after opening validation.
+  Missing proof of an unopened gate also rejects continuation before jobs or
+  output creation. Newly emitted full logs use explicit `phase: full`,
+  `requestedPhase: full`, `chainEligible: false`, `holdoutOpened: true`, and
+  promotion markers; their breeding plans are also non-chainable.
 - Require every explicit predecessor to seal
   `holdoutUsedForDevelopmentSelection: false`; its selected development record
   must match the first qualified ranking survivor and skill digest. Its normal
@@ -327,8 +341,8 @@ uv run <skill-root>/scripts/harbor_operator_report_only.py generation.yaml `
 
 The output directory contains deterministic JSON strategy artifacts plus a
 concise `report.md`. A normal full run writes ranking, breeding, holdout, and
-sealed coevolution artifacts and explicitly marks the log as a chain-eligible
-full phase with an opened holdout and Boolean promotion decision.
+sealed coevolution artifacts and explicitly marks the log as a terminal,
+non-chainable full phase with an opened holdout and Boolean promotion decision.
 Development-only output records an unopened
 holdout. Plain `development` seals the selected candidate/digest with
 `chainEligible: false`; successful `development-chain` seals the same

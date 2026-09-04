@@ -1969,7 +1969,25 @@ def run_candidate_jobs(
     return records
 
 
+def require_unreleased_search(config: dict[str, Any]) -> None:
+    """Reject continuation after an attempted release in this output or predecessor."""
+    roots = {config["outputDir"]}
+    previous = config.get("previousGenerationLog")
+    if previous is not None:
+        previous = previous.resolve()
+        if previous.parent.parent.name == "development":
+            roots.add(previous.parent.parent.parent)
+    for root in roots:
+        if (root / "holdout").exists():
+            raise ValueError(
+                "Independent validation/holdout already opened or attempted in this "
+                "search. Preserve its evidence; another evolution requires a new "
+                "study with fresh validation."
+            )
+
+
 def development(config: dict[str, Any], analyze_only: bool) -> dict[str, Any]:
+    require_unreleased_search(config)
     records = run_candidate_jobs(
         config,
         phase="development",
@@ -2335,6 +2353,7 @@ def validate_development_archive_binding(
 
 
 def holdout(config: dict[str, Any], analyze_only: bool) -> dict[str, Any]:
+    require_unreleased_search(config)
     if config["selectedCandidate"] is None:
         raise ValueError("search.selectedCandidate is required for the holdout phase.")
     if config["developmentArchive"] is None:
@@ -2562,6 +2581,7 @@ def main() -> None:
     args = parse_args()
     try:
         config = normalize_config(args.config.resolve())
+        require_unreleased_search(config)
         if args.dry_run:
             result = public_plan(config, args.phase)
         elif args.doctor:

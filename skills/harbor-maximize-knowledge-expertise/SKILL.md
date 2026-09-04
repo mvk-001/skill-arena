@@ -12,6 +12,20 @@ evaluation, selection, and promotion in their owning skills.
 Runtime: Python 3.12 or newer, using only the standard library. In commands,
 `<skill-root>` means this copied skill directory.
 
+## Planning decisions
+
+Describe each gap as an observed development failure, a proposed expertise
+mechanism, and a preservation requirement. If the evidence supports only a
+symptom, keep the cause tentative. Prioritize the smallest portfolio that
+covers distinct supported gaps while retaining an incumbent and a conservative
+branch; more dimensions or operators do not by themselves establish expertise.
+
+The planner binds supplied classifications by digest but does not verify their
+causal interpretation. Compare fidelity, robustness, coverage, and efficiency
+under the downstream evaluator's declared gates. Treat its first unseen
+`holdout` cohort as independent validation, planned before evolution and
+consumed once; an additional final holdout belongs to the study lifecycle.
+
 ## Workflow
 
 1. Read [references/expertise-contract.md](references/expertise-contract.md)

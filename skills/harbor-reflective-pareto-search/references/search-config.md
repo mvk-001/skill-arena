@@ -230,6 +230,16 @@ artifact retain their ordinary reward semantics and are not rejected.
 
 ## Independent validation / holdout gate
 
+The presence of `holdout/` in the search output marks an attempted release,
+including a failed or unfinished attempt. Development, repeated holdout,
+dry-run, and doctor reject that output before jobs or report writes. A
+successor also checks the output containing its previous archive when the
+archive uses the standard `development/generation-NNN/pareto-archive.json`
+layout. Inspect completed receipts directly rather than rerunning selection.
+These filesystem checks are local continuity guards; copied archives and
+unrelated output roots do not prove a fresh cohort. The organizer and private
+study protocol remain authoritative for cross-directory release history.
+
 The holdout phase requires a selected development archive member and rejects
 any task name or checksum observed during development. Before executing or analyzing
 holdout jobs, it binds the archive to the same Harbor strategy, search id,

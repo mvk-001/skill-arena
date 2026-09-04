@@ -1694,7 +1694,9 @@ def holdout_gate(
         "nextStep": (
             None
             if holdout_evaluable
-            else "At least one holdout job lacks an evaluable primary reward. Repair or rerun the external/provider failure before promotion."
+            else "At least one holdout job is non-evaluable. Preserve this frozen decision. "
+            "Use the selective recovery workflow only for independently proven "
+            "external failures; do not rerun selection or retry semantic failures."
         ),
         "baselineMeanReward": baseline_mean,
         "winnerMeanReward": winner_mean,
@@ -1725,7 +1727,86 @@ def holdout_gate(
     }
 
 
+def validate_search_continuation(
+    args: argparse.Namespace, inputs: dict[str, Any] | None = None
+) -> bool:
+    """Allow only completion of an unchanged, artifact-only staged selection."""
+    holdout_root = args.output.resolve() / "holdout"
+    if not holdout_root.exists():
+        return False
+    attempts = sorted(holdout_root.glob("generation-*/attempt-*"))
+    if not attempts:
+        raise ValueError("Unrecognized holdout history; preserve it for audit.")
+    staged_manifests = []
+    for attempt in attempts:
+        manifest = read_json_mapping(attempt / "attempt.json", "Holdout attempt")
+        result_path = attempt / "result.json"
+        staged = (
+            manifest.get("mode") == "analyze-only"
+            and manifest.get("providedHoldoutJobDirectories") is None
+            and result_path.is_file()
+            and read_json_mapping(result_path, "Holdout result").get("status") == "staged"
+        )
+        if not staged:
+            raise ValueError(
+                "Independent validation/holdout already opened or its attempt is "
+                "unfinished. Preserve the frozen decision; another search requires "
+                "a new study with fresh validation. Use the recovery skill only "
+                "for independently proven external failures."
+            )
+        staged_manifests.append(manifest)
+    for manifest in staged_manifests:
+        if (
+            manifest.get("generation") != args.generation
+            or manifest.get("baselineCandidate") != args.baseline
+            or not args.analyze_only
+            or not args.holdout_job
+        ):
+            raise ValueError(
+                "A staged holdout freezes selection. Complete that same generation "
+                "with --analyze-only and its baseline/winner holdout jobs."
+            )
+        if inputs is not None:
+            generation = read_json_mapping(
+                args.output.resolve() / f"generation-{args.generation:03d}" / "generation.json",
+                "Frozen development generation",
+            )
+            frozen = {
+                row["candidateId"]: (row["skillDigest"], row["nativeJobDirectory"])
+                for row in generation["candidates"]
+            }
+            supplied = {
+                candidate_id: (directory_digest(source), str(inputs["jobs"][candidate_id]))
+                for candidate_id, source in inputs["candidates"].items()
+            }
+            if frozen != supplied:
+                raise ValueError("Staged holdout candidate or development job identity changed.")
+            # Validate every imported result before any derived config or receipt
+            # can be rewritten. Reuse the native parser, not a second evidence format.
+            for candidate_id, source in inputs["candidates"].items():
+                observed = parse_harbor_job(
+                    inputs["jobs"][candidate_id],
+                    args.reward_key,
+                    args.pass_threshold,
+                    inputs["requiredRewardThresholds"],
+                    config_fingerprint(inputs["templatePayload"]),
+                    inputs["skillName"],
+                    directory_digest_variants(source, "Staged candidate"),
+                    source,
+                    True,
+                )
+                observed["candidateId"] = candidate_id
+                result_path = (
+                    args.output.resolve() / f"generation-{args.generation:03d}"
+                    / "candidates" / candidate_id / "candidate-result.json"
+                )
+                if observed != read_json_mapping(result_path, "Frozen candidate result"):
+                    raise ValueError("Staged holdout development evidence changed.")
+    return True
+
+
 def run_search(args: argparse.Namespace, inputs: dict[str, Any]) -> dict[str, Any]:
+    staged_holdout = validate_search_continuation(args, inputs)
     output = args.output.resolve()
     generation_directory = output / f"generation-{args.generation:03d}"
     logical_name = inputs["skillName"]
@@ -1792,6 +1873,8 @@ def run_search(args: argparse.Namespace, inputs: dict[str, Any]) -> dict[str, An
         )
         result["candidateId"] = candidate_id
         result_path = candidate_root / "candidate-result.json"
+        if staged_holdout and result != read_json_mapping(result_path, "Frozen candidate result"):
+            raise ValueError("Staged holdout development evidence changed.")
         write_json(result_path, result)
         development_results[candidate_id] = result
         candidate_state = {
@@ -2218,6 +2301,7 @@ def run_search(args: argparse.Namespace, inputs: dict[str, Any]) -> dict[str, An
 def main(argv: list[str] | None = None) -> int:
     args = parse_arguments(sys.argv[1:] if argv is None else argv)
     try:
+        validate_search_continuation(args)
         inputs = validate_inputs(args)
         if version("harbor") != HARBOR_VERSION:
             raise ValueError(

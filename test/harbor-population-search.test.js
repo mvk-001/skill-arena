@@ -1371,7 +1371,7 @@ test("Harbor population search blocks per-task holdout regressions by default", 
   }
 });
 
-test("Harbor population search keeps immutable holdout attempts across generations", {
+test("Harbor population search makes every opened holdout terminal and preserves staged selection", {
   skip: !uvAvailable,
 }, async () => {
   const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "harbor-pop-holdout-history-"));
@@ -1433,7 +1433,7 @@ test("Harbor population search keeps immutable holdout attempts across generatio
       second,
       { ...holdoutOptions, reward: 1 },
     );
-    const output = path.join(tempDirectory, "output");
+    let output = path.join(tempDirectory, "output");
     const generationArgs = (generation, candidateId, candidate, developmentJob, holdoutJob) => [
       "--job-template",
       path.join(developmentBaseline, "config.json"),
@@ -1460,96 +1460,87 @@ test("Harbor population search keeps immutable holdout attempts across generatio
       "--analyze-only",
     ];
 
-    const firstRun = runSearch(generationArgs(
-      0,
-      "first",
-      first,
-      developmentFirst,
-      holdoutFirstExternalFailure,
-    ));
-    assert.equal(firstRun.status, 0, firstRun.stderr);
-    const attemptZero = path.join(
-      output,
-      "holdout",
-      "generation-000",
-      "attempt-000",
-    );
-    const attemptZeroManifestBefore = await fs.readFile(
-      path.join(attemptZero, "attempt.json"),
-      "utf8",
-    );
-    const attemptZeroResultBefore = await fs.readFile(
-      path.join(attemptZero, "result.json"),
-      "utf8",
-    );
-    assert.equal(JSON.parse(attemptZeroResultBefore).status, "non-evaluable");
+    const scenarios = [
+      ["external", "first", first, developmentFirst, holdoutFirstExternalFailure],
+      ["rejected", "first", first, developmentFirst, holdoutFirstRegression],
+      ["accepted", "second", second, developmentSecond, holdoutSecond],
+    ];
+    for (const [label, id, skill, developmentJob, holdoutJob] of scenarios) {
+      output = path.join(tempDirectory, label);
+      const args = generationArgs(0, id, skill, developmentJob, holdoutJob);
+      if (label === "external") {
+        const stagedArgs = args.filter((value, index) => (
+          value !== "--holdout-job" && args[index - 1] !== "--holdout-job"
+        ));
+        const staged = runSearch(stagedArgs);
+        assert.equal(staged.status, 0, staged.stderr);
+        const frozenBytes = await harborSkillDigest(output);
+        const unfinishedOutput = path.join(tempDirectory, "unfinished-stage");
+        await fs.cp(output, unfinishedOutput, { recursive: true });
+        await fs.rm(path.join(
+          unfinishedOutput, "holdout", "generation-000", "attempt-000", "result.json",
+        ));
+        const unfinishedBytes = await harborSkillDigest(unfinishedOutput);
+        const unfinishedArgs = [...args];
+        unfinishedArgs[unfinishedArgs.indexOf("--output") + 1] = unfinishedOutput;
+        const unfinished = runSearch(unfinishedArgs);
+        assert.notEqual(unfinished.status, 0);
+        assert.match(unfinished.stderr, /attempt is unfinished/i);
+        assert.equal(await harborSkillDigest(unfinishedOutput), unfinishedBytes);
 
-    const retry = runSearch(generationArgs(
-      0,
-      "first",
-      first,
-      developmentFirst,
-      holdoutFirstRegression,
-    ));
-    assert.equal(retry.status, 0, retry.stderr);
-    const attemptOne = path.join(
-      output,
-      "holdout",
-      "generation-000",
-      "attempt-001",
-    );
-    assert.equal(
-      await fs.readFile(path.join(attemptZero, "attempt.json"), "utf8"),
-      attemptZeroManifestBefore,
-    );
-    assert.equal(
-      await fs.readFile(path.join(attemptZero, "result.json"), "utf8"),
-      attemptZeroResultBefore,
-    );
-    assert.equal(JSON.parse(
-      await fs.readFile(path.join(attemptOne, "result.json"), "utf8"),
-    ).promoted, false);
+        const trial = (await fs.readdir(developmentFirst, { withFileTypes: true }))
+          .find((entry) => entry.isDirectory());
+        const trialPath = path.join(developmentFirst, trial.name, "result.json");
+        const trialBytes = await fs.readFile(trialPath, "utf8");
+        try {
+          const driftedTrial = JSON.parse(trialBytes);
+          driftedTrial.verifier_result.rewards.reward = 0.5;
+          await writeJson(trialPath, driftedTrial);
+          const changedEvidence = runSearch(args);
+          assert.notEqual(changedEvidence.status, 0);
+          assert.match(changedEvidence.stderr, /staged holdout development evidence changed/i);
+          assert.equal(await harborSkillDigest(output), frozenBytes);
+        } finally {
+          await fs.writeFile(trialPath, trialBytes, "utf8");
+        }
+        const changed = runSearch(generationArgs(
+          0, "first", second, developmentSecond, holdoutSecond,
+        ));
+        assert.notEqual(changed.status, 0);
+        assert.match(changed.stderr, /staged holdout candidate or development job identity changed/i);
+        assert.equal(await harborSkillDigest(output), frozenBytes);
+        const later = runSearch(generationArgs(
+          1, "second", second, developmentSecond, holdoutSecond,
+        ));
+        assert.notEqual(later.status, 0);
+        assert.match(later.stderr, /staged holdout freezes selection/i);
+        assert.equal(await harborSkillDigest(output), frozenBytes);
+      }
+      const completed = runSearch(args);
+      assert.equal(completed.status, 0, completed.stderr);
+      const receipt = JSON.parse(await fs.readFile(path.join(output, "run.json"), "utf8"));
+      assert.equal(receipt.holdout.promoted, label === "accepted");
+      if (label === "external") assert.equal(receipt.holdout.status, "non-evaluable");
+      const before = await harborSkillDigest(output);
 
-    const nextGeneration = runSearch(generationArgs(
-      1,
-      "second",
-      second,
-      developmentSecond,
-      holdoutSecond,
-    ));
-    assert.equal(nextGeneration.status, 0, nextGeneration.stderr);
-    const attemptTwo = path.join(
-      output,
-      "holdout",
-      "generation-001",
-      "attempt-000",
-    );
-    const nextRun = JSON.parse(await fs.readFile(path.join(output, "run.json"), "utf8"));
-    assert.equal(nextRun.generation, 1);
-    assert.equal(nextRun.selectedWinner, "second");
-    assert.equal(nextRun.holdout.promoted, true);
-    assert.equal(nextRun.holdout.attempt.directory, attemptTwo);
-    const firstManifest = JSON.parse(attemptZeroManifestBefore);
-    const secondManifest = JSON.parse(
-      await fs.readFile(path.join(attemptTwo, "attempt.json"), "utf8"),
-    );
-    assert.equal(firstManifest.generation, 0);
-    assert.equal(firstManifest.winnerCandidate, "first");
-    assert.equal(secondManifest.generation, 1);
-    assert.equal(secondManifest.winnerCandidate, "second");
-    assert.notEqual(firstManifest.winnerDigest, secondManifest.winnerDigest);
-    assert.equal(
-      await fs.readFile(path.join(attemptZero, "result.json"), "utf8"),
-      attemptZeroResultBefore,
-    );
-    const log = JSON.parse(
-      await fs.readFile(path.join(output, "population-search-log.json"), "utf8"),
-    );
-    assert.equal(log.generations.length, 2);
-    assert.deepEqual(
-      log.holdoutAttempts.map(({ generation, attempt }) => [generation, attempt]),
-      [[0, 0], [0, 1], [1, 0]],
-    );
+      const attempts = [
+        args,
+        generationArgs(1, "second", second, developmentSecond, holdoutSecond),
+        [...args.filter((value) => value !== "--analyze-only"), "--dry-run"],
+      ];
+      for (const attempt of attempts) {
+        const rejected = runSearch(attempt);
+        assert.notEqual(rejected.status, 0);
+        assert.match(rejected.stderr, /validation\/holdout already opened/i);
+        assert.equal(await harborSkillDigest(output), before);
+      }
+      await assert.rejects(fs.stat(path.join(output, "generation-001")), /ENOENT/);
+      const log = JSON.parse(await fs.readFile(
+        path.join(output, "population-search-log.json"), "utf8",
+      ));
+      assert.equal(log.generations.length, 1);
+      assert.equal(log.holdoutAttempts.length, label === "external" ? 2 : 1);
+    }
   } finally {
     await fs.rm(tempDirectory, { recursive: true, force: true });
   }

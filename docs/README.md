@@ -11,4 +11,5 @@ evaluation and evolution workflow.
 - [Repository layout, maintenance, and validation](repository-guide.md)
 - [Agent instructions](../AGENTS.md)
 - [Research foundations](research-foundations.md)
+- [Methodology review and method selection](methodology-review.md)
 - [Architecture decisions](../.specs/adr/)

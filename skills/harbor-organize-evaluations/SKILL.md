@@ -10,6 +10,21 @@ candidate realization, evolution, and metric interpretation to their owning
 skills. The bundled script uses Python 3.12 standard library only. In commands,
 `<skill-root>` means this installed skill directory.
 
+## Study decisions
+
+Choose the smallest lifecycle that answers the question. A report of an
+existing job needs no new evolution study. Before an evolution study starts,
+record its hypothesis, baseline, primary outcome, hard gates, fixed resource
+budget, development stopping rule, and independent acceptance rule in its
+private protocol. Reference the owning skill for executable fields.
+
+Stage completion records that work finished; it does not establish that the
+candidate passed. Have the owning evaluator interpret the frozen acceptance
+rule before any optional holdout or promotion decision. A failed or
+non-evaluable gate keeps the baseline and preserves the receipt. The organizer
+verifies ordering and bytes, not semantic independence, statistical power,
+evaluator authority, or the truth of a declared acceptance outcome.
+
 ## Workflow
 
 1. Read

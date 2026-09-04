@@ -12,6 +12,20 @@ Runtime: use uv and Python 3.12 or newer. The bundled reporter pins Harbor
 0.18.0 through inline script metadata. In commands, <skill-root> means this
 installed skill directory.
 
+## Comparison decisions
+
+Separate three questions: did execution finish, are the jobs comparable, and
+what outcome did the verifier measure? Answer them in that order. Report the
+paired task/attempt coverage, configured reward and pass threshold, errors,
+and available resource measures before interpreting an aggregate delta.
+A larger mean cannot compensate for a required gate owned by the study.
+
+Treat repeated attempts as measurements of the same task, not new independent
+tasks. State the independent family count and uncertainty only when the
+supplied study evidence supports them. A descriptive report, legacy unlocked
+comparison, or partial diagnostic report does not itself authorize promotion
+or establish that the skill caused a general improvement.
+
 ## Workflow
 
 1. Identify whether the user wants an existing job inspected or a fresh job
@@ -25,14 +39,17 @@ installed skill directory.
 uvx --from harbor==0.18.0 harbor run --config <job.yaml> --print-config
 ~~~
 
-4. For a requested live run, choose a new job name and execute Harbor:
+4. For a requested live run, require `retry.max_retries: 0` in the native
+   config, choose a new job name, and execute Harbor:
 
 ~~~powershell
 uvx --from harbor==0.18.0 harbor run --config <job.yaml> --job-name <unique-name>
 ~~~
 
-Use harbor job resume only for an intentionally resumed partial job. Never
-delete or overwrite prior evidence automatically.
+Preserve partial jobs as evidence. Route independently proven external
+failures to `harbor-resume-external-failures` under its fixed retry cap and
+first-evaluable policy. A reporting request does not authorize rerunning
+semantic failures or resuming a job against changed skill content.
 
 5. Produce the final report from one completed job:
 

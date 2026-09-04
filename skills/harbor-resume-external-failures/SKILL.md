@@ -7,6 +7,20 @@ description: Safely retry only verified external failures from Harbor 0.18.0 job
 
 Use the bundled script to inspect completed Harbor jobs and create fresh jobs only for trials whose external failure is proven by verifier-owned structured diagnostics or an exact allowlisted exception type/code. The workflow never resumes or deletes a job, never treats a missing reward as sufficient evidence, and never retries semantic failures, context limits, agent timeouts, budget exhaustion, or candidate-caused cancellation.
 
+## Recovery decisions
+
+Separate eligibility, provenance, and readiness. A null reward identifies a
+missing measurement; it does not explain its cause. Establish the allowlisted
+external failure from authoritative artifacts, verify the exact source
+lineage, then check that the specific remediation is ready before consuming
+the fixed call cap. A successful doctor is not evidence of a repaired service.
+
+Stop at the first evaluable outcome even if it is a failure of the task. An
+exhausted cap or conflicting evidence leaves the cell unresolved; changing a
+config, destination, or skill is not a way to replenish the cap. Recovery of a
+frozen validation candidate never authorizes mutation, reselection, or another
+independent claim from the consumed cohort.
+
 ## Workflow
 
 1. Read [the configuration and artifact contract](references/contract.md).

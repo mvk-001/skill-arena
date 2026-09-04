@@ -22,6 +22,21 @@ validation from entering GEPA, and keeps holdout sealed unless validation
 passes. A validation failure is terminal for that run; another unbiased attempt
 requires fresh validation.
 
+## Optimization decisions
+
+Choose this method when the proposed improvement can be expressed entirely in
+SKILL.md and automatic reflection is appropriate. If the mechanism requires
+code, references, or assets, use a complete-bundle candidate workflow instead.
+Freeze the intended failure mechanism, resource budget, and acceptance rule;
+keep GEPA's optimizer-visible selection cases inside `evolution` regardless
+of terminology used by upstream examples.
+
+Review whether feedback supports a reusable instruction rather than task
+memorization. Treat the chosen text as a development winner until independent
+gates pass. Report optimizer calls and final evaluation cost separately when
+available. A higher development score, a deterministic winner, or two repeated
+attempts alone does not establish uncertainty or generalization.
+
 ## Method
 
 The script first copies the source into an immutable baseline snapshot under

@@ -2643,6 +2643,20 @@ def validate_holdout_candidate_evidence_identity(
     return identity
 
 
+def require_unopened_predecessor(config: dict[str, Any]) -> None:
+    """An opened independent gate cannot become another development parent."""
+    path = config["previousGenerationLog"]
+    if path is None:
+        return
+    previous = read_json(path)
+    if previous.get("phase") == "full" or previous.get("holdoutOpened") is not False:
+        raise ValueError(
+            "Previous generation is not chain-eligible: independent validation/"
+            "holdout is opened or its unopened state is unproven. Preserve the "
+            "receipt; another evolution requires a new study with fresh validation."
+        )
+
+
 def validate_previous_generation_profile(
     config: dict[str, Any],
     profile: dict[str, Any],
@@ -2650,6 +2664,7 @@ def validate_previous_generation_profile(
     development_evidence: list[dict[str, Any]],
     development_only: bool = False,
 ) -> None:
+    require_unopened_predecessor(config)
     path = config["previousGenerationLog"]
     if path is None:
         if config["generation"] > 0:
@@ -4424,6 +4439,7 @@ def resolve_holdout_jobs(
 def run_analysis(
     config: dict[str, Any], analyze_only: bool, phase: str = "full"
 ) -> dict[str, Any]:
+    require_unopened_predecessor(config)
     missing = [
         name for name in config["harbor"]["requiredEnv"] if not os.environ.get(name)
     ]
@@ -4532,6 +4548,7 @@ def run_analysis(
         evidence_by_id[selected_candidate_id],
     )
 
+    breeding["chainEligible"] = False
     public_development = [public_evidence(item) for item in development]
     public_holdout_evidence = [public_evidence(item) for item in holdout_evidence]
     exploratory = any(
@@ -4591,7 +4608,7 @@ def run_analysis(
         "requestedPhase": "full",
         "decision": holdout["decision"],
         "diagnosticOnly": False,
-        "chainEligible": True,
+        "chainEligible": False,
         "holdoutOpened": True,
         "promotion": holdout["promoted"],
         "selectedDevelopment": selected_development,
@@ -4675,6 +4692,7 @@ def main() -> None:
     args = parse_args()
     try:
         config = normalize_config(args.config.resolve(), args.output_dir)
+        require_unopened_predecessor(config)
         if args.dry_run:
             validate_dry_run_job_configs(config, args.phase)
             result = public_plan(config, args.phase)

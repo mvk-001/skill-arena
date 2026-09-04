@@ -1068,197 +1068,98 @@ test("Harbor operator coevolution seals the evaluation profile across phases", {
   }
 });
 
-test("Harbor operator coevolution rejects inter-generation profile drift", {
+test("Harbor operator coevolution rejects inter-generation profile and lineage drift", {
   skip: !uvAvailable,
 }, async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "harbor-operator-generation-profile-"));
   try {
     const fixture = await createFixture(root);
     const firstOutput = path.join(root, "first-output");
-    const first = runAnalysis(fixture.configPath, firstOutput);
+    const first = runDevelopmentChainAnalysis(fixture.configPath, firstOutput);
     assert.equal(first.status, 0, first.stderr);
     const previousLog = path.join(firstOutput, "operator-coevolution-log.json");
-    const sealed = JSON.parse(await fs.readFile(previousLog, "utf8"));
+    const sealed = await readOutput(firstOutput, "operator-coevolution-log.json");
     assert.match(sealed.evolutionProfileDigest, /^sha256:[0-9a-f]{64}$/);
     assert.match(sealed.generationSeal, /^sha256:[0-9a-f]{64}$/);
-
-    assert.equal(sealed.phase, "full");
-    assert.equal(sealed.requestedPhase, "full");
-    assert.equal(sealed.diagnosticOnly, false);
     assert.equal(sealed.chainEligible, true);
-    assert.equal(sealed.holdoutOpened, true);
-    assert.equal(sealed.promotion, true);
-    assert.equal(sealed.holdoutUsedForDevelopmentSelection, false);
-    assert.equal(sealed.selectedDevelopment.candidateId, "strong-child-a");
-    assert.equal(sealed.holdoutReleaseBinding.candidateId, "strong-child-a");
-    assert.equal(
-      sealed.holdoutReleaseBinding.holdoutDeclarationDigest,
-      sealed.evolutionProfile.holdoutDeclarationDigest,
-    );
-    assert.match(
-      sealed.developmentEvidenceIdentityDigest,
-      /^sha256:[0-9a-f]{64}$/,
-    );
-    assert.equal(
-      sealed.developmentEvidenceIdentity.candidates.length,
-      fixture.config.candidates.length,
-    );
+    assert.equal(sealed.holdoutOpened, false);
     configureNextGeneration(fixture, sealed, previousLog);
     await rebuildGeneratedCandidateJobs(fixture, root, "generation-002");
-    await fs.writeFile(
-      fixture.configPath,
-      JSON.stringify(fixture.config, null, 2),
-      "utf8",
-    );
-    const compatible = runAnalysis(
-      fixture.configPath,
-      path.join(root, "compatible-output"),
-    );
+    await fs.writeFile(fixture.configPath, JSON.stringify(fixture.config, null, 2));
+    const compatible = runAnalysis(fixture.configPath, path.join(root, "compatible-output"));
     assert.equal(compatible.status, 0, compatible.stderr);
 
-    const tamperedReleasePath = path.join(root, "tampered-release-log.json");
-    const tamperedRelease = structuredClone(sealed);
-    tamperedRelease.holdoutReleaseBinding.candidateId = "strong-child-b";
-    tamperedRelease.generationSeal = stableDigest(
-      generationSealPayload(tamperedRelease),
-    );
-    await fs.writeFile(
-      tamperedReleasePath,
-      JSON.stringify(tamperedRelease, null, 2),
-      "utf8",
-    );
-    fixture.config.evolution.previousGenerationLog = tamperedReleasePath;
-    await fs.writeFile(
-      fixture.configPath,
-      JSON.stringify(fixture.config, null, 2),
-      "utf8",
-    );
-    const tamperedReleaseResult = runAnalysis(
-      fixture.configPath,
-      path.join(root, "tampered-release-output"),
-    );
-    assert.notEqual(tamperedReleaseResult.status, 0);
-    assert.match(
-      tamperedReleaseResult.stderr,
-      /invalid final holdout release candidate binding/i,
-    );
-
-    const historicalLogPath = path.join(root, "historical-full-log.json");
-    const historical = structuredClone(sealed);
-    for (const key of [
-      "phase",
-      "requestedPhase",
-      "diagnosticOnly",
-      "chainEligible",
-      "holdoutOpened",
-      "promotion",
-      "selectedDevelopment",
-      "holdoutReleaseBinding",
-      "holdoutUsedForDevelopmentSelection",
-      "developmentEvidenceIdentity",
-      "developmentEvidenceIdentityDigest",
-    ]) delete historical[key];
-    delete historical.evolutionProfile.holdoutDeclaration;
-    delete historical.evolutionProfile.holdoutDeclarationDigest;
-    historical.evolutionProfileDigest = stableDigest(historical.evolutionProfile);
-    for (const operator of historical.breedingPlan.operators) {
-      delete operator.instructionContract;
-    }
-    historical.generationSeal = stableDigest(generationSealPayload(historical));
-    await fs.writeFile(
-      historicalLogPath,
-      JSON.stringify(historical, null, 2),
-      "utf8",
-    );
-    const frozenHoldout = structuredClone(fixture.config.holdout);
-    const historicalMustNotOpen = path.join(root, "historical-must-not-open");
-    fixture.config.evolution.previousGenerationLog = historicalLogPath;
-    fixture.config.holdout.baseline.jobDirectory = path.join(
-      historicalMustNotOpen,
-      "baseline",
-    );
-    fixture.config.holdout.candidate.jobDirectory = path.join(
-      historicalMustNotOpen,
-      "candidate",
-    );
-    await fs.writeFile(
-      fixture.configPath,
-      JSON.stringify(fixture.config, null, 2),
-      "utf8",
-    );
-    const historicalSuccessor = runAnalysis(
-      fixture.configPath,
-      path.join(root, "historical-successor-output"),
-    );
-    assert.notEqual(historicalSuccessor.status, 0);
-    assert.match(
-      historicalSuccessor.stderr,
-      /generated-child freshness cannot be proven/i,
-    );
-    await assert.rejects(fs.stat(historicalMustNotOpen), /ENOENT/);
-    fixture.config.holdout = frozenHoldout;
-
-    const disguisedLog = path.join(root, "new-log-without-phase.json");
-    const disguised = structuredClone(sealed);
-    delete disguised.phase;
-    delete disguised.requestedPhase;
-    delete disguised.chainEligible;
-    await fs.writeFile(disguisedLog, JSON.stringify(disguised, null, 2), "utf8");
-    fixture.config.evolution.previousGenerationLog = disguisedLog;
-    await fs.writeFile(
-      fixture.configPath,
-      JSON.stringify(fixture.config, null, 2),
-      "utf8",
-    );
-    const disguisedResult = runAnalysis(
-      fixture.configPath,
-      path.join(root, "disguised-output"),
-    );
-    assert.notEqual(disguisedResult.status, 0);
-    assert.match(disguisedResult.stderr, /not chain-eligible|genuinely historical/i);
-
-    fixture.config.evolution.previousGenerationLog = previousLog;
     fixture.config.harbor.passThreshold = 0.9;
-    await fs.writeFile(
-      fixture.configPath,
-      JSON.stringify(fixture.config, null, 2),
-      "utf8",
-    );
+    await fs.writeFile(fixture.configPath, JSON.stringify(fixture.config, null, 2));
     const drifted = runAnalysis(fixture.configPath, path.join(root, "drifted-output"));
     assert.notEqual(drifted.status, 0);
     assert.match(drifted.stderr, /profile drifted from the previous generation/i);
 
     fixture.config.harbor.passThreshold = 1;
     const unrelatedLog = path.join(root, "unrelated-log.json");
-    const unrelated = JSON.parse(JSON.stringify(sealed));
+    const unrelated = structuredClone(sealed);
     unrelated.evolutionId = "another-evolution";
-    await fs.writeFile(unrelatedLog, JSON.stringify(unrelated, null, 2), "utf8");
+    await fs.writeFile(unrelatedLog, JSON.stringify(unrelated, null, 2));
     fixture.config.evolution.previousGenerationLog = unrelatedLog;
-    await fs.writeFile(
-      fixture.configPath,
-      JSON.stringify(fixture.config, null, 2),
-      "utf8",
-    );
-    const unrelatedResult = runAnalysis(
-      fixture.configPath,
-      path.join(root, "unrelated-output"),
-    );
+    await fs.writeFile(fixture.configPath, JSON.stringify(fixture.config, null, 2));
+    const unrelatedResult = runAnalysis(fixture.configPath, path.join(root, "unrelated-output"));
     assert.notEqual(unrelatedResult.status, 0);
     assert.match(unrelatedResult.stderr, /another evolutionId/i);
 
     fixture.config.evolution.previousGenerationLog = previousLog;
     fixture.config.operators[0].parentOperatorIds = ["tampered-parent"];
-    await fs.writeFile(
-      fixture.configPath,
-      JSON.stringify(fixture.config, null, 2),
-      "utf8",
-    );
-    const lineage = runAnalysis(
-      fixture.configPath,
-      path.join(root, "lineage-output"),
-    );
+    await fs.writeFile(fixture.configPath, JSON.stringify(fixture.config, null, 2));
+    const lineage = runAnalysis(fixture.configPath, path.join(root, "lineage-output"));
     assert.notEqual(lineage.status, 0);
     assert.match(lineage.stderr, /lineage differs from the previous breeding plan/i);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("opened or historical full coevolution receipts cannot seed another generation", {
+  skip: !uvAvailable,
+}, async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "harbor-operator-consumed-gate-"));
+  try {
+    const fixture = await createFixture(root);
+    const output = path.join(root, "first");
+    const first = runAnalysis(fixture.configPath, output);
+    assert.equal(first.status, 0, first.stderr);
+    const logPath = path.join(output, "operator-coevolution-log.json");
+    const bytes = await fs.readFile(logPath, "utf8");
+    const sealed = JSON.parse(bytes);
+    assert.equal(sealed.holdoutOpened, true);
+    assert.equal(sealed.chainEligible, false);
+    assert.equal(sealed.breedingPlan.chainEligible, false);
+    configureNextGeneration(fixture, sealed, logPath);
+    fixture.config.holdout.baseline.jobDirectory = path.join(root, "must-not-read-baseline");
+    fixture.config.holdout.candidate.jobDirectory = path.join(root, "must-not-read-candidate");
+
+    const historical = structuredClone(sealed);
+    for (const key of ["phase", "requestedPhase", "chainEligible", "holdoutOpened"]) {
+      delete historical[key];
+    }
+    const previouslyChainable = { ...sealed, chainEligible: true };
+    previouslyChainable.generationSeal = stableDigest(generationSealPayload(previouslyChainable));
+    for (const [label, receipt] of [
+      ["terminal", sealed], ["old-chainable", previouslyChainable], ["historical", historical],
+    ]) {
+      const predecessor = path.join(root, label + ".json");
+      await fs.writeFile(predecessor, JSON.stringify(receipt, null, 2));
+      fixture.config.evolution.previousGenerationLog = predecessor;
+      await fs.writeFile(fixture.configPath, JSON.stringify(fixture.config, null, 2));
+      for (const mode of ["--analyze-only", "--dry-run", "--doctor"]) {
+        const destination = path.join(root, label + mode);
+        const rejected = spawnSync("uv", [
+          "run", script, fixture.configPath, "--output-dir", destination, mode,
+        ], { encoding: "utf8", timeout: 60000, windowsHide: true });
+        assert.notEqual(rejected.status, 0);
+        assert.match(rejected.stderr, /not chain-eligible.*validation\/holdout/i);
+        await assert.rejects(fs.stat(destination), /ENOENT/);
+      }
+    }
+    assert.equal(await fs.readFile(logPath, "utf8"), bytes);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
@@ -3332,7 +3233,7 @@ test("explicit development-chain seeds a full successor without opening first-ge
     assert.equal(finalLog.phase, "full");
     assert.equal(finalLog.requestedPhase, "full");
     assert.equal(finalLog.diagnosticOnly, false);
-    assert.equal(finalLog.chainEligible, true);
+    assert.equal(finalLog.chainEligible, false);
     assert.equal(finalLog.holdoutOpened, true);
     assert.equal(finalLog.promotion, true);
     assert.equal(finalLog.selectedDevelopment.candidateId, newWinnerId);

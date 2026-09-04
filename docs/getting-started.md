@@ -74,6 +74,12 @@ inputs, commands, modes, evidence checks, outputs, and validation.
 
 ## Common workflow
 
+Choose a method using its evidence requirements, not its apparent complexity.
+The [methodology review](methodology-review.md) maps all twelve responsibilities
+and separates executable guards from study-level scientific judgments. Keep
+budgets, stopping rules, and the finalist rule in the private study protocol;
+do not add unsupported fields to a runner's configuration.
+
 1. Before study initialization, use `harbor-author-evaluation-datasets` to
    define source and scenario families, assign families to splits, materialize
    seeded nuisance variants, test reference and shortcut solutions, audit

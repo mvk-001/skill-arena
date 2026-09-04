@@ -1585,6 +1585,14 @@ test("Harbor reflective Pareto search gates only on disjoint holdout jobs", asyn
   const profileDrift = run(configPath, "--phase", "holdout", "--analyze-only");
   assert.notEqual(profileDrift.status, 0);
   assert.match(profileDrift.stderr, /observed agent\/version\/model profile differs/i);
+  const failedReleaseBytes = await fs.readdir(path.join(profileDriftConfig.search.outputDir, "holdout"));
+  const failedReleaseRetry = run(configPath, "--phase", "holdout", "--analyze-only");
+  assert.notEqual(failedReleaseRetry.status, 0);
+  assert.match(failedReleaseRetry.stderr, /validation\/holdout already opened or attempted/i);
+  assert.deepEqual(
+    await fs.readdir(path.join(profileDriftConfig.search.outputDir, "holdout")),
+    failedReleaseBytes,
+  );
 
   const holdoutConfig = configFor({
     output,
@@ -1612,6 +1620,23 @@ test("Harbor reflective Pareto search gates only on disjoint holdout jobs", asyn
     await computeSkillDigest(candidateSkill),
   );
   assert.match(promotion.developmentProfileDigest, /^sha256:[0-9a-f]{64}$/);
+  const promotionBytes = await fs.readFile(result.promotion, "utf8");
+  const reopened = run(configPath, "--phase", "holdout", "--analyze-only");
+  assert.notEqual(reopened.status, 0);
+  assert.match(reopened.stderr, /validation\/holdout already opened or attempted/i);
+  assert.equal(await fs.readFile(result.promotion, "utf8"), promotionBytes);
+
+  const successor = structuredClone(developmentConfig);
+  successor.search.generation = 1;
+  successor.search.previousGenerationLog = archive;
+  successor.search.outputDir = path.join(temp, "must-not-create-successor");
+  await fs.writeFile(configPath, JSON.stringify(successor, null, 2));
+  for (const mode of ["--analyze-only", "--dry-run"]) {
+    const continued = run(configPath, mode);
+    assert.notEqual(continued.status, 0);
+    assert.match(continued.stderr, /validation\/holdout already opened or attempted/i);
+    await assert.rejects(fs.stat(successor.search.outputDir), /ENOENT/);
+  }
   assert.equal(
     await fs.readFile(path.join(baselineSkill, "SKILL.md"), "utf8"),
     [
