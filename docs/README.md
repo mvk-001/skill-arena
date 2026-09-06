@@ -7,6 +7,9 @@ evaluation and evolution workflow.
 
 ## Start here
 
+- [Evaluation reports and skill metrics](evaluation-reports.md)
+- [Organizer report catalog procedure](../skills/harbor-organize-evaluations/references/report-catalog.md)
+- [Decision: report discovery and skill coverage](../.specs/adr/2026-09-06-report-discovery-and-skill-coverage.md)
 - [Usage and setup](getting-started.md)
 - [Repository layout, maintenance, and validation](repository-guide.md)
 - [Agent instructions](../AGENTS.md)

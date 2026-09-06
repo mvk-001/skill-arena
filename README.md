@@ -15,6 +15,7 @@ npm run skills:check
 
 ## Documentation
 
+- [Evaluation reports: evaluated skills, metrics, and evidence coverage](docs/evaluation-reports.md)
 - [Documentation index](docs/README.md)
 - [Usage and operations](docs/getting-started.md)
 - [Repository layout and validation](docs/repository-guide.md)

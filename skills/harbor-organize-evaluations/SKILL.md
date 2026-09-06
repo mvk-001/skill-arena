@@ -1,6 +1,6 @@
 ---
 name: harbor-organize-evaluations
-description: Organize Harbor studies with multiple public development and private verification datasets, a frozen protocol and baseline, curator-reviewed leakage controls, ordered skill-owned stages, one-way validation gates, and Git-safe publication. Use to prepare or audit an evaluation or evolution methodology, prevent private feedback and task shortcuts from entering training or skill selection, or coordinate native Harbor owners without implementing another optimizer or scorer.
+description: Organize Harbor studies with multiple public development and private verification datasets, frozen protocols, leakage controls, ordered stages, and one-way validation gates. Use to prepare or audit evaluation methodology, prevent private feedback and task shortcuts, or organize published reports into a discoverable catalog of evaluated skills and source-linked metrics without implementing another optimizer or scorer.
 ---
 
 # Harbor Organize Evaluations
@@ -11,6 +11,13 @@ skills. The bundled script uses Python 3.12 standard library only. In commands,
 `<skill-root>` means this installed skill directory.
 
 ## Study decisions
+
+When organizing existing reports or answering which skills have been evaluated,
+follow [Report discovery and skill coverage](references/report-catalog.md).
+Maintain a project-level report catalog with source links, reviewed aggregate
+metrics per evaluated variant, and explicit missing evidence. Separate target
+skill quality from evolution-method observations. Refresh this catalog after
+publication; do not infer current-version quality from a historical score.
 
 Choose the smallest lifecycle that answers the question. A report of an
 existing job needs no new evolution study. Before an evolution study starts,
@@ -246,8 +253,10 @@ evaluator authority, or the truth of a declared acceptance outcome.
   that contains no task content, prompts, responses, traces, secrets, or
   holdout internals. The organizer verifies structure and Git tracking, not
   semantic redaction.
-- Do not copy, parse, normalize, average, rank, or reinterpret Harbor rewards
-  here. Register the report produced by the owning skill.
+- Do not parse raw Harbor rewards, normalize, average, rank, or reinterpret
+  scores here. Register the report produced by the owning skill. A report
+  catalog may transcribe already reviewed published aggregates with source
+  links and their original meaning, without calculating new metrics.
 - Do not add datasets after any stage starts. Evolution stages bind only
   `development`. Validation stages bind only `validation` and cannot run before
   the selected candidate bundle is digest-bound and explicitly released.
